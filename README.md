@@ -7,12 +7,12 @@ JSON with `<Render>`. Data goes in through props and comes out through callbacks
 
 ## Packages
 
-| Package | Purpose |
-| --- | --- |
-| `packages/core` | Framework-free schema, registry, tree operations and commands |
-| `packages/render` | Read-only `<Render>` for published pages (SSR friendly) |
-| `packages/editor` | `<Editor>`: canvas, layers, properties, drag and drop |
-| `apps/playground` | Vite app for trying the library |
+| Package           | Purpose                                                       |
+| ----------------- | ------------------------------------------------------------- |
+| `packages/core`   | Framework-free schema, registry, tree operations and commands |
+| `packages/render` | Read-only `<Render>` for published pages (SSR friendly)       |
+| `packages/editor` | `<Editor>`: canvas, layers, properties, drag and drop         |
+| `apps/playground` | Vite app for trying the library                               |
 
 Packages are published as `@midito-kitchen/core`, `@midito-kitchen/render` and
 `@midito-kitchen/editor`.
