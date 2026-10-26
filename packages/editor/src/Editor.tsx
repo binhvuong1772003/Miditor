@@ -12,11 +12,14 @@ import {
   SCHEMA_VERSION,
   updateNode,
   withFreeBox,
+  withStyle,
 } from "@midito-kitchen/core";
 import { Render } from "@midito-kitchen/render";
-import { type PointerEvent, useLayoutEffect, useRef, useState } from "react";
+import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DragMove, isMoveableLayer } from "./canvas/DragMove";
 import styles from "./Editor.module.css";
+import { isEditableTarget } from "./editable";
+import { PropertiesPanel } from "./PropertiesPanel";
 import { SavedDataDialog } from "./SavedDataDialog";
 
 export interface EditorProps {
@@ -39,7 +42,7 @@ const INITIAL_PAGE: PageData = {
         id: "sample",
         type: "Container",
         props: {},
-        styles: {},
+        styles: { background: "#d5dae3" },
         position: {
           mode: "free",
           x: { anchor: "end", offset: 20 },
@@ -53,7 +56,7 @@ const INITIAL_PAGE: PageData = {
         id: "sample-2",
         type: "Container",
         props: {},
-        styles: {},
+        styles: { background: "#d5dae3" },
         position: {
           mode: "free",
           x: { anchor: "start", offset: 40 },
@@ -86,6 +89,21 @@ export function Editor({ className }: EditorProps) {
   const editorRoot = useRef<HTMLDivElement>(null);
   // Temporary: the JSON shown by the Save button, taken at the moment of the click.
   const [savedJson, setSavedJson] = useState<string | null>(null);
+  // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
+  const [draft, setDraft] = useState<{ id: string; background: string | undefined } | null>(null);
+  const shown = useMemo<PageData>(
+    () =>
+      draft
+        ? {
+            ...data,
+            root: updateNode(data.root, draft.id, (n) =>
+              withStyle(n, "background", draft.background),
+            ),
+          }
+        : data,
+    [data, draft],
+  );
+  const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
 
   // `<Render>` owns the elements, so look up the one for the selected node after every render.
   useLayoutEffect(() => {
@@ -98,12 +116,25 @@ export function Editor({ className }: EditorProps) {
   const press = (event: PointerEvent<HTMLElement>) => {
     const target = event.target as Element;
     if (event.button !== 0 || isMoveableLayer(target)) return;
+    // A field that is being typed in applies its text before the panel changes.
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && isEditableTarget(active)) active.blur();
     const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
     const selectable = id !== undefined && id !== data.root.id;
+    if ((selectable ? id : null) !== selectedId) setDraft(null);
     setSelectedId(selectable ? id : null);
     // A press on a node keeps the keyboard inside the editor, so that Esc reaches it. The editor's
     // own element takes the focus: it has no ring, unlike the scrolling canvas.
     if (selectable) editorRoot.current?.focus({ preventScroll: true });
+  };
+
+  /** Store a colour on a node, once. The draft is over. */
+  const commitBackground = (id: string, background: string | undefined) => {
+    setDraft(null);
+    setData((prev) => {
+      const root = updateNode(prev.root, id, (n) => withStyle(n, "background", background));
+      return root === prev.root ? prev : { ...prev, root };
+    });
   };
 
   const startDrag = () => {
@@ -138,9 +169,11 @@ export function Editor({ className }: EditorProps) {
       data-midito-editor=""
       tabIndex={-1}
       onKeyDown={(event) => {
-        // Esc inside the Save pop-up closes the pop-up only.
+        // Esc inside the Save pop-up closes the pop-up only, and Esc in a field only undoes the field.
         const inDialog = (event.target as Element).closest("dialog") !== null;
-        if (event.key === "Escape" && !inDialog) setSelectedId(null);
+        if (event.key !== "Escape" || inDialog || isEditableTarget(event.target)) return;
+        setDraft(null);
+        setSelectedId(null);
       }}
     >
       <header className={styles.toolbar}>
@@ -157,7 +190,7 @@ export function Editor({ className }: EditorProps) {
         tabIndex={0}
         onPointerDown={press}
       >
-        <Render data={data} className={styles.page} />
+        <Render data={shown} className={styles.page} />
         <DragMove
           target={block}
           container={workspace}
@@ -166,7 +199,16 @@ export function Editor({ className }: EditorProps) {
           onDragEnd={endDrag}
         />
       </section>
-      <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties" />
+      <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
+        <PropertiesPanel
+          // A new panel for each node, so text typed for one is never applied to another.
+          key={selectedNode?.id ?? "none"}
+          node={selectedNode}
+          onPreview={(background) => selectedNode && setDraft({ id: selectedNode.id, background })}
+          onCommit={(background) => selectedNode && commitBackground(selectedNode.id, background)}
+          onDiscard={() => setDraft(null)}
+        />
+      </aside>
       {savedJson !== null && (
         <SavedDataDialog json={savedJson} onClose={() => setSavedJson(null)} />
       )}

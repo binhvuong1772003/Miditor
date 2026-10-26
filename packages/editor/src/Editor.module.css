@@ -11,8 +11,7 @@
   --_focus: var(--midito-focus, #2f5bea);
   --_scrollbar: var(--midito-scrollbar, #b9c0cc);
   --_muted: var(--midito-muted, #4b5565);
-  --_block-fill: var(--midito-block-fill, #d5dae3);
-  --_block-edge: var(--midito-block-edge, #b3bccb);
+  --_danger: var(--midito-danger, #b42318);
 
   display: grid;
   grid-template-columns: 16rem minmax(0, 1fr) 18rem;
@@ -122,26 +121,6 @@
   .page {
     border: 1px solid CanvasText;
   }
-}
-
-/*
- * Temporary look for the sample node. A node carries an inline `all: revert`, which no class can beat
- * without `!important`, and the node has no `styles` in its data yet. Removed at the colour step.
- */
-.page [data-midito-id^="sample"] {
-  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
-  background: var(--_block-fill) !important;
-  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
-  border: 1px solid var(--_block-edge) !important;
-  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
-  border-radius: 4px !important;
-  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
-  cursor: grab !important;
-}
-
-.page [data-midito-id^="sample"][data-dragging] {
-  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
-  cursor: grabbing !important;
 }
 
 /*
