@@ -19,7 +19,8 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
   "files": [
     "dist"
@@ -34,5 +35,12 @@
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
+  },
+  "devDependencies": {
+    "@tsdown/css": "^0.23.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
