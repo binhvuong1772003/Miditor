@@ -120,6 +120,23 @@ describe("<Render>", () => {
     expect(m).not.toContain('data-midito-id="inside"');
   });
 
+  it("draws the background colour of a node, and only a stored colour", () => {
+    const colored = free("tinted");
+    const m = html(
+      page(
+        flow("root", "Page", [
+          { ...colored, styles: { background: "#ff0000" } },
+          { ...free("evil"), styles: { background: "#fff;position:fixed" } },
+          flow("plain", "Container"),
+        ]),
+      ),
+    );
+    expect(tagOf(m, "tinted")).toContain("background-color:#ff0000");
+    expect(tagOf(m, "evil")).not.toContain("background-color");
+    expect(m).not.toContain("position:fixed");
+    expect(tagOf(m, "plain")).not.toContain("background-color");
+  });
+
   it("treats a type named like an inherited object property as unregistered", () => {
     const m = html(
       page(flow("root", "Page", [flow("odd", "constructor", [flow("inside", "Container")])])),

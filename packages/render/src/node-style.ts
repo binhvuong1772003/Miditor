@@ -1,4 +1,4 @@
-import { cssFor, freeBoxOf, isFreeNode, type TreeNode } from "@midito-kitchen/core";
+import { cssFor, freeBoxOf, isFreeNode, isHexColor, type TreeNode } from "@midito-kitchen/core";
 import type { CSSProperties } from "react";
 
 /**
@@ -45,11 +45,15 @@ export const isBuiltIn = (type: string) => Object.hasOwn(BY_TYPE, type);
  * other nodes then inherit the page typography the root writes out.
  */
 export function nodeStyle(node: TreeNode, isRoot: boolean): CSSProperties {
+  // Data comes from outside, so `styles` may be missing and a colour may be anything: only a stored
+  // `#rrggbb` is written into CSS.
+  const background = node.styles?.background;
   const style: CSSProperties = {
     all: isRoot ? "initial" : "revert",
     ...BOX,
     ...(isBuiltIn(node.type) ? BY_TYPE[node.type] : { display: "block" }),
     ...(isRoot ? { ...PAGE_TEXT, flexGrow: 1, minWidth: 0 } : {}),
+    ...(isHexColor(background) ? { backgroundColor: background } : {}),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it.
