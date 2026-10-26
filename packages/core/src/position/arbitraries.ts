@@ -1,6 +1,6 @@
 // Shared fast-check generators for the position tests. Not exported from the package.
 import fc from "fast-check";
-import type { Axis, FreeBox, Size } from "./types";
+import type { Axis, Container, FreeBox, Rect, Size } from "./types";
 
 export const num = (lo: number, hi: number) =>
   fc.double({ min: lo, max: hi, noNaN: true, noDefaultInfinity: true });
@@ -30,4 +30,18 @@ export const box: fc.Arbitrary<FreeBox> = fc.record({
   w: size,
   h: size,
   rotation: num(-180, 180),
+});
+
+/** A container that is never empty, for round trips that divide by its size. */
+export const solidContainer: fc.Arbitrary<Container> = fc.record({
+  w: num(1, 1600),
+  h: num(1, 1200),
+});
+
+/** An unrotated rect as a drag would produce, partly outside the container on purpose. */
+export const rect: fc.Arbitrary<Rect> = fc.record({
+  x: num(-100, 500),
+  y: num(-100, 400),
+  w: num(0, 400),
+  h: num(0, 300),
 });
