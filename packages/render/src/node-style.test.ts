@@ -37,24 +37,35 @@ const nodes: TreeNode[] = [
 ];
 
 describe("nodeStyle", () => {
-  it("starts with `all: revert` on every node, so it drops the host's rules first", () => {
+  it("starts with `all` on every node, so it drops the host's rules first", () => {
     for (const node of nodes) {
-      const style = nodeStyle(node, false);
-      expect(Object.keys(style)[0]).toBe("all");
-      expect(style.all).toBe("revert");
+      for (const isRoot of [false, true]) {
+        expect(Object.keys(nodeStyle(node, isRoot))[0]).toBe("all");
+      }
+      expect(nodeStyle(node, false).all).toBe("revert");
     }
   });
 
+  it("uses `all: initial` on the root, so inherited rules of the host cannot reach the page", () => {
+    expect(nodeStyle(flow("Page", "root"), true).all).toBe("initial");
+    expect(nodeStyle(flow("Container"), false).all).toBe("revert");
+  });
+
   it("writes the box values right after it, then the type's own values", () => {
-    expect(Object.keys(nodeStyle(flow("Container"), false)).slice(0, 7)).toEqual([
+    expect(Object.keys(nodeStyle(flow("Container"), false)).slice(0, 8)).toEqual([
       "all",
       "margin",
       "padding",
       "border",
       "boxSizing",
+      "transform",
       "display",
       "flexDirection",
     ]);
+  });
+
+  it("writes `transform: none`, never `revert`, so a drag library can append to it", () => {
+    for (const node of nodes) expect(nodeStyle(node, false).transform).toBe("none");
   });
 
   it("always sets display explicitly, because `all: revert` resets it", () => {

@@ -7,7 +7,7 @@ export interface RenderProps {
    * A class for the box around the page, for sizing it inside the host. It goes on a wrapper that has
    * no reset, because a class on a node would be dropped by the node's own `all: revert`.
    */
-  className?: string;
+  className?: string | undefined;
 }
 
 function RenderNode({ node, isRoot }: { node: TreeNode; isRoot: boolean }) {

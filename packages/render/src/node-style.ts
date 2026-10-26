@@ -3,9 +3,17 @@ import type { CSSProperties } from "react";
 
 /**
  * Explicit box values on every node, so rules of the host page (Tailwind's preflight, `* { margin }`
- * and the like) cannot change the box model.
+ * and the like) cannot change the box model. `transform` is an explicit `none` rather than the
+ * `revert` that `all` leaves behind: a drag library builds its preview by appending to the inline
+ * transform, and a CSS-wide keyword makes that string invalid, so the preview silently does nothing.
  */
-const BOX: CSSProperties = { margin: 0, padding: 0, border: 0, boxSizing: "border-box" };
+const BOX: CSSProperties = {
+  margin: 0,
+  padding: 0,
+  border: 0,
+  boxSizing: "border-box",
+  transform: "none",
+};
 
 /** What each built-in type needs on top of the box values. `display` is always explicit. */
 const BY_TYPE: Record<string, CSSProperties> = {
@@ -25,14 +33,19 @@ const PAGE_TEXT: CSSProperties = {
 export const isBuiltIn = (type: string) => Object.hasOwn(BY_TYPE, type);
 
 /**
- * The inline style of one node. The order is part of the contract: `all: revert` comes first so it
- * drops every rule of the host page on this element, then the explicit values win over it, and the
- * position comes last. A rule written in a class could never beat an inline `all: revert`, so the
- * look of a node must come from its data.
+ * The inline style of one node. The order is part of the contract: `all` comes first so it drops
+ * every rule of the host page on this element, then the explicit values win over it, and the
+ * position comes last. A rule written in a class could never beat an inline `all`, so the look of a
+ * node must come from its data.
+ *
+ * The root says `all: initial` and every other node `all: revert`. `revert` on an inherited property
+ * (letter-spacing, line-height, ...) means "inherit", and the root's parent is the wrapper, which
+ * belongs to the host page: its rules would leak through. `initial` cuts that chain at the root; the
+ * other nodes then inherit the page typography the root writes out.
  */
 export function nodeStyle(node: TreeNode, isRoot: boolean): CSSProperties {
   const style: CSSProperties = {
-    all: "revert",
+    all: isRoot ? "initial" : "revert",
     ...BOX,
     ...(isBuiltIn(node.type) ? BY_TYPE[node.type] : { display: "block" }),
     ...(isRoot ? { ...PAGE_TEXT, flexGrow: 1, minWidth: 0 } : {}),

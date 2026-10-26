@@ -58,8 +58,9 @@ describe("<Render>", () => {
     expect(markup.match(/<\/div>/g)?.length).toBe(5);
   });
 
-  it("puts `all: revert` first in the style of every node", () => {
-    for (const id of ["root", "box", "hero", "tail"]) {
+  it("puts `all` first in the style of every node: initial on the root, revert on the rest", () => {
+    expect(tagOf(markup, "root")).toMatch(/style="all:initial;margin:0;/);
+    for (const id of ["box", "hero", "tail"]) {
       expect(tagOf(markup, id)).toMatch(/style="all:revert;margin:0;/);
     }
   });
