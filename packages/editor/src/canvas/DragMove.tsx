@@ -34,6 +34,8 @@ export function DragMove({ target, container, onDragStart, onDragEnd }: DragMove
   const moveable = useRef<Moveable>(null);
   const dragging = useRef(false);
   const lastDist = useRef({ x: 0, y: 0 });
+  // The inline transform the element had before the drag, put back when the drag ends.
+  const savedTransform = useRef("");
 
   // The control layer caches the target's rect. Refresh it when the target's parent changes size,
   // for example when the window narrows and an end-anchored node moves, but never during a drag.
@@ -59,6 +61,7 @@ export function DragMove({ target, container, onDragStart, onDragEnd }: DragMove
       onDragStart={guarded((e: OnDragStart) => {
         dragging.current = true;
         lastDist.current = { x: 0, y: 0 };
+        savedTransform.current = (e.target as HTMLElement).style.transform;
         (e.target as HTMLElement).dataset.dragging = "";
         onDragStart();
       })}
@@ -77,7 +80,10 @@ export function DragMove({ target, container, onDragStart, onDragEnd }: DragMove
         try {
           flushSync(() => onDragEnd(lastDist.current));
         } finally {
-          el.style.removeProperty("transform");
+          // Put back what the node had (render writes `transform: none`) instead of clearing it, so a
+          // rule of the host page cannot start to apply to the node after the first drag.
+          if (savedTransform.current) el.style.transform = savedTransform.current;
+          else el.style.removeProperty("transform");
           moveable.current?.updateRect();
         }
       })}

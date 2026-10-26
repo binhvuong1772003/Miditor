@@ -101,7 +101,6 @@
 }
 
 .page {
-  position: relative;
   flex: 1 0 auto;
   inline-size: 100%;
   max-inline-size: 60rem;
@@ -120,16 +119,24 @@
   }
 }
 
-/* Placeholder look for a node on the page; position and size come from cssFor as inline styles. */
-.sample {
-  background: var(--_block-fill);
-  border: 1px solid var(--_block-edge);
-  border-radius: 4px;
-  cursor: grab;
+/*
+ * Temporary look for the sample node. A node carries an inline `all: revert`, which no class can beat
+ * without `!important`, and the node has no `styles` in its data yet. Removed at the colour step.
+ */
+.page [data-midito-id="sample"] {
+  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
+  background: var(--_block-fill) !important;
+  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
+  border: 1px solid var(--_block-edge) !important;
+  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
+  border-radius: 4px !important;
+  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
+  cursor: grab !important;
 }
 
-.sample[data-dragging] {
-  cursor: grabbing;
+.page [data-midito-id="sample"][data-dragging] {
+  /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
+  cursor: grabbing !important;
 }
 
 /* Buttons: one shape for the whole editor. */
