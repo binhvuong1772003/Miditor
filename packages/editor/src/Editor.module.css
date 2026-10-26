@@ -10,6 +10,8 @@
   --_text: var(--midito-text, #1b2330);
   --_focus: var(--midito-focus, #2f5bea);
   --_scrollbar: var(--midito-scrollbar, #b9c0cc);
+  --_block-fill: var(--midito-block-fill, #d5dae3);
+  --_block-edge: var(--midito-block-edge, #b3bccb);
 
   display: grid;
   grid-template-columns: 16rem minmax(0, 1fr) 18rem;
@@ -91,6 +93,7 @@
 }
 
 .page {
+  position: relative;
   flex: 1 0 auto;
   inline-size: 100%;
   max-inline-size: 60rem;
@@ -107,4 +110,11 @@
   .page {
     border: 1px solid CanvasText;
   }
+}
+
+/* Placeholder look for a node on the page; position and size come from cssFor as inline styles. */
+.sample {
+  background: var(--_block-fill);
+  border: 1px solid var(--_block-edge);
+  border-radius: 4px;
 }
