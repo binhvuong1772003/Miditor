@@ -1,0 +1,133 @@
+// @vitest-environment node
+import type { FlowNode, FreeNode, PageData } from "@midito-kitchen/core";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import { Render } from "./Render";
+
+const flow = (id: string, type: string, children: (FlowNode | FreeNode)[] = []): FlowNode => ({
+  id,
+  type,
+  props: {},
+  position: { mode: "flow" },
+  children,
+});
+
+const free = (id: string): FreeNode => ({
+  id,
+  type: "Container",
+  props: {},
+  position: { mode: "free", x: { anchor: "end", offset: 20 }, y: { anchor: "start", offset: 40 } },
+  size: { w: { kind: "px", v: 160 }, h: { kind: "px", v: 96 } },
+  rotation: 0,
+  children: [],
+});
+
+const page = (root: FlowNode): PageData => ({ schemaVersion: 1, root });
+const html = (data: PageData, className?: string) =>
+  renderToStaticMarkup(<Render data={data} {...(className ? { className } : {})} />);
+
+/** The opening tag of the element for this node id. */
+const tagOf = (markup: string, id: string) =>
+  new RegExp(`<div[^>]*data-midito-id="${id}"[^>]*>`).exec(markup)?.[0] ?? "";
+
+describe("<Render>", () => {
+  const data = page(
+    flow("root", "Page", [flow("box", "Container", [free("hero")]), flow("tail", "Container")]),
+  );
+  const markup = html(data);
+
+  it("renders on the server with no window or document", () => {
+    expect(typeof window).toBe("undefined");
+    expect(markup).toContain('data-midito-id="root"');
+  });
+
+  it("draws every node with its id and type, in tree order", () => {
+    const order = ["root", "box", "hero", "tail"].map((id) =>
+      markup.indexOf(`data-midito-id="${id}"`),
+    );
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(tagOf(markup, "hero")).toContain('data-midito-type="Container"');
+  });
+
+  it("nests the nodes the way the tree nests them", () => {
+    const heroInBox =
+      markup.indexOf('data-midito-id="hero"') < markup.indexOf('data-midito-id="tail"');
+    expect(heroInBox).toBe(true);
+    expect(markup.match(/<div/g)?.length).toBe(5); // wrapper + four nodes
+    expect(markup.match(/<\/div>/g)?.length).toBe(5);
+  });
+
+  it("puts `all: revert` first in the style of every node", () => {
+    for (const id of ["root", "box", "hero", "tail"]) {
+      expect(tagOf(markup, id)).toMatch(/style="all:revert;margin:0;/);
+    }
+  });
+
+  it("places a free node with the CSS from cssFor", () => {
+    const tag = tagOf(markup, "hero");
+    expect(tag).toContain("position:absolute");
+    expect(tag).toContain("right:20px");
+    expect(tag).toContain("width:160px");
+    expect(tag).toContain("top:40px");
+    expect(tag).toContain("height:96px");
+  });
+
+  it("gives only the root the page typography and the room to grow", () => {
+    const root = tagOf(markup, "root");
+    expect(root).toContain("font-size:16px");
+    expect(root).toContain("flex-grow:1");
+    for (const id of ["box", "hero", "tail"]) {
+      expect(tagOf(markup, id)).not.toContain("font-size");
+      expect(tagOf(markup, id)).not.toContain("flex-grow");
+    }
+  });
+
+  it("makes a flow node relative", () => {
+    expect(tagOf(markup, "box")).toContain("position:relative");
+    expect(tagOf(markup, "tail")).toContain("position:relative");
+  });
+
+  it("keeps a free node before a flow node in the markup, so the later one paints on top", () => {
+    const data2 = page(flow("root", "Page", [free("under"), flow("over", "Container")]));
+    const m = html(data2);
+    expect(m.indexOf('data-midito-id="under"')).toBeLessThan(m.indexOf('data-midito-id="over"'));
+    expect(tagOf(m, "under")).toContain("position:absolute");
+    expect(tagOf(m, "over")).toContain("position:relative");
+  });
+
+  it("puts the class on a wrapper that has no reset, never on a node", () => {
+    const withClass = html(data, "host-box");
+    expect(withClass.startsWith('<div class="host-box" data-midito-render=""')).toBe(true);
+    expect(withClass.match(/host-box/g)?.length).toBe(1);
+    // The only `class` attribute in the whole output is the wrapper's.
+    expect(withClass.match(/class=/g)?.length).toBe(1);
+    const wrapper = /^<div[^>]*>/.exec(withClass)?.[0] ?? "";
+    expect(wrapper).not.toContain("all:revert");
+    // A column, so the root can fill it.
+    expect(wrapper).toContain("display:flex;flex-direction:column");
+  });
+
+  it("draws a type nobody registered as an empty box and ignores its children", () => {
+    const m = html(
+      page(flow("root", "Page", [flow("odd", "Mystery", [flow("inside", "Container")])])),
+    );
+    expect(tagOf(m, "odd")).toContain("data-midito-unknown");
+    expect(tagOf(m, "odd")).toContain("position:relative");
+    expect(m).not.toContain('data-midito-id="inside"');
+  });
+
+  it("treats a type named like an inherited object property as unregistered", () => {
+    const m = html(
+      page(flow("root", "Page", [flow("odd", "constructor", [flow("inside", "Container")])])),
+    );
+    expect(tagOf(m, "odd")).toContain("data-midito-unknown");
+    expect(m).not.toContain('data-midito-id="inside"');
+  });
+
+  it("escapes what it prints into attributes", () => {
+    const m = html(page(flow("root", "Page", [flow('a"b<c', "Container")])));
+    expect(m).not.toContain('a"b<c');
+    expect(m).toContain("a&quot;b&lt;c");
+  });
+});
