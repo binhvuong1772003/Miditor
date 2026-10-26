@@ -10,6 +10,8 @@ export interface DragMoveProps {
   target: HTMLElement | null;
   /** The scrolling element that holds moveable's control layer. */
   container: HTMLElement | null;
+  /** A class for moveable's control layer, to colour the selection outline. */
+  className?: string | undefined;
   /** A drag begins. Read whatever the commit will need here. */
   onDragStart: () => void;
   /**
@@ -30,7 +32,12 @@ function guarded<A extends unknown[]>(handler: (...args: A) => void) {
   };
 }
 
-export function DragMove({ target, container, onDragStart, onDragEnd }: DragMoveProps) {
+/** True for an element that belongs to moveable's own layer, so a press on it is not a press on a node. */
+export function isMoveableLayer(element: Element): boolean {
+  return element.closest(".moveable-control-box") !== null;
+}
+
+export function DragMove({ target, container, className, onDragStart, onDragEnd }: DragMoveProps) {
   const moveable = useRef<Moveable>(null);
   const dragging = useRef(false);
   const lastDist = useRef({ x: 0, y: 0 });
@@ -54,8 +61,8 @@ export function DragMove({ target, container, onDragStart, onDragEnd }: DragMove
       ref={moveable}
       target={target}
       container={container}
+      {...(className ? { className } : {})}
       draggable
-      hideDefaultLines
       origin={false}
       throttleDrag={0}
       onDragStart={guarded((e: OnDragStart) => {

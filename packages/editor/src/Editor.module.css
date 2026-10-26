@@ -28,6 +28,11 @@
   line-height: 1.4;
 }
 
+/* The root takes the focus when a node is pressed (so Esc works); it is not a control, so no ring. */
+.root:focus {
+  outline: none;
+}
+
 .root *,
 .root *::before,
 .root *::after {
@@ -123,7 +128,7 @@
  * Temporary look for the sample node. A node carries an inline `all: revert`, which no class can beat
  * without `!important`, and the node has no `styles` in its data yet. Removed at the colour step.
  */
-.page [data-midito-id="sample"] {
+.page [data-midito-id^="sample"] {
   /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
   background: var(--_block-fill) !important;
   /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
@@ -134,9 +139,17 @@
   cursor: grab !important;
 }
 
-.page [data-midito-id="sample"][data-dragging] {
+.page [data-midito-id^="sample"][data-dragging] {
   /* biome-ignore lint/complexity/noImportantStyles: temporary, see the note above */
   cursor: grabbing !important;
+}
+
+/*
+ * The outline of the selected node is moveable's control layer. Moveable sets its colour variable on
+ * the control box with one class, in a style tag added later, so this needs two classes to win.
+ */
+.workspace .selection {
+  --moveable-color: var(--_focus);
 }
 
 /* Buttons: one shape for the whole editor. */
