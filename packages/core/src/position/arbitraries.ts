@@ -1,6 +1,6 @@
 // Shared fast-check generators for the position and tree tests. Never import this from package code.
 import fc from "fast-check";
-import type { FlowNode, FreeNode, TreeNode } from "../tree/types";
+import type { FlowNode, FreeNode, NodeStyles, TreeNode } from "../tree/types";
 import type { Axis, Container, FreeBox, Rect, Size } from "./types";
 
 export const num = (lo: number, hi: number) =>
@@ -47,6 +47,17 @@ export const rect: fc.Arbitrary<Rect> = fc.record({
   h: num(0, 300),
 });
 
+/** A stored colour: `#` and six lowercase hex digits. */
+export const hexColor: fc.Arbitrary<string> = fc
+  .array(fc.constantFrom(..."0123456789abcdef"), { minLength: 6, maxLength: 6 })
+  .map((digits) => `#${digits.join("")}`);
+
+/** Empty styles, or a background colour. */
+export const styles: fc.Arbitrary<NodeStyles> = fc.oneof(
+  fc.constant({}),
+  hexColor.map((background) => ({ background })),
+);
+
 /** A free node with plain JSON props, as it would be saved. */
 export const freeNode: fc.Arbitrary<FreeNode> = fc.record({
   id: fc.stringMatching(/^[a-z0-9]{1,12}$/),
@@ -55,6 +66,7 @@ export const freeNode: fc.Arbitrary<FreeNode> = fc.record({
     fc.stringMatching(/^[a-z]{1,8}$/),
     fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
   ),
+  styles,
   position: fc.record({ mode: fc.constant("free" as const), x: axis, y: axis }),
   size: fc.record({ w: size, h: size }),
   rotation: num(-180, 180),
@@ -75,6 +87,7 @@ export const tree: fc.Arbitrary<TreeNode> = fc.letrec<{ node: TreeNode }>((tie) 
         id: fc.constant("x"),
         type: fc.constant("Container"),
         props: fc.constant({}),
+        styles: fc.constant({}),
         position: fc.constant({ mode: "flow" as const }),
         children: fc.array(tie("node"), { minLength: 1, maxLength: 3 }),
       }) as fc.Arbitrary<FlowNode>,

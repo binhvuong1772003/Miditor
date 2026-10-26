@@ -6,6 +6,14 @@ export type { Axis, Container, FreeBox, Rect, Size } from "./position/types";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { freeBoxOf, isFreeNode, withFreeBox } from "./tree/free-box";
 export { findNode, updateNode } from "./tree/nodes";
-export type { FlowNode, FreeNode, JsonValue, PageData, TreeNode } from "./tree/types";
+export { withStyle } from "./tree/styles";
+export type {
+  FlowNode,
+  FreeNode,
+  JsonValue,
+  NodeStyles,
+  PageData,
+  TreeNode,
+} from "./tree/types";
 
 export const SCHEMA_VERSION = 1;

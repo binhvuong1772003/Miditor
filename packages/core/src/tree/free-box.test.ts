@@ -11,6 +11,7 @@ const flow: FlowNode = {
   id: "page",
   type: "Container",
   props: {},
+  styles: {},
   position: { mode: "flow" },
   children: [],
 };
@@ -19,6 +20,7 @@ const sample: FreeNode = {
   id: "hero",
   type: "Image",
   props: { src: "/hero.png" },
+  styles: {},
   position: { mode: "free", x: { anchor: "end", offset: 20 }, y: { anchor: "start", offset: 40 } },
   size: { w: { kind: "px", v: 160 }, h: { kind: "px", v: 96 } },
   rotation: 0,
@@ -69,6 +71,7 @@ describe("withFreeBox", () => {
     expect(next.id).toBe("hero");
     expect(next.type).toBe("Image");
     expect(next.props).toBe(sample.props);
+    expect(next.styles).toBe(sample.styles);
     expect(next.children).toBe(sample.children);
   });
 
@@ -117,6 +120,7 @@ describe("freeBoxOf and withFreeBox, properties", () => {
           out.id === n.id &&
           out.type === n.type &&
           out.props === n.props &&
+          out.styles === n.styles &&
           out.children === n.children
         );
       }),

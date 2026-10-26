@@ -32,12 +32,14 @@ const INITIAL_PAGE: PageData = {
     id: "root",
     type: "Page",
     props: {},
+    styles: {},
     position: { mode: "flow" },
     children: [
       {
         id: "sample",
         type: "Container",
         props: {},
+        styles: {},
         position: {
           mode: "free",
           x: { anchor: "end", offset: 20 },
@@ -51,6 +53,7 @@ const INITIAL_PAGE: PageData = {
         id: "sample-2",
         type: "Container",
         props: {},
+        styles: {},
         position: {
           mode: "free",
           x: { anchor: "start", offset: 40 },

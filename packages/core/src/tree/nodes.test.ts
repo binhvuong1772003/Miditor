@@ -8,6 +8,7 @@ const leaf = (id: string): FlowNode => ({
   id,
   type: "Text",
   props: {},
+  styles: {},
   position: { mode: "flow" },
   children: [],
 });

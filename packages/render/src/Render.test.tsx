@@ -8,6 +8,7 @@ const flow = (id: string, type: string, children: (FlowNode | FreeNode)[] = []):
   id,
   type,
   props: {},
+  styles: {},
   position: { mode: "flow" },
   children,
 });
@@ -16,6 +17,7 @@ const free = (id: string): FreeNode => ({
   id,
   type: "Container",
   props: {},
+  styles: {},
   position: { mode: "free", x: { anchor: "end", offset: 20 }, y: { anchor: "start", offset: 40 } },
   size: { w: { kind: "px", v: 160 }, h: { kind: "px", v: 96 } },
   rotation: 0,

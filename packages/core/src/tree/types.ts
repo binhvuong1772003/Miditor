@@ -9,6 +9,15 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+/**
+ * How a node looks. Every value is typed: a colour is a stored `#rrggbb` (see `isHexColor`), never
+ * free-form CSS. More fields (border, radius, text) come when something can edit and draw them.
+ */
+export interface NodeStyles {
+  /** The fill colour, stored as `#rrggbb` in lowercase. */
+  background?: string;
+}
+
 /** What every node has, whatever the way it is placed. */
 interface NodeBase {
   /** Unique in the whole tree, made by the client. */
@@ -17,6 +26,8 @@ interface NodeBase {
   type: string;
   /** The content of the component, for example the text of a heading. */
   props: Record<string, JsonValue>;
+  /** How the node looks. Always present, `{}` when nothing is set. */
+  styles: NodeStyles;
   /** Always present, empty for a leaf. Which kinds may hold children is the registry's decision. */
   children: TreeNode[];
 }

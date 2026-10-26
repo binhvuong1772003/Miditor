@@ -7,6 +7,7 @@ const flow = (type: string, id = "n"): FlowNode => ({
   id,
   type,
   props: {},
+  styles: {},
   position: { mode: "flow" },
   children: [],
 });
@@ -15,6 +16,7 @@ const free = (x: Axis, y: Axis = { anchor: "start", offset: 40 }): FreeNode => (
   id: "f",
   type: "Container",
   props: {},
+  styles: {},
   position: { mode: "free", x, y },
   size: { w: { kind: "px", v: 160 }, h: { kind: "percent", v: 20 } },
   rotation: 15,

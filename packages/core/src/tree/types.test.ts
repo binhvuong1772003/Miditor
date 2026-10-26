@@ -9,6 +9,7 @@ const flow: FlowNode = {
   id: "a",
   type: "Container",
   props: {},
+  styles: {},
   position: { mode: "flow" },
   children: [],
 };
@@ -17,6 +18,7 @@ const free: FreeNode = {
   id: "b",
   type: "Image",
   props: { src: "/hero.png", alt: "Hero", tags: ["a", "b"], meta: { crop: null } },
+  styles: {},
   position: { mode: "free", x: { anchor: "end", offset: 20 }, y: { anchor: "start", offset: 40 } },
   size: { w: { kind: "percent", v: 30 }, h: { kind: "px", v: 96 } },
   rotation: 0,
@@ -63,18 +65,27 @@ describe("the tree types refuse what they should", () => {
       () => node({ ...flow, size: free.size }),
       // Every node says how it is placed.
       // @ts-expect-error
-      () => node({ id: "d", type: "Text", props: {}, children: [] }),
+      () => node({ id: "d", type: "Text", props: {}, styles: {}, children: [] }),
       // Every node has a children list, empty for a leaf.
       // @ts-expect-error
-      () => node({ id: "e", type: "Text", props: {}, position: { mode: "flow" } }),
+      () => node({ id: "e", type: "Text", props: {}, styles: {}, position: { mode: "flow" } }),
       // Only two ways of placing a node exist.
       // @ts-expect-error
       () => node({ ...flow, position: { mode: "absolute" } }),
+      // Every node has a styles object, empty when nothing is set.
+      // @ts-expect-error
+      () => node({ id: "f", type: "Text", props: {}, children: [], position: { mode: "flow" } }),
+      // A style value must be a string.
+      // @ts-expect-error
+      () => node({ ...flow, styles: { background: 0xffffff } }),
+      // Only the known style fields exist.
+      // @ts-expect-error
+      () => node({ ...flow, styles: { background: "#ffffff", position: "fixed" } }),
       // Props are plain JSON.
       // @ts-expect-error
       () => node({ ...flow, props: { onClick: () => 1 } }),
     ];
-    expect(attempts).toHaveLength(10);
+    expect(attempts).toHaveLength(13);
   });
 
   it("also rejects extra data that arrives through a variable", () => {
