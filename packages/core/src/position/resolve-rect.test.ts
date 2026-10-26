@@ -1,37 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { box, container, num, size } from "./arbitraries";
 import { resolveRect } from "./resolve-rect";
 import type { Axis, Container, FreeBox, Size } from "./types";
-
-const num = (lo: number, hi: number) =>
-  fc.double({ min: lo, max: hi, noNaN: true, noDefaultInfinity: true });
-
-const container = fc.record({ w: num(0, 1600), h: num(0, 1200) });
-
-const axis: fc.Arbitrary<Axis> = fc.oneof(
-  num(-100, 200).map((offset): Axis => ({ anchor: "start", offset })),
-  num(-100, 200).map((offset): Axis => ({ anchor: "end", offset })),
-  num(-100, 100).map((offset): Axis => ({ anchor: "center", offset })),
-  fc
-    .tuple(num(0, 800), num(0, 800))
-    .map(([start, end]): Axis => ({ anchor: "stretch", start, end })),
-  fc
-    .tuple(num(0, 40), num(10, 50))
-    .map(([start, size]): Axis => ({ anchor: "scale", start, size })),
-);
-
-const size: fc.Arbitrary<Size> = fc.oneof(
-  num(10, 200).map((v): Size => ({ kind: "px", v })),
-  num(5, 40).map((v): Size => ({ kind: "percent", v })),
-);
-
-const box: fc.Arbitrary<FreeBox> = fc.record({
-  x: axis,
-  y: axis,
-  w: size,
-  h: size,
-  rotation: num(-180, 180),
-});
 
 const base = (x: Axis, w: Size = { kind: "px", v: 100 }): FreeBox => ({
   x,
