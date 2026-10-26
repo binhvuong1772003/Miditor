@@ -73,9 +73,13 @@ export function DragMove({ target, container, onDragStart, onDragEnd }: DragMove
         delete el.dataset.dragging;
         if (!e.isDrag) return;
         // One task: commit the new position, then drop the preview, so no frame shows the old spot.
-        flushSync(() => onDragEnd(lastDist.current));
-        el.style.removeProperty("transform");
-        moveable.current?.updateRect();
+        // The preview goes even if the commit throws, so the block never shows data it does not have.
+        try {
+          flushSync(() => onDragEnd(lastDist.current));
+        } finally {
+          el.style.removeProperty("transform");
+          moveable.current?.updateRect();
+        }
       })}
     />
   );
