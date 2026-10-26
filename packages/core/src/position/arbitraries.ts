@@ -1,5 +1,6 @@
-// Shared fast-check generators for the position tests. Not exported from the package.
+// Shared fast-check generators for the position and tree tests. Never import this from package code.
 import fc from "fast-check";
+import type { FreeNode } from "../tree/types";
 import type { Axis, Container, FreeBox, Rect, Size } from "./types";
 
 export const num = (lo: number, hi: number) =>
@@ -44,4 +45,18 @@ export const rect: fc.Arbitrary<Rect> = fc.record({
   y: num(-100, 400),
   w: num(0, 400),
   h: num(0, 300),
+});
+
+/** A free node with plain JSON props, as it would be saved. */
+export const freeNode: fc.Arbitrary<FreeNode> = fc.record({
+  id: fc.stringMatching(/^[a-z0-9]{1,12}$/),
+  type: fc.constantFrom("Image", "Button", "Heading"),
+  props: fc.dictionary(
+    fc.stringMatching(/^[a-z]{1,8}$/),
+    fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+  ),
+  position: fc.record({ mode: fc.constant("free" as const), x: axis, y: axis }),
+  size: fc.record({ w: size, h: size }),
+  rotation: num(-180, 180),
+  children: fc.constant([]),
 });
