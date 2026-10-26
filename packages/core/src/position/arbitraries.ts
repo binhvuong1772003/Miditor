@@ -1,6 +1,6 @@
 // Shared fast-check generators for the position and tree tests. Never import this from package code.
 import fc from "fast-check";
-import type { FreeNode } from "../tree/types";
+import type { FlowNode, FreeNode, TreeNode } from "../tree/types";
 import type { Axis, Container, FreeBox, Rect, Size } from "./types";
 
 export const num = (lo: number, hi: number) =>
@@ -60,3 +60,40 @@ export const freeNode: fc.Arbitrary<FreeNode> = fc.record({
   rotation: num(-180, 180),
   children: fc.constant([]),
 });
+
+/**
+ * A tree of flow containers with free leaves, up to a few levels deep. Every id is "x": call
+ * `relabel` to make them unique. Containers are three times as likely as leaves so that most trees
+ * have several nodes.
+ */
+export const tree: fc.Arbitrary<TreeNode> = fc.letrec<{ node: TreeNode }>((tie) => ({
+  node: fc.oneof(
+    { depthSize: "small", withCrossShrink: true },
+    { arbitrary: freeNode, weight: 1 },
+    {
+      arbitrary: fc.record({
+        id: fc.constant("x"),
+        type: fc.constant("Container"),
+        props: fc.constant({}),
+        position: fc.constant({ mode: "flow" as const }),
+        children: fc.array(tie("node"), { minLength: 1, maxLength: 3 }),
+      }) as fc.Arbitrary<FlowNode>,
+      weight: 3,
+    },
+  ),
+})).node;
+
+/** The same tree with ids n0, n1, n2... in depth-first order. */
+export function relabel(root: TreeNode): TreeNode {
+  let counter = 0;
+  const walk = (node: TreeNode): TreeNode => {
+    const id = `n${counter++}`;
+    return { ...node, id, children: node.children.map(walk) };
+  };
+  return walk(root);
+}
+
+/** Every node of a tree, in depth-first order. */
+export function nodesOf(root: TreeNode): TreeNode[] {
+  return [root, ...root.children.flatMap(nodesOf)];
+}
