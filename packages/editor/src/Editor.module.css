@@ -58,6 +58,8 @@
 }
 
 .workspace {
+  /* The drag control layer is mounted in here and positioned against it, so it scrolls and clips with it. */
+  position: relative;
   display: flex;
   flex-direction: column;
   min-inline-size: 0;
@@ -117,4 +119,9 @@
   background: var(--_block-fill);
   border: 1px solid var(--_block-edge);
   border-radius: 4px;
+  cursor: grab;
+}
+
+.sample[data-dragging] {
+  cursor: grabbing;
 }

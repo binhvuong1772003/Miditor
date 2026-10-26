@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "@midito-kitchen/core": "workspace:*",
-    "@midito-kitchen/render": "workspace:*"
+    "@midito-kitchen/render": "workspace:*",
+    "react-moveable": "0.56.0"
   },
   "peerDependencies": {
     "react": "^18 || ^19",
