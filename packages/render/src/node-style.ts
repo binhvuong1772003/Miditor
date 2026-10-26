@@ -4,8 +4,9 @@ import type { CSSProperties } from "react";
 /**
  * Explicit box values on every node, so rules of the host page (Tailwind's preflight, `* { margin }`
  * and the like) cannot change the box model. `transform` is an explicit `none` rather than the
- * `revert` that `all` leaves behind: a drag library builds its preview by appending to the inline
- * transform, and a CSS-wide keyword makes that string invalid, so the preview silently does nothing.
+ * `revert` that `all` leaves behind. Observed with react-moveable: with `transform: revert` inline no
+ * preview transform was ever written during a drag; with `none` it ran on every move. Presumably the
+ * library appends to the inline value and a CSS-wide keyword makes that string invalid.
  */
 const BOX: CSSProperties = {
   margin: 0,
