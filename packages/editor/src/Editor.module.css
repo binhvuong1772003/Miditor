@@ -10,6 +10,7 @@
   --_text: var(--midito-text, #1b2330);
   --_focus: var(--midito-focus, #2f5bea);
   --_scrollbar: var(--midito-scrollbar, #b9c0cc);
+  --_muted: var(--midito-muted, #4b5565);
   --_block-fill: var(--midito-block-fill, #d5dae3);
   --_block-edge: var(--midito-block-edge, #b3bccb);
 
@@ -38,7 +39,12 @@
 }
 
 .toolbar {
+  display: flex;
   grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-inline: 1rem;
   background: var(--_chrome);
   border-block-end: 1px solid var(--_border);
 }
@@ -124,4 +130,111 @@
 
 .sample[data-dragging] {
   cursor: grabbing;
+}
+
+/* Buttons: one shape for the whole editor. */
+.button {
+  appearance: none;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.primary {
+  background: var(--_focus);
+  color: #ffffff;
+}
+
+.primary:hover {
+  background: color-mix(in srgb, var(--_focus) 88%, #000000);
+}
+
+.primary:active {
+  background: color-mix(in srgb, var(--_focus) 76%, #000000);
+}
+
+.secondary {
+  background: var(--_canvas);
+  border-color: var(--_border);
+  color: var(--_text);
+}
+
+.secondary:hover {
+  background: var(--_workspace);
+}
+
+.secondary:active {
+  background: color-mix(in srgb, var(--_workspace) 88%, #000000);
+}
+
+/* The pop-up that shows the saved data. */
+.dialog {
+  inline-size: min(42rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--_border);
+  border-radius: 8px;
+  background: var(--_chrome);
+  color: var(--_text);
+  box-shadow:
+    0 8px 32px rgb(16 24 40 / 0.18),
+    0 2px 6px rgb(16 24 40 / 0.08);
+}
+
+.dialog::backdrop {
+  background: rgb(16 24 40 / 0.4);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-block-end: 1px solid var(--_border);
+}
+
+.dialogTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.dialogNote {
+  margin: 0;
+  padding: 0.75rem 1rem 0;
+  color: var(--_muted);
+}
+
+.dialogData {
+  max-block-size: 60vh;
+  margin: 0.75rem 1rem 1rem;
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  border: 1px solid var(--_border);
+  border-radius: 6px;
+  background: var(--_canvas);
+}
+
+.dialogCode {
+  margin: 0;
+  font:
+    0.8125rem / 1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  tab-size: 2;
+}
+
+.dialogData:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
 }

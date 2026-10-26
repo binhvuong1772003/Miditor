@@ -6,10 +6,12 @@ import {
   moveRect,
   type Rect,
   resolveRect,
+  SCHEMA_VERSION,
 } from "@midito-kitchen/core";
 import { useRef, useState } from "react";
 import { DragMove } from "./canvas/DragMove";
 import styles from "./Editor.module.css";
+import { SavedDataDialog } from "./SavedDataDialog";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -35,6 +37,12 @@ export function Editor({ className }: EditorProps) {
   const [page, setPage] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
   const drag = useRef<{ before: FreeBox; start: Rect; container: Container } | null>(null);
+  // Temporary: the JSON shown by the Save button, taken at the moment of the click.
+  const [savedJson, setSavedJson] = useState<string | null>(null);
+
+  const save = () => {
+    setSavedJson(JSON.stringify({ schemaVersion: SCHEMA_VERSION, sample: box }, null, 2));
+  };
 
   const startDrag = () => {
     if (!page) return;
@@ -52,7 +60,11 @@ export function Editor({ className }: EditorProps) {
 
   return (
     <div className={rootClass} data-midito-editor="">
-      <header className={styles.toolbar} />
+      <header className={styles.toolbar}>
+        <button type="button" className={`${styles.button} ${styles.primary}`} onClick={save}>
+          Save
+        </button>
+      </header>
       <aside className={`${styles.panel} ${styles.start}`} aria-label="Layers" />
       {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard */}
       <section ref={setWorkspace} className={styles.workspace} aria-label="Canvas" tabIndex={0}>
@@ -67,6 +79,9 @@ export function Editor({ className }: EditorProps) {
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties" />
+      {savedJson !== null && (
+        <SavedDataDialog json={savedJson} onClose={() => setSavedJson(null)} />
+      )}
     </div>
   );
 }
