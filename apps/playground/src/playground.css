@@ -1,0 +1,6 @@
+html,
+body,
+#root {
+  block-size: 100%;
+  margin: 0;
+}
