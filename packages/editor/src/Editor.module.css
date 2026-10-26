@@ -101,3 +101,10 @@
     0 1px 2px rgb(16 24 40 / 0.06),
     0 4px 16px rgb(16 24 40 / 0.06);
 }
+
+/* Forced colors drop backgrounds and shadows, so draw the page edge with a border. */
+@media (forced-colors: active) {
+  .page {
+    border: 1px solid CanvasText;
+  }
+}
