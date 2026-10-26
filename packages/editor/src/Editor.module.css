@@ -1,0 +1,103 @@
+/*
+ * Hosts re-theme the editor by setting the public --midito-* variables on an ancestor or on the
+ * root class. The private --_* variables below only add the fallback values.
+ */
+.root {
+  --_chrome: var(--midito-chrome, #f7f8fa);
+  --_workspace: var(--midito-workspace, #e9ecf0);
+  --_canvas: var(--midito-canvas, #ffffff);
+  --_border: var(--midito-border, #d8dce3);
+  --_text: var(--midito-text, #1b2330);
+  --_focus: var(--midito-focus, #2f5bea);
+  --_scrollbar: var(--midito-scrollbar, #b9c0cc);
+
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr) 18rem;
+  grid-template-rows: 3rem minmax(0, 1fr);
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  background: var(--_workspace);
+  color: var(--_text);
+  font-family: var(--midito-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.root *,
+.root *::before,
+.root *::after {
+  box-sizing: border-box;
+}
+
+.root ::selection {
+  background: color-mix(in srgb, var(--_focus) 24%, transparent);
+}
+
+.toolbar {
+  grid-column: 1 / -1;
+  background: var(--_chrome);
+  border-block-end: 1px solid var(--_border);
+}
+
+.panel {
+  min-inline-size: 0;
+  overflow: auto;
+  background: var(--_chrome);
+}
+
+.start {
+  border-inline-end: 1px solid var(--_border);
+}
+
+.end {
+  border-inline-start: 1px solid var(--_border);
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  padding: 2rem;
+  overflow: auto;
+  scrollbar-color: var(--_scrollbar) transparent;
+}
+
+.workspace:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: -2px;
+}
+
+/* Narrow screens: slimmer panels, then the canvas alone. Editing on a phone is not a goal yet. */
+@media (max-width: 900px) {
+  .root {
+    grid-template-columns: 12rem minmax(0, 1fr) 14rem;
+  }
+
+  .workspace {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel {
+    display: none;
+  }
+}
+
+.page {
+  flex: 1 0 auto;
+  inline-size: 100%;
+  max-inline-size: 60rem;
+  min-block-size: 40rem;
+  margin-inline: auto;
+  background: var(--_canvas);
+  box-shadow:
+    0 1px 2px rgb(16 24 40 / 0.06),
+    0 4px 16px rgb(16 24 40 / 0.06);
+}
