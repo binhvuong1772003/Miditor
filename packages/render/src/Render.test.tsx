@@ -132,9 +132,27 @@ describe("<Render>", () => {
       ),
     );
     expect(tagOf(m, "tinted")).toContain("background-color:#ff0000");
-    expect(tagOf(m, "evil")).not.toContain("background-color");
+    expect(tagOf(m, "evil")).toContain("background-color:transparent");
     expect(m).not.toContain("position:fixed");
-    expect(tagOf(m, "plain")).not.toContain("background-color");
+    expect(tagOf(m, "plain")).toContain("background-color:transparent");
+  });
+
+  it("draws a border and rounded corners, and always writes the keys", () => {
+    const m = html(
+      page(
+        flow("root", "Page", [
+          {
+            ...free("framed"),
+            styles: { borderWidth: 2, borderColor: "#112233", borderRadius: 6 },
+          },
+          flow("plain", "Container"),
+        ]),
+      ),
+    );
+    expect(tagOf(m, "framed")).toContain("border:2px solid #112233");
+    expect(tagOf(m, "framed")).toContain("border-radius:6px");
+    expect(tagOf(m, "plain")).toContain("border:0");
+    expect(tagOf(m, "plain")).toContain("border-radius:0");
   });
 
   it("treats a type named like an inherited object property as unregistered", () => {

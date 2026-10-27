@@ -1,4 +1,12 @@
-import { cssFor, freeBoxOf, isFreeNode, isHexColor, type TreeNode } from "@midito-kitchen/core";
+import {
+  cssFor,
+  freeBoxOf,
+  isFreeNode,
+  isHexColor,
+  isPixelLength,
+  type NodeStyles,
+  type TreeNode,
+} from "@midito-kitchen/core";
 import type { CSSProperties } from "react";
 
 /**
@@ -30,6 +38,29 @@ const PAGE_TEXT: CSSProperties = {
   color: "#1b2330",
 };
 
+/** A length as CSS, rounded to 0.01, or 0 when it is not a usable length. */
+const drawn = (value: unknown) => (isPixelLength(value) ? Math.round(value * 100) / 100 : 0);
+
+/**
+ * The look of a node, from its styles. Every key is written for every node, with an explicit default,
+ * so that an edit changes a value and never removes a key: a removed inline key would be left to the
+ * rules of the host page in some browsers, and `border` is one shorthand because mixing it with its
+ * longhands makes React warn and leaves a width undeclared when one of them goes. Only values that
+ * pass the strict checks reach CSS; anything else is the default.
+ */
+function lookOf(styles: NodeStyles | undefined): CSSProperties {
+  // Data comes from outside, so `styles` may be missing and a value may be anything.
+  const { background, borderWidth, borderColor, borderRadius } = styles ?? {};
+  const width = drawn(borderWidth);
+  const radius = drawn(borderRadius);
+  const color = isHexColor(borderColor) ? borderColor : "currentcolor";
+  return {
+    backgroundColor: isHexColor(background) ? background : "transparent",
+    border: width > 0 ? `${width}px solid ${color}` : "0",
+    borderRadius: radius > 0 ? `${radius}px` : "0",
+  };
+}
+
 /** The types `<Render>` can draw. The registry will decide this later; until then it is this list. */
 export const isBuiltIn = (type: string) => Object.hasOwn(BY_TYPE, type);
 
@@ -45,15 +76,12 @@ export const isBuiltIn = (type: string) => Object.hasOwn(BY_TYPE, type);
  * other nodes then inherit the page typography the root writes out.
  */
 export function nodeStyle(node: TreeNode, isRoot: boolean): CSSProperties {
-  // Data comes from outside, so `styles` may be missing and a colour may be anything: only a stored
-  // `#rrggbb` is written into CSS.
-  const background = node.styles?.background;
   const style: CSSProperties = {
     all: isRoot ? "initial" : "revert",
     ...BOX,
     ...(isBuiltIn(node.type) ? BY_TYPE[node.type] : { display: "block" }),
     ...(isRoot ? { ...PAGE_TEXT, flexGrow: 1, minWidth: 0 } : {}),
-    ...(isHexColor(background) ? { backgroundColor: background } : {}),
+    ...lookOf(node.styles),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it.
