@@ -7,6 +7,7 @@ import {
   isFreeNode,
   minSize,
   moveRect,
+  normalizeAngle,
   type PageData,
   type Rect,
   resizeRotated,
@@ -180,6 +181,20 @@ export function Editor({ className }: EditorProps) {
   const endDrag = (dist: { x: number; y: number }) =>
     endGesture((g) => moveRect(g.start, dist, g.before.rotation));
 
+  // Position maths ignore the rotation, so a turn only changes the angle: no `inferBox`.
+  const endRotate = (dist: number) => {
+    const g = gesture.current;
+    if (!g) return;
+    gesture.current = null;
+    const rotation = normalizeAngle(g.before.rotation + dist);
+    setData((prev) => ({
+      ...prev,
+      root: updateNode(prev.root, g.before.id, (n) =>
+        isFreeNode(n) && n.rotation !== rotation ? { ...n, rotation } : n,
+      ),
+    }));
+  };
+
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, g.before.rotation, handle, w, h));
 
@@ -218,9 +233,11 @@ export function Editor({ className }: EditorProps) {
           container={workspace}
           className={styles.selection}
           minSize={minSize(selectedNode?.styles)}
+          angle={selectedNode && isFreeNode(selectedNode) ? selectedNode.rotation : 0}
           onGestureStart={startGesture}
           onDragEnd={endDrag}
           onResizeEnd={endResize}
+          onRotateEnd={endRotate}
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">

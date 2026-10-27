@@ -8,6 +8,9 @@ import Moveable, {
   type OnResize,
   type OnResizeEnd,
   type OnResizeStart,
+  type OnRotate,
+  type OnRotateEnd,
+  type OnRotateStart,
 } from "react-moveable";
 
 // The only file that knows react-moveable, so the library can be swapped for hand-written handles.
@@ -30,6 +33,8 @@ export interface SelectionBoxProps {
   className?: string | undefined;
   /** The smallest width and height, in px, that a resize can reach. */
   minSize: number;
+  /** The node's current rotation in degrees, which Shift snaps the turn against. */
+  angle: number;
   /** A drag or a resize begins. Read whatever the commit will need here. */
   onGestureStart: () => void;
   /**
@@ -39,6 +44,11 @@ export interface SelectionBoxProps {
   onDragEnd: (dist: { x: number; y: number }) => void;
   /** Once, on release, and only when a handle really moved. Flushed to the DOM before returning. */
   onResizeEnd: (result: ResizeResult) => void;
+  /**
+   * Once, on release, and only when the handle really turned. `dist` is the turn in degrees since the
+   * gesture began, as react-moveable reports it. Flushed to the DOM before returning.
+   */
+  onRotateEnd: (dist: number) => void;
 }
 
 /** Wraps a handler so an exception is logged: moveable silently drops the whole gesture on one. */
@@ -76,6 +86,13 @@ function restore(el: HTMLElement, saved: Saved) {
   }
 }
 
+/** The step, in degrees, that the angle snaps to while Shift is held. */
+const SNAP_DEGREES = 15;
+
+/** The turn that takes `angle` to the nearest multiple of the snap step, when the pointer asks for `dist`. */
+const snapTurn = (angle: number, dist: number) =>
+  Math.round((angle + dist) / SNAP_DEGREES) * SNAP_DEGREES - angle;
+
 const sign = (n: number | undefined): -1 | 0 | 1 =>
   n === undefined ? 0 : n < 0 ? -1 : n > 0 ? 1 : 0;
 const handleOf = (direction: number[]): Handle => [sign(direction[0]), sign(direction[1])];
@@ -86,14 +103,17 @@ export function SelectionBox({
   container,
   className,
   minSize,
+  angle,
   onGestureStart,
   onDragEnd,
   onResizeEnd,
+  onRotateEnd,
 }: SelectionBoxProps) {
   const moveable = useRef<Moveable>(null);
   const busy = useRef(false);
   const lastDist = useRef({ x: 0, y: 0 });
   const lastSize = useRef<ResizeResult | null>(null);
+  const lastTurn = useRef(0);
   const saved = useRef<Saved>({ transform: "", width: "", height: "" });
   // Shift at a corner keeps the ratio. Moveable reads this prop on every event of the gesture.
   const [keepRatio, setKeepRatio] = useState(false);
@@ -146,6 +166,7 @@ export function SelectionBox({
       {...(className ? { className } : {})}
       draggable
       resizable
+      rotatable
       keepRatio={keepRatio}
       origin={false}
       throttleDrag={0}
@@ -181,6 +202,27 @@ export function SelectionBox({
         // Shift can go down or up in the middle of a gesture.
         const wanted = isCorner(handle) && e.inputEvent?.shiftKey === true;
         if (wanted !== keepRatio) setKeepRatio(wanted);
+      })}
+      onRotateStart={guarded((e: OnRotateStart) => {
+        lastTurn.current = 0;
+        begin(e.target as HTMLElement);
+      })}
+      onRotate={guarded((e: OnRotate) => {
+        // With Shift the ANGLE snaps, not the turn: a node at 37 degrees goes to 45, not to 52.
+        const turn = e.inputEvent?.shiftKey === true ? snapTurn(angle, e.dist) : e.dist;
+        // Moveable's own transform is `translate(0px, 0px) rotate(Ndeg)`; this is the same turn,
+        // stacked on the node's `rotate` property.
+        (e.target as HTMLElement).style.transform = `rotate(${turn}deg)`;
+        lastTurn.current = turn;
+      })}
+      onRotateEnd={guarded((e: OnRotateEnd) => {
+        const el = e.target as HTMLElement;
+        end(el);
+        if (!e.isDrag) {
+          restore(el, saved.current);
+          return;
+        }
+        finish(el, () => onRotateEnd(lastTurn.current));
       })}
       onResizeEnd={guarded((e: OnResizeEnd) => {
         const el = e.target as HTMLElement;
