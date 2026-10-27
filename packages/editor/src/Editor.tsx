@@ -69,6 +69,12 @@ const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
     : withStyle(node, patch.key, patch.value);
 };
 
+/** The page with a pending change applied, for drawing it or for storing it. */
+const withDraft = (data: PageData, draft: PanelPatch & { id: string }): PageData => ({
+  ...data,
+  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft)),
+});
+
 /** The page the editor starts from: the host's, once it is checked, or an empty one. */
 function openPage(data: PageData | undefined): PageData {
   if (data === undefined) return emptyPage();
@@ -106,16 +112,7 @@ export function Editor({ className, data: initialData, onChange, onSave }: Edito
   const editorRoot = useRef<HTMLDivElement>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
-  const shown = useMemo<PageData>(
-    () =>
-      draft
-        ? {
-            ...data,
-            root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft)),
-          }
-        : data,
-    [data, draft],
-  );
+  const shown = useMemo<PageData>(() => (draft ? withDraft(data, draft) : data), [data, draft]);
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
 
   // `<Render>` owns the elements, so look up the one for the selected node after every render.
@@ -126,13 +123,17 @@ export function Editor({ className, data: initialData, onChange, onSave }: Edito
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
     const target = event.target as Element;
-    if (event.button !== 0 || isMoveableLayer(target)) return;
-    // A field that is being typed in applies its text before the panel changes.
+    if (event.button !== 0) return;
+    // What is still pending in the panel is applied before anything else changes. A field that is
+    // being typed in applies its text when it loses the focus. A colour that was picked is only a
+    // draft until the picker closes and sends its own `change`, which comes too late for a press
+    // that changes the selection (the panel is gone by then), so the draft is stored here.
     const active = document.activeElement;
     if (active instanceof HTMLElement && isEditableTarget(active)) active.blur();
+    if (draft) commitPatch(draft.id, draft);
+    if (isMoveableLayer(target)) return;
     const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
     const selectable = id !== undefined && id !== data.root.id;
-    if ((selectable ? id : null) !== selectedId) setDraft(null);
     setSelectedId(selectable ? id : null);
     // A press on a node keeps the keyboard inside the editor, so that Esc reaches it. The editor's
     // own element takes the focus: it has no ring, unlike the scrolling canvas.
@@ -213,7 +214,12 @@ export function Editor({ className, data: initialData, onChange, onSave }: Edito
           <button
             type="button"
             className={`${styles.button} ${styles.primary}`}
-            onClick={() => onSave(data)}
+            onClick={() => {
+              // A change that is still pending is stored first, and it is part of what is saved.
+              const pending = draft;
+              if (pending) commitPatch(pending.id, pending);
+              onSave(pending ? withDraft(data, pending) : data);
+            }}
           >
             Save
           </button>
