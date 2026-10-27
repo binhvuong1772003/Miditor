@@ -52,11 +52,19 @@ export const hexColor: fc.Arbitrary<string> = fc
   .array(fc.constantFrom(..."0123456789abcdef"), { minLength: 6, maxLength: 6 })
   .map((digits) => `#${digits.join("")}`);
 
-/** Empty styles, or a background colour. */
-export const styles: fc.Arbitrary<NodeStyles> = fc.oneof(
-  fc.constant({}),
-  hexColor.map((background) => ({ background })),
-);
+/** A length in px, as it would be stored. */
+export const pixelLength: fc.Arbitrary<number> = fc.integer({ min: 0, max: 100 }).map((n) => n / 4);
+
+/** Any mix of the style fields, including none. */
+export const styles: fc.Arbitrary<NodeStyles> = fc.record(
+  {
+    background: hexColor,
+    borderWidth: pixelLength,
+    borderColor: hexColor,
+    borderRadius: pixelLength,
+  },
+  { requiredKeys: [] },
+) as fc.Arbitrary<NodeStyles>;
 
 /** A free node with plain JSON props, as it would be saved. */
 export const freeNode: fc.Arbitrary<FreeNode> = fc.record({

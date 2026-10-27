@@ -78,6 +78,15 @@ describe("the tree types refuse what they should", () => {
       // A style value must be a string.
       // @ts-expect-error
       () => node({ ...flow, styles: { background: 0xffffff } }),
+      // The border width is a number of px, not text.
+      // @ts-expect-error
+      () => node({ ...flow, styles: { borderWidth: "2px" } }),
+      // The radius is a number of px, not text.
+      // @ts-expect-error
+      () => node({ ...flow, styles: { borderRadius: "4px" } }),
+      // The border colour is a string, not a number.
+      // @ts-expect-error
+      () => node({ ...flow, styles: { borderColor: 0 } }),
       // Only the known style fields exist.
       // @ts-expect-error
       () => node({ ...flow, styles: { background: "#ffffff", position: "fixed" } }),
@@ -85,7 +94,7 @@ describe("the tree types refuse what they should", () => {
       // @ts-expect-error
       () => node({ ...flow, props: { onClick: () => 1 } }),
     ];
-    expect(attempts).toHaveLength(13);
+    expect(attempts).toHaveLength(16);
   });
 
   it("also rejects extra data that arrives through a variable", () => {

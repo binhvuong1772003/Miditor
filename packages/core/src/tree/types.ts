@@ -10,12 +10,18 @@ export type JsonValue =
   | { [key: string]: JsonValue };
 
 /**
- * How a node looks. Every value is typed: a colour is a stored `#rrggbb` (see `isHexColor`), never
- * free-form CSS. More fields (border, radius, text) come when something can edit and draw them.
+ * How a node looks. Every value is typed: a colour is a stored `#rrggbb` (see `isHexColor`) and a
+ * length is a number of px (see `isPixelLength`), never free-form CSS. More fields (border, radius, text) come when something can edit and draw them.
  */
 export interface NodeStyles {
   /** The fill colour, stored as `#rrggbb` in lowercase. */
   background?: string;
+  /** The border width in px, from 0 to `MAX_PIXEL_LENGTH`. Without it nothing is drawn. */
+  borderWidth?: number;
+  /** The border colour, stored as `#rrggbb`. A border without one is drawn in the text colour. */
+  borderColor?: string;
+  /** The radius of all four corners in px, from 0 to `MAX_PIXEL_LENGTH`. */
+  borderRadius?: number;
 }
 
 /** What every node has, whatever the way it is placed. */

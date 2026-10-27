@@ -98,6 +98,45 @@ describe("withStyle", () => {
   });
 });
 
+describe("withStyle, border and radius", () => {
+  it("sets, replaces and removes a number, and a colour for the border", () => {
+    const set = withStyle(flow, "borderWidth", 2);
+    expect(set.styles).toEqual({ borderWidth: 2 });
+    const more = withStyle(withStyle(set, "borderColor", "#112233"), "borderRadius", 6);
+    expect(more.styles).toEqual({ borderWidth: 2, borderColor: "#112233", borderRadius: 6 });
+    const replaced = withStyle(more, "borderWidth", 4);
+    expect(replaced.styles).toEqual({ borderWidth: 4, borderColor: "#112233", borderRadius: 6 });
+    const removed = withStyle(replaced, "borderWidth", undefined);
+    expect(removed.styles).toEqual({ borderColor: "#112233", borderRadius: 6 });
+    expect("borderWidth" in removed.styles).toBe(false);
+  });
+
+  it("returns the very same node when the number is already set", () => {
+    const node = withStyle(flow, "borderRadius", 4);
+    expect(withStyle(node, "borderRadius", 4)).toBe(node);
+    expect(withStyle(flow, "borderWidth", undefined)).toBe(flow);
+  });
+
+  it("keeps the other styles when one changes", () => {
+    const node = { ...free, styles: { background: "#d5dae3", borderWidth: 1, borderRadius: 4 } };
+    expect(withStyle(node, "borderRadius", 8).styles).toEqual({
+      background: "#d5dae3",
+      borderWidth: 1,
+      borderRadius: 8,
+    });
+    expect(withStyle(node, "background", undefined).styles).toEqual({
+      borderWidth: 1,
+      borderRadius: 4,
+    });
+  });
+
+  it("treats 0 as a value, not as nothing", () => {
+    const node = withStyle(flow, "borderWidth", 0);
+    expect(node.styles).toEqual({ borderWidth: 0 });
+    expect(withStyle(node, "borderWidth", undefined).styles).toEqual({});
+  });
+});
+
 describe("withStyle, properties", () => {
   it("what was set can be read back, and removing it restores the empty styles", () => {
     fc.assert(
