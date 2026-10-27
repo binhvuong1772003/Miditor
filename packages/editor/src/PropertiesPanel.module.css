@@ -2,7 +2,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 1rem;
   padding: 1rem;
 }
 
@@ -66,6 +66,11 @@
 
 .input[aria-invalid="true"] {
   border-color: var(--_danger);
+}
+
+.unit {
+  flex: none;
+  color: var(--_muted);
 }
 
 .swatch:focus-visible,

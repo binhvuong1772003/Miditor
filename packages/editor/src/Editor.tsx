@@ -10,6 +10,7 @@ import {
   type Rect,
   resolveRect,
   SCHEMA_VERSION,
+  type TreeNode,
   updateNode,
   withFreeBox,
   withStyle,
@@ -19,7 +20,7 @@ import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "r
 import { DragMove, isMoveableLayer } from "./canvas/DragMove";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
-import { PropertiesPanel } from "./PropertiesPanel";
+import { PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { SavedDataDialog } from "./SavedDataDialog";
 
 export interface EditorProps {
@@ -42,7 +43,7 @@ const INITIAL_PAGE: PageData = {
         id: "sample",
         type: "Container",
         props: {},
-        styles: { background: "#d5dae3" },
+        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
         position: {
           mode: "free",
           x: { anchor: "end", offset: 20 },
@@ -56,7 +57,7 @@ const INITIAL_PAGE: PageData = {
         id: "sample-2",
         type: "Container",
         props: {},
-        styles: { background: "#d5dae3" },
+        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
         position: {
           mode: "free",
           x: { anchor: "start", offset: 40 },
@@ -69,6 +70,19 @@ const INITIAL_PAGE: PageData = {
     ],
   },
 };
+
+// Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
+// identical branches so that each call to `withStyle` sees a matching key and value type.
+const isColourPatch = (
+  patch: StylePatch,
+): patch is Extract<StylePatch, { key: "background" | "borderColor" }> =>
+  patch.key === "background" || patch.key === "borderColor";
+
+/** The node with one style set to the value of a patch. */
+const applyPatch = (node: TreeNode, patch: StylePatch): TreeNode =>
+  isColourPatch(patch)
+    ? withStyle(node, patch.key, patch.value)
+    : withStyle(node, patch.key, patch.value);
 
 /** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */
 const elementOf = (scope: HTMLElement, id: string) =>
@@ -90,15 +104,13 @@ export function Editor({ className }: EditorProps) {
   // Temporary: the JSON shown by the Save button, taken at the moment of the click.
   const [savedJson, setSavedJson] = useState<string | null>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
-  const [draft, setDraft] = useState<{ id: string; background: string | undefined } | null>(null);
+  const [draft, setDraft] = useState<(StylePatch & { id: string }) | null>(null);
   const shown = useMemo<PageData>(
     () =>
       draft
         ? {
             ...data,
-            root: updateNode(data.root, draft.id, (n) =>
-              withStyle(n, "background", draft.background),
-            ),
+            root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft)),
           }
         : data,
     [data, draft],
@@ -128,11 +140,11 @@ export function Editor({ className }: EditorProps) {
     if (selectable) editorRoot.current?.focus({ preventScroll: true });
   };
 
-  /** Store a colour on a node, once. The draft is over. */
-  const commitBackground = (id: string, background: string | undefined) => {
+  /** Store a style on a node, once. The draft is over. */
+  const commitStyle = (id: string, patch: StylePatch) => {
     setDraft(null);
     setData((prev) => {
-      const root = updateNode(prev.root, id, (n) => withStyle(n, "background", background));
+      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch));
       return root === prev.root ? prev : { ...prev, root };
     });
   };
@@ -204,8 +216,8 @@ export function Editor({ className }: EditorProps) {
           // A new panel for each node, so text typed for one is never applied to another.
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
-          onPreview={(background) => selectedNode && setDraft({ id: selectedNode.id, background })}
-          onCommit={(background) => selectedNode && commitBackground(selectedNode.id, background)}
+          onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
+          onCommit={(patch) => selectedNode && commitStyle(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}
         />
       </aside>

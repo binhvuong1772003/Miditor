@@ -1,55 +1,162 @@
-import { parseHexColor, type TreeNode } from "@midito-kitchen/core";
+import { parseHexColor, parsePixelLength, type TreeNode } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
+
+/** One style of one node, and the value it should have. `undefined` removes the style. */
+export type StylePatch =
+  | { key: "background" | "borderColor"; value: string | undefined }
+  | { key: "borderWidth" | "borderRadius"; value: number | undefined };
 
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
   node: TreeNode | undefined;
-  /** A colour is being picked or typed: show it, but do not store it yet. `undefined` means no fill. */
-  onPreview: (background: string | undefined) => void;
-  /** The colour is final: store it. `undefined` removes the fill. */
-  onCommit: (background: string | undefined) => void;
+  /** A value is being picked or typed: show it, but do not store it yet. */
+  onPreview: (patch: StylePatch) => void;
+  /** The value is final: store it. */
+  onCommit: (patch: StylePatch) => void;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
 }
 
 /**
- * Temporary: one fixed "Fill" field for any selected node. The fields will come from `config` and the
+ * Temporary: four fixed fields for any selected node. The fields will come from `config` and the
  * registry, so each kind of component can say what it lets a person edit.
  */
 export function PropertiesPanel({ node, onPreview, onCommit, onDiscard }: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
   }
+  const colour = (key: "background" | "borderColor") => ({
+    stored: node.styles[key],
+    onPreview: (value: string | undefined) => onPreview({ key, value }),
+    onCommit: (value: string | undefined) => onCommit({ key, value }),
+    onDiscard,
+  });
+  const length = (key: "borderWidth" | "borderRadius") => ({
+    stored: node.styles[key],
+    onPreview: (value: number | undefined) => onPreview({ key, value }),
+    onCommit: (value: number | undefined) => onCommit({ key, value }),
+    onDiscard,
+  });
   return (
     <div className={styles.content}>
       <h2 className={styles.title}>{node.type}</h2>
       <p className={styles.meta}>{node.id}</p>
-      <FillField
-        stored={node.styles.background}
-        onPreview={onPreview}
-        onCommit={onCommit}
-        onDiscard={onDiscard}
+      <ColourField
+        label="Fill"
+        pickerLabel="Fill colour picker"
+        hint="Hex colour, like #d5dae3. Leave it empty for no fill."
+        {...colour("background")}
+      />
+      <LengthField
+        label="Border width"
+        hint="In pixels, like 2. Leave it empty or 0 for no border."
+        {...length("borderWidth")}
+      />
+      <ColourField
+        label="Border colour"
+        pickerLabel="Border colour picker"
+        hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
+        {...colour("borderColor")}
+      />
+      <LengthField
+        label="Radius"
+        hint="In pixels, like 4. Leave it empty or 0 for square corners."
+        {...length("borderRadius")}
       />
     </div>
   );
 }
 
-interface FillFieldProps {
-  /** The colour that is stored on the node, in the stored form, or `undefined`. */
-  stored: string | undefined;
-  onPreview: (background: string | undefined) => void;
-  onCommit: (background: string | undefined) => void;
+interface FieldProps<T> {
+  label: string;
+  hint: string;
+  /** What is stored on the node, or `undefined`. */
+  stored: T | undefined;
+  onPreview: (value: T | undefined) => void;
+  onCommit: (value: T | undefined) => void;
   onDiscard: () => void;
 }
 
-/** What a text means as a colour: nothing typed is "no fill", `null` is not a colour. */
-const read = (text: string): string | undefined | null =>
+/** What a text means: nothing typed is `undefined`, `null` is "not a value". */
+type Reading<T> = T | undefined | null;
+
+/** The part of a field that does not depend on the kind of value: text, error and the keys. */
+function useTextField<T>(
+  stored: T | undefined,
+  show: (value: T | undefined) => string,
+  read: (text: string) => Reading<T>,
+  { onPreview, onCommit, onDiscard }: Pick<FieldProps<T>, "onPreview" | "onCommit" | "onDiscard">,
+) {
+  const [text, setText] = useState(show(stored));
+  const [invalid, setInvalid] = useState(false);
+
+  // When the stored value changes (a change was committed), show it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `show` only formats `stored`
+  useEffect(() => {
+    setText(show(stored));
+    setInvalid(false);
+  }, [stored]);
+
+  const revert = () => {
+    setText(show(stored));
+    setInvalid(false);
+    onDiscard();
+  };
+
+  /** Store what is typed. Returns false, and keeps the text, when it is not a value. */
+  const apply = () => {
+    const value = read(text);
+    if (value === null) {
+      setInvalid(true);
+      return false;
+    }
+    setInvalid(false);
+    setText(show(value));
+    if (value === stored) onDiscard();
+    else onCommit(value);
+    return true;
+  };
+
+  const typed = (next: string) => {
+    setText(next);
+    setInvalid(false);
+    const value = read(next);
+    // A text that is not (yet) a value shows what is stored.
+    if (value === null) onDiscard();
+    else onPreview(value);
+  };
+
+  const keys = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") apply();
+    if (event.key === "Escape") revert();
+  };
+
+  const leave = () => {
+    // Leaving the field applies a value that is typed, and drops text that is not one.
+    const value = read(text);
+    if (value !== null && value === stored) {
+      setText(show(value));
+      return;
+    }
+    if (!apply()) revert();
+  };
+
+  return { text, setText, invalid, setInvalid, typed, keys, leave };
+}
+
+const showColour = (value: string | undefined) => value ?? "";
+const readColour = (text: string): Reading<string> =>
   text.trim() === "" ? undefined : (parseHexColor(text) ?? null);
 
-function FillField({ stored, onPreview, onCommit, onDiscard }: FillFieldProps) {
-  const [text, setText] = useState(stored ?? "");
-  const [invalid, setInvalid] = useState(false);
+function ColourField({ pickerLabel, ...field }: FieldProps<string> & { pickerLabel: string }) {
+  const { label, hint, stored, onPreview, onCommit, onDiscard } = field;
+  const { text, setText, invalid, setInvalid, typed, keys, leave } = useTextField(
+    stored,
+    showColour,
+    readColour,
+    { onPreview, onCommit, onDiscard },
+  );
   const textId = useId();
   const hintId = useId();
   const errorId = useId();
@@ -58,12 +165,6 @@ function FillField({ stored, onPreview, onCommit, onDiscard }: FillFieldProps) {
   // must see the latest callback.
   const commitRef = useRef(onCommit);
   commitRef.current = onCommit;
-
-  // When the stored colour changes (a pick was committed), show it.
-  useEffect(() => {
-    setText(stored ?? "");
-    setInvalid(false);
-  }, [stored]);
 
   // React's `onChange` on a colour input fires on every `input` event while the picker is dragged;
   // only the native `change` event says the pick is done.
@@ -75,64 +176,23 @@ function FillField({ stored, onPreview, onCommit, onDiscard }: FillFieldProps) {
     return () => element.removeEventListener("change", done);
   }, []);
 
-  const revert = () => {
-    setText(stored ?? "");
-    setInvalid(false);
-    onDiscard();
-  };
-
-  /** Store what is typed. Returns false, and keeps the text, when it is not a colour. */
-  const apply = () => {
-    const value = read(text);
-    if (value === null) {
-      setInvalid(true);
-      return false;
-    }
-    setInvalid(false);
-    setText(value ?? "");
-    if (value === stored) onDiscard();
-    else onCommit(value);
-    return true;
-  };
-
-  const typed = (event: ChangeEvent<HTMLInputElement>) => {
-    const next = event.target.value;
-    setText(next);
-    setInvalid(false);
-    const value = read(next);
-    // A text that is not (yet) a colour shows what is stored.
-    if (value === null) onDiscard();
-    else onPreview(value);
-  };
-
   const picked = (event: ChangeEvent<HTMLInputElement>) => {
     setText(event.target.value);
     setInvalid(false);
     onPreview(event.target.value);
   };
 
-  const keys = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") apply();
-    if (event.key === "Escape") revert();
-  };
-
-  const leave = () => {
-    // Leaving the field applies a colour that is typed, and drops text that is not one.
-    if (read(text) === stored) return;
-    if (!apply()) revert();
-  };
-
   return (
     <div className={styles.field}>
       <label className={styles.label} htmlFor={textId}>
-        Fill
+        {label}
       </label>
       <div className={styles.row}>
         <input
           ref={picker}
           type="color"
           className={styles.swatch}
-          aria-label="Fill colour picker"
+          aria-label={pickerLabel}
           value={parseHexColor(text) ?? "#ffffff"}
           onChange={picked}
         />
@@ -146,7 +206,7 @@ function FillField({ stored, onPreview, onCommit, onDiscard }: FillFieldProps) {
           autoComplete="off"
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : hintId}
-          onChange={typed}
+          onChange={(event) => typed(event.target.value)}
           onKeyDown={keys}
           onBlur={leave}
         />
@@ -157,7 +217,64 @@ function FillField({ stored, onPreview, onCommit, onDiscard }: FillFieldProps) {
         </p>
       ) : (
         <p id={hintId} className={styles.hint}>
-          Hex colour, like #d5dae3. Leave it empty for no fill.
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const showLength = (value: number | undefined) => (value === undefined ? "" : String(value));
+/** A length of 0 means "none", which is the same as no value: the style is removed. */
+const readLength = (text: string): Reading<number> => {
+  if (text.trim() === "") return undefined;
+  const value = parsePixelLength(text);
+  if (value === undefined) return null;
+  return value === 0 ? undefined : value;
+};
+
+function LengthField({ label, hint, stored, onPreview, onCommit, onDiscard }: FieldProps<number>) {
+  const { text, invalid, typed, keys, leave } = useTextField(stored, showLength, readLength, {
+    onPreview,
+    onCommit,
+    onDiscard,
+  });
+  const textId = useId();
+  const hintId = useId();
+  const errorId = useId();
+
+  return (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor={textId}>
+        {label}
+      </label>
+      <div className={styles.row}>
+        <input
+          id={textId}
+          type="text"
+          inputMode="decimal"
+          className={styles.input}
+          value={text}
+          placeholder="0"
+          spellCheck={false}
+          autoComplete="off"
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : hintId}
+          onChange={(event) => typed(event.target.value)}
+          onKeyDown={keys}
+          onBlur={leave}
+        />
+        <span className={styles.unit} aria-hidden="true">
+          px
+        </span>
+      </div>
+      {invalid ? (
+        <p id={errorId} className={styles.error} role="alert">
+          Not a length. Use a number from 0 to 1000, like 4.
+        </p>
+      ) : (
+        <p id={hintId} className={styles.hint}>
+          {hint}
         </p>
       )}
     </div>
