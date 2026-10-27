@@ -1,7 +1,12 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { relabel, tree } from "../position/arbitraries";
+import { hexColor, num, pixelLength, relabel, solidContainer, tree } from "../position/arbitraries";
+import { inferBox } from "../position/infer-box";
+import { normalizeAngle } from "../styles/angle";
+import { freeBoxOf, isFreeNode, withFreeBox } from "./free-box";
+import { updateNode } from "./nodes";
 import { emptyPage, isPageData, SCHEMA_VERSION } from "./page";
+import { withStyle } from "./styles";
 import type { PageData, TreeNode } from "./types";
 
 /** A page that is valid and uses every kind of placement, so each test can break one thing. */
@@ -431,5 +436,83 @@ describe("isPageData, properties", () => {
         return !isPageData(copy);
       }),
     );
+  });
+
+  // What the editor commits must stay a page `isPageData` accepts: if one commit failed the check, a
+  // reload would open the sample instead of the saved page and the next edit would overwrite it.
+  describe("after what the editor does", () => {
+    const freeIds = (root: TreeNode): string[] => [
+      ...(isFreeNode(root) ? [root.id] : []),
+      ...root.children.flatMap(freeIds),
+    ];
+
+    /** A page and the id of one free node in it, or none when it has no free node. */
+    const pageAndFree = page.chain((data) => {
+      const ids = freeIds(data.root);
+      return ids.length === 0
+        ? fc.constant<[PageData, string | undefined]>([data, undefined])
+        : fc.constantFrom(...ids).map((id): [PageData, string | undefined] => [data, id]);
+    });
+
+    const change = (data: PageData, id: string, edit: (node: TreeNode) => TreeNode): PageData => ({
+      ...data,
+      root: updateNode(data.root, id, edit),
+    });
+
+    it("keeps a page valid after a drag or a resize (any rect of at least 1px by 1px)", () => {
+      const resized = fc.record({
+        x: num(-300, 900),
+        y: num(-300, 700),
+        w: num(1, 600),
+        h: num(1, 500),
+      });
+      fc.assert(
+        fc.property(pageAndFree, resized, solidContainer, ([data, id], moved, container) => {
+          if (id === undefined) return true;
+          const next = change(data, id, (n) =>
+            isFreeNode(n) ? withFreeBox(n, inferBox(freeBoxOf(n), moved, container)) : n,
+          );
+          return isPageData(next);
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("keeps a page valid after a turn of any size", () => {
+      fc.assert(
+        fc.property(pageAndFree, num(-100000, 100000), ([data, id], degrees) => {
+          if (id === undefined) return true;
+          const rotation = normalizeAngle(degrees);
+          const next = change(data, id, (n) => (isFreeNode(n) ? { ...n, rotation } : n));
+          return isPageData(next);
+        }),
+        { numRuns: 500 },
+      );
+    });
+
+    it("keeps a page valid after any style the panel can store", () => {
+      const patch = fc.oneof(
+        fc.record({
+          key: fc.constantFrom("background" as const, "borderColor" as const),
+          value: hexColor,
+        }),
+        fc.record({
+          key: fc.constantFrom("borderWidth" as const, "borderRadius" as const),
+          value: pixelLength,
+        }),
+      );
+      fc.assert(
+        fc.property(pageAndFree, patch, ([data, id], change1) => {
+          if (id === undefined) return true;
+          const next = change(data, id, (n) =>
+            change1.key === "background" || change1.key === "borderColor"
+              ? withStyle(n, change1.key, change1.value as string)
+              : withStyle(n, change1.key, change1.value as number),
+          );
+          return isPageData(next);
+        }),
+        { numRuns: 500 },
+      );
+    });
   });
 });
