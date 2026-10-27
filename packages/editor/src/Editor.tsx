@@ -1,10 +1,12 @@
 import {
   type Container,
+  emptyPage,
   type FreeNode,
   findNode,
   freeBoxOf,
   inferBox,
   isFreeNode,
+  isPageData,
   minSize,
   moveRect,
   normalizeAngle,
@@ -12,14 +14,13 @@ import {
   type Rect,
   resizeRotated,
   resolveRect,
-  SCHEMA_VERSION,
   type TreeNode,
   updateNode,
   withFreeBox,
   withStyle,
 } from "@midito-kitchen/core";
 import { Render } from "@midito-kitchen/render";
-import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type PointerEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -29,50 +30,20 @@ import { SavedDataDialog } from "./SavedDataDialog";
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
   className?: string;
+  /**
+   * The page to open. It is read once, when the editor mounts: the editor keeps its own working copy
+   * from then on, so a later change of this prop does not reset it (give the editor a new `key` to
+   * open another page). It must pass `isPageData`, or the editor throws. Without it the editor opens
+   * an empty page.
+   */
+  data?: PageData;
+  /**
+   * Called after every change that is final: a drag, resize or turn that ended, a field applied with
+   * Enter or by leaving it. Not called while something is still being typed or dragged, not when the
+   * editor mounts, and once per change. The argument is the whole page, ready to be stored.
+   */
+  onChange?: (data: PageData) => void;
 }
-
-// Temporary: a page with two free nodes so there is something to select and drag. It is replaced by
-// data that comes from the host. The page lives in React state for now, so a reload puts it back.
-const INITIAL_PAGE: PageData = {
-  schemaVersion: SCHEMA_VERSION,
-  root: {
-    id: "root",
-    type: "Page",
-    props: {},
-    styles: {},
-    position: { mode: "flow" },
-    children: [
-      {
-        id: "sample",
-        type: "Container",
-        props: {},
-        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
-        position: {
-          mode: "free",
-          x: { anchor: "end", offset: 20 },
-          y: { anchor: "start", offset: 40 },
-        },
-        size: { w: { kind: "px", v: 160 }, h: { kind: "px", v: 96 } },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "sample-2",
-        type: "Container",
-        props: {},
-        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
-        position: {
-          mode: "free",
-          x: { anchor: "start", offset: 40 },
-          y: { anchor: "end", offset: 60 },
-        },
-        size: { w: { kind: "px", v: 200 }, h: { kind: "px", v: 64 } },
-        rotation: 0,
-        children: [],
-      },
-    ],
-  },
-};
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
 // identical branches so that each call to `withStyle` sees a matching key and value type.
@@ -93,6 +64,15 @@ const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
     : withStyle(node, patch.key, patch.value);
 };
 
+/** The page the editor starts from: the host's, once it is checked, or an empty one. */
+function openPage(data: PageData | undefined): PageData {
+  if (data === undefined) return emptyPage();
+  if (!isPageData(data)) {
+    throw new Error("[midito] `data` is not a page this editor can open: check it with isPageData");
+  }
+  return data;
+}
+
 /** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */
 const elementOf = (scope: HTMLElement, id: string) =>
   [...scope.querySelectorAll<HTMLElement>("[data-midito-id]")].find(
@@ -100,9 +80,18 @@ const elementOf = (scope: HTMLElement, id: string) =>
   ) ?? null;
 
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
-export function Editor({ className }: EditorProps) {
+export function Editor({ className, data: initialData, onChange }: EditorProps) {
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
-  const [data, setData] = useState<PageData>(INITIAL_PAGE);
+  const [data, setData] = useState<PageData>(() => openPage(initialData));
+  // The page the host already has, so that `onChange` is called for a change and only once for it.
+  const notified = useRef(data);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  useEffect(() => {
+    if (data === notified.current) return;
+    notified.current = data;
+    onChangeRef.current?.(data);
+  }, [data]);
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
