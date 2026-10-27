@@ -53,6 +53,12 @@
   border-block-end: 1px solid var(--_border);
 }
 
+.group {
+  display: flex;
+  gap: 0.5rem;
+  margin-inline-end: auto;
+}
+
 .panel {
   min-inline-size: 0;
   overflow: auto;
@@ -146,6 +152,11 @@
 .button:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .primary {

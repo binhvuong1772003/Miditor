@@ -24,6 +24,7 @@ import { type PointerEvent, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
+import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 
 export interface EditorProps {
@@ -48,6 +49,12 @@ export interface EditorProps {
    * when this is given.
    */
   onSave?: (data: PageData) => void | Promise<void>;
+  /**
+   * How many steps undo can go back, 100 when not given. A whole number from 1 up, or `Infinity` for
+   * no limit; anything else uses 100. It is read at each change, so a new value trims the oldest
+   * steps on the next change. The steps live in memory only: a reload starts without any.
+   */
+  historyLimit?: number;
 }
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
@@ -91,9 +98,19 @@ const elementOf = (scope: HTMLElement, id: string) =>
   ) ?? null;
 
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
-export function Editor({ className, data: initialData, onChange, onSave }: EditorProps) {
+export function Editor({
+  className,
+  data: initialData,
+  onChange,
+  onSave,
+  historyLimit,
+}: EditorProps) {
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
-  const [data, setData] = useState<PageData>(() => openPage(initialData));
+  const [history, setHistory] = useState(() => createHistory(openPage(initialData)));
+  const data = history.present;
+  /** Store a change as one step. */
+  const setData = (change: (prev: PageData) => PageData) =>
+    setHistory((h) => commit(h, change(h.present), historyLimit));
   // The page the host already has, so that `onChange` is called for a change and only once for it.
   const notified = useRef(data);
   const onChangeRef = useRef(onChange);
@@ -192,6 +209,14 @@ export function Editor({ className, data: initialData, onChange, onSave }: Edito
     }));
   };
 
+  /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
+  const step = (move: typeof undo) => {
+    const next = move(history).present;
+    setDraft(null);
+    setSelectedId((id) => (id !== null && findNode(next.root, id) ? id : null));
+    setHistory(move);
+  };
+
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, g.before.rotation, handle, w, h));
 
@@ -203,13 +228,43 @@ export function Editor({ className, data: initialData, onChange, onSave }: Edito
       data-midito-editor=""
       tabIndex={-1}
       onKeyDown={(event) => {
-        // Esc in a field only undoes the field.
-        if (event.key !== "Escape" || isEditableTarget(event.target)) return;
-        setDraft(null);
-        setSelectedId(null);
+        // A field keeps its own Esc and its own undo.
+        if (isEditableTarget(event.target)) return;
+        if (event.key === "Escape") {
+          setDraft(null);
+          setSelectedId(null);
+          return;
+        }
+        if (gesture.current) return;
+        const key = event.key.toLowerCase();
+        const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
+        if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
+          event.preventDefault();
+          step(redoing ? redo : undo);
+        }
       }}
     >
       <header className={styles.toolbar}>
+        <div className={styles.group}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            disabled={!canUndo(history)}
+            title="Undo (Ctrl+Z)"
+            onClick={() => step(undo)}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            disabled={!canRedo(history)}
+            title="Redo (Shift+Ctrl+Z)"
+            onClick={() => step(redo)}
+          >
+            Redo
+          </button>
+        </div>
         {onSave && (
           <button
             type="button"
