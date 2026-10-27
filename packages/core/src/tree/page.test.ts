@@ -1,0 +1,435 @@
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import { relabel, tree } from "../position/arbitraries";
+import { emptyPage, isPageData, SCHEMA_VERSION } from "./page";
+import type { PageData, TreeNode } from "./types";
+
+/** A page that is valid and uses every kind of placement, so each test can break one thing. */
+function sample(): PageData {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    root: {
+      id: "root",
+      type: "Page",
+      props: {},
+      styles: {},
+      position: { mode: "flow" },
+      children: [
+        {
+          id: "a",
+          type: "Container",
+          props: { title: "Hi", list: [1, 2, { deep: null }], on: true },
+          styles: {
+            background: "#d5dae3",
+            borderWidth: 1,
+            borderColor: "#b3bccb",
+            borderRadius: 4,
+          },
+          position: {
+            mode: "free",
+            x: { anchor: "end", offset: 20 },
+            y: { anchor: "start", offset: 40 },
+          },
+          size: { w: { kind: "px", v: 160 }, h: { kind: "percent", v: 15 } },
+          rotation: 30,
+          children: [
+            {
+              id: "a1",
+              type: "Container",
+              props: {},
+              styles: {},
+              position: { mode: "flow" },
+              children: [],
+            },
+          ],
+        },
+        {
+          id: "b",
+          type: "Container",
+          props: {},
+          styles: {},
+          position: {
+            mode: "free",
+            x: { anchor: "stretch", start: 40, end: 300 },
+            y: { anchor: "scale", start: 10, size: 20 },
+          },
+          size: { w: { kind: "px", v: 1 }, h: { kind: "px", v: 1 } },
+          rotation: 0,
+          children: [],
+        },
+        {
+          id: "c",
+          type: "Container",
+          props: {},
+          styles: {},
+          position: {
+            mode: "free",
+            x: { anchor: "center", offset: -5 },
+            y: { anchor: "center", offset: 0 },
+          },
+          size: { w: { kind: "percent", v: 50 }, h: { kind: "px", v: 10 } },
+          rotation: -179.99,
+          children: [],
+        },
+      ],
+    },
+  };
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: the tests break a copy of the data on purpose, so its fields are loose
+type Loose = Record<string, any>;
+
+/** The sample after `change` has been applied to a copy of it, as loose data. */
+function broken(change: (page: Loose) => void): unknown {
+  const page = JSON.parse(JSON.stringify(sample())) as Loose;
+  change(page);
+  return page;
+}
+
+const a = (page: Loose) => page.root.children[0] as Loose;
+const b = (page: Loose) => page.root.children[1] as Loose;
+
+describe("emptyPage", () => {
+  it("is a page that passes the check, with a root and no children", () => {
+    const page = emptyPage();
+    expect(isPageData(page)).toBe(true);
+    expect(page.root).toMatchObject({ id: "root", type: "Page", children: [] });
+    expect(page.schemaVersion).toBe(SCHEMA_VERSION);
+  });
+
+  it("makes a new object every time", () => {
+    expect(emptyPage()).not.toBe(emptyPage());
+    expect(emptyPage().root.children).not.toBe(emptyPage().root.children);
+  });
+});
+
+describe("isPageData", () => {
+  it("accepts a page that uses every placement, and one that went through JSON", () => {
+    expect(isPageData(sample())).toBe(true);
+    expect(isPageData(JSON.parse(JSON.stringify(sample())))).toBe(true);
+  });
+
+  it("refuses what is not an object, and does not throw for anything at all", () => {
+    for (const bad of [
+      null,
+      undefined,
+      0,
+      1,
+      "page",
+      true,
+      [],
+      [sample()],
+      () => sample(),
+      Symbol("x"),
+    ]) {
+      expect(isPageData(bad)).toBe(false);
+    }
+    fc.assert(fc.property(fc.anything(), (value) => isPageData(value) === false));
+    fc.assert(fc.property(fc.jsonValue(), (value) => isPageData(value) === false));
+  });
+
+  it("refuses another schema version, a missing one, and extra keys on the page", () => {
+    for (const schemaVersion of [0, 2, "1", null, undefined, Number.NaN]) {
+      expect(isPageData({ ...sample(), schemaVersion })).toBe(false);
+    }
+    expect(isPageData({ root: sample().root })).toBe(false);
+    expect(isPageData({ schemaVersion: SCHEMA_VERSION })).toBe(false);
+    expect(isPageData({ ...sample(), extra: 1 })).toBe(false);
+  });
+
+  it("refuses a root that is missing, not a node, or not placed by flow", () => {
+    expect(isPageData(broken((p) => delete p.root))).toBe(false);
+    expect(isPageData(broken((p) => (p.root = null)))).toBe(false);
+    expect(isPageData(broken((p) => (p.root = [])))).toBe(false);
+    expect(isPageData(broken((p) => (p.root = a(p))))).toBe(false);
+  });
+
+  describe("ids and types", () => {
+    it("refuses a missing, empty or non-string id", () => {
+      for (const id of [undefined, "", 1, null, {}]) {
+        expect(isPageData(broken((p) => (a(p).id = id)))).toBe(false);
+      }
+      expect(isPageData(broken((p) => delete a(p).id))).toBe(false);
+    });
+
+    it("refuses an id that appears twice, at any depth", () => {
+      expect(isPageData(broken((p) => (b(p).id = "a")))).toBe(false);
+      expect(isPageData(broken((p) => (a(p).children[0].id = "root")))).toBe(false);
+      expect(isPageData(broken((p) => (a(p).children[0].id = "b")))).toBe(false);
+    });
+
+    it("refuses a missing, empty or non-string type", () => {
+      for (const type of [undefined, "", 1, null]) {
+        expect(isPageData(broken((p) => (a(p).type = type)))).toBe(false);
+      }
+    });
+  });
+
+  describe("props", () => {
+    it("accepts any JSON value in props", () => {
+      expect(
+        isPageData(broken((p) => (a(p).props = { x: [1, "2", [null, { y: false }]], z: -1.5 }))),
+      ).toBe(true);
+    });
+
+    it("refuses props that are not a plain object", () => {
+      for (const props of [null, [], "x", 1, undefined, new Date(), new Map()]) {
+        expect(isPageData(broken((p) => (a(p).props = props)))).toBe(false);
+      }
+    });
+
+    it("refuses a value that JSON cannot carry", () => {
+      for (const value of [
+        Number.NaN,
+        Infinity,
+        undefined,
+        () => 1,
+        new Date(),
+        Symbol("x"),
+        10n,
+      ]) {
+        expect(isPageData(broken((p) => (a(p).props = { value })))).toBe(false);
+        expect(isPageData(broken((p) => (a(p).props = { list: [value] })))).toBe(false);
+      }
+    });
+
+    it("accepts props nested 31 objects deep and refuses 32", () => {
+      const nested = (levels: number): unknown => {
+        let value: unknown = 1;
+        for (let i = 0; i < levels; i++) value = { value };
+        return value;
+      };
+      expect(isPageData(broken((p) => (a(p).props = { deep: nested(31) })))).toBe(true);
+      expect(isPageData(broken((p) => (a(p).props = { deep: nested(32) })))).toBe(false);
+    });
+  });
+
+  describe("styles", () => {
+    it("accepts every known style at its limits", () => {
+      expect(
+        isPageData(
+          broken(
+            (p) =>
+              (a(p).styles = {
+                background: "#000000",
+                borderWidth: 0,
+                borderColor: "#ffffff",
+                borderRadius: 1000,
+              }),
+          ),
+        ),
+      ).toBe(true);
+    });
+
+    it("refuses a colour that is not #rrggbb in lowercase", () => {
+      for (const background of ["red", "#fff", "#FFFFFF", "#ggg000", "d5dae3", "", 5, null]) {
+        expect(isPageData(broken((p) => (a(p).styles = { background })))).toBe(false);
+        expect(isPageData(broken((p) => (a(p).styles = { borderColor: background })))).toBe(false);
+      }
+    });
+
+    it("refuses a length that is negative, too large or not a number", () => {
+      for (const length of [-1, 1001, Number.NaN, "4", null]) {
+        expect(isPageData(broken((p) => (a(p).styles = { borderWidth: length })))).toBe(false);
+        expect(isPageData(broken((p) => (a(p).styles = { borderRadius: length })))).toBe(false);
+      }
+    });
+
+    it("refuses a style it does not know, and styles that are missing or not an object", () => {
+      expect(isPageData(broken((p) => (a(p).styles = { color: "#000000" })))).toBe(false);
+      expect(isPageData(broken((p) => (a(p).styles = { toString: "x" })))).toBe(false);
+      for (const styles of [undefined, null, [], "x"]) {
+        expect(isPageData(broken((p) => (a(p).styles = styles)))).toBe(false);
+      }
+    });
+  });
+
+  describe("children", () => {
+    it("refuses children that are missing, not a list, or hold something that is not a node", () => {
+      expect(isPageData(broken((p) => delete a(p).children))).toBe(false);
+      for (const children of [null, {}, "x", 1]) {
+        expect(isPageData(broken((p) => (a(p).children = children)))).toBe(false);
+      }
+      for (const child of [null, 1, "x", [], {}, { id: "z" }]) {
+        expect(isPageData(broken((p) => (a(p).children = [child])))).toBe(false);
+      }
+    });
+
+    it("accepts a tree as deep as the bound and refuses one deeper", () => {
+      const chain = (depth: number): PageData => {
+        const page = emptyPage();
+        let node: TreeNode = page.root;
+        for (let i = 1; i <= depth; i++) {
+          const child: TreeNode = {
+            id: `n${i}`,
+            type: "Container",
+            props: {},
+            styles: {},
+            position: { mode: "flow" },
+            children: [],
+          };
+          node.children.push(child);
+          node = child;
+        }
+        return page;
+      };
+      expect(isPageData(chain(100))).toBe(true);
+      expect(isPageData(chain(101))).toBe(false);
+    });
+
+    it("accepts a tree of exactly the largest size and refuses one node more", () => {
+      const leaf = (i: number): TreeNode => ({
+        id: `n${i}`,
+        type: "Container",
+        props: {},
+        styles: {},
+        position: { mode: "flow" },
+        children: [],
+      });
+      const page = emptyPage();
+      // The root is the first node, so 19999 children make 20000.
+      for (let i = 0; i < 19999; i++) page.root.children.push(leaf(i));
+      expect(isPageData(page)).toBe(true);
+      page.root.children.push(leaf(19999));
+      expect(isPageData(page)).toBe(false);
+    });
+  });
+
+  describe("placement", () => {
+    it("refuses a missing position, an unknown mode and extra keys in it", () => {
+      expect(isPageData(broken((p) => delete a(p).position))).toBe(false);
+      for (const mode of ["absolute", "", undefined, null, 1]) {
+        expect(isPageData(broken((p) => (a(p).position.mode = mode)))).toBe(false);
+      }
+      expect(isPageData(broken((p) => (a(p).position.z = 1)))).toBe(false);
+    });
+
+    it("refuses a flow node that carries coordinates, a size or a rotation", () => {
+      const flow = (p: Loose) => a(p).children[0] as Loose;
+      expect(isPageData(broken((p) => (flow(p).position.x = { anchor: "start", offset: 0 })))).toBe(
+        false,
+      );
+      expect(
+        isPageData(
+          broken((p) => (flow(p).size = { w: { kind: "px", v: 1 }, h: { kind: "px", v: 1 } })),
+        ),
+      ).toBe(false);
+      expect(isPageData(broken((p) => (flow(p).rotation = 0)))).toBe(false);
+    });
+
+    it("refuses a free node that lacks a coordinate, a size or a rotation", () => {
+      expect(isPageData(broken((p) => delete a(p).position.x))).toBe(false);
+      expect(isPageData(broken((p) => delete a(p).position.y))).toBe(false);
+      expect(isPageData(broken((p) => delete a(p).size))).toBe(false);
+      expect(isPageData(broken((p) => delete a(p).size.w))).toBe(false);
+      expect(isPageData(broken((p) => delete a(p).size.h))).toBe(false);
+      expect(isPageData(broken((p) => delete a(p).rotation))).toBe(false);
+      expect(isPageData(broken((p) => (a(p).size.extra = 1)))).toBe(false);
+    });
+
+    it("refuses a rotation that is not a number of degrees from -180 to 180", () => {
+      for (const rotation of [
+        Number.NaN,
+        Infinity,
+        null,
+        "30",
+        -180.01,
+        180.01,
+        190,
+        360,
+        undefined,
+      ]) {
+        expect(isPageData(broken((p) => (a(p).rotation = rotation)))).toBe(false);
+      }
+      for (const rotation of [180, -180, -179.99, 0, 0.01]) {
+        expect(isPageData(broken((p) => (a(p).rotation = rotation)))).toBe(true);
+      }
+    });
+  });
+
+  describe("axes and sizes", () => {
+    it("refuses an unknown anchor, and a number that is missing, not finite or huge", () => {
+      for (const anchor of ["left", "", undefined, null, "START"]) {
+        expect(isPageData(broken((p) => (a(p).position.x.anchor = anchor)))).toBe(false);
+      }
+      for (const offset of [undefined, Number.NaN, null, "5", 1_000_001, -1_000_001]) {
+        expect(isPageData(broken((p) => (a(p).position.x.offset = offset)))).toBe(false);
+      }
+      expect(isPageData(broken((p) => (a(p).position.x.offset = 1_000_000)))).toBe(true);
+      expect(isPageData(broken((p) => (a(p).position.x.offset = -1_000_000)))).toBe(true);
+    });
+
+    it("refuses an axis that has a number it does not own, or lacks one it does", () => {
+      expect(isPageData(broken((p) => (a(p).position.x.start = 1)))).toBe(false);
+      expect(isPageData(broken((p) => (b(p).position.x.extra = 1)))).toBe(false);
+      expect(isPageData(broken((p) => delete b(p).position.x.end))).toBe(false);
+      expect(isPageData(broken((p) => delete b(p).position.x.start))).toBe(false);
+      expect(isPageData(broken((p) => delete b(p).position.y.size))).toBe(false);
+      expect(isPageData(broken((p) => delete b(p).position.y.start))).toBe(false);
+      expect(isPageData(broken((p) => (b(p).position.y.end = 3)))).toBe(false);
+    });
+
+    it("refuses a size with another kind, a negative value or one that is not finite", () => {
+      for (const kind of ["em", "", undefined, null]) {
+        expect(isPageData(broken((p) => (a(p).size.w.kind = kind)))).toBe(false);
+      }
+      for (const v of [-1, Number.NaN, Infinity, null, "5", undefined, 1_000_001]) {
+        expect(isPageData(broken((p) => (a(p).size.h.v = v)))).toBe(false);
+      }
+      expect(isPageData(broken((p) => (a(p).size.w.v = 0)))).toBe(true);
+      expect(isPageData(broken((p) => (a(p).size.w.extra = 1)))).toBe(false);
+    });
+  });
+
+  describe("node keys", () => {
+    it("refuses a key that no node has", () => {
+      expect(isPageData(broken((p) => (a(p).extra = 1)))).toBe(false);
+      expect(isPageData(broken((p) => (p.root.extra = 1)))).toBe(false);
+    });
+  });
+});
+
+describe("isPageData, properties", () => {
+  const page = tree.map((node): PageData => {
+    const root = relabel({
+      id: "root",
+      type: "Page",
+      props: {},
+      styles: {},
+      position: { mode: "flow" },
+      children: [node],
+    });
+    return { schemaVersion: SCHEMA_VERSION, root };
+  });
+
+  it("accepts every page the generators make, and the same page after JSON", () => {
+    fc.assert(
+      fc.property(page, (data) => isPageData(data) && isPageData(JSON.parse(JSON.stringify(data)))),
+    );
+  });
+
+  it("refuses the page when any one node repeats the id of another", () => {
+    fc.assert(
+      fc.property(page, fc.nat(), fc.nat(), (data, i, j) => {
+        const ids: string[] = [];
+        const collect = (n: TreeNode) => {
+          ids.push(n.id);
+          n.children.forEach(collect);
+        };
+        collect(data.root);
+        if (ids.length < 2) return true;
+        const from = i % ids.length;
+        const to = (from + 1 + (j % (ids.length - 1))) % ids.length;
+        const copy = JSON.parse(JSON.stringify(data)) as PageData;
+        let index = 0;
+        const rename = (n: TreeNode) => {
+          if (index === to) n.id = ids[from] as string;
+          index++;
+          n.children.forEach(rename);
+        };
+        rename(copy.root);
+        return !isPageData(copy);
+      }),
+    );
+  });
+});

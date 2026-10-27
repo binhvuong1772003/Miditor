@@ -10,6 +10,7 @@ export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export { freeBoxOf, isFreeNode, withFreeBox } from "./tree/free-box";
 export { findNode, updateNode } from "./tree/nodes";
+export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
 export { withStyle } from "./tree/styles";
 export type {
   FlowNode,
@@ -19,5 +20,3 @@ export type {
   PageData,
   TreeNode,
 } from "./tree/types";
-
-export const SCHEMA_VERSION = 1;
