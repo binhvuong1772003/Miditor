@@ -23,7 +23,7 @@ import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "r
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
-import { PropertiesPanel, type StylePatch } from "./PropertiesPanel";
+import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { SavedDataDialog } from "./SavedDataDialog";
 
 export interface EditorProps {
@@ -81,11 +81,17 @@ const isColourPatch = (
 ): patch is Extract<StylePatch, { key: "background" | "borderColor" }> =>
   patch.key === "background" || patch.key === "borderColor";
 
-/** The node with one style set to the value of a patch. */
-const applyPatch = (node: TreeNode, patch: StylePatch): TreeNode =>
-  isColourPatch(patch)
+/** The node with the change of a patch applied. A rotation only changes a free node. */
+const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
+  if (patch.key === "rotation") {
+    return isFreeNode(node) && node.rotation !== patch.value
+      ? { ...node, rotation: patch.value }
+      : node;
+  }
+  return isColourPatch(patch)
     ? withStyle(node, patch.key, patch.value)
     : withStyle(node, patch.key, patch.value);
+};
 
 /** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */
 const elementOf = (scope: HTMLElement, id: string) =>
@@ -107,7 +113,7 @@ export function Editor({ className }: EditorProps) {
   // Temporary: the JSON shown by the Save button, taken at the moment of the click.
   const [savedJson, setSavedJson] = useState<string | null>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
-  const [draft, setDraft] = useState<(StylePatch & { id: string }) | null>(null);
+  const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
   const shown = useMemo<PageData>(
     () =>
       draft
@@ -143,8 +149,8 @@ export function Editor({ className }: EditorProps) {
     if (selectable) editorRoot.current?.focus({ preventScroll: true });
   };
 
-  /** Store a style on a node, once. The draft is over. */
-  const commitStyle = (id: string, patch: StylePatch) => {
+  /** Store one change on a node, once. The draft is over. */
+  const commitPatch = (id: string, patch: PanelPatch) => {
     setDraft(null);
     setData((prev) => {
       const root = updateNode(prev.root, id, (n) => applyPatch(n, patch));
@@ -246,7 +252,7 @@ export function Editor({ className }: EditorProps) {
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-          onCommit={(patch) => selectedNode && commitStyle(selectedNode.id, patch)}
+          onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}
         />
       </aside>

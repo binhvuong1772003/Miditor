@@ -130,6 +130,13 @@ export function SelectionBox({
     return () => observer.disconnect();
   }, [target]);
 
+  // The control layer caches the target's rect, and a panel field can change that rect (the rotation
+  // turns the node, a border width can grow it). The editor renders again for every such change,
+  // so look at the node again after each render, except in the middle of a gesture.
+  useEffect(() => {
+    if (!busy.current) moveable.current?.updateRect();
+  });
+
   const begin = (el: HTMLElement) => {
     busy.current = true;
     saved.current = save(el);

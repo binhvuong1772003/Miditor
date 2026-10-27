@@ -1,4 +1,10 @@
-import { parseHexColor, parsePixelLength, type TreeNode } from "@midito-kitchen/core";
+import {
+  isFreeNode,
+  parseAngle,
+  parseHexColor,
+  parsePixelLength,
+  type TreeNode,
+} from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
 
@@ -7,19 +13,25 @@ export type StylePatch =
   | { key: "background" | "borderColor"; value: string | undefined }
   | { key: "borderWidth" | "borderRadius"; value: number | undefined };
 
+/** What the panel changes besides styles: the rotation, which every free node has and never loses. */
+export type RotationPatch = { key: "rotation"; value: number };
+
+/** One change to one node, from any field of the panel. */
+export type PanelPatch = StylePatch | RotationPatch;
+
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
   node: TreeNode | undefined;
   /** A value is being picked or typed: show it, but do not store it yet. */
-  onPreview: (patch: StylePatch) => void;
+  onPreview: (patch: PanelPatch) => void;
   /** The value is final: store it. */
-  onCommit: (patch: StylePatch) => void;
+  onCommit: (patch: PanelPatch) => void;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
 }
 
 /**
- * Temporary: four fixed fields for any selected node. The fields will come from `config` and the
+ * Temporary: fixed fields for any selected node (the rotation only for a free one). The fields will come from `config` and the
  * registry, so each kind of component can say what it lets a person edit.
  */
 export function PropertiesPanel({ node, onPreview, onCommit, onDiscard }: PropertiesPanelProps) {
@@ -42,6 +54,16 @@ export function PropertiesPanel({ node, onPreview, onCommit, onDiscard }: Proper
     <div className={styles.content}>
       <h2 className={styles.title}>{node.type}</h2>
       <p className={styles.meta}>{node.id}</p>
+      {isFreeNode(node) && (
+        <AngleField
+          label="Rotation"
+          hint="In degrees, from -180 to 180, like 45. Leave it empty for 0."
+          stored={node.rotation}
+          onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
+          onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
+          onDiscard={onDiscard}
+        />
+      )}
       <ColourField
         label="Fill"
         pickerLabel="Fill colour picker"
@@ -224,7 +246,8 @@ function ColourField({ pickerLabel, ...field }: FieldProps<string> & { pickerLab
   );
 }
 
-const showLength = (value: number | undefined) => (value === undefined ? "" : String(value));
+const showNumber = (value: number | undefined) => (value === undefined ? "" : String(value));
+
 /** A length of 0 means "none", which is the same as no value: the style is removed. */
 const readLength = (text: string): Reading<number> => {
   if (text.trim() === "") return undefined;
@@ -233,8 +256,52 @@ const readLength = (text: string): Reading<number> => {
   return value === 0 ? undefined : value;
 };
 
-function LengthField({ label, hint, stored, onPreview, onCommit, onDiscard }: FieldProps<number>) {
-  const { text, invalid, typed, keys, leave } = useTextField(stored, showLength, readLength, {
+/** Nothing typed is a turn of 0: a free node always has a rotation, so it is never removed. */
+const readAngle = (text: string): Reading<number> =>
+  text.trim() === "" ? 0 : (parseAngle(text) ?? null);
+
+function LengthField(field: FieldProps<number>) {
+  return (
+    <NumberField
+      {...field}
+      unit="px"
+      placeholder="0"
+      read={readLength}
+      error="Not a length. Use a number from 0 to 1000, like 4."
+    />
+  );
+}
+
+function AngleField(field: FieldProps<number>) {
+  return (
+    <NumberField
+      {...field}
+      unit="°"
+      placeholder="0"
+      read={readAngle}
+      error="Not an angle. Use a number of degrees, like 45."
+    />
+  );
+}
+
+function NumberField({
+  label,
+  hint,
+  unit,
+  placeholder,
+  error,
+  read,
+  stored,
+  onPreview,
+  onCommit,
+  onDiscard,
+}: FieldProps<number> & {
+  unit: string;
+  placeholder: string;
+  error: string;
+  read: (text: string) => Reading<number>;
+}) {
+  const { text, invalid, typed, keys, leave } = useTextField(stored, showNumber, read, {
     onPreview,
     onCommit,
     onDiscard,
@@ -255,7 +322,7 @@ function LengthField({ label, hint, stored, onPreview, onCommit, onDiscard }: Fi
           inputMode="decimal"
           className={styles.input}
           value={text}
-          placeholder="0"
+          placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
           aria-invalid={invalid}
@@ -265,12 +332,12 @@ function LengthField({ label, hint, stored, onPreview, onCommit, onDiscard }: Fi
           onBlur={leave}
         />
         <span className={styles.unit} aria-hidden="true">
-          px
+          {unit}
         </span>
       </div>
       {invalid ? (
         <p id={errorId} className={styles.error} role="alert">
-          Not a length. Use a number from 0 to 1000, like 4.
+          {error}
         </p>
       ) : (
         <p id={hintId} className={styles.hint}>
