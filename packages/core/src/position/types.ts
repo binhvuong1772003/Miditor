@@ -38,3 +38,10 @@ export interface Container {
   w: number;
   h: number;
 }
+
+/**
+ * A resize handle as react-moveable names it: the side of the node it sits on, one number per axis.
+ * `-1` is the left or top side, `1` the right or bottom side and `0` the middle, so `[1, 1]` is the
+ * bottom right corner and `[1, 0]` the middle of the right edge.
+ */
+export type Handle = readonly [-1 | 0 | 1, -1 | 0 | 1];
