@@ -25,7 +25,6 @@ import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/Selec
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
-import { SavedDataDialog } from "./SavedDataDialog";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -43,6 +42,12 @@ export interface EditorProps {
    * editor mounts, and once per change. The argument is the whole page, ready to be stored.
    */
   onChange?: (data: PageData) => void;
+  /**
+   * Called when the person presses Save, with the page as it is stored (a field that is being typed
+   * in is applied first). Sending it to a back end is the host's job. The Save button only shows
+   * when this is given.
+   */
+  onSave?: (data: PageData) => void | Promise<void>;
 }
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
@@ -80,7 +85,7 @@ const elementOf = (scope: HTMLElement, id: string) =>
   ) ?? null;
 
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
-export function Editor({ className, data: initialData, onChange }: EditorProps) {
+export function Editor({ className, data: initialData, onChange, onSave }: EditorProps) {
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const [data, setData] = useState<PageData>(() => openPage(initialData));
   // The page the host already has, so that `onChange` is called for a change and only once for it.
@@ -99,8 +104,6 @@ export function Editor({ className, data: initialData, onChange }: EditorProps) 
   const [block, setBlock] = useState<HTMLElement | null>(null);
   const gesture = useRef<{ before: FreeNode; start: Rect; container: Container } | null>(null);
   const editorRoot = useRef<HTMLDivElement>(null);
-  // Temporary: the JSON shown by the Save button, taken at the moment of the click.
-  const [savedJson, setSavedJson] = useState<string | null>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
   const shown = useMemo<PageData>(
@@ -119,8 +122,6 @@ export function Editor({ className, data: initialData, onChange }: EditorProps) 
   useLayoutEffect(() => {
     setBlock(workspace && selectedId ? elementOf(workspace, selectedId) : null);
   });
-
-  const save = () => setSavedJson(JSON.stringify(data, null, 2));
 
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
@@ -201,17 +202,22 @@ export function Editor({ className, data: initialData, onChange }: EditorProps) 
       data-midito-editor=""
       tabIndex={-1}
       onKeyDown={(event) => {
-        // Esc inside the Save pop-up closes the pop-up only, and Esc in a field only undoes the field.
-        const inDialog = (event.target as Element).closest("dialog") !== null;
-        if (event.key !== "Escape" || inDialog || isEditableTarget(event.target)) return;
+        // Esc in a field only undoes the field.
+        if (event.key !== "Escape" || isEditableTarget(event.target)) return;
         setDraft(null);
         setSelectedId(null);
       }}
     >
       <header className={styles.toolbar}>
-        <button type="button" className={`${styles.button} ${styles.primary}`} onClick={save}>
-          Save
-        </button>
+        {onSave && (
+          <button
+            type="button"
+            className={`${styles.button} ${styles.primary}`}
+            onClick={() => onSave(data)}
+          >
+            Save
+          </button>
+        )}
       </header>
       <aside className={`${styles.panel} ${styles.start}`} aria-label="Layers" />
       <section
@@ -245,9 +251,6 @@ export function Editor({ className, data: initialData, onChange }: EditorProps) 
           onDiscard={() => setDraft(null)}
         />
       </aside>
-      {savedJson !== null && (
-        <SavedDataDialog json={savedJson} onClose={() => setSavedJson(null)} />
-      )}
     </div>
   );
 }

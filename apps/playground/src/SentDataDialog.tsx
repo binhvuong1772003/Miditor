@@ -1,17 +1,13 @@
 import { useEffect, useId, useRef } from "react";
-import styles from "./Editor.module.css";
 
-export interface SavedDataDialogProps {
+export interface SentDataDialogProps {
   /** The data to show, already formatted as JSON text. */
   json: string;
   onClose: () => void;
 }
 
-/**
- * Temporary: a pop-up that shows the data the editor holds, so it can be inspected while the editor
- * is built. It is replaced by a real save hook (`onChange` / `onPublish`) later.
- */
-export function SavedDataDialog({ json, onClose }: SavedDataDialogProps) {
+/** A pop-up that shows what `onSave` was given, standing in for the back end the playground does not have. */
+export function SentDataDialog({ json, onClose }: SentDataDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -24,7 +20,7 @@ export function SavedDataDialog({ json, onClose }: SavedDataDialogProps) {
     // biome-ignore lint/a11y/useKeyWithClickEvents: clicking the backdrop is a mouse shortcut; the keyboard path is Esc and the Close button
     <dialog
       ref={dialog}
-      className={styles.dialog}
+      className="dialog"
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(event) => {
@@ -32,24 +28,21 @@ export function SavedDataDialog({ json, onClose }: SavedDataDialogProps) {
         if (event.target === event.currentTarget) dialog.current?.close();
       }}
     >
-      <div className={styles.dialogHeader}>
-        <h2 id={titleId} className={styles.dialogTitle}>
-          Saved data
+      <div className="dialog-header">
+        <h2 id={titleId} className="dialog-title">
+          Data to send
         </h2>
-        <button
-          type="button"
-          className={`${styles.button} ${styles.secondary}`}
-          onClick={() => dialog.current?.close()}
-        >
+        <button type="button" className="button" onClick={() => dialog.current?.close()}>
           Close
         </button>
       </div>
-      <p className={styles.dialogNote}>
-        Nothing is stored anywhere yet. This is the data the editor holds right now.
+      <p className="dialog-note">
+        The playground has no back end. This is the data the editor gave to onSave, and what a host
+        would send. The page is also kept in this browser's localStorage after every change.
       </p>
       {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard */}
-      <section className={styles.dialogData} aria-label="Saved data as JSON" tabIndex={0}>
-        <pre className={styles.dialogCode}>{json}</pre>
+      <section className="dialog-data" aria-label="Data to send as JSON" tabIndex={0}>
+        <pre className="dialog-code">{json}</pre>
       </section>
     </dialog>
   );
