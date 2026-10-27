@@ -5,9 +5,11 @@ import {
   freeBoxOf,
   inferBox,
   isFreeNode,
+  minSize,
   moveRect,
   type PageData,
   type Rect,
+  resizeRotated,
   resolveRect,
   SCHEMA_VERSION,
   type TreeNode,
@@ -17,7 +19,7 @@ import {
 } from "@midito-kitchen/core";
 import { Render } from "@midito-kitchen/render";
 import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { DragMove, isMoveableLayer } from "./canvas/DragMove";
+import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { PropertiesPanel, type StylePatch } from "./PropertiesPanel";
@@ -99,7 +101,7 @@ export function Editor({ className }: EditorProps) {
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
-  const drag = useRef<{ before: FreeNode; start: Rect; container: Container } | null>(null);
+  const gesture = useRef<{ before: FreeNode; start: Rect; container: Container } | null>(null);
   const editorRoot = useRef<HTMLDivElement>(null);
   // Temporary: the JSON shown by the Save button, taken at the moment of the click.
   const [savedJson, setSavedJson] = useState<string | null>(null);
@@ -149,29 +151,37 @@ export function Editor({ className }: EditorProps) {
     });
   };
 
-  const startDrag = () => {
+  /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
+  const startGesture = () => {
     const node = selectedId ? findNode(data.root, selectedId) : undefined;
     const parent = block?.parentElement;
     if (!node || !isFreeNode(node) || !parent) return;
     // The padding box of the node's real parent, which is what the position maths measure from.
     const container = { w: parent.clientWidth, h: parent.clientHeight };
-    drag.current = { before: node, start: resolveRect(freeBoxOf(node), container), container };
+    gesture.current = {
+      before: node,
+      start: resolveRect(freeBoxOf(node), container),
+      container,
+    };
   };
 
-  const endDrag = (dist: { x: number; y: number }) => {
-    const d = drag.current;
-    if (!d) return;
-    drag.current = null;
-    const moved = inferBox(
-      freeBoxOf(d.before),
-      moveRect(d.start, dist, d.before.rotation),
-      d.container,
-    );
+  /** Store the box a gesture ended in, once. `next` says which rect that is. */
+  const endGesture = (next: (g: NonNullable<typeof gesture.current>) => Rect) => {
+    const g = gesture.current;
+    if (!g) return;
+    gesture.current = null;
+    const moved = inferBox(freeBoxOf(g.before), next(g), g.container);
     setData((prev) => ({
       ...prev,
-      root: updateNode(prev.root, d.before.id, (n) => (isFreeNode(n) ? withFreeBox(n, moved) : n)),
+      root: updateNode(prev.root, g.before.id, (n) => (isFreeNode(n) ? withFreeBox(n, moved) : n)),
     }));
   };
+
+  const endDrag = (dist: { x: number; y: number }) =>
+    endGesture((g) => moveRect(g.start, dist, g.before.rotation));
+
+  const endResize = ({ w, h, handle }: ResizeResult) =>
+    endGesture((g) => resizeRotated(g.start, g.before.rotation, handle, w, h));
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it
@@ -203,12 +213,14 @@ export function Editor({ className }: EditorProps) {
         onPointerDown={press}
       >
         <Render data={shown} className={styles.page} />
-        <DragMove
+        <SelectionBox
           target={block}
           container={workspace}
           className={styles.selection}
-          onDragStart={startDrag}
+          minSize={minSize(selectedNode?.styles)}
+          onGestureStart={startGesture}
           onDragEnd={endDrag}
+          onResizeEnd={endResize}
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
