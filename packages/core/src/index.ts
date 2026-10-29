@@ -5,6 +5,7 @@ export { resizeRotated } from "./position/resize-rotated";
 export { resolveRect } from "./position/resolve-rect";
 export { setAnchor } from "./position/set-anchor";
 export type { Axis, AxisAnchor, Container, FreeBox, Handle, Rect, Size } from "./position/types";
+export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
 export { newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
