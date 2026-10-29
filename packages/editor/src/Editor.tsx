@@ -5,6 +5,7 @@ import {
   type Container,
   canInsert,
   type Device,
+  duplicateNode,
   emptyPage,
   type FreeBox,
   type FreeNode,
@@ -401,6 +402,31 @@ export function Editor({
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
 
+  /** A copy of each selected block, a little down and to the right, selected in place of them. */
+  const duplicateSelected = () => {
+    const container = parentSize();
+    if (onPhone || !selectedId || selectedId === data.root.id || !container) return;
+    if (draft) commitPatch(draft.id, draft);
+    const options = { shift: { x: 16, y: 16 }, container };
+    const originals = [selectedId, ...picked];
+    // Each copy is made on the tree the one before left, so the ids the copies get are known now.
+    const copies: string[] = [];
+    let root = data.root;
+    for (const id of originals) {
+      const copy = nextId(root);
+      const next = duplicateNode(root, id, options);
+      if (next !== root) copies.push(copy);
+      root = next;
+    }
+    if (copies.length === 0) return;
+    setData((prev) => ({
+      ...prev,
+      root: originals.reduce((tree, id) => duplicateNode(tree, id, options), prev.root),
+    }));
+    setSelectedId(copies.at(-1) ?? null);
+    setPicked(copies.slice(0, -1));
+  };
+
   /** The selected blocks become one group, selected, where they were. */
   const groupSelected = () => {
     if (onPhone) return;
@@ -493,6 +519,11 @@ export function Editor({
           return;
         }
         const key = event.key.toLowerCase();
+        if (key === "d" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          duplicateSelected();
+          return;
+        }
         if (key === "g" && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();
           if (event.shiftKey) ungroupSelected();
@@ -571,6 +602,15 @@ export function Editor({
             onClick={ungroupSelected}
           >
             Ungroup
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            disabled={onPhone || !selectedId}
+            title={onPhone ? "Switch to Desktop to duplicate blocks" : "Duplicate (Ctrl+D)"}
+            onClick={duplicateSelected}
+          >
+            Duplicate
           </button>
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
