@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { nodesOf, relabel, tree } from "../position/arbitraries";
-import { findNode, nextId, removeNode, updateNode } from "./nodes";
+import { findNode, insertNode, nextId, removeNode, updateNode } from "./nodes";
 import type { FlowNode, TreeNode } from "./types";
 
 const leaf = (id: string): FlowNode => ({
@@ -199,6 +199,42 @@ describe("nextId", () => {
         // Once a node with that id is added, the next id is a different one.
         const grown = { ...t, children: [...t.children, { ...leaf(id) }] } as TreeNode;
         expect(nextId(grown)).not.toBe(id);
+      }),
+    );
+  });
+});
+
+describe("insertNode", () => {
+  const fresh = leaf("fresh");
+
+  it("adds last by default, or at an index kept inside the list", () => {
+    expect(insertNode(root, "root", fresh).children).toEqual([a, b, fresh]);
+    expect(insertNode(root, "root", fresh, 0).children).toEqual([fresh, a, b]);
+    expect(findNode(insertNode(root, "a", fresh, 1), "a")?.children).toEqual([a1, fresh, a2]);
+    expect(insertNode(root, "root", fresh, 99).children).toEqual([a, b, fresh]);
+    expect(insertNode(root, "root", fresh, -5).children).toEqual([fresh, a, b]);
+    expect(insertNode(root, "root", fresh, Number.NaN).children).toEqual([a, b, fresh]);
+  });
+
+  it("shares what it did not touch and leaves the original as it was", () => {
+    const next = insertNode(root, "a", fresh);
+    expect(next.children[1]).toBe(b);
+    expect(root.children).toEqual([a, b]);
+  });
+
+  it("returns the very same tree for a missing parent or an id already taken", () => {
+    expect(insertNode(root, "nope", fresh)).toBe(root);
+    expect(insertNode(root, "root", leaf("b"))).toBe(root);
+    expect(insertNode(root, "root", box("fresh", [leaf("a1")]))).toBe(root);
+  });
+
+  it("is undone by removeNode", () => {
+    fc.assert(
+      fc.property(tree, (generated) => {
+        const t = relabel(generated);
+        const id = nextId(t);
+        const parent = nodesOf(t).at(-1) as TreeNode;
+        expect(removeNode(insertNode(t, parent.id, leaf(id)), id)).toEqual(t);
       }),
     );
   });

@@ -65,3 +65,29 @@ export function nextId(root: TreeNode): string {
   while (taken.has(`n${n}`)) n++;
   return `n${n}`;
 }
+
+/**
+ * A new tree with `node` among the children of `parentId`, at `index` (counted from 0, kept inside
+ * the list) or last. When the parent is not in the tree, or an id of `node` or of anything under it
+ * is already taken, the very same tree comes back: ids stay unique.
+ */
+export function insertNode(
+  root: TreeNode,
+  parentId: string,
+  node: TreeNode,
+  index?: number,
+): TreeNode {
+  if (!findNode(root, parentId)) return root;
+  const taken = idsOf(root);
+  for (const id of idsOf(node)) if (taken.has(id)) return root;
+  return updateNode(root, parentId, (parent) => {
+    const at =
+      index === undefined || !Number.isInteger(index)
+        ? parent.children.length
+        : Math.min(Math.max(index, 0), parent.children.length);
+    return {
+      ...parent,
+      children: [...parent.children.slice(0, at), node, ...parent.children.slice(at)],
+    };
+  });
+}
