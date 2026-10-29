@@ -193,6 +193,9 @@ describe("<Render> Text and Shape", () => {
     expect(tag).toContain("color:#ff0000");
     expect(tag).toContain("font-weight:700");
     expect(tag).toContain("text-align:center");
+    expect(tag).toContain("display:flex");
+    expect(tag).toContain("align-items:center");
+    expect(tag).toContain("justify-content:center");
     expect(tag).not.toContain("data-midito-unknown");
     expect(m).toContain(">Hello</div>");
   });

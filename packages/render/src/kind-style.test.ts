@@ -16,15 +16,33 @@ describe("textStyle", () => {
       color: "#ff0000",
       fontWeight: 700,
       textAlign: "center",
+      justifyContent: "center",
     });
   });
 
   it("uses the defaults for missing or bad values, and always writes every key", () => {
-    const plain = { fontSize: "24px", color: "#111111", fontWeight: 400, textAlign: "left" };
+    const plain = {
+      fontSize: "24px",
+      color: "#111111",
+      fontWeight: 400,
+      textAlign: "center",
+      justifyContent: "center",
+    };
     expect(textStyle({})).toEqual(plain);
     expect(textStyle({ size: "big", color: "red", bold: "yes", align: "justify" })).toEqual(plain);
     expect(textStyle({ size: Number.NaN })).toEqual(plain);
     expect(textStyle({ color: "#FF0000" }).color).toBe("#111111");
+  });
+
+  it("places the text across its box by its alignment", () => {
+    expect(textStyle({ align: "left" })).toMatchObject({
+      textAlign: "left",
+      justifyContent: "flex-start",
+    });
+    expect(textStyle({ align: "right" })).toMatchObject({
+      textAlign: "right",
+      justifyContent: "flex-end",
+    });
   });
 
   it("keeps the size between 1 and 400 px and rounds it to 0.01", () => {

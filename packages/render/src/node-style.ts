@@ -28,8 +28,14 @@ const BOX: CSSProperties = {
 const BY_TYPE: Record<string, CSSProperties> = {
   Page: { display: "block" },
   Container: { display: "flex", flexDirection: "column" },
-  // A text keeps its line breaks and breaks a long word instead of running out of its box.
-  Text: { display: "block", whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
+  // A text sits in the middle of its box, up and down. Across, `textStyle` places it by its `align`.
+  // It keeps its line breaks and breaks a long word instead of running out of its box.
+  Text: {
+    display: "flex",
+    alignItems: "center",
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+  },
   Shape: { display: "block" },
 };
 

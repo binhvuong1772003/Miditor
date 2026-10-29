@@ -9,22 +9,26 @@ const DEFAULT_SIZE = 24;
 const DEFAULT_COLOUR = "#111111";
 const DEFAULT_FILL = "#cbd5e1";
 const ALIGNS = ["left", "center", "right"] as const;
+/** Where a text of each alignment sits across its box, which is a flex row. */
+const JUSTIFY = { left: "flex-start", center: "center", right: "flex-end" } as const;
 
 /** The text a `Text` block shows: its `text` prop, or nothing when that is not a string. */
 export const textOf = (props: Props) => (typeof props.text === "string" ? props.text : "");
 
-/** The typography of a `Text` block. Every key is written, so an edit changes a value and removes no key. */
+/** The typography of a `Text` block, also where it sits across its box. Every key is written, so an edit changes a value and removes no key. */
 export function textStyle(props: Props): CSSProperties {
   const { size, color, bold, align } = props;
   const px =
     typeof size === "number" && Number.isFinite(size)
       ? Math.round(Math.min(400, Math.max(1, size)) * 100) / 100
       : DEFAULT_SIZE;
+  const alignment = ALIGNS.find((a) => a === align) ?? "center";
   return {
     fontSize: `${px}px`,
     color: isHexColor(color) ? color : DEFAULT_COLOUR,
     fontWeight: bold === true ? 700 : 400,
-    textAlign: ALIGNS.find((a) => a === align) ?? "left",
+    textAlign: alignment,
+    justifyContent: JUSTIFY[alignment],
   };
 }
 
