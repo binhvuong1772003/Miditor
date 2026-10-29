@@ -1,6 +1,7 @@
 export { cssFor, type PositionStyle } from "./position/css-for";
 export { inferBox } from "./position/infer-box";
 export { moveRect } from "./position/move-rect";
+export { reparentBox } from "./position/reparent-box";
 export { resizeRotated } from "./position/resize-rotated";
 export { resolveRect } from "./position/resolve-rect";
 export { setAnchor } from "./position/set-anchor";
