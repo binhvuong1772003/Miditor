@@ -46,6 +46,35 @@ describe("newBlock", () => {
     expect(rect.x + rect.w).toBeLessThanOrEqual(375);
   });
 
+  it("with a size, keeps exactly that size and sits in the middle across, whatever the page", () => {
+    fc.assert(
+      fc.property(solidContainer, (c) => {
+        const block = newBlock("n1", c, { w: 90, h: 70 });
+        expect(block.position.x).toEqual({ anchor: "center", offset: 0 });
+        const rect = resolveRect(freeBoxOf(block), c);
+        expect(rect.w).toBe(90);
+        expect(rect.h).toBe(70);
+        expect(rect.x + rect.w / 2).toBeCloseTo(c.w / 2);
+        if (c.h >= 70) expect(Math.abs(rect.y + rect.h / 2 - c.h / 2)).toBeLessThanOrEqual(0.5);
+        else expect(rect.y).toBe(0);
+      }),
+    );
+  });
+
+  it("ignores a size that is not finite or not above 0", () => {
+    const plain = newBlock("n1", page);
+    for (const size of [
+      { w: 0, h: 10 },
+      { w: 10, h: -1 },
+      { w: Number.NaN, h: 10 },
+      { w: 10, h: Number.POSITIVE_INFINITY },
+      { w: Number.POSITIVE_INFINITY, h: 10 },
+      { w: 10, h: Number.NaN },
+    ]) {
+      expect(newBlock("n1", page, size)).toEqual(plain);
+    }
+  });
+
   it("returns a new object each time", () => {
     expect(newBlock("n1", page)).not.toBe(newBlock("n1", page));
     expect(newBlock("n1", page)).toEqual(newBlock("n1", page));

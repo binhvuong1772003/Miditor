@@ -20,6 +20,11 @@ export interface ComponentDef {
   defaultProps: Record<string, JsonValue>;
   /** The props a person can edit. A prop that is not here is refused by `validateProps`. */
   fields: Record<string, Field>;
+  /**
+   * The width and height in px a new block of this kind starts with. Without it a block is a quarter
+   * of the page wide and 80 px tall. With it the block keeps exactly this size, centred across.
+   */
+  size?: { w: number; h: number };
   /** Whether other blocks can be placed inside this one. Not the same as the `children` of a node. */
   canContain: boolean;
   /** Whether resizing keeps the width to height ratio, for a picture that must not be squashed. */

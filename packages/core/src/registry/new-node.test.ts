@@ -37,6 +37,24 @@ describe("newNode", () => {
     });
   });
 
+  it("uses the size of its kind when it has one, and keeps it whatever the page", () => {
+    const sized: Registry = {
+      Heart: {
+        label: "Heart",
+        canContain: false,
+        lockRatio: true,
+        size: { w: 80, h: 64 },
+        defaultProps: {},
+        fields: {},
+      },
+    };
+    for (const container of [page, { w: 375, h: 640 }, { w: 2000, h: 300 }]) {
+      const node = newNode(sized, "Heart", "n1", container);
+      expect(node?.size).toEqual({ w: { kind: "px", v: 80 }, h: { kind: "px", v: 64 } });
+      expect(node?.position.x).toEqual({ anchor: "center", offset: 0 });
+    }
+  });
+
   it("gives every call its own props object, without touching the registry", () => {
     const a = newNode(registry, "Text", "n1", page);
     const b = newNode(registry, "Text", "n2", page);
