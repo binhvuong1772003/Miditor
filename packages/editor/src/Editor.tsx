@@ -7,6 +7,7 @@ import {
   type FreeNode,
   findNode,
   freeBoxOf,
+  groupNodes,
   inferBox,
   insertNode,
   isFreeNode,
@@ -26,6 +27,7 @@ import {
   resolveRect,
   setAnchor,
   type TreeNode,
+  ungroupNode,
   updateNode,
   withFreeBox,
   withStyle,
@@ -347,6 +349,37 @@ export function Editor({
     }));
   };
 
+  /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
+  const parentSize = () => {
+    const parent = block?.parentElement;
+    return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
+  };
+
+  /** The selected blocks become one group, selected, where they were. */
+  const groupSelected = () => {
+    const container = parentSize();
+    if (!selectedId || picked.length === 0 || !container) return;
+    if (draft) commitPatch(draft.id, draft);
+    const ids = [selectedId, ...picked];
+    const id = nextId(data.root);
+    if (groupNodes(data.root, ids, id, container) === data.root) return;
+    setData((prev) => ({ ...prev, root: groupNodes(prev.root, ids, id, container) }));
+    setSelectedId(id);
+    setPicked([]);
+  };
+
+  /** The selected group is gone and its blocks are selected, each where it was on the page. */
+  const ungroupSelected = () => {
+    const container = parentSize();
+    if (selectedNode?.type !== "Group" || !container) return;
+    if (ungroupNode(data.root, selectedNode.id, container) === data.root) return;
+    const members = selectedNode.children.map((child) => child.id);
+    const id = selectedNode.id;
+    setData((prev) => ({ ...prev, root: ungroupNode(prev.root, id, container) }));
+    setSelectedId(members.at(-1) ?? null);
+    setPicked(members.slice(0, -1));
+  };
+
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (!selectedId || selectedId === data.root.id) return;
@@ -410,6 +443,12 @@ export function Editor({
           return;
         }
         const key = event.key.toLowerCase();
+        if (key === "g" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          if (event.shiftKey) ungroupSelected();
+          else groupSelected();
+          return;
+        }
         const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
         if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
           event.preventDefault();
@@ -456,6 +495,26 @@ export function Editor({
             onClick={addBlock}
           >
             Add
+          </button>
+        </div>
+        <div className={styles.group}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            disabled={!selectedId || picked.length === 0}
+            title="Group the selected blocks (Ctrl+G). Select more with Shift."
+            onClick={groupSelected}
+          >
+            Group
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            disabled={selectedNode?.type !== "Group"}
+            title="Ungroup (Shift+Ctrl+G)"
+            onClick={ungroupSelected}
+          >
+            Ungroup
           </button>
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
