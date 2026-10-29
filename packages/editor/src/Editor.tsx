@@ -15,6 +15,7 @@ import {
   normalizeAngle,
   type PageData,
   type Rect,
+  removeNode,
   resizeRotated,
   resolveRect,
   type TreeNode,
@@ -220,6 +221,14 @@ export function Editor({
     setSelectedId(id);
   };
 
+  /** The selected block and everything in it is gone. The root cannot be deleted. */
+  const deleteBlock = () => {
+    if (!selectedId || selectedId === data.root.id) return;
+    setDraft(null);
+    setData((prev) => ({ ...prev, root: removeNode(prev.root, selectedId) }));
+    setSelectedId(null);
+  };
+
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = (move: typeof undo) => {
     const next = move(history).present;
@@ -247,6 +256,18 @@ export function Editor({
           return;
         }
         if (gesture.current) return;
+        if (
+          (event.key === "Delete" || event.key === "Backspace") &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey &&
+          selectedId
+        ) {
+          // Backspace is "back" in some browsers.
+          event.preventDefault();
+          deleteBlock();
+          return;
+        }
         const key = event.key.toLowerCase();
         const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
         if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
