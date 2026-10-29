@@ -1,6 +1,8 @@
 import {
   type AxisAnchor,
+  builtInRegistry,
   type Container,
+  canInsert,
   emptyPage,
   type FreeNode,
   findNode,
@@ -11,11 +13,12 @@ import {
   isPageData,
   minSize,
   moveRect,
-  newBlock,
+  newNode,
   nextId,
   normalizeAngle,
   type PageData,
   type Rect,
+  type Registry,
   removeNode,
   resizeRotated,
   resolveRect,
@@ -61,6 +64,11 @@ export interface EditorProps {
    * steps on the next change. The steps live in memory only: a reload starts without any.
    */
   historyLimit?: number;
+  /**
+   * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
+   * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
+   */
+  config?: { components?: Registry };
 }
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
@@ -110,6 +118,7 @@ export function Editor({
   onChange,
   onSave,
   historyLimit,
+  config,
 }: EditorProps) {
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const [history, setHistory] = useState(() => createHistory(openPage(initialData)));
@@ -128,6 +137,11 @@ export function Editor({
   }, [data]);
   // The width the page is shown at. A view setting only: it is not in the page data and not in the history.
   const [frame, setFrame] = useState<"desktop" | "phone">("desktop");
+  const components = config?.components;
+  const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
+  // The kind the Add button makes. A kind that is no longer in the registry falls back to the first.
+  const [kind, setKind] = useState("Text");
+  const addKind = Object.hasOwn(registry, kind) ? kind : (Object.keys(registry)[0] ?? "");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
@@ -217,17 +231,27 @@ export function Editor({
     }));
   };
 
-  /** A new block in the middle of the page, selected. A pending change is stored first. */
+  /**
+   * A new block of the chosen kind, selected. It goes inside the selected block when that kind lets
+   * blocks in, and on the page otherwise, in the middle of whichever it goes into. A pending change
+   * is stored first.
+   */
   const addBlock = () => {
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
+    const sizeOf = (element: HTMLElement | null) => ({
+      w: element?.clientWidth ?? 0,
+      h: element?.clientHeight ?? 0,
+    });
+    const inside = selectedNode ? newNode(registry, addKind, id, sizeOf(block)) : undefined;
+    const intoSelected =
+      inside && selectedNode && canInsert(registry, data.root, selectedNode.id, inside);
+    const parentId = intoSelected && selectedNode ? selectedNode.id : data.root.id;
     // The page as it is drawn now, to find its middle down the page.
     const page = workspace ? elementOf(workspace, data.root.id) : null;
-    const container = { w: page?.clientWidth ?? 0, h: page?.clientHeight ?? 0 };
-    setData((prev) => ({
-      ...prev,
-      root: insertNode(prev.root, prev.root.id, newBlock(id, container)),
-    }));
+    const node = intoSelected ? inside : newNode(registry, addKind, id, sizeOf(page));
+    if (!node) return;
+    setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
     setSelectedId(id);
   };
 
@@ -323,6 +347,18 @@ export function Editor({
           >
             Redo
           </button>
+          <select
+            className={`${styles.button} ${styles.secondary}`}
+            aria-label="Kind of block to add"
+            value={addKind}
+            onChange={(event) => setKind(event.target.value)}
+          >
+            {Object.entries(registry).map(([type, def]) => (
+              <option key={type} value={type}>
+                {def.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             className={`${styles.button} ${styles.secondary}`}
