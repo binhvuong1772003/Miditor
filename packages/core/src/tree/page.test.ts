@@ -386,6 +386,57 @@ describe("isPageData", () => {
     });
   });
 
+  describe("phone placement", () => {
+    const phone = {
+      x: { anchor: "scale", start: 5, size: 90 },
+      y: { anchor: "start", offset: 12 },
+      w: { kind: "px", v: 1 },
+      h: { kind: "percent", v: 20 },
+      rotation: -45,
+    };
+    const withPhone = (change?: (phone: Loose) => void) =>
+      broken((p) => {
+        a(p).phone = JSON.parse(JSON.stringify(phone));
+        change?.(a(p).phone);
+      });
+
+    it("accepts a free node with a full phone placement, also after JSON", () => {
+      const page = withPhone();
+      expect(isPageData(page)).toBe(true);
+      expect(isPageData(JSON.parse(JSON.stringify(page)))).toBe(true);
+    });
+
+    it("refuses a flow node that has one", () => {
+      const flow = (p: Loose) => a(p).children[0] as Loose;
+      expect(isPageData(broken((p) => (flow(p).phone = phone)))).toBe(false);
+    });
+
+    it("refuses a placement that lacks a number or has one it should not", () => {
+      for (const key of ["x", "y", "w", "h", "rotation"]) {
+        expect(isPageData(withPhone((ph) => delete ph[key]))).toBe(false);
+      }
+      expect(isPageData(withPhone((ph) => (ph.extra = 1)))).toBe(false);
+      expect(isPageData(withPhone((ph) => (ph.position = { mode: "free" })))).toBe(false);
+    });
+
+    it("refuses an axis, a size or a rotation that the main placement would refuse", () => {
+      expect(isPageData(withPhone((ph) => (ph.x = { anchor: "start" })))).toBe(false);
+      expect(isPageData(withPhone((ph) => (ph.x = { anchor: "start", offset: Number.NaN })))).toBe(
+        false,
+      );
+      expect(isPageData(withPhone((ph) => (ph.w = { kind: "px", v: -1 })))).toBe(false);
+      expect(isPageData(withPhone((ph) => (ph.h = { kind: "em", v: 1 })))).toBe(false);
+      expect(isPageData(withPhone((ph) => (ph.rotation = 181)))).toBe(false);
+      expect(isPageData(withPhone((ph) => (ph.rotation = "0")))).toBe(false);
+    });
+
+    it("refuses a phone placement that is not an object", () => {
+      for (const value of [null, 1, "x", [], undefined]) {
+        expect(isPageData(broken((p) => (a(p).phone = value)))).toBe(false);
+      }
+    });
+  });
+
   describe("node keys", () => {
     it("refuses a key that no node has", () => {
       expect(isPageData(broken((p) => (a(p).extra = 1)))).toBe(false);

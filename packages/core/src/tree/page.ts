@@ -108,14 +108,39 @@ function isStyles(value: unknown): boolean {
   );
 }
 
-const NODE_KEYS = ["id", "type", "props", "styles", "children", "position", "size", "rotation"];
+const NODE_KEYS = [
+  "id",
+  "type",
+  "props",
+  "styles",
+  "children",
+  "position",
+  "size",
+  "rotation",
+  "phone",
+];
+
+/** The placement set by hand on a phone: every number of `FreeBox`, and nothing else. */
+const isPhonePlacement = (value: unknown): boolean =>
+  isPlainObject(value) &&
+  hasOnly(value, ["x", "y", "w", "h", "rotation"]) &&
+  isAxis(value.x) &&
+  isAxis(value.y) &&
+  isSize(value.w) &&
+  isSize(value.h) &&
+  isRotation(value.rotation);
 
 /** Checks the placement fields, which depend on the mode: a flow node has none, a free node all. */
 function hasValidPlacement(node: Record<string, unknown>): boolean {
   const position = node.position;
   if (!isPlainObject(position)) return false;
   if (position.mode === "flow") {
-    return hasOnly(position, ["mode"]) && !("size" in node) && !("rotation" in node);
+    return (
+      hasOnly(position, ["mode"]) &&
+      !("size" in node) &&
+      !("rotation" in node) &&
+      !("phone" in node)
+    );
   }
   if (position.mode !== "free") return false;
   const size = node.size;
@@ -127,7 +152,8 @@ function hasValidPlacement(node: Record<string, unknown>): boolean {
     hasOnly(size, ["w", "h"]) &&
     isSize(size.w) &&
     isSize(size.h) &&
-    isRotation(node.rotation)
+    isRotation(node.rotation) &&
+    (!("phone" in node) || isPhonePlacement(node.phone))
   );
 }
 

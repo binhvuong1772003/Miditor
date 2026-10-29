@@ -1,4 +1,4 @@
-import type { Axis, Size } from "../position/types";
+import type { Axis, FreeBox, Size } from "../position/types";
 
 /** Anything that survives `JSON.stringify` and `JSON.parse` unchanged. */
 export type JsonValue =
@@ -46,6 +46,7 @@ export interface FlowNode extends NodeBase {
   position: { mode: "flow"; x?: never; y?: never };
   size?: never;
   rotation?: never;
+  phone?: never;
 }
 
 /** A node placed by constraints against its container. It needs a size and a rotation. */
@@ -54,6 +55,11 @@ export interface FreeNode extends NodeBase {
   size: { w: Size; h: Size };
   /** Degrees, around the centre of the unrotated rect. */
   rotation: number;
+  /**
+   * The placement on a phone, when a person set it by hand there: all of the position, the size and
+   * the rotation, as `FreeBox` has them. Without it the phone gets its placement from the one above.
+   */
+  phone?: FreeBox;
 }
 
 /** A nested tree: a node holds its children directly. */

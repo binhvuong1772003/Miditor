@@ -43,6 +43,11 @@ const node = (value: TreeNode) => value;
 const loose = { x: free.position.x, y: free.position.y };
 
 describe("the tree types refuse what they should", () => {
+  it("lets a free node carry a phone placement", () => {
+    const withPhone: FreeNode = { ...free, phone: { ...freeBoxOf(free), rotation: 10 } };
+    expect(withPhone.phone?.rotation).toBe(10);
+  });
+
   it("rejects invalid nodes at compile time", () => {
     const attempts = [
       // A free node needs a size.
@@ -63,6 +68,9 @@ describe("the tree types refuse what they should", () => {
       // A flow node has no size yet.
       // @ts-expect-error
       () => node({ ...flow, size: free.size }),
+      // A flow node has no phone placement.
+      // @ts-expect-error
+      () => node({ ...flow, phone: freeBoxOf(free) }),
       // Every node says how it is placed.
       // @ts-expect-error
       () => node({ id: "d", type: "Text", props: {}, styles: {}, children: [] }),
@@ -94,7 +102,7 @@ describe("the tree types refuse what they should", () => {
       // @ts-expect-error
       () => node({ ...flow, props: { onClick: () => 1 } }),
     ];
-    expect(attempts).toHaveLength(16);
+    expect(attempts).toHaveLength(17);
   });
 
   it("also rejects extra data that arrives through a variable", () => {
