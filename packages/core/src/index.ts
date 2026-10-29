@@ -36,6 +36,7 @@ export {
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
 export { type Pick, pickBlock } from "./tree/pick";
+export { type Reorder, reorderNode } from "./tree/reorder";
 export { withStyle } from "./tree/styles";
 export type {
   FlowNode,
