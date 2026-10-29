@@ -19,6 +19,7 @@ export { isAngle, normalizeAngle, parseAngle } from "./styles/angle";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
+export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { freeBoxOf, isFreeNode, withFreeBox } from "./tree/free-box";
 export { groupNodes, ungroupNode } from "./tree/group";
 export { NEW_BLOCK_SIZE, newBlock } from "./tree/new-block";
