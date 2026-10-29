@@ -14,6 +14,10 @@ describe("builtInRegistry", () => {
     expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape"]);
   });
 
+  it("starts a text centred", () => {
+    expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
+  });
+
   it("lets a shape and a box hold blocks, but not a text", () => {
     expect(builtInRegistry.Container?.canContain).toBe(true);
     expect(builtInRegistry.Shape?.canContain).toBe(true);

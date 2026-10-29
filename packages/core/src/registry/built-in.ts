@@ -17,7 +17,7 @@ export const builtInRegistry: Registry = {
   Text: {
     label: "Text",
     canContain: false,
-    defaultProps: { text: "Your text", size: 24, color: "#111111", bold: false, align: "left" },
+    defaultProps: { text: "Your text", size: 24, color: "#111111", bold: false, align: "center" },
     fields: {
       text: { type: "text", label: "Text", maxLength: 2000 },
       size: { type: "number", label: "Size", min: 1, max: 400 },
