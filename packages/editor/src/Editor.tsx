@@ -80,6 +80,11 @@ const isColourPatch = (
 
 /** The node with the change of a patch applied. A rotation only changes a free node. */
 const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
+  if (patch.key === "prop") {
+    return node.props[patch.name] === patch.value
+      ? node
+      : { ...node, props: { ...node.props, [patch.name]: patch.value } };
+  }
   if (patch.key === "rotation") {
     return isFreeNode(node) && node.rotation !== patch.value
       ? { ...node, rotation: patch.value }
@@ -432,6 +437,11 @@ export function Editor({
           // A new panel for each node, so text typed for one is never applied to another.
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
+          def={
+            selectedNode && Object.hasOwn(registry, selectedNode.type)
+              ? registry[selectedNode.type]
+              : undefined
+          }
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}

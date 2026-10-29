@@ -1,6 +1,8 @@
 import {
   type AxisAnchor,
+  type ComponentDef,
   isFreeNode,
+  type JsonValue,
   parseAngle,
   parseHexColor,
   parsePixelLength,
@@ -8,6 +10,7 @@ import {
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
+import { PropFields } from "./PropFields";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
@@ -17,12 +20,17 @@ export type StylePatch =
 /** What the panel changes besides styles: the rotation, which every free node has and never loses. */
 export type RotationPatch = { key: "rotation"; value: number };
 
+/** One prop of the node, set by a field that its kind in the registry declares. */
+export type PropPatch = { key: "prop"; name: string; value: JsonValue };
+
 /** One change to one node, from any field of the panel. */
-export type PanelPatch = StylePatch | RotationPatch;
+export type PanelPatch = StylePatch | RotationPatch | PropPatch;
 
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
   node: TreeNode | undefined;
+  /** The kind of the selected node in the registry, or `undefined` for a kind nobody registered. */
+  def: ComponentDef | undefined;
   /** A value is being picked or typed: show it, but do not store it yet. */
   onPreview: (patch: PanelPatch) => void;
   /** The value is final: store it. */
@@ -41,6 +49,7 @@ export interface PropertiesPanelProps {
  */
 export function PropertiesPanel({
   node,
+  def,
   onPreview,
   onCommit,
   onDiscard,
@@ -66,6 +75,13 @@ export function PropertiesPanel({
     <div className={styles.content}>
       <h2 className={styles.title}>{node.type}</h2>
       <p className={styles.meta}>{node.id}</p>
+      {def && (
+        <PropFields
+          def={def}
+          props={node.props}
+          onChange={(name, value) => onCommit({ key: "prop", name, value })}
+        />
+      )}
       {isFreeNode(node) && (
         <>
           <AnchorSelect
