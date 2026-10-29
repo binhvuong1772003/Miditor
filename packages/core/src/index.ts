@@ -7,6 +7,7 @@ export { setAnchor } from "./position/set-anchor";
 export type { Axis, AxisAnchor, Container, FreeBox, Handle, Rect, Size } from "./position/types";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export type { ComponentDef, Field, Registry } from "./registry/types";
+export { type PageIssue, validatePage } from "./registry/validate-page";
 export { type PropIssue, validateProps } from "./registry/validate-props";
 export { isAngle, normalizeAngle, parseAngle } from "./styles/angle";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
