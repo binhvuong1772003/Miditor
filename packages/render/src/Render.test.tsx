@@ -2,7 +2,7 @@
 import type { Device, FlowNode, FreeNode, PageData } from "@midito-kitchen/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Render } from "./Render";
+import { Render, type Renderer } from "./Render";
 
 const flow = (id: string, type: string, children: (FlowNode | FreeNode)[] = []): FlowNode => ({
   id,
@@ -332,5 +332,57 @@ describe("<Render> on a phone", () => {
     expect(tagOf(m, "tiny")).toContain("font-size:10px");
     const d = html(page(flow("root", "Page", [text("mid", 24)])));
     expect(tagOf(d, "mid")).toContain("font-size:24px");
+  });
+});
+
+const Probe: Renderer = ({ props, device, children }) => (
+  <b data-c={String(props.color)} data-d={device}>
+    {children}
+  </b>
+);
+const Plain: Renderer = () => <i data-x="" />;
+
+describe("<Render> renderers", () => {
+  const heart = (id: string, children: (FlowNode | FreeNode)[] = []): FlowNode => ({
+    ...flow(id, "Heart", children),
+    props: { color: "#ff0000" },
+  });
+  const draw = (
+    data: PageData,
+    renderers: Parameters<typeof Render>[0]["renderers"],
+    device?: Device,
+  ) =>
+    renderToStaticMarkup(
+      <Render data={data} renderers={renderers} {...(device ? { device } : {})} />,
+    );
+
+  it("draws a host kind with its function, given the props, the device and the blocks inside", () => {
+    const data = page(flow("root", "Page", [heart("h", [free("in")])]));
+    const markup = draw(data, { Heart: Probe }, "phone");
+    expect(markup).toContain('data-c="#ff0000"');
+    expect(markup).toContain('data-d="phone"');
+    expect(markup.indexOf("<b")).toBeLessThan(markup.indexOf('data-midito-id="in"'));
+    expect(tagOf(markup, "h")).not.toContain("data-midito-unknown");
+  });
+
+  it("leaves out the blocks inside when the function does not use them", () => {
+    const data = page(flow("root", "Page", [heart("h", [free("in")])]));
+    expect(draw(data, { Heart: Plain })).not.toContain('data-midito-id="in"');
+  });
+
+  it("keeps a kind with no function an empty box", () => {
+    const data = page(flow("root", "Page", [heart("h")]));
+    expect(tagOf(draw(data, {}), "h")).toContain("data-midito-unknown");
+    expect(tagOf(draw(data, undefined), "h")).toContain("data-midito-unknown");
+  });
+
+  it("never lets a function replace a built-in type", () => {
+    const data = page(flow("root", "Page", [flow("c", "Container")]));
+    expect(draw(data, { Container: Plain })).not.toContain("data-x");
+  });
+
+  it("ignores a name on the prototype", () => {
+    const data = page(flow("root", "Page", [{ ...flow("t", "toString") }]));
+    expect(tagOf(draw(data, {}), "t")).toContain("data-midito-unknown");
   });
 });

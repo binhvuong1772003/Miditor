@@ -1,6 +1,19 @@
-import type { Device, PageData, TreeNode } from "@midito-kitchen/core";
+import type { Device, JsonValue, PageData, TreeNode } from "@midito-kitchen/core";
+import type { ReactNode } from "react";
 import { shapeLayerStyle, textOf, textStyle } from "./kind-style";
 import { isBuiltIn, nodeStyle } from "./node-style";
+
+/** What a host's drawing function is given for one block of its own kind. */
+export interface RendererContext {
+  /** The props stored on the node, as they are: nothing fills in defaults. */
+  props: Record<string, JsonValue>;
+  device: Device;
+  /** The blocks inside this one, already drawn. A function that leaves them out hides them. */
+  children: ReactNode;
+}
+
+/** A host's drawing of one kind of block, by `type`. It draws the inside; the box is `<Render>`'s. */
+export type Renderer = (context: RendererContext) => ReactNode;
 
 export interface RenderProps {
   data: PageData;
@@ -15,9 +28,21 @@ export interface RenderProps {
    * smaller. Anything else is the desktop.
    */
   device?: Device | undefined;
+  /**
+   * How to draw the kinds the host added, by `type`. A built-in type is never drawn by this, and a
+   * type with no entry here stays an empty box.
+   */
+  renderers?: Readonly<Record<string, Renderer>> | undefined;
 }
 
-function RenderNode({ node, isRoot, device }: { node: TreeNode; isRoot: boolean; device: Device }) {
+interface NodeProps {
+  node: TreeNode;
+  isRoot: boolean;
+  device: Device;
+  renderers: Readonly<Record<string, Renderer>> | undefined;
+}
+
+function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
   const common = {
     "data-midito-id": node.id,
     "data-midito-type": node.type,
@@ -27,24 +52,36 @@ function RenderNode({ node, isRoot, device }: { node: TreeNode; isRoot: boolean;
         : nodeStyle(node, isRoot, device),
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
-  if (!isBuiltIn(node.type)) return <div {...common} data-midito-unknown="" />;
+  if (!isBuiltIn(node.type)) {
+    const draw =
+      renderers && Object.hasOwn(renderers, node.type) ? renderers[node.type] : undefined;
+    if (!draw) return <div {...common} data-midito-unknown="" />;
+    return (
+      <div {...common}>
+        {draw({ props: node.props, device, children: kids(node, device, renderers) })}
+      </div>
+    );
+  }
   // A text is its words: it has no blocks inside, so any in the data are not drawn.
   if (node.type === "Text") return <div {...common}>{textOf(node.props)}</div>;
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(node.props)} />}
-      {node.children.map((child) => (
-        <RenderNode key={child.id} node={child} isRoot={false} device={device} />
-      ))}
+      {kids(node, device, renderers)}
     </div>
   );
 }
+
+const kids = (node: TreeNode, device: Device, renderers: NodeProps["renderers"]) =>
+  node.children.map((child) => (
+    <RenderNode key={child.id} node={child} isRoot={false} device={device} renderers={renderers} />
+  ));
 
 /**
  * Draws a page from its data. Read-only and safe to render on the server: it touches neither
  * `window` nor `document`. The wrapper is a column so the page fills it.
  */
-export function Render({ data, className, device }: RenderProps) {
+export function Render({ data, className, device, renderers }: RenderProps) {
   const screen = device === "phone" ? "phone" : "desktop";
   return (
     <div
@@ -52,7 +89,7 @@ export function Render({ data, className, device }: RenderProps) {
       data-midito-render=""
       style={{ display: "flex", flexDirection: "column" }}
     >
-      <RenderNode node={data.root} isRoot device={screen} />
+      <RenderNode node={data.root} isRoot device={screen} renderers={renderers} />
     </div>
   );
 }
