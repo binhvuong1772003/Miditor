@@ -350,6 +350,7 @@ export function Editor({
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}
+          onDelete={deleteBlock}
         />
       </aside>
     </div>

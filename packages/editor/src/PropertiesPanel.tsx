@@ -28,13 +28,21 @@ export interface PropertiesPanelProps {
   onCommit: (patch: PanelPatch) => void;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
+  /** Delete the selected block and everything in it. */
+  onDelete: () => void;
 }
 
 /**
  * Temporary: fixed fields for any selected node (the rotation only for a free one). The fields will come from `config` and the
  * registry, so each kind of component can say what it lets a person edit.
  */
-export function PropertiesPanel({ node, onPreview, onCommit, onDiscard }: PropertiesPanelProps) {
+export function PropertiesPanel({
+  node,
+  onPreview,
+  onCommit,
+  onDiscard,
+  onDelete,
+}: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
   }
@@ -86,6 +94,9 @@ export function PropertiesPanel({ node, onPreview, onCommit, onDiscard }: Proper
         hint="In pixels, like 4. Leave it empty or 0 for square corners."
         {...length("borderRadius")}
       />
+      <button type="button" className={styles.delete} title="Delete (Del)" onClick={onDelete}>
+        Delete block
+      </button>
     </div>
   );
 }

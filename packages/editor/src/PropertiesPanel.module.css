@@ -6,6 +6,28 @@
   padding: 1rem;
 }
 
+.delete {
+  appearance: none;
+  align-self: start;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--_danger);
+  border-radius: 6px;
+  background: var(--_canvas);
+  color: var(--_danger);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.delete:hover {
+  background: color-mix(in srgb, var(--_danger) 10%, var(--_canvas));
+}
+
+.delete:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
 .title {
   margin: 0;
   font-size: 1rem;
