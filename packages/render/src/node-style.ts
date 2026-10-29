@@ -37,6 +37,8 @@ const BY_TYPE: Record<string, CSSProperties> = {
     overflowWrap: "anywhere",
   },
   Shape: { display: "block" },
+  // A group has no look of its own: it is only the box that holds its blocks.
+  Group: { display: "block" },
 };
 
 /** Typography the whole page inherits, written out so the host's inherited styles do not leak in. */

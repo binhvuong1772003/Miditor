@@ -249,3 +249,20 @@ describe("<Render> Text and Shape", () => {
     expect(m).toContain("background-color:#cbd5e1");
   });
 });
+
+describe("<Render> Group", () => {
+  it("draws a group as a box that holds its blocks, with nothing of its own", () => {
+    const m = html(
+      page(
+        flow("root", "Page", [flow("g", "Group", [flow("a", "Container"), flow("b", "Shape")])]),
+      ),
+    );
+    expect(tagOf(m, "g")).not.toContain("data-midito-unknown");
+    expect(tagOf(m, "g")).toContain("display:block");
+    expect(tagOf(m, "g")).toContain("background-color:transparent");
+    expect(m.indexOf('data-midito-id="g"')).toBeLessThan(m.indexOf('data-midito-id="a"'));
+    expect(m.indexOf('data-midito-id="a"')).toBeLessThan(m.indexOf('data-midito-id="b"'));
+    // The only layer is the one the shape draws, and the group has none.
+    expect(m.match(/aria-hidden/g)).toHaveLength(1);
+  });
+});
