@@ -4,7 +4,7 @@ import { box, solidContainer } from "../position/arbitraries";
 import { resolveRect } from "../position/resolve-rect";
 import type { FreeBox, Rect } from "../position/types";
 import { freeBoxOf, isFreeNode, withFreeBox } from "./free-box";
-import { groupNodes } from "./group";
+import { groupNodes, ungroupNode } from "./group";
 import { findNode } from "./nodes";
 import { emptyPage, isPageData } from "./page";
 import type { FlowNode, FreeNode, TreeNode } from "./types";
@@ -153,6 +153,102 @@ describe("groupNodes", () => {
           // Nothing is lost and nothing is twice.
           const left = out.children.length + chosen.length - 1;
           expect(left).toBe(nodes.length);
+        },
+      ),
+    );
+  });
+});
+
+describe("ungroupNode", () => {
+  const a = placed("a", at(10, 10));
+  const b = placed("b", at(200, 100));
+  const c = placed("c", at(50, 200));
+  const root = pageWith(a, c, b);
+  const grouped = groupNodes(root, ["a", "b"], "g", container);
+
+  it("puts the blocks back in the place of the group, where they were on the page", () => {
+    const out = ungroupNode(grouped, "g", container);
+    expect(ids(out)).toEqual(["c", "a", "b"]);
+    expect(findNode(out, "g")).toBeUndefined();
+    expect((findNode(out, "a") as FreeNode).position.x).toEqual({ anchor: "start", offset: 10 });
+    expect((findNode(out, "b") as FreeNode).position.y).toEqual({ anchor: "start", offset: 100 });
+    expect(out.children[0]).toBe(c);
+  });
+
+  it("keeps the blocks that were inside a block of the group", () => {
+    const inner = placed("in", at(5, 5, 20, 20));
+    const nested = pageWith(placed("x", at(0, 0)), placed("y", at(100, 0), [inner]));
+    const out = ungroupNode(groupNodes(nested, ["x", "y"], "g", container), "g", container);
+    expect(ids(findNode(out, "y"))).toEqual(["in"]);
+  });
+
+  it("removes a group with nothing in it", () => {
+    const empty = pageWith(a, placed("g", at(0, 0)));
+    const emptyGroup = {
+      ...empty,
+      children: [a, { ...(empty.children[1] as FreeNode), type: "Group" }],
+    };
+    expect(ids(ungroupNode(emptyGroup, "g", container))).toEqual(["a"]);
+  });
+
+  it("returns the very same tree when it cannot ungroup", () => {
+    const turned = {
+      ...grouped,
+      children: grouped.children.map((n) => (n.id === "g" ? { ...n, rotation: 30 } : n)),
+    } as TreeNode;
+    const flowInside = {
+      ...grouped,
+      children: grouped.children.map((n) =>
+        n.id === "g" ? { ...n, children: [...n.children, flowNode("f")] } : n,
+      ),
+    } as TreeNode;
+    const notGroup = pageWith(placed("s", at(0, 0), [placed("s1", at(0, 0))]));
+    // A root that is called a Group is still the page, and cannot be dissolved.
+    const groupRoot = { ...pageWith(a), type: "Group" } as TreeNode;
+    for (const [tree, id, size] of [
+      [grouped, "nope", container],
+      [grouped, "root", container],
+      [grouped, "a", container],
+      [notGroup, "s", container],
+      [groupRoot, "root", container],
+      [turned, "g", container],
+      [flowInside, "g", container],
+      [grouped, "g", { w: 0, h: 300 }],
+      [grouped, "g", { w: 400, h: 0 }],
+    ] as const) {
+      expect(ungroupNode(tree, id, size)).toBe(tree);
+    }
+  });
+
+  it("undoes groupNodes: every block is where it was on the page, whatever the anchors", () => {
+    fc.assert(
+      fc.property(
+        fc.array(box, { minLength: 2, maxLength: 6 }),
+        fc.array(fc.boolean(), { minLength: 6, maxLength: 6 }),
+        solidContainer,
+        (boxes, mask, size) => {
+          const nodes = boxes.map((b, i) => placed(`n${i}`, b));
+          const chosen = nodes.filter((_, i) => mask[i]);
+          if (chosen.length < 2) return;
+          const top = pageWith(...nodes);
+          const ungrouped = ungroupNode(
+            groupNodes(
+              top,
+              chosen.map((n) => n.id),
+              "g",
+              size,
+            ),
+            "g",
+            size,
+          );
+          expect(ungrouped.children).toHaveLength(nodes.length);
+          for (const node of nodes) {
+            const before = resolveRect(freeBoxOf(node), size);
+            const after = resolveRect(freeBoxOf(findNode(ungrouped, node.id) as FreeNode), size);
+            for (const key of ["x", "y", "w", "h"] as const) {
+              expect(Math.abs(after[key] - before[key])).toBeLessThan(0.2);
+            }
+          }
         },
       ),
     );

@@ -19,7 +19,7 @@ export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export { freeBoxOf, isFreeNode, withFreeBox } from "./tree/free-box";
-export { groupNodes } from "./tree/group";
+export { groupNodes, ungroupNode } from "./tree/group";
 export { NEW_BLOCK_SIZE, newBlock } from "./tree/new-block";
 export {
   findNode,

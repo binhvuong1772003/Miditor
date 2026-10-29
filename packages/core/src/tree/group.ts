@@ -84,3 +84,30 @@ export function groupNodes(
   const after = parent.children.slice(lastAt + 1);
   return updateNode(root, parent.id, (p) => ({ ...p, children: [...before, group, ...after] }));
 }
+
+/**
+ * A new tree where the `Group` block `groupId` is gone and the blocks that were in it stand in its
+ * place, in their order, each exactly where it was on the page: the reverse of `groupNodes`.
+ * `container` is the size of the parent of the group (its padding box). A group with nothing in it
+ * is simply removed. The very same tree comes back when the block is not in the tree, is the root,
+ * is not a `Group`, is not a free block, is turned (the blocks inside could not keep their place),
+ * has a block inside that is not free, or when the container is empty.
+ */
+export function ungroupNode(root: TreeNode, groupId: string, container: Container): TreeNode {
+  const group = findNode(root, groupId);
+  const parent = parentOf(root, groupId);
+  if (!group || !parent || group.type !== "Group" || !isFreeNode(group)) return root;
+  if (group.rotation !== 0 || !group.children.every(isFreeNode)) return root;
+  if (!(container.w >= 0.01 && container.h >= 0.01)) return root;
+  const placed = resolveRect(freeBoxOf(group), container);
+  const inside = { w: placed.w, h: placed.h };
+  // The parent's corner is where the group's corner is, taken backwards.
+  const shift = { x: -placed.x, y: -placed.y };
+  const members = group.children
+    .filter(isFreeNode)
+    .map((node) => withFreeBox(node, reparentBox(freeBoxOf(node), inside, container, shift)));
+  return updateNode(root, parent.id, (p) => ({
+    ...p,
+    children: p.children.flatMap((child) => (child.id === groupId ? members : [child])),
+  }));
+}
