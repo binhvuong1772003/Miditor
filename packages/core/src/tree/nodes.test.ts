@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { nodesOf, relabel, tree } from "../position/arbitraries";
-import { findNode, removeNode, updateNode } from "./nodes";
+import { findNode, nextId, removeNode, updateNode } from "./nodes";
 import type { FlowNode, TreeNode } from "./types";
 
 const leaf = (id: string): FlowNode => ({
@@ -177,6 +177,28 @@ describe("removeNode", () => {
           const left = nodesOf(removeNode(t, id)).map((n) => n.id);
           expect(left).toEqual(ids.filter((x) => !gone.has(x)));
         }
+      }),
+    );
+  });
+});
+
+describe("nextId", () => {
+  it("is n1 for a tree that has none, and skips the ones taken", () => {
+    expect(nextId(root)).toBe("n1");
+    expect(nextId(box("root", [leaf("n1"), box("n2", [leaf("n3")])]))).toBe("n4");
+    expect(nextId(box("root", [leaf("n2")]))).toBe("n1");
+  });
+
+  it("is never an id of the tree, and the same tree gives the same id", () => {
+    fc.assert(
+      fc.property(tree, (generated) => {
+        const t = relabel(generated);
+        const id = nextId(t);
+        expect(findNode(t, id)).toBeUndefined();
+        expect(nextId(t)).toBe(id);
+        // Once a node with that id is added, the next id is a different one.
+        const grown = { ...t, children: [...t.children, { ...leaf(id) }] } as TreeNode;
+        expect(nextId(grown)).not.toBe(id);
       }),
     );
   });

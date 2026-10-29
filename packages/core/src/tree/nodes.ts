@@ -50,3 +50,18 @@ export function removeNode(root: TreeNode, id: string): TreeNode {
   }
   return changed ? { ...root, children } : root;
 }
+
+/** Every id in the tree. */
+function idsOf(root: TreeNode, into: Set<string> = new Set()): Set<string> {
+  into.add(root.id);
+  for (const child of root.children) idsOf(child, into);
+  return into;
+}
+
+/** An id for a new node: `n1`, `n2`... the first one that no node of the tree has. */
+export function nextId(root: TreeNode): string {
+  const taken = idsOf(root);
+  let n = 1;
+  while (taken.has(`n${n}`)) n++;
+  return `n${n}`;
+}
