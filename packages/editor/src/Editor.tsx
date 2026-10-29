@@ -50,6 +50,7 @@ import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
+import { pageWidthVariables } from "./page-width";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -459,6 +460,7 @@ export function Editor({
     <div
       ref={editorRoot}
       className={rootClass}
+      style={pageWidthVariables}
       data-midito-editor=""
       tabIndex={-1}
       onKeyDown={(event) => {

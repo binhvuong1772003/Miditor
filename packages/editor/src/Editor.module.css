@@ -122,7 +122,7 @@
 .page {
   flex: 1 0 auto;
   inline-size: 100%;
-  max-inline-size: 60rem;
+  max-inline-size: var(--_page-desktop);
   min-block-size: 40rem;
   margin-inline: auto;
   background: var(--_canvas);
@@ -131,9 +131,9 @@
     0 4px 16px rgb(16 24 40 / 0.06);
 }
 
-/* The phone frame: 375px wide, the page of a common phone. */
+/* The phone frame: the width of a common phone page, from DEVICE_WIDTH in core. */
 .phone {
-  max-inline-size: 23.4375rem;
+  max-inline-size: var(--_page-phone);
 }
 
 /* Forced colors drop backgrounds and shadows, so draw the page edge with a border. */
