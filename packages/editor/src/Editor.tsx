@@ -36,7 +36,7 @@ import {
   withPhoneBox,
   withStyle,
 } from "@midito-kitchen/core";
-import { Render } from "@midito-kitchen/render";
+import { Render, type Renderer } from "@midito-kitchen/render";
 import {
   type MouseEvent,
   type PointerEvent,
@@ -84,8 +84,9 @@ export interface EditorProps {
   /**
    * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
    * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
+   * `renderers` draws the kinds the host added, by name; a built-in kind is always drawn by the editor.
    */
-  config?: { components?: Registry };
+  config?: { components?: Registry; renderers?: Readonly<Record<string, Renderer>> };
 }
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
@@ -660,6 +661,7 @@ export function Editor({
         <Render
           data={shown}
           device={frame}
+          renderers={config?.renderers}
           className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
         />
         <SelectionBox
