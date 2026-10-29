@@ -7,6 +7,18 @@ const hasFreshIds = (root: TreeNode, node: TreeNode): boolean =>
   !findNode(root, node.id) && node.children.every((child) => hasFreshIds(root, child));
 
 /**
+ * Whether blocks may go inside `parent`: the root is the page, it always holds blocks; any other
+ * block does when its kind says so. A kind the registry does not know is refused, since nothing
+ * says it may hold anything.
+ */
+export function holdsBlocks(registry: Registry, root: TreeNode, parent: TreeNode): boolean {
+  if (parent === root) return true;
+  // Own keys only: a kind named `constructor` is not on the registry.
+  const def = Object.hasOwn(registry, parent.type) ? registry[parent.type] : undefined;
+  return def?.canContain === true;
+}
+
+/**
  * Whether `node` can be placed inside the block `parentId`: the parent is in the tree, its kind
  * allows blocks inside, and no id of `node` is taken. These are the cases where `insertNode` would
  * change the tree, so a `true` means it will. The root is the page, it always holds blocks. A parent
@@ -21,10 +33,6 @@ export function canInsert(
 ): boolean {
   const parent = findNode(root, parentId);
   if (!parent) return false;
-  if (parent !== root) {
-    // Own keys only: a kind named `constructor` is not on the registry.
-    const def = Object.hasOwn(registry, parent.type) ? registry[parent.type] : undefined;
-    if (!def?.canContain) return false;
-  }
+  if (!holdsBlocks(registry, root, parent)) return false;
   return hasFreshIds(root, node);
 }

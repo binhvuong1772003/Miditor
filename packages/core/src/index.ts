@@ -7,6 +7,7 @@ export { setAnchor } from "./position/set-anchor";
 export type { Axis, AxisAnchor, Container, FreeBox, Handle, Rect, Size } from "./position/types";
 export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
+export { canMove } from "./registry/can-move";
 export { newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export type { ComponentDef, Field, Registry } from "./registry/types";
