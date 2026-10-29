@@ -17,6 +17,8 @@ import {
   nextId,
   normalizeAngle,
   type PageData,
+  parentOf,
+  pickBlock,
   type Rect,
   type Registry,
   removeNode,
@@ -29,7 +31,15 @@ import {
   withStyle,
 } from "@midito-kitchen/core";
 import { Render } from "@midito-kitchen/render";
-import { type PointerEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type MouseEvent,
+  type PointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -154,6 +164,8 @@ export function Editor({
   const addKind = addable.some(([type]) => type === kind) ? kind : (addable[0]?.[0] ?? "");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The block whose children a press selects: the page at the start, a group once it is entered.
+  const [scopeId, setScopeId] = useState(data.root.id);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
@@ -187,11 +199,30 @@ export function Editor({
     if (draft) commitPatch(draft.id, draft);
     if (isMoveableLayer(target)) return;
     const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
-    const selectable = id !== undefined && id !== data.root.id;
-    setSelectedId(selectable ? id : null);
+    // The outermost block of the scope that holds what was pressed, so a block in a group selects
+    // the group. A press on the page or the grey around it selects nothing and starts again at the page.
+    const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+    setSelectedId(hit?.id ?? null);
+    setScopeId(hit?.scopeId ?? data.root.id);
     // A press on a node keeps the keyboard inside the editor, so that Esc reaches it. The editor's
     // own element takes the focus: it has no ring, unlike the scrolling canvas.
-    if (selectable) editorRoot.current?.focus({ preventScroll: true });
+    if (hit) editorRoot.current?.focus({ preventScroll: true });
+  };
+
+  /**
+   * A double press on the selected block goes into it: the block under the pointer, one level down,
+   * is selected. The pointer is over moveable's box, so the block is looked for under it.
+   */
+  const enter = (event: MouseEvent<HTMLElement>) => {
+    if (!selectedId) return;
+    const under = document
+      .elementsFromPoint(event.clientX, event.clientY)
+      .find((element) => !isMoveableLayer(element) && element.closest("[data-midito-id]"));
+    const id = under?.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+    const hit = id === undefined ? undefined : pickBlock(data.root, selectedId, id);
+    if (!hit) return;
+    setSelectedId(hit.id);
+    setScopeId(hit.scopeId);
   };
 
   /** Store one change on a node, once. The draft is over. */
@@ -268,6 +299,7 @@ export function Editor({
     if (!node) return;
     setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
     setSelectedId(id);
+    setScopeId(parentId);
   };
 
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
@@ -300,6 +332,7 @@ export function Editor({
     const next = move(history).present;
     setDraft(null);
     setSelectedId((id) => (id !== null && findNode(next.root, id) ? id : null));
+    setScopeId((id) => (findNode(next.root, id) ? id : next.root.id));
     setHistory(move);
   };
 
@@ -318,7 +351,14 @@ export function Editor({
         if (isEditableTarget(event.target)) return;
         if (event.key === "Escape") {
           setDraft(null);
-          setSelectedId(null);
+          // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
+          const scope = scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
+          if (selectedId && scope) {
+            setSelectedId(scope.id);
+            setScopeId(parentOf(data.root, scope.id)?.id ?? data.root.id);
+          } else {
+            setSelectedId(null);
+          }
           return;
         }
         if (gesture.current) return;
@@ -425,6 +465,7 @@ export function Editor({
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
         tabIndex={0}
         onPointerDown={press}
+        onDoubleClick={enter}
       >
         <Render
           data={shown}
