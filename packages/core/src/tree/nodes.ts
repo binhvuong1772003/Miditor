@@ -53,7 +53,7 @@ export function removeNode(root: TreeNode, id: string): TreeNode {
 }
 
 /** Every id in the tree. */
-function idsOf(root: TreeNode, into: Set<string> = new Set()): Set<string> {
+export function idsOf(root: TreeNode, into: Set<string> = new Set()): Set<string> {
   into.add(root.id);
   for (const child of root.children) idsOf(child, into);
   return into;
