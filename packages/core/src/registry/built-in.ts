@@ -16,6 +16,7 @@ export const builtInRegistry: Registry = {
   },
   Text: {
     label: "Text",
+    size: { w: 240, h: 60 },
     canContain: false,
     defaultProps: { text: "Your text", size: 24, color: "#111111", bold: false, align: "center" },
     fields: {
@@ -29,6 +30,7 @@ export const builtInRegistry: Registry = {
   /** A basic shape. It can hold other blocks, for example a square with two texts in it. */
   Shape: {
     label: "Shape",
+    size: { w: 160, h: 160 },
     canContain: true,
     defaultProps: { shape: "rectangle", fill: "#cbd5e1" },
     fields: {

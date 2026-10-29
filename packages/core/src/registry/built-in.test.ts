@@ -14,6 +14,16 @@ describe("builtInRegistry", () => {
     expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape"]);
   });
 
+  it("starts a text wide and a shape square, at the size of their kind", () => {
+    const text = newNode(builtInRegistry, "Text", "n1", page);
+    const shape = newNode(builtInRegistry, "Shape", "n2", page);
+    const box = newNode(builtInRegistry, "Container", "n3", page);
+    expect(text?.size).toEqual({ w: { kind: "px", v: 240 }, h: { kind: "px", v: 60 } });
+    expect(shape?.size).toEqual({ w: { kind: "px", v: 160 }, h: { kind: "px", v: 160 } });
+    // A box has no size of its own: it starts as it always did, a quarter of the page wide.
+    expect(box?.position.x.anchor).toBe("scale");
+  });
+
   it("starts a text centred", () => {
     expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
   });
