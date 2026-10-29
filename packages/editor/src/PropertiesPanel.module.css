@@ -23,6 +23,11 @@
   background: color-mix(in srgb, var(--_danger) 10%, var(--_canvas));
 }
 
+.delete:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .delete:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;

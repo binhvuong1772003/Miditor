@@ -169,7 +169,9 @@ export function Editor({
     onChangeRef.current?.(data);
   }, [data]);
   // The width the page is shown at. A view setting only: it is not in the page data and not in the history.
-  const [frame, setFrame] = useState<"desktop" | "phone">("desktop");
+  const [frame, setFrame] = useState<Device>("desktop");
+  // Adding, deleting and grouping change the blocks every screen shares, so they are done on the desktop.
+  const onPhone = frame === "phone";
   const components = config?.components;
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   // The kind the Add button makes. A kind that is no longer in the registry falls back to the first.
@@ -344,6 +346,7 @@ export function Editor({
    * is stored first.
    */
   const addBlock = () => {
+    if (onPhone) return;
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
     const sizeOf = (element: HTMLElement | null) => ({
@@ -389,6 +392,7 @@ export function Editor({
 
   /** The selected blocks become one group, selected, where they were. */
   const groupSelected = () => {
+    if (onPhone) return;
     const container = parentSize();
     if (!selectedId || picked.length === 0 || !container) return;
     if (draft) commitPatch(draft.id, draft);
@@ -402,6 +406,7 @@ export function Editor({
 
   /** The selected group is gone and its blocks are selected, each where it was on the page. */
   const ungroupSelected = () => {
+    if (onPhone) return;
     const container = parentSize();
     if (selectedNode?.type !== "Group" || !container) return;
     if (ungroupNode(data.root, selectedNode.id, container) === data.root) return;
@@ -414,6 +419,7 @@ export function Editor({
 
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
+    if (onPhone) return;
     if (!selectedId || selectedId === data.root.id) return;
     const gone = [selectedId, ...picked];
     setDraft(null);
@@ -511,6 +517,7 @@ export function Editor({
           <select
             className={`${styles.button} ${styles.secondary}`}
             aria-label="Kind of block to add"
+            disabled={onPhone}
             value={addKind}
             onChange={(event) => setKind(event.target.value)}
           >
@@ -523,7 +530,8 @@ export function Editor({
           <button
             type="button"
             className={`${styles.button} ${styles.secondary}`}
-            title="Add a block"
+            disabled={onPhone}
+            title={onPhone ? "Switch to Desktop to add blocks" : "Add a block"}
             onClick={addBlock}
           >
             Add
@@ -533,8 +541,12 @@ export function Editor({
           <button
             type="button"
             className={`${styles.button} ${styles.secondary}`}
-            disabled={!selectedId || picked.length === 0}
-            title="Group the selected blocks (Ctrl+G). Select more with Shift."
+            disabled={onPhone || !selectedId || picked.length === 0}
+            title={
+              onPhone
+                ? "Switch to Desktop to group blocks"
+                : "Group the selected blocks (Ctrl+G). Select more with Shift."
+            }
             onClick={groupSelected}
           >
             Group
@@ -542,7 +554,7 @@ export function Editor({
           <button
             type="button"
             className={`${styles.button} ${styles.secondary}`}
-            disabled={selectedNode?.type !== "Group"}
+            disabled={onPhone || selectedNode?.type !== "Group"}
             title="Ungroup (Shift+Ctrl+G)"
             onClick={ungroupSelected}
           >
@@ -619,6 +631,7 @@ export function Editor({
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
           device={frame}
+          canDelete={!onPhone}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}

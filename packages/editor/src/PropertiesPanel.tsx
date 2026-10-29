@@ -41,6 +41,8 @@ export interface PropertiesPanelProps {
   onCommit: (patch: PanelPatch) => void;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
+  /** False when the blocks cannot be changed from this screen, so the button that deletes one is off. */
+  canDelete: boolean;
   /** Delete the selected block and everything in it. */
   onDelete: () => void;
   /** Anchor one axis of the selected free block another way; the block stays where it is. */
@@ -54,6 +56,7 @@ export interface PropertiesPanelProps {
 export function PropertiesPanel({
   node,
   device,
+  canDelete,
   def,
   onPreview,
   onCommit,
@@ -133,7 +136,13 @@ export function PropertiesPanel({
         hint="In pixels, like 4. Leave it empty or 0 for square corners."
         {...length("borderRadius")}
       />
-      <button type="button" className={styles.delete} title="Delete (Del)" onClick={onDelete}>
+      <button
+        type="button"
+        className={styles.delete}
+        disabled={!canDelete}
+        title={canDelete ? "Delete (Del)" : "Switch to Desktop to delete blocks"}
+        onClick={onDelete}
+      >
         Delete block
       </button>
     </div>
