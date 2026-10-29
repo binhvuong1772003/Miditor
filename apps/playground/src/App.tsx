@@ -1,4 +1,4 @@
-import { Editor, type PageData } from "@midito-kitchen/editor";
+import { Editor, type PageData, type Registry } from "@midito-kitchen/editor";
 import { useState } from "react";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -14,6 +14,18 @@ function openPage(): PageData {
   return loadPage(window.localStorage, reset);
 }
 
+/** A kind of the host's own, to try `config`: it keeps its ratio when resized. Render does not draw it yet. */
+const components: Registry = {
+  Heart: {
+    label: "Heart (demo)",
+    size: { w: 120, h: 100 },
+    lockRatio: true,
+    canContain: false,
+    defaultProps: {},
+    fields: {},
+  },
+};
+
 export function App() {
   const [page] = useState(openPage);
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
@@ -23,6 +35,7 @@ export function App() {
     <>
       <Editor
         data={page}
+        config={{ components }}
         onChange={(data) => storePage(window.localStorage, data)}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
       />
