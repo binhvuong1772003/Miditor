@@ -18,6 +18,9 @@ export type Axis =
   | { anchor: "stretch"; start: number; end: number }
   | { anchor: "scale"; start: number; size: number };
 
+/** The kinds of anchor an axis can have. */
+export type AxisAnchor = Axis["anchor"];
+
 export type Size = { kind: "px"; v: number } | { kind: "percent"; v: number };
 
 /** A node placed freely inside its container. */
