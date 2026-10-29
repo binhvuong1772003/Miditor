@@ -25,7 +25,9 @@ import {
   pickBlock,
   type Rect,
   type Registry,
+  type Reorder,
   removeNode,
+  reorderNode,
   resizeRotated,
   resolveRect,
   setAnchor,
@@ -403,6 +405,13 @@ export function Editor({
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
 
+  /** The selected block one place or all the way up or down among its siblings. Only the main one. */
+  const reorderSelected = (to: Reorder) => {
+    if (onPhone || !selectedId || selectedId === data.root.id) return;
+    if (draft) commitPatch(draft.id, draft);
+    setData((prev) => ({ ...prev, root: reorderNode(prev.root, selectedId, to) }));
+  };
+
   /** A copy of each selected block, a little down and to the right, selected in place of them. */
   const duplicateSelected = () => {
     const container = parentSize();
@@ -613,6 +622,28 @@ export function Editor({
           >
             Duplicate
           </button>
+        </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+        <div className={styles.group} role="group" aria-label="Order">
+          {(
+            [
+              ["front", "Front", "Bring to front"],
+              ["forward", "Forward", "Bring forward"],
+              ["backward", "Backward", "Send backward"],
+              ["back", "Back", "Send to back"],
+            ] as const
+          ).map(([to, label, title]) => (
+            <button
+              key={to}
+              type="button"
+              className={`${styles.button} ${styles.secondary}`}
+              disabled={onPhone || !selectedId || selectedId === data.root.id}
+              title={onPhone ? "Switch to Desktop to change the order" : title}
+              onClick={() => reorderSelected(to)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.group} role="group" aria-label="Frame">
