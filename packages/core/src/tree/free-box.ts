@@ -32,3 +32,16 @@ export function withFreeBox(node: FreeNode, box: FreeBox): FreeNode {
     rotation: box.rotation,
   };
 }
+
+/**
+ * The same node with the placement a person set by hand for the phone, or, with `undefined`, with
+ * none, so the phone gets one made from the desktop placement again. Returns a new node; the id,
+ * type, props and children are the very same objects. A node that already has that placement (or
+ * none, when none is asked for) comes back as it is.
+ */
+export function withPhoneBox(node: FreeNode, box: FreeBox | undefined): FreeNode {
+  if (node.phone === box) return node;
+  if (box) return { ...node, phone: box };
+  const { phone: _removed, ...rest } = node;
+  return rest;
+}

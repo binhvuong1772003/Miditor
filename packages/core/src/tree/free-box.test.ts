@@ -4,7 +4,9 @@ import { box, freeNode, num, solidContainer } from "../position/arbitraries";
 import { inferBox } from "../position/infer-box";
 import { moveRect } from "../position/move-rect";
 import { resolveRect } from "../position/resolve-rect";
-import { freeBoxOf, isFreeNode, withFreeBox } from "./free-box";
+import { boxFor } from "./device";
+import { freeBoxOf, isFreeNode, withFreeBox, withPhoneBox } from "./free-box";
+import { emptyPage, isPageData } from "./page";
 import type { FlowNode, FreeNode, TreeNode } from "./types";
 
 const flow: FlowNode = {
@@ -153,5 +155,73 @@ describe("the pieces working together on a stored node", () => {
       ),
       { numRuns: 1000 },
     );
+  });
+});
+
+describe("withPhoneBox", () => {
+  const node = withFreeBox(
+    {
+      id: "n",
+      type: "Shape",
+      props: { a: 1 },
+      styles: {},
+      position: {
+        mode: "free",
+        x: { anchor: "start", offset: 0 },
+        y: { anchor: "start", offset: 0 },
+      },
+      size: { w: { kind: "px", v: 10 }, h: { kind: "px", v: 10 } },
+      rotation: 0,
+      children: [],
+    },
+    {
+      x: { anchor: "start", offset: 100 },
+      y: { anchor: "end", offset: 20 },
+      w: { kind: "px", v: 200 },
+      h: { kind: "px", v: 80 },
+      rotation: 10,
+    },
+  );
+  const byHand = {
+    x: { anchor: "start", offset: 5 },
+    y: { anchor: "start", offset: 6 },
+    w: { kind: "px", v: 70 },
+    h: { kind: "px", v: 30 },
+    rotation: -20,
+  } as const;
+
+  it("sets the phone placement and shares everything else", () => {
+    const out = withPhoneBox(node, byHand);
+    expect(out.phone).toBe(byHand);
+    expect(out.props).toBe(node.props);
+    expect(out.children).toBe(node.children);
+    expect(out.position).toBe(node.position);
+    expect(node.phone).toBeUndefined();
+  });
+
+  it("changes what the phone shows and not what the desktop shows", () => {
+    const out = withPhoneBox(node, byHand);
+    expect(boxFor(out, "phone")).toBe(byHand);
+    expect(boxFor(out, "desktop")).toEqual(boxFor(node, "desktop"));
+  });
+
+  it("with undefined takes the placement away, without leaving the key", () => {
+    const out = withPhoneBox(withPhoneBox(node, byHand), undefined);
+    expect("phone" in out).toBe(false);
+    expect(out).toEqual(node);
+    expect(boxFor(out, "phone")).toEqual(boxFor(node, "phone"));
+  });
+
+  it("returns the very same node when nothing would change", () => {
+    const withIt = withPhoneBox(node, byHand);
+    expect(withPhoneBox(withIt, byHand)).toBe(withIt);
+    expect(withPhoneBox(node, undefined)).toBe(node);
+  });
+
+  it("makes a page that is still valid, also after JSON", () => {
+    const page = emptyPage();
+    const grown = { ...page, root: { ...page.root, children: [withPhoneBox(node, byHand)] } };
+    expect(isPageData(grown)).toBe(true);
+    expect(isPageData(JSON.parse(JSON.stringify(grown)))).toBe(true);
   });
 });
