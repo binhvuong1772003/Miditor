@@ -192,14 +192,23 @@ export function Editor({
   });
 
   // Mark the other selected blocks. The elements belong to `<Render>`, so the mark is put on after
-  // each render and taken off again before the next.
+  // each render and taken off again before the next. It is an inline style: every block has an
+  // inline `all: revert`, which a class could never beat.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
   useLayoutEffect(() => {
     if (!workspace) return;
     const marked = picked.flatMap((id) => elementOf(workspace, id) ?? []);
-    for (const element of marked) element.dataset.miditoPicked = "";
+    for (const element of marked) {
+      element.dataset.miditoPicked = "";
+      element.style.outline = "2px solid var(--_focus)";
+      element.style.outlineOffset = "1px";
+    }
     return () => {
-      for (const element of marked) delete element.dataset.miditoPicked;
+      for (const element of marked) {
+        delete element.dataset.miditoPicked;
+        element.style.removeProperty("outline");
+        element.style.removeProperty("outline-offset");
+      }
     };
   }, [workspace, picked, shown]);
 
