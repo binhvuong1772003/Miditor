@@ -1,6 +1,8 @@
 import {
   type AxisAnchor,
+  boxFor,
   type ComponentDef,
+  type Device,
   isFreeNode,
   type JsonValue,
   parseAngle,
@@ -29,6 +31,8 @@ export type PanelPatch = StylePatch | RotationPatch | PropPatch;
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
   node: TreeNode | undefined;
+  /** The screen being edited: the rotation and the anchors shown are the ones of this screen. */
+  device: Device;
   /** The kind of the selected node in the registry, or `undefined` for a kind nobody registered. */
   def: ComponentDef | undefined;
   /** A value is being picked or typed: show it, but do not store it yet. */
@@ -49,6 +53,7 @@ export interface PropertiesPanelProps {
  */
 export function PropertiesPanel({
   node,
+  device,
   def,
   onPreview,
   onCommit,
@@ -86,12 +91,12 @@ export function PropertiesPanel({
         <>
           <AnchorSelect
             label="Anchor X"
-            value={node.position.x.anchor}
+            value={boxFor(node, device).x.anchor}
             onChange={(a) => onAnchor("x", a)}
           />
           <AnchorSelect
             label="Anchor Y"
-            value={node.position.y.anchor}
+            value={boxFor(node, device).y.anchor}
             onChange={(a) => onAnchor("y", a)}
           />
         </>
@@ -100,7 +105,7 @@ export function PropertiesPanel({
         <AngleField
           label="Rotation"
           hint="In degrees, from -180 to 180, like 45. Leave it empty for 0."
-          stored={node.rotation}
+          stored={boxFor(node, device).rotation}
           onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
           onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
           onDiscard={onDiscard}

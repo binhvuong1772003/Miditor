@@ -1,12 +1,14 @@
 import {
   type AxisAnchor,
+  boxFor,
   builtInRegistry,
   type Container,
   canInsert,
+  type Device,
   emptyPage,
+  type FreeBox,
   type FreeNode,
   findNode,
-  freeBoxOf,
   groupNodes,
   inferBox,
   insertNode,
@@ -30,6 +32,7 @@ import {
   ungroupNode,
   updateNode,
   withFreeBox,
+  withPhoneBox,
   withStyle,
 } from "@midito-kitchen/core";
 import { Render } from "@midito-kitchen/render";
@@ -90,17 +93,26 @@ const isColourPatch = (
 ): patch is Extract<StylePatch, { key: "background" | "borderColor" }> =>
   patch.key === "background" || patch.key === "borderColor";
 
-/** The node with the change of a patch applied. A rotation only changes a free node. */
-const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
+/**
+ * The free node with the placement `box` for this screen: its own placement on the desktop, the one
+ * set by hand for the phone on a phone, so a change made on a phone leaves the desktop as it was.
+ */
+const withBoxFor = (node: FreeNode, device: Device, box: FreeBox): FreeNode =>
+  device === "phone" ? withPhoneBox(node, box) : withFreeBox(node, box);
+
+/** The node with the change of a patch applied. A rotation only changes a free node, on this screen. */
+const applyPatch = (node: TreeNode, patch: PanelPatch, device: Device): TreeNode => {
   if (patch.key === "prop") {
     return node.props[patch.name] === patch.value
       ? node
       : { ...node, props: { ...node.props, [patch.name]: patch.value } };
   }
   if (patch.key === "rotation") {
-    return isFreeNode(node) && node.rotation !== patch.value
-      ? { ...node, rotation: patch.value }
-      : node;
+    if (!isFreeNode(node)) return node;
+    const box = boxFor(node, device);
+    return box.rotation === patch.value
+      ? node
+      : withBoxFor(node, device, { ...box, rotation: patch.value });
   }
   return isColourPatch(patch)
     ? withStyle(node, patch.key, patch.value)
@@ -108,9 +120,13 @@ const applyPatch = (node: TreeNode, patch: PanelPatch): TreeNode => {
 };
 
 /** The page with a pending change applied, for drawing it or for storing it. */
-const withDraft = (data: PageData, draft: PanelPatch & { id: string }): PageData => ({
+const withDraft = (
+  data: PageData,
+  draft: PanelPatch & { id: string },
+  device: Device,
+): PageData => ({
   ...data,
-  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft)),
+  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device)),
 });
 
 /** The page the editor starts from: the host's, once it is checked, or an empty one. */
@@ -178,7 +194,10 @@ export function Editor({
   const editorRoot = useRef<HTMLDivElement>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
-  const shown = useMemo<PageData>(() => (draft ? withDraft(data, draft) : data), [data, draft]);
+  const shown = useMemo<PageData>(
+    () => (draft ? withDraft(data, draft, frame) : data),
+    [data, draft, frame],
+  );
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
   // The kind of the selected node, or `undefined` for one nobody registered.
   const selectedDef =
@@ -267,7 +286,7 @@ export function Editor({
   const commitPatch = (id: string, patch: PanelPatch) => {
     setDraft(null);
     setData((prev) => {
-      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch));
+      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame));
       return root === prev.root ? prev : { ...prev, root };
     });
   };
@@ -281,7 +300,7 @@ export function Editor({
     const container = { w: parent.clientWidth, h: parent.clientHeight };
     gesture.current = {
       before: node,
-      start: resolveRect(freeBoxOf(node), container),
+      start: resolveRect(boxFor(node, frame), container),
       container,
     };
   };
@@ -291,27 +310,31 @@ export function Editor({
     const g = gesture.current;
     if (!g) return;
     gesture.current = null;
-    const moved = inferBox(freeBoxOf(g.before), next(g), g.container);
+    const moved = inferBox(boxFor(g.before, frame), next(g), g.container);
     setData((prev) => ({
       ...prev,
-      root: updateNode(prev.root, g.before.id, (n) => (isFreeNode(n) ? withFreeBox(n, moved) : n)),
+      root: updateNode(prev.root, g.before.id, (n) =>
+        isFreeNode(n) ? withBoxFor(n, frame, moved) : n,
+      ),
     }));
   };
 
   const endDrag = (dist: { x: number; y: number }) =>
-    endGesture((g) => moveRect(g.start, dist, g.before.rotation));
+    endGesture((g) => moveRect(g.start, dist, boxFor(g.before, frame).rotation));
 
   // Position maths ignore the rotation, so a turn only changes the angle: no `inferBox`.
   const endRotate = (dist: number) => {
     const g = gesture.current;
     if (!g) return;
     gesture.current = null;
-    const rotation = normalizeAngle(g.before.rotation + dist);
+    const rotation = normalizeAngle(boxFor(g.before, frame).rotation + dist);
     setData((prev) => ({
       ...prev,
-      root: updateNode(prev.root, g.before.id, (n) =>
-        isFreeNode(n) && n.rotation !== rotation ? { ...n, rotation } : n,
-      ),
+      root: updateNode(prev.root, g.before.id, (n) => {
+        if (!isFreeNode(n)) return n;
+        const box = boxFor(n, frame);
+        return box.rotation === rotation ? n : withBoxFor(n, frame, { ...box, rotation });
+      }),
     }));
   };
 
@@ -351,9 +374,9 @@ export function Editor({
       ...prev,
       root: updateNode(prev.root, selectedNode.id, (n) => {
         if (!isFreeNode(n)) return n;
-        const before = freeBoxOf(n);
+        const before = boxFor(n, frame);
         const after = setAnchor(before, axis, anchor, container);
-        return after === before ? n : withFreeBox(n, after);
+        return after === before ? n : withBoxFor(n, frame, after);
       }),
     }));
   };
@@ -413,7 +436,7 @@ export function Editor({
   };
 
   const endResize = ({ w, h, handle }: ResizeResult) =>
-    endGesture((g) => resizeRotated(g.start, g.before.rotation, handle, w, h));
+    endGesture((g) => resizeRotated(g.start, boxFor(g.before, frame).rotation, handle, w, h));
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it
@@ -553,7 +576,7 @@ export function Editor({
               // A change that is still pending is stored first, and it is part of what is saved.
               const pending = draft;
               if (pending) commitPatch(pending.id, pending);
-              onSave(pending ? withDraft(data, pending) : data);
+              onSave(pending ? withDraft(data, pending, frame) : data);
             }}
           >
             Save
@@ -572,6 +595,7 @@ export function Editor({
       >
         <Render
           data={shown}
+          device={frame}
           className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
         />
         <SelectionBox
@@ -580,7 +604,9 @@ export function Editor({
           className={styles.selection}
           lockRatio={selectedDef?.lockRatio === true}
           minSize={minSize(selectedNode?.styles)}
-          angle={selectedNode && isFreeNode(selectedNode) ? selectedNode.rotation : 0}
+          angle={
+            selectedNode && isFreeNode(selectedNode) ? boxFor(selectedNode, frame).rotation : 0
+          }
           onGestureStart={startGesture}
           onDragEnd={endDrag}
           onResizeEnd={endResize}
@@ -592,6 +618,7 @@ export function Editor({
           // A new panel for each node, so text typed for one is never applied to another.
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
+          device={frame}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
