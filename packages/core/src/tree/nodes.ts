@@ -133,3 +133,13 @@ export function moveNode(
 /** Where `index` falls in a list of `length` items: inside it, or the end when it is not a whole number. */
 const clampIndex = (index: number | undefined, length: number) =>
   index === undefined || !Number.isInteger(index) ? length : Math.min(Math.max(index, 0), length);
+
+/** The nodes from the root down to this one, both included, or `undefined` when the id is not in the tree. */
+export function pathTo(root: TreeNode, id: string): TreeNode[] | undefined {
+  if (root.id === id) return [root];
+  for (const child of root.children) {
+    const below = pathTo(child, id);
+    if (below) return [root, ...below];
+  }
+  return undefined;
+}

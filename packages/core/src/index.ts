@@ -27,10 +27,12 @@ export {
   moveNode,
   nextId,
   parentOf,
+  pathTo,
   removeNode,
   updateNode,
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
+export { type Pick, pickBlock } from "./tree/pick";
 export { withStyle } from "./tree/styles";
 export type {
   FlowNode,
