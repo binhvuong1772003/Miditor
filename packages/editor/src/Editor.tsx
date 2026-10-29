@@ -146,7 +146,12 @@ export function Editor({
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   // The kind the Add button makes. A kind that is no longer in the registry falls back to the first.
   const [kind, setKind] = useState("Text");
-  const addKind = Object.hasOwn(registry, kind) ? kind : (Object.keys(registry)[0] ?? "");
+  // Kinds that are made another way (a group) are not offered.
+  const addable = useMemo(
+    () => Object.entries(registry).filter(([, def]) => def.hidden !== true),
+    [registry],
+  );
+  const addKind = addable.some(([type]) => type === kind) ? kind : (addable[0]?.[0] ?? "");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
@@ -363,7 +368,7 @@ export function Editor({
             value={addKind}
             onChange={(event) => setKind(event.target.value)}
           >
-            {Object.entries(registry).map(([type, def]) => (
+            {addable.map(([type, def]) => (
               <option key={type} value={type}>
                 {def.label}
               </option>
