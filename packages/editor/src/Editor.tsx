@@ -221,7 +221,13 @@ export function Editor({
   const addBlock = () => {
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
-    setData((prev) => ({ ...prev, root: insertNode(prev.root, prev.root.id, newBlock(id)) }));
+    // The page as it is drawn now, to find its middle down the page.
+    const page = workspace ? elementOf(workspace, data.root.id) : null;
+    const container = { w: page?.clientWidth ?? 0, h: page?.clientHeight ?? 0 };
+    setData((prev) => ({
+      ...prev,
+      root: insertNode(prev.root, prev.root.id, newBlock(id, container)),
+    }));
     setSelectedId(id);
   };
 

@@ -1,40 +1,53 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { container } from "../position/arbitraries";
+import { solidContainer } from "../position/arbitraries";
 import { resolveRect } from "../position/resolve-rect";
 import { freeBoxOf, isFreeNode } from "./free-box";
-import { newBlock } from "./new-block";
+import { NEW_BLOCK_SIZE, newBlock } from "./new-block";
 import { insertNode } from "./nodes";
 import { emptyPage, isPageData } from "./page";
 
+const page = { w: 960, h: 640 };
+
 describe("newBlock", () => {
-  it("is a free Container of 120 by 80 with the given id", () => {
-    const block = newBlock("n1");
+  it("is a free Container with the given id, scaled across and pinned to the start down", () => {
+    const block = newBlock("n1", page);
     expect(block).toMatchObject({ id: "n1", type: "Container", rotation: 0, children: [] });
     expect(isFreeNode(block)).toBe(true);
+    expect(block.position.x).toEqual({ anchor: "scale", start: 37.5, size: 25 });
+    expect(block.position.y).toEqual({ anchor: "start", offset: 280 });
   });
 
   it("makes a page that is still valid when it is added to the empty page", () => {
-    const page = emptyPage();
-    const grown = { ...page, root: insertNode(page.root, "root", newBlock("n1")) };
+    const empty = emptyPage();
+    const grown = { ...empty, root: insertNode(empty.root, "root", newBlock("n1", page)) };
     expect(grown.root.children).toHaveLength(1);
     expect(isPageData(grown)).toBe(true);
   });
 
-  it("sits in the middle of any container", () => {
+  it("sits in the middle of the container and keeps its height", () => {
     fc.assert(
-      fc.property(container, (c) => {
-        const rect = resolveRect(freeBoxOf(newBlock("n1")), c);
-        expect(rect.w).toBe(120);
-        expect(rect.h).toBe(80);
+      fc.property(solidContainer, (c) => {
+        const rect = resolveRect(freeBoxOf(newBlock("n1", c)), c);
+        expect(rect.w).toBeCloseTo((c.w * NEW_BLOCK_SIZE.widthPercent) / 100);
+        expect(rect.h).toBe(NEW_BLOCK_SIZE.h);
         expect(rect.x + rect.w / 2).toBeCloseTo(c.w / 2);
-        expect(rect.y + rect.h / 2).toBeCloseTo(c.h / 2);
+        // Down the page the middle is found to the pixel; a container shorter than the block starts at 0.
+        if (c.h >= NEW_BLOCK_SIZE.h)
+          expect(Math.abs(rect.y + rect.h / 2 - c.h / 2)).toBeLessThanOrEqual(0.5);
+        else expect(rect.y).toBe(0);
       }),
     );
   });
 
+  it("stays on screen when the page gets narrower", () => {
+    const rect = resolveRect(freeBoxOf(newBlock("n1", page)), { w: 375, h: 640 });
+    expect(rect.x).toBeGreaterThanOrEqual(0);
+    expect(rect.x + rect.w).toBeLessThanOrEqual(375);
+  });
+
   it("returns a new object each time", () => {
-    expect(newBlock("n1")).not.toBe(newBlock("n1"));
-    expect(newBlock("n1")).toEqual(newBlock("n1"));
+    expect(newBlock("n1", page)).not.toBe(newBlock("n1", page));
+    expect(newBlock("n1", page)).toEqual(newBlock("n1", page));
   });
 });
