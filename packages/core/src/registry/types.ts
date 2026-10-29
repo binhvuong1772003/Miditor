@@ -25,6 +25,11 @@ export interface ComponentDef {
    * of the page wide and 80 px tall. With it the block keeps exactly this size, centred across.
    */
   size?: { w: number; h: number };
+  /**
+   * True for a kind that is not offered when a person adds a block, because it is made another way
+   * (a `Group` comes from grouping blocks). It is a kind like any other in every other respect.
+   */
+  hidden?: boolean;
   /** Whether other blocks can be placed inside this one. Not the same as the `children` of a node. */
   canContain: boolean;
   /** Whether resizing keeps the width to height ratio, for a picture that must not be squashed. */

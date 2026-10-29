@@ -38,4 +38,15 @@ export const builtInRegistry: Registry = {
       fill: { type: "color", label: "Fill" },
     },
   },
+  /**
+   * Several blocks gathered, see `groupNodes`. It has no look of its own, so a group is only the
+   * blocks in it, moved and resized together. Made by grouping, so it is not offered when adding.
+   */
+  Group: {
+    label: "Group",
+    hidden: true,
+    canContain: true,
+    defaultProps: {},
+    fields: {},
+  },
 };

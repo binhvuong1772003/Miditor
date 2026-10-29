@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isFreeNode } from "../tree/free-box";
+import { groupNodes } from "../tree/group";
 import { insertNode } from "../tree/nodes";
 import { emptyPage, isPageData } from "../tree/page";
 import { builtInRegistry } from "./built-in";
@@ -11,7 +12,7 @@ const page = { w: 960, h: 640 };
 
 describe("builtInRegistry", () => {
   it("has the kinds the editor starts with", () => {
-    expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape"]);
+    expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape", "Group"]);
   });
 
   it("starts a text wide and a shape square, at the size of their kind", () => {
@@ -22,6 +23,24 @@ describe("builtInRegistry", () => {
     expect(shape?.size).toEqual({ w: { kind: "px", v: 160 }, h: { kind: "px", v: 160 } });
     // A box has no size of its own: it starts as it always did, a quarter of the page wide.
     expect(box?.position.x.anchor).toBe("scale");
+  });
+
+  it("has a group that holds blocks and is not offered when adding, and nothing else hidden", () => {
+    expect(builtInRegistry.Group).toMatchObject({ canContain: true, hidden: true });
+    const hidden = Object.entries(builtInRegistry).filter(([, def]) => def.hidden);
+    expect(hidden.map(([type]) => type)).toEqual(["Group"]);
+  });
+
+  it("accepts what groupNodes makes", () => {
+    const a = newNode(builtInRegistry, "Text", "n1", page);
+    const b = newNode(builtInRegistry, "Shape", "n2", page);
+    const empty = emptyPage();
+    if (!a || !b) throw new Error("a kind is missing");
+    const root = insertNode(insertNode(empty.root, "root", a), "root", b);
+    const grouped = { ...empty, root: groupNodes(root, ["n1", "n2"], "n3", page) };
+    expect(grouped.root.children.map((n) => n.type)).toEqual(["Group"]);
+    expect(isPageData(grouped)).toBe(true);
+    expect(validatePage(builtInRegistry, grouped)).toEqual([]);
   });
 
   it("starts a text centred", () => {
@@ -67,7 +86,7 @@ describe("builtInRegistry", () => {
   it("can be extended by spreading, without changing it", () => {
     const heart = { label: "Heart", canContain: false, defaultProps: {}, fields: {} };
     const mine = { ...builtInRegistry, Heart: heart };
-    expect(Object.keys(mine)).toEqual(["Container", "Text", "Shape", "Heart"]);
-    expect(Object.keys(builtInRegistry)).toHaveLength(3);
+    expect(Object.keys(mine)).toEqual(["Container", "Text", "Shape", "Group", "Heart"]);
+    expect(Object.keys(builtInRegistry)).toHaveLength(4);
   });
 });
