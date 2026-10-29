@@ -1,4 +1,5 @@
 import {
+  type AxisAnchor,
   isFreeNode,
   parseAngle,
   parseHexColor,
@@ -30,6 +31,8 @@ export interface PropertiesPanelProps {
   onDiscard: () => void;
   /** Delete the selected block and everything in it. */
   onDelete: () => void;
+  /** Anchor one axis of the selected free block another way; the block stays where it is. */
+  onAnchor: (axis: "x" | "y", anchor: AxisAnchor) => void;
 }
 
 /**
@@ -42,6 +45,7 @@ export function PropertiesPanel({
   onCommit,
   onDiscard,
   onDelete,
+  onAnchor,
 }: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
@@ -62,6 +66,20 @@ export function PropertiesPanel({
     <div className={styles.content}>
       <h2 className={styles.title}>{node.type}</h2>
       <p className={styles.meta}>{node.id}</p>
+      {isFreeNode(node) && (
+        <>
+          <AnchorSelect
+            label="Anchor X"
+            value={node.position.x.anchor}
+            onChange={(a) => onAnchor("x", a)}
+          />
+          <AnchorSelect
+            label="Anchor Y"
+            value={node.position.y.anchor}
+            onChange={(a) => onAnchor("y", a)}
+          />
+        </>
+      )}
       {isFreeNode(node) && (
         <AngleField
           label="Rotation"
@@ -97,6 +115,40 @@ export function PropertiesPanel({
       <button type="button" className={styles.delete} title="Delete (Del)" onClick={onDelete}>
         Delete block
       </button>
+    </div>
+  );
+}
+
+const ANCHORS: readonly AxisAnchor[] = ["start", "end", "center", "stretch", "scale"];
+
+/** Temporary: a plain select to try `setAnchor` by hand. */
+function AnchorSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: AxisAnchor;
+  onChange: (anchor: AxisAnchor) => void;
+}) {
+  const id = useId();
+  return (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      <select
+        id={id}
+        className={styles.input}
+        value={value}
+        onChange={(event) => onChange(event.target.value as AxisAnchor)}
+      >
+        {ANCHORS.map((anchor) => (
+          <option key={anchor} value={anchor}>
+            {anchor}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  type AxisAnchor,
   type Container,
   emptyPage,
   type FreeNode,
@@ -18,6 +19,7 @@ import {
   removeNode,
   resizeRotated,
   resolveRect,
+  setAnchor,
   type TreeNode,
   updateNode,
   withFreeBox,
@@ -223,6 +225,23 @@ export function Editor({
     setSelectedId(id);
   };
 
+  /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
+  const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) => {
+    const parent = block?.parentElement;
+    if (!selectedNode || !isFreeNode(selectedNode) || !parent) return;
+    if (draft) commitPatch(draft.id, draft);
+    const container = { w: parent.clientWidth, h: parent.clientHeight };
+    setData((prev) => ({
+      ...prev,
+      root: updateNode(prev.root, selectedNode.id, (n) => {
+        if (!isFreeNode(n)) return n;
+        const before = freeBoxOf(n);
+        const after = setAnchor(before, axis, anchor, container);
+        return after === before ? n : withFreeBox(n, after);
+      }),
+    }));
+  };
+
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (!selectedId || selectedId === data.root.id) return;
@@ -307,6 +326,7 @@ export function Editor({
             Add
           </button>
         </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.group} role="group" aria-label="Frame">
           <button
             type="button"
@@ -326,7 +346,6 @@ export function Editor({
           </button>
         </div>
         {onSave && (
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
           <button
             type="button"
             className={`${styles.button} ${styles.primary} ${styles.save}`}
@@ -375,6 +394,7 @@ export function Editor({
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}
           onDelete={deleteBlock}
+          onAnchor={changeAnchor}
         />
       </aside>
     </div>
