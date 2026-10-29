@@ -19,8 +19,17 @@ export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export { freeBoxOf, isFreeNode, withFreeBox } from "./tree/free-box";
+export { groupNodes } from "./tree/group";
 export { NEW_BLOCK_SIZE, newBlock } from "./tree/new-block";
-export { findNode, insertNode, moveNode, nextId, removeNode, updateNode } from "./tree/nodes";
+export {
+  findNode,
+  insertNode,
+  moveNode,
+  nextId,
+  parentOf,
+  removeNode,
+  updateNode,
+} from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
 export { withStyle } from "./tree/styles";
 export type {

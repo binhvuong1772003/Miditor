@@ -3,7 +3,7 @@ import { resolveRect } from "./resolve-rect";
 import type { Axis, AxisAnchor, Container, FreeBox } from "./types";
 
 /** An axis of this anchor kind with every number at 0: the shape `inferBox` fills in. */
-function blank(anchor: AxisAnchor): Axis {
+export function blankAxis(anchor: AxisAnchor): Axis {
   switch (anchor) {
     case "start":
     case "end":
@@ -32,6 +32,10 @@ export function setAnchor(
 ): FreeBox {
   if (box[axis].anchor === anchor) return box;
   if (!((axis === "x" ? container.w : container.h) >= 0.01)) return box;
-  const next = inferBox({ ...box, [axis]: blank(anchor) }, resolveRect(box, container), container);
+  const next = inferBox(
+    { ...box, [axis]: blankAxis(anchor) },
+    resolveRect(box, container),
+    container,
+  );
   return axis === "x" ? { ...box, x: next.x, w: next.w } : { ...box, y: next.y, h: next.h };
 }

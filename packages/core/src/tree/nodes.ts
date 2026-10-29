@@ -93,7 +93,7 @@ export function insertNode(
 }
 
 /** The node that has this id among its children, or `undefined` for the root and for an id not in the tree. */
-function parentOf(root: TreeNode, id: string): TreeNode | undefined {
+export function parentOf(root: TreeNode, id: string): TreeNode | undefined {
   for (const child of root.children) {
     if (child.id === id) return root;
     const found = parentOf(child, id);
