@@ -56,7 +56,15 @@
 .group {
   display: flex;
   gap: 0.5rem;
-  margin-inline-end: auto;
+}
+
+.group + .group {
+  margin-inline-start: 1rem;
+}
+
+/* The Save button, when there is one, goes to the far end. */
+.save {
+  margin-inline-start: auto;
 }
 
 .panel {
@@ -123,6 +131,11 @@
     0 4px 16px rgb(16 24 40 / 0.06);
 }
 
+/* The phone frame: 375px wide, the page of a common phone. */
+.phone {
+  max-inline-size: 23.4375rem;
+}
+
 /* Forced colors drop backgrounds and shadows, so draw the page edge with a border. */
 @media (forced-colors: active) {
   .page {
@@ -152,6 +165,11 @@
 .button:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
+}
+
+.button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--_focus) 14%, var(--_canvas));
+  border-color: var(--_focus);
 }
 
 .button:disabled {

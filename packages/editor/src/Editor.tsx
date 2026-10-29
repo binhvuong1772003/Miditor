@@ -124,6 +124,8 @@ export function Editor({
     notified.current = data;
     onChangeRef.current?.(data);
   }, [data]);
+  // The width the page is shown at. A view setting only: it is not in the page data and not in the history.
+  const [frame, setFrame] = useState<"desktop" | "phone">("desktop");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
@@ -305,10 +307,28 @@ export function Editor({
             Add
           </button>
         </div>
+        <div className={styles.group} role="group" aria-label="Frame">
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            aria-pressed={frame === "desktop"}
+            onClick={() => setFrame("desktop")}
+          >
+            Desktop
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            aria-pressed={frame === "phone"}
+            onClick={() => setFrame("phone")}
+          >
+            Phone
+          </button>
+        </div>
         {onSave && (
           <button
             type="button"
-            className={`${styles.button} ${styles.primary}`}
+            className={`${styles.button} ${styles.primary} ${styles.save}`}
             onClick={() => {
               // A change that is still pending is stored first, and it is part of what is saved.
               const pending = draft;
@@ -329,7 +349,10 @@ export function Editor({
         tabIndex={0}
         onPointerDown={press}
       >
-        <Render data={shown} className={styles.page} />
+        <Render
+          data={shown}
+          className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
+        />
         <SelectionBox
           target={block}
           container={workspace}
