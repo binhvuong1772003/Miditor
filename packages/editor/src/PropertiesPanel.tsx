@@ -41,6 +41,8 @@ export interface PropertiesPanelProps {
   onCommit: (patch: PanelPatch) => void;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
+  /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
+  onResetPhone: () => void;
   /** False when the blocks cannot be changed from this screen, so the button that deletes one is off. */
   canDelete: boolean;
   /** Delete the selected block and everything in it. */
@@ -56,6 +58,7 @@ export interface PropertiesPanelProps {
 export function PropertiesPanel({
   node,
   device,
+  onResetPhone,
   canDelete,
   def,
   onPreview,
@@ -89,6 +92,11 @@ export function PropertiesPanel({
           props={node.props}
           onChange={(name, value) => onCommit({ key: "prop", name, value })}
         />
+      )}
+      {device === "phone" && isFreeNode(node) && node.phone && (
+        <button type="button" className={styles.reset} onClick={onResetPhone}>
+          Reset to automatic
+        </button>
       )}
       {isFreeNode(node) && (
         <>

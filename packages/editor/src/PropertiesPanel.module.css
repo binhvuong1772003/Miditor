@@ -6,6 +6,28 @@
   padding: 1rem;
 }
 
+.reset {
+  appearance: none;
+  align-self: start;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--_border);
+  border-radius: 6px;
+  background: var(--_canvas);
+  color: var(--_text);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reset:hover {
+  background: color-mix(in srgb, var(--_focus) 10%, var(--_canvas));
+}
+
+.reset:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
 .delete {
   appearance: none;
   align-self: start;

@@ -384,6 +384,16 @@ export function Editor({
     }));
   };
 
+  /** The selected block gets its automatic phone placement again; the desktop one is not touched. */
+  const resetPhone = () => {
+    if (!selectedNode || !isFreeNode(selectedNode) || !selectedNode.phone) return;
+    const id = selectedNode.id;
+    setData((prev) => ({
+      ...prev,
+      root: updateNode(prev.root, id, (n) => (isFreeNode(n) ? withPhoneBox(n, undefined) : n)),
+    }));
+  };
+
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
   const parentSize = () => {
     const parent = block?.parentElement;
@@ -631,6 +641,7 @@ export function Editor({
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
           device={frame}
+          onResetPhone={resetPhone}
           canDelete={!onPhone}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
