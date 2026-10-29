@@ -31,6 +31,8 @@ export interface SelectionBoxProps {
   container: HTMLElement | null;
   /** A class for moveable's control layer, to colour the selection outline. */
   className?: string | undefined;
+  /** Resizing always keeps the width to height ratio, for a block that must not be squashed. */
+  lockRatio?: boolean;
   /** The smallest width and height, in px, that a resize can reach. */
   minSize: number;
   /** The node's current rotation in degrees, which Shift snaps the turn against. */
@@ -102,6 +104,7 @@ export function SelectionBox({
   target,
   container,
   className,
+  lockRatio = false,
   minSize,
   angle,
   onGestureStart,
@@ -174,7 +177,7 @@ export function SelectionBox({
       draggable
       resizable
       rotatable
-      keepRatio={keepRatio}
+      keepRatio={lockRatio || keepRatio}
       origin={false}
       throttleDrag={0}
       throttleResize={0}

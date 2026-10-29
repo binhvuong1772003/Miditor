@@ -158,6 +158,11 @@ export function Editor({
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
   const shown = useMemo<PageData>(() => (draft ? withDraft(data, draft) : data), [data, draft]);
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
+  // The kind of the selected node, or `undefined` for one nobody registered.
+  const selectedDef =
+    selectedNode && Object.hasOwn(registry, selectedNode.type)
+      ? registry[selectedNode.type]
+      : undefined;
 
   // `<Render>` owns the elements, so look up the one for the selected node after every render.
   useLayoutEffect(() => {
@@ -424,6 +429,7 @@ export function Editor({
           target={block}
           container={workspace}
           className={styles.selection}
+          lockRatio={selectedDef?.lockRatio === true}
           minSize={minSize(selectedNode?.styles)}
           angle={selectedNode && isFreeNode(selectedNode) ? selectedNode.rotation : 0}
           onGestureStart={startGesture}
@@ -437,11 +443,7 @@ export function Editor({
           // A new panel for each node, so text typed for one is never applied to another.
           key={selectedNode?.id ?? "none"}
           node={selectedNode}
-          def={
-            selectedNode && Object.hasOwn(registry, selectedNode.type)
-              ? registry[selectedNode.type]
-              : undefined
-          }
+          def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
           onDiscard={() => setDraft(null)}
