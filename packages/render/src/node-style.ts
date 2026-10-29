@@ -1,6 +1,7 @@
 import {
+  boxFor,
   cssFor,
-  freeBoxOf,
+  type Device,
   isFreeNode,
   isHexColor,
   isPixelLength,
@@ -86,7 +87,11 @@ export const isBuiltIn = (type: string) => Object.hasOwn(BY_TYPE, type);
  * belongs to the host page: its rules would leak through. `initial` cuts that chain at the root; the
  * other nodes then inherit the page typography the root writes out.
  */
-export function nodeStyle(node: TreeNode, isRoot: boolean): CSSProperties {
+export function nodeStyle(
+  node: TreeNode,
+  isRoot: boolean,
+  device: Device = "desktop",
+): CSSProperties {
   const style: CSSProperties = {
     all: isRoot ? "initial" : "revert",
     ...BOX,
@@ -95,8 +100,8 @@ export function nodeStyle(node: TreeNode, isRoot: boolean): CSSProperties {
     ...lookOf(node.styles),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
-  // order of painting. A free node sits where its anchors put it.
+  // order of painting. A free node sits where its anchors put it, on this screen.
   return isFreeNode(node)
-    ? { ...style, ...cssFor(freeBoxOf(node)) }
+    ? { ...style, ...cssFor(boxFor(node, device)) }
     : { ...style, position: "relative" };
 }

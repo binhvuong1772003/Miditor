@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { FlowNode, FreeNode, PageData } from "@midito-kitchen/core";
+import type { Device, FlowNode, FreeNode, PageData } from "@midito-kitchen/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Render } from "./Render";
@@ -25,8 +25,10 @@ const free = (id: string): FreeNode => ({
 });
 
 const page = (root: FlowNode): PageData => ({ schemaVersion: 1, root });
-const html = (data: PageData, className?: string) =>
-  renderToStaticMarkup(<Render data={data} {...(className ? { className } : {})} />);
+const html = (data: PageData, className?: string, device?: Device) =>
+  renderToStaticMarkup(
+    <Render data={data} {...(className ? { className } : {})} {...(device ? { device } : {})} />,
+  );
 
 /** The opening tag of the element for this node id. */
 const tagOf = (markup: string, id: string) =>
@@ -264,5 +266,71 @@ describe("<Render> Group", () => {
     expect(m.indexOf('data-midito-id="a"')).toBeLessThan(m.indexOf('data-midito-id="b"'));
     // The only layer is the one the shape draws, and the group has none.
     expect(m.match(/aria-hidden/g)).toHaveLength(1);
+  });
+});
+
+describe("<Render> on a phone", () => {
+  const withPhone = (): FreeNode => ({
+    ...free("hand"),
+    phone: {
+      x: { anchor: "start", offset: 11 },
+      y: { anchor: "end", offset: 22 },
+      w: { kind: "px", v: 33 },
+      h: { kind: "px", v: 44 },
+      rotation: 0,
+    },
+  });
+  const data = page(flow("root", "Page", [free("auto"), withPhone()]));
+
+  it("draws the desktop placement made smaller when nobody set one for the phone", () => {
+    const tag = tagOf(html(data, undefined, "phone"), "auto");
+    // 160 x 96 at the top 40 right 20 of a 960 px page, at 375 / 960.
+    expect(tag).toContain("width:62.5px");
+    expect(tag).toContain("height:37.5px");
+    expect(tag).toContain("top:15.63px");
+    expect(tag).toContain("right:7.81px");
+  });
+
+  it("draws the placement set by hand for the phone", () => {
+    const tag = tagOf(html(data, undefined, "phone"), "hand");
+    expect(tag).toContain("left:11px");
+    expect(tag).toContain("bottom:22px");
+    expect(tag).toContain("width:33px");
+    expect(tag).toContain("height:44px");
+  });
+
+  it("draws the desktop placement on the desktop, also for a block that has a phone one", () => {
+    for (const markup of [html(data), html(data, undefined, "desktop")]) {
+      expect(tagOf(markup, "auto")).toContain("width:160px");
+      expect(tagOf(markup, "hand")).toContain("width:160px");
+      expect(tagOf(markup, "hand")).toContain("right:20px");
+    }
+  });
+
+  it("takes anything but phone for the desktop", () => {
+    const odd = renderToStaticMarkup(<Render data={data} device={"tablet" as Device} />);
+    expect(tagOf(odd, "auto")).toContain("width:160px");
+  });
+
+  it("draws a flow block the same on both screens", () => {
+    const flowPage = page(flow("root", "Page", [flow("f", "Container")]));
+    expect(html(flowPage, undefined, "phone")).toBe(html(flowPage));
+  });
+
+  it("makes the words smaller with the page, but not below 12 px or above the desktop size", () => {
+    const text = (id: string, size: number): FlowNode => ({
+      ...flow(id, "Text"),
+      props: { text: "Hi", size },
+    });
+    const m = html(
+      page(flow("root", "Page", [text("big", 40), text("mid", 24), text("tiny", 10)])),
+      undefined,
+      "phone",
+    );
+    expect(tagOf(m, "big")).toContain("font-size:15.63px");
+    expect(tagOf(m, "mid")).toContain("font-size:12px");
+    expect(tagOf(m, "tiny")).toContain("font-size:10px");
+    const d = html(page(flow("root", "Page", [text("mid", 24)])));
+    expect(tagOf(d, "mid")).toContain("font-size:24px");
   });
 });
