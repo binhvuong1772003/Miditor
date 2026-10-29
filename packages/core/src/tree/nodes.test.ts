@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { nodesOf, relabel, tree } from "../position/arbitraries";
-import { findNode, updateNode } from "./nodes";
+import { findNode, removeNode, updateNode } from "./nodes";
 import type { FlowNode, TreeNode } from "./types";
 
 const leaf = (id: string): FlowNode => ({
@@ -141,6 +141,42 @@ describe("findNode and updateNode, properties", () => {
         const all = nodesOf(labelled);
         const target = all[pick % all.length] as TreeNode;
         return updateNode(labelled, target.id, (n) => n) === labelled;
+      }),
+    );
+  });
+});
+
+describe("removeNode", () => {
+  it("removes a leaf and a whole branch, and shares what it did not touch", () => {
+    const withoutA2 = removeNode(root, "a2");
+    expect(findNode(withoutA2, "a2")).toBeUndefined();
+    expect(findNode(withoutA2, "a1")).toBe(a1);
+    expect(findNode(withoutA2, "b")).toBe(b);
+    const withoutA = removeNode(root, "a");
+    expect(withoutA.children).toEqual([b]);
+    expect(findNode(withoutA, "a1")).toBeUndefined();
+  });
+
+  it("leaves the original tree as it was", () => {
+    removeNode(root, "a");
+    expect(root.children).toEqual([a, b]);
+  });
+
+  it("returns the very same tree for the root and for an id that is not there", () => {
+    expect(removeNode(root, "root")).toBe(root);
+    expect(removeNode(root, "nope")).toBe(root);
+  });
+
+  it("removes exactly the subtree: every other id stays", () => {
+    fc.assert(
+      fc.property(tree, (generated) => {
+        const t = relabel(generated);
+        const ids = nodesOf(t).map((n) => n.id);
+        for (const id of ids.slice(1)) {
+          const gone = new Set(nodesOf(findNode(t, id) as TreeNode).map((n) => n.id));
+          const left = nodesOf(removeNode(t, id)).map((n) => n.id);
+          expect(left).toEqual(ids.filter((x) => !gone.has(x)));
+        }
       }),
     );
   });

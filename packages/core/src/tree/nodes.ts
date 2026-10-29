@@ -29,3 +29,24 @@ export function updateNode(
   });
   return changed ? { ...root, children } : root;
 }
+
+/**
+ * A new tree without the node with this id and everything under it. Only the nodes on the way down
+ * to its parent are copied. The root cannot be removed, and when the id is not in the tree: in both
+ * cases the very same tree comes back.
+ */
+export function removeNode(root: TreeNode, id: string): TreeNode {
+  if (root.id === id) return root;
+  let changed = false;
+  const children: TreeNode[] = [];
+  for (const child of root.children) {
+    if (child.id === id) {
+      changed = true;
+      continue;
+    }
+    const next = removeNode(child, id);
+    if (next !== child) changed = true;
+    children.push(next);
+  }
+  return changed ? { ...root, children } : root;
+}
