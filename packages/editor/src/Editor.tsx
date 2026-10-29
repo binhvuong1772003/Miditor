@@ -166,6 +166,9 @@ export function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The block whose children a press selects: the page at the start, a group once it is entered.
   const [scopeId, setScopeId] = useState(data.root.id);
+  // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
+  // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
+  const [picked, setPicked] = useState<string[]>([]);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
@@ -186,6 +189,18 @@ export function Editor({
     setBlock(workspace && selectedId ? elementOf(workspace, selectedId) : null);
   });
 
+  // Mark the other selected blocks. The elements belong to `<Render>`, so the mark is put on after
+  // each render and taken off again before the next.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
+  useLayoutEffect(() => {
+    if (!workspace) return;
+    const marked = picked.flatMap((id) => elementOf(workspace, id) ?? []);
+    for (const element of marked) element.dataset.miditoPicked = "";
+    return () => {
+      for (const element of marked) delete element.dataset.miditoPicked;
+    };
+  }, [workspace, picked, shown]);
+
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
     const target = event.target as Element;
@@ -202,6 +217,18 @@ export function Editor({
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+    // Shift adds a block to the selection, or takes it out, when it has the same parent as the one
+    // selected: they are the blocks that can be grouped.
+    if (event.shiftKey && selectedId && hit) {
+      const sameParent = parentOf(data.root, hit.id)?.id === parentOf(data.root, selectedId)?.id;
+      if (sameParent && hit.id !== selectedId) {
+        setPicked((list) =>
+          list.includes(hit.id) ? list.filter((other) => other !== hit.id) : [...list, hit.id],
+        );
+      }
+      return;
+    }
+    setPicked([]);
     setSelectedId(hit?.id ?? null);
     setScopeId(hit?.scopeId ?? data.root.id);
     // A press on a node keeps the keyboard inside the editor, so that Esc reaches it. The editor's
@@ -299,6 +326,7 @@ export function Editor({
     if (!node) return;
     setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
     setSelectedId(id);
+    setPicked([]);
     setScopeId(parentId);
   };
 
@@ -322,9 +350,14 @@ export function Editor({
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (!selectedId || selectedId === data.root.id) return;
+    const gone = [selectedId, ...picked];
     setDraft(null);
-    setData((prev) => ({ ...prev, root: removeNode(prev.root, selectedId) }));
+    setData((prev) => ({
+      ...prev,
+      root: gone.reduce((root, id) => removeNode(root, id), prev.root),
+    }));
     setSelectedId(null);
+    setPicked([]);
   };
 
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
@@ -332,6 +365,7 @@ export function Editor({
     const next = move(history).present;
     setDraft(null);
     setSelectedId((id) => (id !== null && findNode(next.root, id) ? id : null));
+    setPicked([]);
     setScopeId((id) => (findNode(next.root, id) ? id : next.root.id));
     setHistory(move);
   };
@@ -353,6 +387,7 @@ export function Editor({
           setDraft(null);
           // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
           const scope = scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
+          setPicked([]);
           if (selectedId && scope) {
             setSelectedId(scope.id);
             setScopeId(parentOf(data.root, scope.id)?.id ?? data.root.id);
