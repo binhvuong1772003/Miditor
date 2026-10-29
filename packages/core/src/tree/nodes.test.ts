@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { nodesOf, relabel, tree } from "../position/arbitraries";
-import { findNode, insertNode, nextId, removeNode, updateNode } from "./nodes";
+import { findNode, insertNode, moveNode, nextId, removeNode, updateNode } from "./nodes";
 import type { FlowNode, TreeNode } from "./types";
 
 const leaf = (id: string): FlowNode => ({
@@ -235,6 +235,77 @@ describe("insertNode", () => {
         const id = nextId(t);
         const parent = nodesOf(t).at(-1) as TreeNode;
         expect(removeNode(insertNode(t, parent.id, leaf(id)), id)).toEqual(t);
+      }),
+    );
+  });
+});
+
+describe("moveNode", () => {
+  const p = box("p", [leaf("p1"), leaf("p2")]);
+  const q = box("q", []);
+  const top = box("root", [p, q, leaf("c")]);
+  const ids = (n: TreeNode | undefined) => n?.children.map((c) => c.id);
+
+  it("moves a node, with what is under it, to another parent and shares the rest", () => {
+    const out = moveNode(root, "a", "b");
+    expect(ids(out)).toEqual(["b"]);
+    expect(findNode(out, "a")).toBe(a);
+    expect(ids(findNode(out, "b"))).toEqual(["a"]);
+    expect(findNode(out, "a2")).toBe(a2);
+    expect(ids(root)).toEqual(["a", "b"]);
+  });
+
+  it("moves into a parent at an index that counts the children without the moved node", () => {
+    expect(ids(findNode(moveNode(top, "c", "p", 1), "p"))).toEqual(["p1", "c", "p2"]);
+    expect(ids(findNode(moveNode(top, "c", "p", 0), "p"))).toEqual(["c", "p1", "p2"]);
+    expect(ids(findNode(moveNode(top, "c", "p", 99), "p"))).toEqual(["p1", "p2", "c"]);
+    expect(ids(findNode(moveNode(top, "c", "p", -3), "p"))).toEqual(["c", "p1", "p2"]);
+    expect(ids(findNode(moveNode(top, "c", "p", Number.NaN), "p"))).toEqual(["p1", "p2", "c"]);
+  });
+
+  it("reorders inside one parent: the index is the place the node ends up at", () => {
+    expect(ids(moveNode(top, "p", "root", 2))).toEqual(["q", "c", "p"]);
+    expect(ids(moveNode(top, "c", "root", 0))).toEqual(["c", "p", "q"]);
+    expect(ids(moveNode(top, "p", "root"))).toEqual(["q", "c", "p"]);
+  });
+
+  it("returns the very same tree when the node would stay where it is", () => {
+    expect(moveNode(top, "p", "root", 0)).toBe(top);
+    expect(moveNode(top, "q", "root", 1)).toBe(top);
+    expect(moveNode(top, "c", "root", 2)).toBe(top);
+    expect(moveNode(top, "c", "root", 99)).toBe(top);
+    expect(moveNode(top, "c", "root")).toBe(top);
+  });
+
+  it("returns the very same tree for the root, a missing node or parent, itself and its own descendants", () => {
+    expect(moveNode(top, "root", "p")).toBe(top);
+    expect(moveNode(top, "nope", "p")).toBe(top);
+    expect(moveNode(top, "c", "nope")).toBe(top);
+    expect(moveNode(top, "p", "p")).toBe(top);
+    expect(moveNode(root, "a", "a1")).toBe(root);
+    expect(moveNode(root, "a", "a2")).toBe(root);
+  });
+
+  it("keeps every node, and moving back to the old place gives the old tree", () => {
+    fc.assert(
+      fc.property(tree, fc.nat(), fc.nat(), (generated, pickNode, pickParent) => {
+        const t = relabel(generated);
+        const all = nodesOf(t);
+        const node = all[1 + (pickNode % Math.max(1, all.length - 1))];
+        if (!node || all.length < 2) return;
+        const inside = new Set(nodesOf(node).map((n) => n.id));
+        const targets = all.filter((n) => !inside.has(n.id));
+        const target = targets[pickParent % targets.length] as TreeNode;
+        const oldParent = all.find((n) => n.children.some((c) => c.id === node.id)) as TreeNode;
+        const oldIndex = oldParent.children.indexOf(node);
+        const moved = moveNode(t, node.id, target.id, 0);
+        expect(
+          nodesOf(moved)
+            .map((n) => n.id)
+            .sort(),
+        ).toEqual(all.map((n) => n.id).sort());
+        expect(findNode(moved, target.id)?.children[0]).toBe(node);
+        expect(moveNode(moved, node.id, oldParent.id, oldIndex)).toEqual(t);
       }),
     );
   });

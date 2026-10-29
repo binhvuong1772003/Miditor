@@ -91,3 +91,45 @@ export function insertNode(
     };
   });
 }
+
+/** The node that has this id among its children, or `undefined` for the root and for an id not in the tree. */
+function parentOf(root: TreeNode, id: string): TreeNode | undefined {
+  for (const child of root.children) {
+    if (child.id === id) return root;
+    const found = parentOf(child, id);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/**
+ * A new tree where the node with this id, and everything under it, sits among the children of
+ * `newParentId` at `index`. The index counts the children of the new parent without the moved node
+ * (so within one parent it is the place the node ends up at), is kept inside the list, and is the
+ * last place when it is missing or not a whole number. Only the nodes on the way to the old and the
+ * new parent are copied. The very same tree comes back when the node or the new parent is not in
+ * the tree, when the node is the root, when the new parent is the node itself or inside it, and
+ * when the node would stay where it is.
+ */
+export function moveNode(
+  root: TreeNode,
+  id: string,
+  newParentId: string,
+  index?: number,
+): TreeNode {
+  const node = findNode(root, id);
+  const oldParent = parentOf(root, id);
+  if (!node || !oldParent || !findNode(root, newParentId)) return root;
+  // The new parent is the node or one of its descendants: the node would end up inside itself.
+  if (findNode(node, newParentId)) return root;
+  if (oldParent.id === newParentId) {
+    const siblings = oldParent.children.filter((child) => child.id !== id);
+    const at = clampIndex(index, siblings.length);
+    if (at === oldParent.children.indexOf(node)) return root;
+  }
+  return insertNode(removeNode(root, id), newParentId, node, index);
+}
+
+/** Where `index` falls in a list of `length` items: inside it, or the end when it is not a whole number. */
+const clampIndex = (index: number | undefined, length: number) =>
+  index === undefined || !Number.isInteger(index) ? length : Math.min(Math.max(index, 0), length);
