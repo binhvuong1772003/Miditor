@@ -326,6 +326,7 @@ export function Editor({
           </button>
         </div>
         {onSave && (
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
           <button
             type="button"
             className={`${styles.button} ${styles.primary} ${styles.save}`}
