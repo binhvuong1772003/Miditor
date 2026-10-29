@@ -84,3 +84,29 @@ describe("shapeLayerStyle", () => {
     expect(shapeLayerStyle({}).pointerEvents).toBe("none");
   });
 });
+
+describe("textStyle on a phone", () => {
+  it("follows the page ratio, with 12 px as the floor and the desktop size as the ceiling", () => {
+    expect(textStyle({ size: 40 }, "phone").fontSize).toBe("15.63px");
+    expect(textStyle({ size: 24 }, "phone").fontSize).toBe("12px");
+    expect(textStyle({ size: 12 }, "phone").fontSize).toBe("12px");
+    expect(textStyle({ size: 10 }, "phone").fontSize).toBe("10px");
+    expect(textStyle({ size: 1 }, "phone").fontSize).toBe("1px");
+    expect(textStyle({ size: 400 }, "phone").fontSize).toBe("156.25px");
+  });
+
+  it("uses the default size, and changes only the size", () => {
+    expect(textStyle({}, "phone").fontSize).toBe("12px");
+    const { fontSize: _a, ...desktop } = textStyle({ size: 40, color: "#ff0000", bold: true });
+    const { fontSize: _b, ...phone } = textStyle(
+      { size: 40, color: "#ff0000", bold: true },
+      "phone",
+    );
+    expect(phone).toEqual(desktop);
+  });
+
+  it("is the desktop size on the desktop", () => {
+    expect(textStyle({ size: 40 }, "desktop").fontSize).toBe("40px");
+    expect(textStyle({ size: 40 }).fontSize).toBe("40px");
+  });
+});
