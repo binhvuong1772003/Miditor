@@ -169,3 +169,80 @@ describe("<Render>", () => {
     expect(m).toContain("a&quot;b&lt;c");
   });
 });
+
+describe("<Render> Text and Shape", () => {
+  const text = (id: string, props: FlowNode["props"], children: FlowNode[] = []): FlowNode => ({
+    ...flow(id, "Text", children),
+    props,
+  });
+  const shape = (id: string, props: FlowNode["props"], children: FlowNode[] = []): FlowNode => ({
+    ...flow(id, "Shape", children),
+    props,
+  });
+
+  it("draws a text with its words, size, colour, weight and alignment", () => {
+    const m = html(
+      page(
+        flow("root", "Page", [
+          text("t", { text: "Hello", size: 30, color: "#ff0000", bold: true, align: "center" }),
+        ]),
+      ),
+    );
+    const tag = tagOf(m, "t");
+    expect(tag).toContain("font-size:30px");
+    expect(tag).toContain("color:#ff0000");
+    expect(tag).toContain("font-weight:700");
+    expect(tag).toContain("text-align:center");
+    expect(tag).not.toContain("data-midito-unknown");
+    expect(m).toContain(">Hello</div>");
+  });
+
+  it("escapes the words of a text and keeps the line breaks", () => {
+    const m = html(page(flow("root", "Page", [text("t", { text: "<b>x</b>\ny" })])));
+    expect(m).toContain("&lt;b&gt;x&lt;/b&gt;\ny");
+    expect(m).not.toContain("<b>");
+    expect(tagOf(m, "t")).toContain("white-space:pre-wrap");
+  });
+
+  it("does not draw the blocks inside a text", () => {
+    const m = html(
+      page(flow("root", "Page", [text("t", { text: "Hi" }, [flow("inside", "Container")])])),
+    );
+    expect(m).not.toContain('data-midito-id="inside"');
+  });
+
+  it("draws a shape as a layer under the blocks inside it", () => {
+    const m = html(
+      page(
+        flow("root", "Page", [
+          shape("s", { shape: "ellipse", fill: "#00ff00" }, [text("t", { text: "Hi" })]),
+        ]),
+      ),
+    );
+    const layer = m.indexOf('aria-hidden="true"');
+    expect(layer).toBeGreaterThan(m.indexOf('data-midito-id="s"'));
+    expect(layer).toBeLessThan(m.indexOf('data-midito-id="t"'));
+    expect(m).toContain("border-radius:50%");
+    expect(m).toContain("background-color:#00ff00");
+    expect(m).toContain("pointer-events:none");
+  });
+
+  it("clips a triangle on its layer only, so the blocks inside are not clipped", () => {
+    const m = html(page(flow("root", "Page", [shape("s", { shape: "triangle" })])));
+    expect(m).toContain("clip-path:polygon(50% 0, 100% 100%, 0 100%)");
+    expect(tagOf(m, "s")).not.toContain("clip-path");
+  });
+
+  it("draws bad props as the defaults and does not throw", () => {
+    const m = html(
+      page(
+        flow("root", "Page", [
+          text("t", { text: 1, size: "x", color: 5 }),
+          shape("s", { shape: 7, fill: "nope" }),
+        ]),
+      ),
+    );
+    expect(tagOf(m, "t")).toContain("font-size:24px");
+    expect(m).toContain("background-color:#cbd5e1");
+  });
+});
