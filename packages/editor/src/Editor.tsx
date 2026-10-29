@@ -5,10 +5,13 @@ import {
   findNode,
   freeBoxOf,
   inferBox,
+  insertNode,
   isFreeNode,
   isPageData,
   minSize,
   moveRect,
+  newBlock,
+  nextId,
   normalizeAngle,
   type PageData,
   type Rect,
@@ -209,6 +212,14 @@ export function Editor({
     }));
   };
 
+  /** A new block in the middle of the page, selected. A pending change is stored first. */
+  const addBlock = () => {
+    if (draft) commitPatch(draft.id, draft);
+    const id = nextId(data.root);
+    setData((prev) => ({ ...prev, root: insertNode(prev.root, prev.root.id, newBlock(id)) }));
+    setSelectedId(id);
+  };
+
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = (move: typeof undo) => {
     const next = move(history).present;
@@ -263,6 +274,14 @@ export function Editor({
             onClick={() => step(redo)}
           >
             Redo
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            title="Add a block"
+            onClick={addBlock}
+          >
+            Add
           </button>
         </div>
         {onSave && (
