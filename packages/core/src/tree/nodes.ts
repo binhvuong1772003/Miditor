@@ -1,3 +1,4 @@
+import { isFreeNode, withPhoneBox } from "./free-box";
 import type { TreeNode } from "./types";
 
 /** The node with this id, searching the tree in depth-first order, or `undefined`. Ids are unique. */
@@ -109,7 +110,8 @@ export function parentOf(root: TreeNode, id: string): TreeNode | undefined {
  * last place when it is missing or not a whole number. Only the nodes on the way to the old and the
  * new parent are copied. The very same tree comes back when the node or the new parent is not in
  * the tree, when the node is the root, when the new parent is the node itself or inside it, and
- * when the node would stay where it is.
+ * when the node would stay where it is. A free node that gets another parent loses its phone
+ * placement (see `FreeNode.phone`); one that only changes place among its siblings keeps it.
  */
 export function moveNode(
   root: TreeNode,
@@ -127,7 +129,11 @@ export function moveNode(
     const at = clampIndex(index, siblings.length);
     if (at === oldParent.children.indexOf(node)) return root;
   }
-  return insertNode(removeNode(root, id), newParentId, node, index);
+  // A new parent is a new frame, so a placement set by hand for the phone no longer fits. What is
+  // inside the node is measured from the node, and keeps its own.
+  const moved =
+    oldParent.id !== newParentId && isFreeNode(node) ? withPhoneBox(node, undefined) : node;
+  return insertNode(removeNode(root, id), newParentId, moved, index);
 }
 
 /** Where `index` falls in a list of `length` items: inside it, or the end when it is not a whole number. */

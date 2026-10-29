@@ -1,8 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { nodesOf, relabel, tree } from "../position/arbitraries";
+import { withPhoneBox } from "./free-box";
 import { findNode, insertNode, moveNode, nextId, removeNode, updateNode } from "./nodes";
-import type { FlowNode, TreeNode } from "./types";
+import type { FlowNode, FreeNode, TreeNode } from "./types";
 
 const leaf = (id: string): FlowNode => ({
   id,
@@ -308,5 +309,49 @@ describe("moveNode", () => {
         expect(moveNode(moved, node.id, oldParent.id, oldIndex)).toEqual(t);
       }),
     );
+  });
+});
+
+describe("moveNode and the phone placement", () => {
+  const byHand = {
+    x: { anchor: "start", offset: 1 },
+    y: { anchor: "start", offset: 2 },
+    w: { kind: "px", v: 3 },
+    h: { kind: "px", v: 4 },
+    rotation: 0,
+  } as const;
+  const placed = (id: string, children: TreeNode[] = []): FreeNode =>
+    withPhoneBox(
+      {
+        id,
+        type: "Container",
+        props: {},
+        styles: {},
+        position: { mode: "free", x: byHand.x, y: byHand.y },
+        size: { w: byHand.w, h: byHand.h },
+        rotation: 0,
+        children,
+      },
+      byHand,
+    );
+  const inner = placed("inner");
+  const top = box("root", [placed("a", [inner]), placed("b"), box("c", [])]);
+
+  it("drops the placement of a block that gets another parent, but not of what is inside it", () => {
+    const out = moveNode(top, "a", "c");
+    expect((findNode(out, "a") as FreeNode).phone).toBeUndefined();
+    expect("phone" in (findNode(out, "a") as FreeNode)).toBe(false);
+    expect((findNode(out, "inner") as FreeNode).phone).toBe(byHand);
+    expect((findNode(out, "b") as FreeNode).phone).toBe(byHand);
+  });
+
+  it("keeps the placement of a block that only changes place among its siblings", () => {
+    const out = moveNode(top, "a", "root", 2);
+    expect((findNode(out, "a") as FreeNode).phone).toBe(byHand);
+  });
+
+  it("moves a flow block as before", () => {
+    const out = moveNode(top, "c", "a");
+    expect(findNode(out, "c")).toBe(top.children[2]);
   });
 });

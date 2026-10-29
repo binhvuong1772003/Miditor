@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { box, solidContainer } from "../position/arbitraries";
 import { resolveRect } from "../position/resolve-rect";
 import type { FreeBox, Rect } from "../position/types";
-import { freeBoxOf, isFreeNode, withFreeBox } from "./free-box";
+import { freeBoxOf, isFreeNode, withFreeBox, withPhoneBox } from "./free-box";
 import { groupNodes, ungroupNode } from "./group";
 import { findNode } from "./nodes";
 import { emptyPage, isPageData } from "./page";
@@ -252,5 +252,36 @@ describe("ungroupNode", () => {
         },
       ),
     );
+  });
+});
+
+describe("grouping and the phone placement", () => {
+  const byHand = at(1, 2, 3, 4);
+  const a = withPhoneBox(placed("a", at(10, 10)), byHand);
+  const b = withPhoneBox(placed("b", at(200, 100)), byHand);
+  const c = withPhoneBox(placed("c", at(50, 200)), byHand);
+  const root = pageWith(a, c, b);
+
+  it("drops the phone placement of the blocks it gathers, and only of those", () => {
+    const out = groupNodes(root, ["a", "b"], "g", container);
+    expect((findNode(out, "a") as FreeNode).phone).toBeUndefined();
+    expect((findNode(out, "b") as FreeNode).phone).toBeUndefined();
+    expect((findNode(out, "c") as FreeNode).phone).toBe(byHand);
+  });
+
+  it("drops the phone placement of the blocks it frees", () => {
+    const grouped = groupNodes(root, ["a", "b"], "g", container);
+    const inGroup = {
+      ...grouped,
+      children: grouped.children.map((n) =>
+        n.id === "g"
+          ? { ...n, children: n.children.map((m) => withPhoneBox(m as FreeNode, byHand)) }
+          : n,
+      ),
+    } as TreeNode;
+    const out = ungroupNode(inGroup, "g", container);
+    expect((findNode(out, "a") as FreeNode).phone).toBeUndefined();
+    expect((findNode(out, "b") as FreeNode).phone).toBeUndefined();
+    expect((findNode(out, "c") as FreeNode).phone).toBe(byHand);
   });
 });
