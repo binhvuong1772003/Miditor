@@ -62,6 +62,9 @@
   padding-inline: 1.5rem;
   background: var(--_chrome);
   border-block-end: 1px solid var(--_border);
+  /* A narrow editor scrolls its toolbar sideways instead of squeezing the controls. */
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .group {
@@ -223,6 +226,22 @@
   opacity: 0.9;
 }
 
+/* Ghost: no edge until it is pointed at. */
+.ghost {
+  background: transparent;
+  color: var(--_text);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--_soft);
+}
+
+/* An icon alone fills the control: a square. */
+.icon {
+  inline-size: var(--_control);
+  padding: 0;
+}
+
 /* Outline: white, with a hairline and a little lift. */
 .secondary {
   background: var(--_canvas);
@@ -238,6 +257,73 @@
 .secondary[aria-pressed="true"] {
   background: var(--_canvas);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
+/* The block kind the Add button makes. */
+.select {
+  appearance: auto;
+  block-size: var(--_control);
+  padding: 0 0.625rem;
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius-card);
+  background: var(--_canvas);
+  box-shadow: var(--_lift);
+  color: var(--_text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Two or more choices in one track, the chosen one raised: the kit's tabs. */
+.segmented {
+  display: flex;
+  padding: 3px;
+  background: var(--_soft);
+  border-radius: var(--_radius);
+}
+
+.segment {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  block-size: 1.875rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+
+.segment[aria-pressed="true"] {
+  background: var(--_canvas);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment {
+    transition: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

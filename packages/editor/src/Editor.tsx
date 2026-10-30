@@ -70,6 +70,7 @@ import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/Selec
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { Icon } from "./icons";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
@@ -926,24 +927,28 @@ export function Editor({
         <div className={styles.group}>
           <button
             type="button"
-            className={`${styles.button} ${styles.secondary}`}
+            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+            aria-label="Undo"
             disabled={!canUndo(history)}
             title="Undo (Ctrl+Z)"
             onClick={() => step(undo)}
           >
-            Undo
+            <Icon name="undo" size={18} />
           </button>
           <button
             type="button"
-            className={`${styles.button} ${styles.secondary}`}
+            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+            aria-label="Redo"
             disabled={!canRedo(history)}
             title="Redo (Shift+Ctrl+Z)"
             onClick={() => step(redo)}
           >
-            Redo
+            <Icon name="redo" size={18} />
           </button>
+        </div>
+        <div className={styles.group}>
           <select
-            className={`${styles.button} ${styles.secondary}`}
+            className={styles.select}
             aria-label="Kind of block to add"
             disabled={onPhone}
             value={addKind}
@@ -962,6 +967,7 @@ export function Editor({
             title={onPhone ? "Switch to Desktop to add blocks" : "Add a block"}
             onClick={addBlock}
           >
+            <Icon name="plus" />
             Add
           </button>
           {config?.uploadImage && (
@@ -974,6 +980,7 @@ export function Editor({
                 title={onPhone ? "Switch to Desktop to add blocks" : "Upload a picture and add it"}
                 onClick={() => chooser.current?.click()}
               >
+                <Icon name="img" />
                 {adding.busy ? "Uploading…" : "Upload image"}
               </button>
               {adding.error && (
@@ -987,7 +994,7 @@ export function Editor({
         <div className={styles.group}>
           <button
             type="button"
-            className={`${styles.button} ${styles.secondary}`}
+            className={`${styles.button} ${styles.ghost}`}
             disabled={onPhone || !selectedId || picked.length === 0}
             title={
               onPhone
@@ -1000,7 +1007,7 @@ export function Editor({
           </button>
           <button
             type="button"
-            className={`${styles.button} ${styles.secondary}`}
+            className={`${styles.button} ${styles.ghost}`}
             disabled={onPhone || selectedNode?.type !== "Group"}
             title="Ungroup (Shift+Ctrl+G)"
             onClick={ungroupSelected}
@@ -1009,54 +1016,60 @@ export function Editor({
           </button>
           <button
             type="button"
-            className={`${styles.button} ${styles.secondary}`}
+            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+            aria-label="Duplicate"
             disabled={onPhone || !selectedId}
             title={onPhone ? "Switch to Desktop to duplicate blocks" : "Duplicate (Ctrl+D)"}
             onClick={duplicateSelected}
           >
-            Duplicate
+            <Icon name="copy" size={18} />
           </button>
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.group} role="group" aria-label="Order">
           {(
             [
-              ["front", "Front", "Bring to front"],
-              ["forward", "Forward", "Bring forward"],
-              ["backward", "Backward", "Send backward"],
-              ["back", "Back", "Send to back"],
+              ["front", "front", "Bring to front"],
+              ["forward", "up", "Bring forward"],
+              ["backward", "down", "Send backward"],
+              ["back", "back", "Send to back"],
             ] as const
-          ).map(([to, label, title]) => (
+          ).map(([to, icon, title]) => (
             <button
               key={to}
               type="button"
-              className={`${styles.button} ${styles.secondary}`}
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label={title}
               disabled={onPhone || !selectedId || selectedId === data.root.id}
               title={onPhone ? "Switch to Desktop to change the order" : title}
               onClick={() => reorderSelected(to)}
             >
-              {label}
+              <Icon name={icon} size={18} />
             </button>
           ))}
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.group} role="group" aria-label="Frame">
-          <button
-            type="button"
-            className={`${styles.button} ${styles.secondary}`}
-            aria-pressed={frame === "desktop"}
-            onClick={() => setFrame("desktop")}
-          >
-            Desktop
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.secondary}`}
-            aria-pressed={frame === "phone"}
-            onClick={() => setFrame("phone")}
-          >
-            Phone
-          </button>
+          <div className={styles.segmented}>
+            <button
+              type="button"
+              className={styles.segment}
+              aria-pressed={frame === "desktop"}
+              onClick={() => setFrame("desktop")}
+            >
+              <Icon name="desk" />
+              Desktop
+            </button>
+            <button
+              type="button"
+              className={styles.segment}
+              aria-pressed={frame === "phone"}
+              onClick={() => setFrame("phone")}
+            >
+              <Icon name="phone" />
+              Phone
+            </button>
+          </div>
         </div>
         {onSave && (
           <button
