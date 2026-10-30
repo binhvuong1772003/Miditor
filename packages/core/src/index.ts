@@ -26,6 +26,13 @@ export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { duplicateNode } from "./tree/duplicate";
 export { freeBoxOf, isFreeNode, withFreeBox, withPhoneBox } from "./tree/free-box";
 export { groupNodes, ungroupNode } from "./tree/group";
+export {
+  MIGRATIONS,
+  type MigrateResult,
+  type Migration,
+  migratePage,
+  runMigrations,
+} from "./tree/migrate";
 export { NEW_BLOCK_SIZE, newBlock } from "./tree/new-block";
 export {
   findNode,
