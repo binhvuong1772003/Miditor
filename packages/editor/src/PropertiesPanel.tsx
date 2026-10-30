@@ -339,7 +339,7 @@ function ColourField({
         <input
           id={textId}
           type="text"
-          className={styles.input}
+          className={`${styles.input} ${styles.mono}`}
           value={text}
           placeholder="#rrggbb"
           spellCheck={false}

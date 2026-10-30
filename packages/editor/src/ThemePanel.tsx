@@ -176,7 +176,7 @@ function FontField({
       <input
         id={id}
         type="text"
-        className={styles.input}
+        className={`${styles.input} ${styles.mono}`}
         value={text}
         placeholder="Inter, sans-serif"
         spellCheck={false}
