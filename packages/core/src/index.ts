@@ -58,6 +58,7 @@ export { type Pick, pickBlock } from "./tree/pick";
 export { type Reorder, reorderNode } from "./tree/reorder";
 export { type ReparentOptions, reparentNode } from "./tree/reparent";
 export { withStyle } from "./tree/styles";
+export { turnOf } from "./tree/turn-of";
 export type {
   FlowNode,
   FreeNode,
