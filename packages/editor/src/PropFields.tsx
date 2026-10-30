@@ -103,6 +103,7 @@ function PropField({ def, name, field, stored, onChange }: PropFieldProps) {
           {...(field.type === "text" && field.maxLength !== undefined
             ? { maxLength: field.maxLength }
             : {})}
+          {...(field.type === "image" ? { placeholder: "https://…" } : {})}
           onChange={(event) => setText(event.target.value)}
           onBlur={applyText}
           onKeyDown={onKeyDown}
