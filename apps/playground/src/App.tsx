@@ -1,4 +1,10 @@
-import { Editor, type PageData, type Registry, type Renderer } from "@midito-kitchen/editor";
+import {
+  Editor,
+  type PageData,
+  type Registry,
+  type Renderer,
+  resolveColor,
+} from "@midito-kitchen/editor";
 import { useState } from "react";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -28,7 +34,7 @@ const components: Registry = {
 
 /** How the host draws its own kind: a heart that fills its box, in the colour stored on the block. */
 const renderers: Record<string, Renderer> = {
-  Heart: ({ props }) => (
+  Heart: ({ props, theme }) => (
     <svg
       viewBox="0 0 24 24"
       width="100%"
@@ -39,7 +45,7 @@ const renderers: Record<string, Renderer> = {
     >
       <path
         d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z"
-        fill={typeof props.color === "string" ? props.color : "#e11d48"}
+        fill={resolveColor(props.color, theme) ?? "#e11d48"}
       />
     </svg>
   ),

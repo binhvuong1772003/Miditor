@@ -1,6 +1,14 @@
-import { type ComponentDef, type Field, type JsonValue, validateProps } from "@midito-kitchen/core";
+import {
+  type ComponentDef,
+  type Field,
+  type JsonValue,
+  resolveColor,
+  type Theme,
+  validateProps,
+} from "@midito-kitchen/core";
 import { type KeyboardEvent, useId, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
+import { ThemePicker } from "./ThemePicker";
 
 export interface PropFieldsProps {
   def: ComponentDef;
@@ -8,10 +16,12 @@ export interface PropFieldsProps {
   props: Record<string, JsonValue>;
   /** A new, valid value for one prop. Not called for a value the field refuses. */
   onChange: (name: string, value: JsonValue) => void;
+  /** The theme of the page, for a colour field to offer its colours. */
+  theme?: Theme | undefined;
 }
 
 /** Temporary: plain inputs built from the fields of a kind, to try the registry by hand. */
-export function PropFields({ def, props, onChange }: PropFieldsProps) {
+export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
   // A picture is added and changed on the canvas, not typed as an address, so it has no field here.
   return Object.entries(def.fields).flatMap(([name, field]) => {
     if (field.type === "image") return [];
@@ -25,6 +35,7 @@ export function PropFields({ def, props, onChange }: PropFieldsProps) {
         field={field}
         stored={stored}
         onChange={onChange}
+        theme={theme}
       />
     );
   });
@@ -36,9 +47,10 @@ interface PropFieldProps {
   field: Field;
   stored: JsonValue | undefined;
   onChange: PropFieldsProps["onChange"];
+  theme: Theme | undefined;
 }
 
-function PropField({ def, name, field, stored, onChange }: PropFieldProps) {
+function PropField({ def, name, field, stored, onChange, theme }: PropFieldProps) {
   const id = useId();
   const [text, setText] = useState(stored === undefined ? "" : String(stored));
   /** Stores `value` when the kind accepts it; otherwise the input goes back to what is stored. */
@@ -93,7 +105,7 @@ function PropField({ def, name, field, stored, onChange }: PropFieldProps) {
         <input
           id={id}
           type="color"
-          value={typeof stored === "string" ? stored : "#000000"}
+          value={resolveColor(stored, theme) ?? "#000000"}
           onChange={(event) => apply(event.target.value)}
         />
       ) : (
@@ -108,6 +120,13 @@ function PropField({ def, name, field, stored, onChange }: PropFieldProps) {
           onChange={(event) => setText(event.target.value)}
           onBlur={applyText}
           onKeyDown={onKeyDown}
+        />
+      )}
+      {field.type === "color" && (
+        <ThemePicker
+          theme={theme}
+          stored={typeof stored === "string" ? stored : undefined}
+          onPick={apply}
         />
       )}
     </div>

@@ -3,6 +3,10 @@ import { type PageData, SCHEMA_VERSION } from "@midito-kitchen/editor";
 /** The page the playground opens when nothing is stored: two free blocks to select, drag, resize and turn. */
 export const SAMPLE_PAGE: PageData = {
   schemaVersion: SCHEMA_VERSION,
+  theme: {
+    colors: { primary: "#2563eb", accent: "#e11d48", paper: "#f8fafc" },
+    fonts: { body: "system-ui, sans-serif", heading: "Georgia, serif" },
+  },
   root: {
     id: "root",
     type: "Page",

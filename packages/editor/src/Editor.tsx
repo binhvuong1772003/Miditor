@@ -6,6 +6,7 @@ import {
   canInsert,
   canMove,
   clipboardText,
+  colorRef,
   copyNodes,
   type Device,
   duplicateNode,
@@ -18,6 +19,7 @@ import {
   inferBox,
   insertNode,
   isFreeNode,
+  isTheme,
   migratePage,
   minSize,
   moveRect,
@@ -36,9 +38,11 @@ import {
   removeNode,
   reorderNode,
   reparentNode,
+  replaceColor,
   resizeRotated,
   resolveRect,
   setAnchor,
+  type Theme,
   type TreeNode,
   turnOf,
   ungroupNode,
@@ -69,6 +73,7 @@ import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
+import { ThemePanel } from "./ThemePanel";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 
 export interface EditorProps {
@@ -112,6 +117,8 @@ export interface EditorProps {
     components?: Registry;
     renderers?: Readonly<Record<string, Renderer>>;
     uploadImage?: UploadImage;
+    /** The theme of a new page, for a host that has its own colours and fonts. */
+    theme?: Theme;
   };
 }
 
@@ -170,9 +177,29 @@ const withDraft = (
   root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device, registry)),
 });
 
-/** The page the editor starts from: the host's, once it is checked, or an empty one. */
-function openPage(data: PageData | undefined): PageData {
-  if (data === undefined) return emptyPage();
+/** The theme without what is empty in it, or `undefined` when nothing is left. */
+function tidyTheme(theme: Theme): Theme | undefined {
+  const colors = theme.colors && Object.keys(theme.colors).length > 0 ? theme.colors : undefined;
+  const fonts = theme.fonts && Object.keys(theme.fonts).length > 0 ? theme.fonts : undefined;
+  return colors || fonts
+    ? { ...(colors ? { colors } : {}), ...(fonts ? { fonts } : {}) }
+    : undefined;
+}
+
+/** The page with this theme, or without one when it is empty. */
+function withTheme(data: PageData, theme: Theme): PageData {
+  const { theme: _old, ...rest } = data;
+  const next = tidyTheme(theme);
+  return next ? { ...rest, theme: next } : rest;
+}
+
+/**
+ * The page the editor starts from: the host's, once it is checked, or an empty one, which has the
+ * theme the host gave when that is a good one.
+ */
+function openPage(data: PageData | undefined, theme?: Theme): PageData {
+  if (data === undefined)
+    return theme && isTheme(theme) ? withTheme(emptyPage(), theme) : emptyPage();
   // A page of an older version is upgraded; anything else that cannot be opened is told apart.
   const opened = migratePage(data);
   if (!opened.ok) {
@@ -204,7 +231,7 @@ export function Editor({
   config,
 }: EditorProps) {
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
-  const [history, setHistory] = useState(() => createHistory(openPage(initialData)));
+  const [history, setHistory] = useState(() => createHistory(openPage(initialData, config?.theme)));
   const data = history.present;
   /** Store a change as one step. */
   const setData = (change: (prev: PageData) => PageData) =>
@@ -786,6 +813,43 @@ export function Editor({
     setScopeId(parent.id);
   };
 
+  // The theme, one step of history for each change. A colour that goes is baked into the blocks that
+  // used it, and one that is renamed is followed by them.
+  const setThemeColor = (name: string, color: string) =>
+    setData((prev) =>
+      withTheme(prev, {
+        ...prev.theme,
+        colors: { ...prev.theme?.colors, [name]: color },
+      }),
+    );
+  const renameThemeColor = (from: string, to: string) =>
+    setData((prev) => {
+      const colors = Object.fromEntries(
+        Object.entries(prev.theme?.colors ?? {}).map(([key, value]) => [
+          key === from ? to : key,
+          value,
+        ]),
+      );
+      const renamed = withTheme(prev, { ...prev.theme, colors });
+      return { ...renamed, root: replaceColor(renamed.root, registry, from, colorRef(to)) };
+    });
+  const deleteThemeColor = (name: string) =>
+    setData((prev) => {
+      const { [name]: gone, ...colors } = prev.theme?.colors ?? {};
+      const kept = withTheme(prev, { ...prev.theme, colors });
+      return gone === undefined
+        ? kept
+        : { ...kept, root: replaceColor(kept.root, registry, name, gone) };
+    });
+  const setThemeFont = (which: "body" | "heading", stack: string | undefined) =>
+    setData((prev) => {
+      const { [which]: _old, ...others } = prev.theme?.fonts ?? {};
+      return withTheme(prev, {
+        ...prev.theme,
+        fonts: stack === undefined ? others : { ...others, [which]: stack },
+      });
+    });
+
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = (move: typeof undo) => {
     const next = move(history).present;
@@ -1072,7 +1136,17 @@ export function Editor({
           onDiscard={() => setDraft(null)}
           onDelete={deleteBlock}
           onAnchor={changeAnchor}
+          theme={data.theme}
         />
+        {!selectedNode && (
+          <ThemePanel
+            theme={data.theme}
+            onSetColor={setThemeColor}
+            onRenameColor={renameThemeColor}
+            onDeleteColor={deleteThemeColor}
+            onSetFont={setThemeFont}
+          />
+        )}
       </aside>
     </div>
   );

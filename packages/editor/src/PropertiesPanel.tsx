@@ -5,15 +5,19 @@ import {
   type Device,
   isFreeNode,
   type JsonValue,
+  nameOfColorRef,
   parseAngle,
   parseHexColor,
   parsePixelLength,
   propsFor,
+  resolveColor,
+  type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
+import { ThemePicker } from "./ThemePicker";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
@@ -40,6 +44,8 @@ export interface PropertiesPanelProps {
   onPreview: (patch: PanelPatch) => void;
   /** The value is final: store it. */
   onCommit: (patch: PanelPatch) => void;
+  /** The theme of the page: its colours can be picked for a colour. */
+  theme?: Theme | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -67,12 +73,14 @@ export function PropertiesPanel({
   onDiscard,
   onDelete,
   onAnchor,
+  theme,
 }: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
   }
   const colour = (key: "background" | "borderColor") => ({
     stored: node.styles[key],
+    theme,
     onPreview: (value: string | undefined) => onPreview({ key, value }),
     onCommit: (value: string | undefined) => onCommit({ key, value }),
     onDiscard,
@@ -91,6 +99,7 @@ export function PropertiesPanel({
         <PropFields
           def={def}
           props={propsFor(node, device)}
+          theme={theme}
           onChange={(name, value) => onCommit({ key: "prop", name, value })}
         />
       )}
@@ -270,10 +279,17 @@ function useTextField<T>(
 }
 
 const showColour = (value: string | undefined) => value ?? "";
+// A colour of the theme is written `@name` and is kept as it is.
 const readColour = (text: string): Reading<string> =>
-  text.trim() === "" ? undefined : (parseHexColor(text) ?? null);
+  text.trim() === ""
+    ? undefined
+    : (parseHexColor(text) ?? (nameOfColorRef(text.trim()) === undefined ? null : text.trim()));
 
-function ColourField({ pickerLabel, ...field }: FieldProps<string> & { pickerLabel: string }) {
+function ColourField({
+  pickerLabel,
+  theme,
+  ...field
+}: FieldProps<string> & { pickerLabel: string; theme: Theme | undefined }) {
   const { label, hint, stored, onPreview, onCommit, onDiscard } = field;
   const { text, setText, invalid, setInvalid, typed, keys, leave } = useTextField(
     stored,
@@ -317,7 +333,7 @@ function ColourField({ pickerLabel, ...field }: FieldProps<string> & { pickerLab
           type="color"
           className={styles.swatch}
           aria-label={pickerLabel}
-          value={parseHexColor(text) ?? "#ffffff"}
+          value={resolveColor(parseHexColor(text) ?? text.trim(), theme) ?? "#ffffff"}
           onChange={picked}
         />
         <input
@@ -335,6 +351,15 @@ function ColourField({ pickerLabel, ...field }: FieldProps<string> & { pickerLab
           onBlur={leave}
         />
       </div>
+      <ThemePicker
+        theme={theme}
+        stored={stored}
+        onPick={(value) => {
+          setText(value);
+          setInvalid(false);
+          onCommit(value);
+        }}
+      />
       {invalid ? (
         <p id={errorId} className={styles.error} role="alert">
           Not a colour. Use a hex colour like #d5dae3.
