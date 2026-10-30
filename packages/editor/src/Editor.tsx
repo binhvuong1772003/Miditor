@@ -203,6 +203,8 @@ export function Editor({
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
+  // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
+  const [dropId, setDropId] = useState<string | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
@@ -252,6 +254,19 @@ export function Editor({
       }
     };
   }, [workspace, picked, shown]);
+
+  // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
+  useLayoutEffect(() => {
+    const target = workspace && dropId ? elementOf(workspace, dropId) : null;
+    if (!target) return;
+    target.style.outline = "2px solid var(--_focus)";
+    target.style.outlineOffset = "-2px";
+    return () => {
+      target.style.removeProperty("outline");
+      target.style.removeProperty("outline-offset");
+    };
+  }, [workspace, dropId, shown]);
 
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
@@ -381,6 +396,12 @@ export function Editor({
         shift: { x: b.x - a.x, y: b.y - a.y },
       },
     };
+  };
+
+  /** Tell the page where a drag would drop, so the block there is outlined. Only a changed target is stored. */
+  const dragMove = (dist: { x: number; y: number } | null) => {
+    const g = gesture.current;
+    setDropId(g && dist ? (dropTarget(g, dist)?.id ?? null) : null);
   };
 
   const endDrag = (dist: { x: number; y: number }) => {
@@ -782,6 +803,7 @@ export function Editor({
           }
           onGestureStart={startGesture}
           onDragEnd={endDrag}
+          onDragMove={dragMove}
           onResizeEnd={endResize}
           onRotateEnd={endRotate}
         />

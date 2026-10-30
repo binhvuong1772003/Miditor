@@ -44,6 +44,11 @@ export interface SelectionBoxProps {
    * (rotated) axes, as react-moveable reports it. The call is flushed to the DOM before returning.
    */
   onDragEnd: (dist: { x: number; y: number }) => void;
+  /**
+   * While a drag goes on, with the distance so far in the same axes as `onDragEnd`, and once more with
+   * `null` when it is over. For a hint drawn while dragging; nothing is stored from it.
+   */
+  onDragMove?: ((dist: { x: number; y: number } | null) => void) | undefined;
   /** Once, on release, and only when a handle really moved. Flushed to the DOM before returning. */
   onResizeEnd: (result: ResizeResult) => void;
   /**
@@ -109,6 +114,7 @@ export function SelectionBox({
   angle,
   onGestureStart,
   onDragEnd,
+  onDragMove,
   onResizeEnd,
   onRotateEnd,
 }: SelectionBoxProps) {
@@ -189,10 +195,12 @@ export function SelectionBox({
         // Moveable previews the move itself; React state stays untouched until release.
         Object.assign((e.target as HTMLElement).style, e.style);
         lastDist.current = { x: e.dist[0] ?? 0, y: e.dist[1] ?? 0 };
+        onDragMove?.(lastDist.current);
       })}
       onDragEnd={guarded((e: OnDragEnd) => {
         const el = e.target as HTMLElement;
         end(el);
+        onDragMove?.(null);
         if (!e.isDrag) return;
         finish(el, () => onDragEnd(lastDist.current));
       })}
