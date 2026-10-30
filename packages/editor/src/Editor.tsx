@@ -94,9 +94,10 @@ export interface EditorProps {
    * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
    * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
    * `renderers` draws the kinds the host added, by name; a built-in kind is always drawn by the editor.
-   * `uploadImage` gives every picture field an Upload button: it is called with the file the person
+   * `uploadImage` adds an Upload image button to the toolbar: it is called with the file the person
    * chose and answers with the address of the uploaded picture (Cloudinary's `secure_url`, for
-   * example). The editor keeps no keys and no files, only that address.
+   * example), and an Image block showing it is added. The editor keeps no keys and no files, only
+   * that address.
    */
   config?: {
     components?: Registry;
@@ -948,7 +949,6 @@ export function Editor({
           onDiscard={() => setDraft(null)}
           onDelete={deleteBlock}
           onAnchor={changeAnchor}
-          uploadImage={config?.uploadImage}
         />
       </aside>
     </div>

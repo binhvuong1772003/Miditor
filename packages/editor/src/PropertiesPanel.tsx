@@ -13,7 +13,6 @@ import {
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
-import type { UploadImage } from "./upload-image";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
@@ -40,8 +39,6 @@ export interface PropertiesPanelProps {
   onPreview: (patch: PanelPatch) => void;
   /** The value is final: store it. */
   onCommit: (patch: PanelPatch) => void;
-  /** The host's way to upload a picture, for the fields that hold one. */
-  uploadImage?: UploadImage | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -69,7 +66,6 @@ export function PropertiesPanel({
   onDiscard,
   onDelete,
   onAnchor,
-  uploadImage,
 }: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
@@ -95,7 +91,6 @@ export function PropertiesPanel({
           def={def}
           props={node.props}
           onChange={(name, value) => onCommit({ key: "prop", name, value })}
-          uploadImage={uploadImage}
         />
       )}
       {device === "phone" && isFreeNode(node) && node.phone && (

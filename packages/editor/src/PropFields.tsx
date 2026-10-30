@@ -1,7 +1,6 @@
 import { type ComponentDef, type Field, type JsonValue, validateProps } from "@midito-kitchen/core";
-import { type ChangeEvent, type KeyboardEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, useId, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
-import { type UploadImage, uploadPicture } from "./upload-image";
 
 export interface PropFieldsProps {
   def: ComponentDef;
@@ -9,13 +8,13 @@ export interface PropFieldsProps {
   props: Record<string, JsonValue>;
   /** A new, valid value for one prop. Not called for a value the field refuses. */
   onChange: (name: string, value: JsonValue) => void;
-  /** The host's way to upload a picture. Without it a picture field has only its address to type. */
-  uploadImage?: UploadImage | undefined;
 }
 
 /** Temporary: plain inputs built from the fields of a kind, to try the registry by hand. */
-export function PropFields({ def, props, onChange, uploadImage }: PropFieldsProps) {
-  return Object.entries(def.fields).map(([name, field]) => {
+export function PropFields({ def, props, onChange }: PropFieldsProps) {
+  // A picture is added and changed on the canvas, not typed as an address, so it has no field here.
+  return Object.entries(def.fields).flatMap(([name, field]) => {
+    if (field.type === "image") return [];
     const stored = Object.hasOwn(props, name) ? props[name] : def.defaultProps[name];
     // A new key when the stored value changes (undo, redo), so the typed text starts again from it.
     return (
@@ -26,7 +25,6 @@ export function PropFields({ def, props, onChange, uploadImage }: PropFieldsProp
         field={field}
         stored={stored}
         onChange={onChange}
-        uploadImage={uploadImage}
       />
     );
   });
@@ -38,10 +36,9 @@ interface PropFieldProps {
   field: Field;
   stored: JsonValue | undefined;
   onChange: PropFieldsProps["onChange"];
-  uploadImage: UploadImage | undefined;
 }
 
-function PropField({ def, name, field, stored, onChange, uploadImage }: PropFieldProps) {
+function PropField({ def, name, field, stored, onChange }: PropFieldProps) {
   const id = useId();
   const [text, setText] = useState(stored === undefined ? "" : String(stored));
   /** Stores `value` when the kind accepts it; otherwise the input goes back to what is stored. */
@@ -52,21 +49,6 @@ function PropField({ def, name, field, stored, onChange, uploadImage }: PropFiel
       return;
     }
     onChange(name, value);
-  };
-  const [upload, setUpload] = useState<{ busy: boolean; error: string | null }>({
-    busy: false,
-    error: null,
-  });
-  const chooser = useRef<HTMLInputElement>(null);
-  /** Upload the chosen file and store the address that comes back. */
-  const pick = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file || !uploadImage) return;
-    setUpload({ busy: true, error: null });
-    const result = await uploadPicture(file, uploadImage);
-    setUpload({ busy: false, error: result.ok ? null : result.error });
-    if (result.ok) apply(result.url);
   };
   const applyText = () => apply(field.type === "number" ? Number(text) : text);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -123,29 +105,10 @@ function PropField({ def, name, field, stored, onChange, uploadImage }: PropFiel
           {...(field.type === "text" && field.maxLength !== undefined
             ? { maxLength: field.maxLength }
             : {})}
-          {...(field.type === "image" ? { placeholder: "https://…" } : {})}
           onChange={(event) => setText(event.target.value)}
           onBlur={applyText}
           onKeyDown={onKeyDown}
         />
-      )}
-      {field.type === "image" && uploadImage && (
-        <>
-          <input ref={chooser} type="file" accept="image/*" hidden onChange={pick} />
-          <button
-            type="button"
-            className={styles.input}
-            disabled={upload.busy}
-            onClick={() => chooser.current?.click()}
-          >
-            {upload.busy ? "Uploading…" : "Upload a picture"}
-          </button>
-          {upload.error && (
-            <p className={styles.error} role="alert">
-              {upload.error}
-            </p>
-          )}
-        </>
       )}
     </div>
   );
