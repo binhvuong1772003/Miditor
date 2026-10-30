@@ -1,4 +1,10 @@
-import type { Device, JsonValue, PageData, TreeNode } from "@midito-kitchen/core";
+import {
+  type Device,
+  type JsonValue,
+  type PageData,
+  propsFor,
+  type TreeNode,
+} from "@midito-kitchen/core";
 import type { ReactNode } from "react";
 import {
   imageOf,
@@ -50,12 +56,19 @@ interface NodeProps {
 }
 
 function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
+  // What the node has on this screen: on a phone the values set by hand for it come over the others.
+  const props = propsFor(node, device);
+  // A text size that a person set for the phone is the size, with no shrinking by the page ratio.
+  const sizeDevice =
+    device === "phone" && node.phoneProps && Object.hasOwn(node.phoneProps, "size")
+      ? "desktop"
+      : device;
   const common = {
     "data-midito-id": node.id,
     "data-midito-type": node.type,
     style:
       node.type === "Text"
-        ? { ...nodeStyle(node, isRoot, device), ...textStyle(node.props, device) }
+        ? { ...nodeStyle(node, isRoot, device), ...textStyle(props, sizeDevice) }
         : nodeStyle(node, isRoot, device),
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
@@ -64,25 +77,18 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
       renderers && Object.hasOwn(renderers, node.type) ? renderers[node.type] : undefined;
     if (!draw) return <div {...common} data-midito-unknown="" />;
     return (
-      <div {...common}>
-        {draw({ props: node.props, device, children: kids(node, device, renderers) })}
-      </div>
+      <div {...common}>{draw({ props, device, children: kids(node, device, renderers) })}</div>
     );
   }
   // A text is its words: it has no blocks inside, so any in the data are not drawn.
-  if (node.type === "Text") return <div {...common}>{textOf(node.props)}</div>;
+  if (node.type === "Text") return <div {...common}>{textOf(props)}</div>;
   // A picture is its picture: like a text it has no blocks inside. A missing or unsafe address is a grey box.
   if (node.type === "Image") {
-    const picture = imageOf(node.props);
+    const picture = imageOf(props);
     return (
       <div {...common}>
         {picture ? (
-          <img
-            src={picture.src}
-            alt={picture.alt}
-            draggable={false}
-            style={imageStyle(node.props)}
-          />
+          <img src={picture.src} alt={picture.alt} draggable={false} style={imageStyle(props)} />
         ) : (
           <div aria-hidden="true" style={imagePlaceholderStyle} />
         )}
@@ -91,7 +97,7 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
   }
   return (
     <div {...common}>
-      {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(node.props)} />}
+      {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props)} />}
       {kids(node, device, renderers)}
     </div>
   );

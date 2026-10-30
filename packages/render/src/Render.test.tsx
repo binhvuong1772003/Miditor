@@ -427,3 +427,40 @@ describe("<Render> Image", () => {
     expect(tagOf(html(image({ src: "/a.png" })), "pic")).toContain("overflow:hidden");
   });
 });
+
+describe("<Render> phone props", () => {
+  const text = (props: Record<string, JsonValue>, phoneProps?: Record<string, JsonValue>) =>
+    page(
+      flow("root", "Page", [
+        { ...flow("t", "Text"), props, ...(phoneProps ? { phoneProps } : {}) },
+      ]),
+    );
+  const tag = (markup: string) => tagOf(markup, "t");
+
+  it("draws the size set for the phone as it is, with no shrinking by the page ratio", () => {
+    const data = text({ text: "Hi", size: 40 }, { size: 20 });
+    expect(tag(html(data, undefined, "phone"))).toContain("font-size:20px");
+    expect(tag(html(data, undefined, "desktop"))).toContain("font-size:40px");
+    expect(tag(html(data))).toContain("font-size:40px");
+  });
+
+  it("still shrinks the desktop size on a phone when nothing was set for it", () => {
+    const data = text({ text: "Hi", size: 40 });
+    expect(tag(html(data, undefined, "phone"))).toContain("font-size:15.63px");
+    const other = text({ text: "Hi", size: 40 }, { bold: true });
+    expect(tag(html(other, undefined, "phone"))).toContain("font-size:15.63px");
+    expect(tag(html(other, undefined, "phone"))).toContain("font-weight:700");
+  });
+
+  it("gives the props with the phone ones over them to the function of a host", () => {
+    const data = page(
+      flow("root", "Page", [
+        { ...flow("h", "Heart"), props: { color: "#ff0000" }, phoneProps: { color: "#00ff00" } },
+      ]),
+    );
+    const seen = (device: Device) =>
+      renderToStaticMarkup(<Render data={data} device={device} renderers={{ Heart: Probe }} />);
+    expect(seen("phone")).toContain('data-c="#00ff00"');
+    expect(seen("desktop")).toContain('data-c="#ff0000"');
+  });
+});
