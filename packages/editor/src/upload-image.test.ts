@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { uploadPicture } from "./upload-image";
+import { fitPicture, MAX_ADDED_WIDTH, uploadPicture } from "./upload-image";
 
 const file = (type: string) => ({ type }) as File;
 
@@ -60,6 +60,36 @@ describe("uploadPicture", () => {
         ok: true,
         url: ok,
       });
+    }
+  });
+});
+
+describe("fitPicture", () => {
+  it("keeps a small picture as it is", () => {
+    expect(fitPicture({ w: 200, h: 100 })).toEqual({ w: 200, h: 100 });
+    expect(fitPicture({ w: MAX_ADDED_WIDTH, h: 10 })).toEqual({ w: MAX_ADDED_WIDTH, h: 10 });
+  });
+
+  it("scales a wide picture down to 320 wide with the same proportions", () => {
+    expect(fitPicture({ w: 1600, h: 900 })).toEqual({ w: 320, h: 180 });
+    expect(fitPicture({ w: 640, h: 1280 })).toEqual({ w: 320, h: 640 });
+    expect(fitPicture({ w: 321, h: 321 })).toEqual({ w: 320, h: 320 });
+  });
+
+  it("never gives less than 1 px", () => {
+    expect(fitPicture({ w: 100000, h: 1 })).toEqual({ w: 320, h: 1 });
+    expect(fitPicture({ w: 1, h: 1 })).toEqual({ w: 1, h: 1 });
+  });
+
+  it("gives nothing for a size that is not usable", () => {
+    for (const size of [
+      { w: 0, h: 10 },
+      { w: 10, h: 0 },
+      { w: -1, h: 10 },
+      { w: Number.NaN, h: 10 },
+      { w: 10, h: Number.POSITIVE_INFINITY },
+    ]) {
+      expect(fitPicture(size)).toBeUndefined();
     }
   });
 });

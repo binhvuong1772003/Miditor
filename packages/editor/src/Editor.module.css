@@ -63,6 +63,11 @@
 }
 
 /* The Save button, when there is one, goes to the far end. */
+.addError {
+  color: var(--_danger);
+  font-size: 0.75rem;
+}
+
 .save {
   margin-inline-start: auto;
 }

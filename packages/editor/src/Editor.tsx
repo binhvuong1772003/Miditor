@@ -18,6 +18,7 @@ import {
   isPageData,
   minSize,
   moveRect,
+  type NewNodeOverrides,
   newNode,
   nextId,
   normalizeAngle,
@@ -43,6 +44,7 @@ import {
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
 import {
+  type ChangeEvent,
   type MouseEvent,
   type PointerEvent,
   useEffect,
@@ -58,7 +60,7 @@ import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
-import type { UploadImage } from "./upload-image";
+import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -508,7 +510,7 @@ export function Editor({
    * blocks in, and on the page otherwise, in the middle of whichever it goes into. A pending change
    * is stored first.
    */
-  const addBlock = () => {
+  const addBlockOf = (kind: string, overrides?: NewNodeOverrides) => {
     if (onPhone) return;
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
@@ -516,18 +518,46 @@ export function Editor({
       w: element?.clientWidth ?? 0,
       h: element?.clientHeight ?? 0,
     });
-    const inside = selectedNode ? newNode(registry, addKind, id, sizeOf(block)) : undefined;
+    const inside = selectedNode ? newNode(registry, kind, id, sizeOf(block), overrides) : undefined;
     const intoSelected =
       inside && selectedNode && canInsert(registry, data.root, selectedNode.id, inside);
     const parentId = intoSelected && selectedNode ? selectedNode.id : data.root.id;
     // The page as it is drawn now, to find its middle down the page.
     const page = workspace ? elementOf(workspace, data.root.id) : null;
-    const node = intoSelected ? inside : newNode(registry, addKind, id, sizeOf(page));
+    const node = intoSelected ? inside : newNode(registry, kind, id, sizeOf(page), overrides);
     if (!node) return;
     setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
     setSelectedId(id);
     setPicked([]);
     setScopeId(parentId);
+  };
+
+  const addBlock = () => addBlockOf(addKind);
+
+  // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
+  const latestAdd = useRef(addBlockOf);
+  latestAdd.current = addBlockOf;
+  const chooser = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState<{ busy: boolean; error: string | null }>({
+    busy: false,
+    error: null,
+  });
+  /** Upload the chosen picture, then add an `Image` block that already shows it, in its own proportions. */
+  const addPicture = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    const upload = config?.uploadImage;
+    if (!file || !upload) return;
+    setAdding({ busy: true, error: null });
+    const result = await uploadPicture(file, upload);
+    if (!result.ok) {
+      setAdding({ busy: false, error: result.error });
+      return;
+    }
+    const natural = await pictureSize(result.url);
+    const size = natural && fitPicture(natural);
+    latestAdd.current("Image", { props: { src: result.url }, ...(size ? { size } : {}) });
+    setAdding({ busy: false, error: null });
   };
 
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
@@ -747,6 +777,25 @@ export function Editor({
           >
             Add
           </button>
+          {config?.uploadImage && (
+            <>
+              <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
+              <button
+                type="button"
+                className={`${styles.button} ${styles.secondary}`}
+                disabled={onPhone || adding.busy}
+                title={onPhone ? "Switch to Desktop to add blocks" : "Upload a picture and add it"}
+                onClick={() => chooser.current?.click()}
+              >
+                {adding.busy ? "Uploading…" : "Upload image"}
+              </button>
+              {adding.error && (
+                <span role="alert" className={styles.addError}>
+                  {adding.error}
+                </span>
+              )}
+            </>
+          )}
         </div>
         <div className={styles.group}>
           <button
