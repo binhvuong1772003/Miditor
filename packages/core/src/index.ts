@@ -1,5 +1,6 @@
 export { type AlignTo, alignRects, distributeRects } from "./position/align";
 export { cssFor, type PositionStyle } from "./position/css-for";
+export { type Frame, moveBetweenFrames } from "./position/frames";
 export { inferBox } from "./position/infer-box";
 export { moveRect } from "./position/move-rect";
 export { reparentBox } from "./position/reparent-box";
