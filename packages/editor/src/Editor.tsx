@@ -5,6 +5,8 @@ import {
   type Container,
   canInsert,
   canMove,
+  clipboardText,
+  copyNodes,
   type Device,
   duplicateNode,
   emptyPage,
@@ -24,6 +26,8 @@ import {
   normalizeAngle,
   type PageData,
   parentOf,
+  parseClipboard,
+  pasteNodes,
   pickBlock,
   type Rect,
   type Registry,
@@ -37,6 +41,7 @@ import {
   type TreeNode,
   ungroupNode,
   updateNode,
+  validatePage,
   validateRegistry,
   withFreeBox,
   withPhoneBox,
@@ -45,6 +50,7 @@ import {
 import { Render, type Renderer } from "@midito-kitchen/render";
 import {
   type ChangeEvent,
+  type ClipboardEvent,
   type MouseEvent,
   type PointerEvent,
   useEffect,
@@ -676,6 +682,56 @@ export function Editor({
     setPicked([]);
   };
 
+  /**
+   * The selected blocks go on the clipboard, as text that only this editor reads. It is the browser's
+   * own copy event, so no permission is needed and it works between tabs. A field keeps its own copy.
+   */
+  const copySelected = (event: ClipboardEvent) => {
+    if (isEditableTarget(event.target) || !selectedId) return;
+    const nodes = copyNodes(data.root, [selectedId, ...picked]);
+    if (nodes.length === 0) return;
+    event.clipboardData.setData("text/plain", clipboardText(nodes));
+    event.preventDefault();
+  };
+
+  /** Copy, then delete what was copied. */
+  const cutSelected = (event: ClipboardEvent) => {
+    if (onPhone || isEditableTarget(event.target) || !selectedId) return;
+    copySelected(event);
+    if (event.defaultPrevented) deleteBlock();
+  };
+
+  /**
+   * The blocks on the clipboard are pasted next to the selected one, in its parent, a little down and
+   * to the right, and selected. Text that is not ours, or has a kind or props the registry refuses, is
+   * left to the browser. A page that is being edited for the phone does not take new blocks.
+   */
+  const pasteBlocks = (event: ClipboardEvent) => {
+    if (onPhone || isEditableTarget(event.target) || !workspace) return;
+    const nodes = parseClipboard(event.clipboardData.getData("text/plain"));
+    if (!nodes) return;
+    const holder = {
+      schemaVersion: data.schemaVersion,
+      root: { ...data.root, children: nodes },
+    };
+    if (validatePage(registry, holder).length > 0) return;
+    event.preventDefault();
+    if (draft) commitPatch(draft.id, draft);
+    const parent = (selectedId ? parentOf(data.root, selectedId) : undefined) ?? data.root;
+    const element = elementOf(workspace, parent.id);
+    if (!element) return;
+    const container = { w: element.clientWidth, h: element.clientHeight };
+    const done = pasteNodes(data.root, parent.id, nodes, { shift: { x: 16, y: 16 }, container });
+    if (done.ids.length === 0) return;
+    setData((prev) => ({
+      ...prev,
+      root: pasteNodes(prev.root, parent.id, nodes, { shift: { x: 16, y: 16 }, container }).root,
+    }));
+    setSelectedId(done.ids[0] ?? null);
+    setPicked(done.ids.slice(1));
+    setScopeId(parent.id);
+  };
+
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = (move: typeof undo) => {
     const next = move(history).present;
@@ -697,6 +753,9 @@ export function Editor({
       style={pageWidthVariables}
       data-midito-editor=""
       tabIndex={-1}
+      onCopy={copySelected}
+      onCut={cutSelected}
+      onPaste={pasteBlocks}
       onKeyDown={(event) => {
         // A field keeps its own Esc and its own undo.
         if (isEditableTarget(event.target)) return;
