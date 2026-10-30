@@ -1,3 +1,4 @@
+import { moveBetweenFrames } from "../position/frames";
 import { inferBox } from "../position/infer-box";
 import { reparentBox } from "../position/reparent-box";
 import { resolveRect } from "../position/resolve-rect";
@@ -96,25 +97,36 @@ export function groupNodes(
  * place, in their order, each exactly where it was on the page: the reverse of `groupNodes`. Their
  * phone placements are dropped, as `groupNodes` does. `container` is the size of the parent of the group (its padding box). A group with nothing in it
  * is simply removed. The very same tree comes back when the block is not in the tree, is the root,
- * is not a `Group`, is not a free block, is turned (the blocks inside could not keep their place),
- * has a block inside that is not free, or when the container is empty.
+ * is not a `Group`, is not a free block, has a block inside that is not free, or when the
+ * container is empty. A turned group is taken apart too: each block keeps its place on the page and
+ * its turn on the page, which is its own plus the group's.
  */
 export function ungroupNode(root: TreeNode, groupId: string, container: Container): TreeNode {
   const group = findNode(root, groupId);
   const parent = parentOf(root, groupId);
   if (!group || !parent || group.type !== "Group" || !isFreeNode(group)) return root;
-  if (group.rotation !== 0 || !group.children.every(isFreeNode)) return root;
+  if (!group.children.every(isFreeNode)) return root;
   if (!(container.w >= 0.01 && container.h >= 0.01)) return root;
   const placed = resolveRect(freeBoxOf(group), container);
   const inside = { w: placed.w, h: placed.h };
-  // The parent's corner is where the group's corner is, taken backwards.
-  const shift = { x: -placed.x, y: -placed.y };
+  // A turned group turns what is in it: each block is carried out of the group's frame, and is
+  // turned by the group's turn as well.
+  const groupFrame = {
+    size: inside,
+    center: { x: placed.x + placed.w / 2, y: placed.y + placed.h / 2 },
+    rotation: group.rotation,
+  };
+  const parentFrame = {
+    size: container,
+    center: { x: container.w / 2, y: container.h / 2 },
+    rotation: 0,
+  };
   // The frame the blocks are measured in changes, so what a person set for the phone is dropped.
   const members = group.children
     .filter(isFreeNode)
     .map((node) =>
       withPhoneBox(
-        withFreeBox(node, reparentBox(freeBoxOf(node), inside, container, shift)),
+        withFreeBox(node, moveBetweenFrames(freeBoxOf(node), groupFrame, parentFrame)),
         undefined,
       ),
     );

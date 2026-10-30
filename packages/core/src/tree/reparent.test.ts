@@ -158,4 +158,60 @@ describe("reparentNode", () => {
       ),
     );
   });
+
+  describe("with frames", () => {
+    // A is 200 x 100 with its middle at (500, 300), turned 90 degrees; the page is upright 800 x 600.
+    const turnedA = { size: { w: 200, h: 100 }, center: { x: 500, y: 300 }, rotation: 90 };
+    const upright = { size: { w: 800, h: 600 }, center: { x: 400, y: 300 }, rotation: 0 };
+    const child = placed("c", at(0, 0, 40, 20));
+    const page = flowNode("root", [placed("a", at(0, 0, 200, 100), [child])]);
+
+    it("carries a block out of a turned parent and keeps it where it is and turned as it is", () => {
+      const out = reparentNode(page, "c", "root", { from: turnedA, to: upright });
+      expect(ids(out)).toEqual(["a", "c"]);
+      const moved = findNode(out, "c") as FreeNode;
+      expect(rectIn(moved, { w: 800, h: 600 })).toMatchObject({ x: 520, y: 210, w: 40, h: 20 });
+      expect(moved.rotation).toBe(90);
+    });
+
+    it("works the other way, into a turned parent", () => {
+      const out = reparentNode(
+        flowNode("root", [
+          placed("a", at(0, 0, 200, 100)),
+          placed("c", { ...at(520, 210, 40, 20), rotation: 90 }),
+        ]),
+        "c",
+        "a",
+        { from: upright, to: turnedA },
+      );
+      const moved = findNode(out, "c") as FreeNode;
+      expect(ids(findNode(out, "a"))).toEqual(["c"]);
+      expect(rectIn(moved, { w: 200, h: 100 })).toMatchObject({ x: 0, y: 0, w: 40, h: 20 });
+      expect(moved.rotation).toBe(0);
+    });
+
+    it("returns the same tree for a frame with an empty size", () => {
+      const flat = { ...upright, size: { w: 0, h: 600 } };
+      expect(reparentNode(page, "c", "root", { from: turnedA, to: flat })).toBe(page);
+      expect(
+        reparentNode(page, "c", "root", {
+          from: { ...turnedA, size: { w: 200, h: 0 } },
+          to: upright,
+        }),
+      ).toBe(page);
+    });
+
+    it("is the same as sizes and a shift when no frame is turned", () => {
+      const viaFrames = reparentNode(page, "c", "root", {
+        from: { size: { w: 200, h: 100 }, center: { x: 100, y: 50 }, rotation: 0 },
+        to: { size: { w: 800, h: 600 }, center: { x: 400 - 100, y: 300 - 50 }, rotation: 0 },
+      });
+      const viaShift = reparentNode(page, "c", "root", {
+        from: { w: 200, h: 100 },
+        to: { w: 800, h: 600 },
+        shift: { x: -100, y: -50 },
+      });
+      expect(viaFrames).toEqual(viaShift);
+    });
+  });
 });

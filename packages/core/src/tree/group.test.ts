@@ -182,6 +182,22 @@ describe("ungroupNode", () => {
     expect(ids(findNode(out, "y"))).toEqual(["in"]);
   });
 
+  it("takes a turned group apart: each block keeps its place and turn on the page", () => {
+    // A group 200 x 100 at (100, 100), turned 90 degrees, so its middle is at (200, 150). A block at
+    // its top left corner has its middle (-80, -40) from the group's middle, which turned is (40, -80).
+    const member = placed("m", { ...at(0, 0, 40, 20), rotation: 30 });
+    const group = {
+      ...placed("g", { ...at(100, 100, 200, 100), rotation: 90 }, [member]),
+      type: "Group",
+    };
+    const page = pageWith(group);
+    const out = ungroupNode(page, "g", container);
+    expect(ids(out)).toEqual(["m"]);
+    const moved = findNode(out, "m") as FreeNode;
+    expect(resolveRect(freeBoxOf(moved), container)).toMatchObject({ x: 220, y: 60, w: 40, h: 20 });
+    expect(moved.rotation).toBe(120);
+  });
+
   it("removes a group with nothing in it", () => {
     const empty = pageWith(a, placed("g", at(0, 0)));
     const emptyGroup = {
@@ -192,10 +208,6 @@ describe("ungroupNode", () => {
   });
 
   it("returns the very same tree when it cannot ungroup", () => {
-    const turned = {
-      ...grouped,
-      children: grouped.children.map((n) => (n.id === "g" ? { ...n, rotation: 30 } : n)),
-    } as TreeNode;
     const flowInside = {
       ...grouped,
       children: grouped.children.map((n) =>
@@ -211,7 +223,6 @@ describe("ungroupNode", () => {
       [grouped, "a", container],
       [notGroup, "s", container],
       [groupRoot, "root", container],
-      [turned, "g", container],
       [flowInside, "g", container],
       [grouped, "g", { w: 0, h: 300 }],
       [grouped, "g", { w: 400, h: 0 }],
