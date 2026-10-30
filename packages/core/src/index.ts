@@ -24,6 +24,17 @@ export { isImageUrl } from "./styles/image-url";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export {
+  colorRef,
+  isColorValue,
+  isFontStack,
+  isTheme,
+  isTokenName,
+  MAX_THEME_COLORS,
+  nameOfColorRef,
+  resolveColor,
+  type Theme,
+} from "./styles/theme";
+export {
   clipboardText,
   copyNodes,
   type PasteOptions,
