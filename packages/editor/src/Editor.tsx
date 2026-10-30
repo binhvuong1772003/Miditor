@@ -332,7 +332,7 @@ export function Editor({
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
     // A press on the empty page may turn into a box drag; a plain click still just clears (below).
-    if (id === undefined) {
+    if (!hit) {
       startMarquee(event);
       // Shift keeps what is selected, so the box can add to it.
       if (event.shiftKey && selectedId) return;
