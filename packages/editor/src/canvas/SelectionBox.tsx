@@ -24,6 +24,10 @@ export interface ResizeResult {
   handle: Handle;
 }
 
+/** How close, in px, an edge or a centre has to come to another before it snaps to it. */
+const SNAP_PX = 6;
+const SNAP_EDGES = { left: true, top: true, right: true, bottom: true, center: true, middle: true };
+
 export interface SelectionBoxProps {
   /** The element to drag and resize. Pass it as state, not a ref: a ref is still null on the first render. */
   target: HTMLElement | null;
@@ -174,6 +178,18 @@ export function SelectionBox({
     setKeepRatio(false);
   };
 
+  // What a drag or a resize snaps to: the other blocks next to this one, and the block around it.
+  // Moveable draws the guide lines. The distance it reports at the end already includes the snap.
+  const guides = target?.parentElement
+    ? [
+        target.parentElement,
+        ...[...target.parentElement.children].filter(
+          (el): el is HTMLElement =>
+            el !== target && el instanceof HTMLElement && el.dataset.miditoId !== undefined,
+        ),
+      ]
+    : [];
+
   return (
     <Moveable
       ref={moveable}
@@ -185,6 +201,13 @@ export function SelectionBox({
       rotatable
       keepRatio={lockRatio || keepRatio}
       origin={false}
+      snappable
+      snapThreshold={SNAP_PX}
+      elementGuidelines={guides}
+      snapDirections={SNAP_EDGES}
+      elementSnapDirections={SNAP_EDGES}
+      snapGap={false}
+      isDisplaySnapDigit={false}
       throttleDrag={0}
       throttleResize={0}
       onDragStart={guarded((e: OnDragStart) => {
