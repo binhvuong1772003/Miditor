@@ -1,6 +1,6 @@
 import type { Registry } from "../registry/types";
 import { colorRef, isColorValue, isTokenName } from "../styles/theme";
-import type { JsonValue, NodeStyles, TreeNode } from "./types";
+import type { JsonValue, TreeNode } from "./types";
 
 type Values = Record<string, JsonValue>;
 
