@@ -1,6 +1,6 @@
 import type { Axis, Size } from "../position/types";
-import { isHexColor } from "../styles/hex-color";
 import { isPixelLength } from "../styles/pixel-length";
+import { isColorValue, isTheme } from "../styles/theme";
 import type { PageData, TreeNode } from "./types";
 
 /** The version of the saved shape. A page with another number is not read as this one. */
@@ -93,9 +93,9 @@ function isSize(value: unknown): value is Size {
 }
 
 const STYLE_CHECKS: Record<string, (value: unknown) => boolean> = {
-  background: isHexColor,
+  background: isColorValue,
   borderWidth: isPixelLength,
-  borderColor: isHexColor,
+  borderColor: isColorValue,
   borderRadius: isPixelLength,
 };
 
@@ -186,7 +186,8 @@ function isNode(value: unknown, depth: number, seen: Set<string>): value is Tree
  * store, a server), so nothing is assumed and nothing throws: anything else is simply `false`.
  */
 export function isPageData(value: unknown): value is PageData {
-  if (!isPlainObject(value) || !hasOnly(value, ["schemaVersion", "root"])) return false;
+  if (!isPlainObject(value) || !hasOnly(value, ["schemaVersion", "root", "theme"])) return false;
+  if ("theme" in value && !isTheme(value.theme)) return false;
   if (value.schemaVersion !== SCHEMA_VERSION) return false;
   const root = value.root;
   if (!isPlainObject(root) || !isPlainObject(root.position) || root.position.mode !== "flow") {

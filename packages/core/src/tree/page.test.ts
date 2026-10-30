@@ -386,6 +386,50 @@ describe("isPageData", () => {
     });
   });
 
+  describe("theme", () => {
+    const withTheme = (theme: unknown) =>
+      broken((p) => {
+        p.theme = theme;
+      });
+
+    it("accepts a page with a theme, also after JSON, and a page without one", () => {
+      expect(
+        isPageData(withTheme({ colors: { primary: "#112233" }, fonts: { body: "Inter" } })),
+      ).toBe(true);
+      expect(isPageData(withTheme({}))).toBe(true);
+      expect(isPageData(JSON.parse(JSON.stringify(withTheme({ colors: { a: "#000000" } }))))).toBe(
+        true,
+      );
+      expect(isPageData(sample())).toBe(true);
+    });
+
+    it("refuses a theme that is not one", () => {
+      for (const theme of [
+        null,
+        5,
+        "x",
+        [],
+        { extra: 1 },
+        { colors: { A: "#112233" } },
+        { colors: { a: "red" } },
+        { fonts: { body: "a;b" } },
+      ]) {
+        expect(isPageData(withTheme(theme)), JSON.stringify(theme)).toBe(false);
+      }
+      expect(isPageData(withTheme(undefined))).toBe(false);
+    });
+
+    it("lets a block name a theme colour for its background and border, and only a good name", () => {
+      for (const value of ["@primary", "@accent-2"]) {
+        expect(isPageData(broken((p) => (a(p).styles = { background: value })))).toBe(true);
+        expect(isPageData(broken((p) => (a(p).styles = { borderColor: value })))).toBe(true);
+      }
+      for (const value of ["@", "@Primary", "@a b", "primary", "@@a"]) {
+        expect(isPageData(broken((p) => (a(p).styles = { background: value }))), value).toBe(false);
+      }
+    });
+  });
+
   describe("phone props", () => {
     const withProps = (value: unknown) =>
       broken((p) => {

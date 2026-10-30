@@ -18,13 +18,21 @@ export const builtInRegistry: Registry = {
     label: "Text",
     size: { w: 240, h: 60 },
     canContain: false,
-    defaultProps: { text: "Your text", size: 24, color: "#111111", bold: false, align: "center" },
+    defaultProps: {
+      text: "Your text",
+      size: 24,
+      color: "#111111",
+      bold: false,
+      align: "center",
+      font: "body",
+    },
     fields: {
       text: { type: "text", label: "Text", maxLength: 2000 },
       size: { type: "number", label: "Size", min: 1, max: 400, perDevice: true },
       color: { type: "color", label: "Colour" },
       bold: { type: "boolean", label: "Bold" },
       align: { type: "select", label: "Align", options: ["left", "center", "right"] },
+      font: { type: "select", label: "Font", options: ["body", "heading"] },
     },
   },
   /** A basic shape. It can hold other blocks, for example a square with two texts in it. */

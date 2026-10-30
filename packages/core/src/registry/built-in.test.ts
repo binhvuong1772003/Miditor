@@ -62,6 +62,15 @@ describe("builtInRegistry", () => {
     expect(perDevice).toEqual(["Text.size"]);
   });
 
+  it("lets a text be set in the body or the heading font, starting in the body font", () => {
+    expect(builtInRegistry.Text?.defaultProps.font).toBe("body");
+    expect(builtInRegistry.Text?.fields.font).toEqual({
+      type: "select",
+      label: "Font",
+      options: ["body", "heading"],
+    });
+  });
+
   it("starts a text centred", () => {
     expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
   });

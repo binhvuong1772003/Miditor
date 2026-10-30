@@ -1,5 +1,5 @@
-import { isHexColor } from "../styles/hex-color";
 import { isImageUrl } from "../styles/image-url";
+import { isColorValue } from "../styles/theme";
 import type { JsonValue } from "../tree/types";
 import type { ComponentDef, Field } from "./types";
 
@@ -25,7 +25,7 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
     case "boolean":
       return typeof value === "boolean" ? undefined : "type";
     case "color":
-      return isHexColor(value) ? undefined : "type";
+      return isColorValue(value) ? undefined : "type";
     case "image":
       return value === "" || isImageUrl(value) ? undefined : "type";
   }

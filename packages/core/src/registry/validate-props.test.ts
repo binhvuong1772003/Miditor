@@ -31,6 +31,13 @@ describe("validateProps", () => {
     expect(validateProps(def, {})).toEqual([]);
   });
 
+  it("accepts a theme colour for a colour field, and refuses a name that is not one", () => {
+    expect(validateProps(def, { tint: "@primary" })).toEqual([]);
+    for (const tint of ["@", "@Primary", "primary", "#abc", "@a b"]) {
+      expect(validateProps(def, { tint }), tint).toEqual([{ key: "tint", code: "type" }]);
+    }
+  });
+
   it("accepts no picture yet or a safe address for an image, and refuses the rest", () => {
     for (const photo of ["", "https://e.co/a.png", "/a.png", "data:image/png;base64,AAAA"]) {
       expect(validateProps(def, { photo }), photo).toEqual([]);

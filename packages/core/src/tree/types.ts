@@ -1,4 +1,5 @@
 import type { Axis, FreeBox, Size } from "../position/types";
+import type { Theme } from "../styles/theme";
 
 /** Anything that survives `JSON.stringify` and `JSON.parse` unchanged. */
 export type JsonValue =
@@ -10,15 +11,16 @@ export type JsonValue =
   | { [key: string]: JsonValue };
 
 /**
- * How a node looks. Every value is typed: a colour is a stored `#rrggbb` (see `isHexColor`) and a
+ * How a node looks. Every value is typed: a colour is a stored `#rrggbb` or a reference to a colour
+ * of the page's theme such as `@primary` (see `isColorValue`) and a
  * length is a number of px (see `isPixelLength`), never free-form CSS. More fields (border, radius, text) come when something can edit and draw them.
  */
 export interface NodeStyles {
-  /** The fill colour, stored as `#rrggbb` in lowercase. */
+  /** The fill colour, stored as `#rrggbb` in lowercase, or a theme colour such as `@primary`. */
   background?: string;
   /** The border width in px, from 0 to `MAX_PIXEL_LENGTH`. Without it nothing is drawn. */
   borderWidth?: number;
-  /** The border colour, stored as `#rrggbb`. A border without one is drawn in the text colour. */
+  /** The border colour, stored as `#rrggbb` or a theme colour. A border without one is drawn in the text colour. */
   borderColor?: string;
   /** The radius of all four corners in px, from 0 to `MAX_PIXEL_LENGTH`. */
   borderRadius?: number;
@@ -75,4 +77,6 @@ export type TreeNode = FlowNode | FreeNode;
 export interface PageData {
   schemaVersion: number;
   root: TreeNode;
+  /** The colours and fonts the blocks can share. Without it a page has only the colours it holds. */
+  theme?: Theme;
 }

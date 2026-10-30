@@ -17,7 +17,7 @@ type FieldKind =
   | { type: "number"; label: string; min?: number; max?: number }
   | { type: "select"; label: string; options: readonly string[] }
   | { type: "boolean"; label: string }
-  /** A stored `#rrggbb`, see `isHexColor`. */
+  /** A stored `#rrggbb` or a theme colour such as `@primary`, see `isColorValue`. */
   | { type: "color"; label: string }
   /** A stored picture address, see `isImageUrl`; an empty string means no picture yet. */
   | { type: "image"; label: string };
