@@ -40,7 +40,8 @@
 }
 
 .delete:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--_danger) 8%, var(--_canvas));
+  /* A light tint: the red text on it keeps 4.5:1. */
+  background: color-mix(in srgb, var(--_danger) 4%, var(--_canvas));
 }
 
 .delete:disabled {
@@ -48,10 +49,34 @@
   cursor: default;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .reset,
+  .delete {
+    transition: none;
+  }
+}
+
 .reset:focus-visible,
 .delete:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
+}
+
+/* A heading for a group of fields: a hairline above it and room around it. */
+.section {
+  margin: 0.5rem 0 -0.25rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--_border);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.footer {
+  display: flex;
+  margin-block-start: 0.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--_border);
 }
 
 .title {

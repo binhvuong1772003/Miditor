@@ -27,6 +27,7 @@ export function ThemePanel({
     <div className={styles.content}>
       <h2 className={styles.title}>Theme</h2>
       <p className={styles.meta}>Shared by the whole page</p>
+      <h3 className={styles.section}>Colours</h3>
       {colors.map(([name, color]) => (
         <ColorRow
           key={name}
@@ -42,6 +43,7 @@ export function ThemePanel({
         taken={colors.map(([name]) => name)}
         onAdd={(name) => onSetColor(name, "#3b82f6")}
       />
+      <h3 className={styles.section}>Fonts</h3>
       {(["body", "heading"] as const).map((which) => (
         <FontField
           key={`${which}:${theme?.fonts?.[which] ?? ""}`}

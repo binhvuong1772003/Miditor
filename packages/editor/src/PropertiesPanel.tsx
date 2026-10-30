@@ -15,6 +15,7 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { ThemePicker } from "./ThemePicker";
@@ -110,6 +111,7 @@ export function PropertiesPanel({
       )}
       {isFreeNode(node) && (
         <>
+          <h3 className={styles.section}>Position</h3>
           <AnchorSelect
             label="Anchor X"
             value={boxFor(node, device).x.anchor}
@@ -132,6 +134,7 @@ export function PropertiesPanel({
           onDiscard={onDiscard}
         />
       )}
+      <h3 className={styles.section}>Appearance</h3>
       <ColourField
         label="Fill"
         pickerLabel="Fill colour picker"
@@ -154,15 +157,18 @@ export function PropertiesPanel({
         hint="In pixels, like 4. Leave it empty or 0 for square corners."
         {...length("borderRadius")}
       />
-      <button
-        type="button"
-        className={styles.delete}
-        disabled={!canDelete}
-        title={canDelete ? "Delete (Del)" : "Switch to Desktop to delete blocks"}
-        onClick={onDelete}
-      >
-        Delete block
-      </button>
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.delete}
+          disabled={!canDelete}
+          title={canDelete ? "Delete (Del)" : "Switch to Desktop to delete blocks"}
+          onClick={onDelete}
+        >
+          <Icon name="trash" />
+          Delete block
+        </button>
+      </div>
     </div>
   );
 }
