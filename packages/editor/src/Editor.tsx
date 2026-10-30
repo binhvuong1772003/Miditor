@@ -34,6 +34,7 @@ import {
   type TreeNode,
   ungroupNode,
   updateNode,
+  validateRegistry,
   withFreeBox,
   withPhoneBox,
   withStyle,
@@ -179,6 +180,12 @@ export function Editor({
   const onPhone = frame === "phone";
   const components = config?.components;
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
+  // A mistake in the host's kinds is told once per registry, and the editor goes on with it.
+  useEffect(() => {
+    for (const { type, key, code } of validateRegistry(registry)) {
+      console.error(`[midito] config.components.${type}${key ? `.${key}` : ""}: ${code}`);
+    }
+  }, [registry]);
   // The kind the Add button makes. A kind that is no longer in the registry falls back to the first.
   const [kind, setKind] = useState("Text");
   // Kinds that are made another way (a group) are not offered.
