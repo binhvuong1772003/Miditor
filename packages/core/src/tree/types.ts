@@ -32,6 +32,12 @@ interface NodeBase {
   type: string;
   /** The content of the component, for example the text of a heading. */
   props: Record<string, JsonValue>;
+  /**
+   * Props that a person set by hand for the phone, over the ones above: only the props of a field that
+   * is marked `perDevice` in the registry. Without it, or for a prop that is not in it, the phone has
+   * the same value as the desktop. See `propsFor`.
+   */
+  phoneProps?: Record<string, JsonValue>;
   /** How the node looks. Always present, `{}` when nothing is set. */
   styles: NodeStyles;
   /** Always present, empty for a leaf. Which kinds may hold children is the registry's decision. */

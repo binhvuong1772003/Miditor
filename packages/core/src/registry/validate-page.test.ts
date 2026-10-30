@@ -113,4 +113,46 @@ describe("validatePage", () => {
       }),
     );
   });
+
+  describe("phone props", () => {
+    const sized: Registry = {
+      Text: kind({
+        fields: {
+          text: { type: "text", label: "Text", maxLength: 3 },
+          size: { type: "number", label: "Size", min: 1, max: 9, perDevice: true },
+        },
+      }),
+    };
+    const withPhone = (phoneProps: Record<string, never | string | number>): PageData =>
+      pageOf({ ...node("a", "Text"), phoneProps });
+
+    it("accepts a value for a prop that is marked perDevice", () => {
+      expect(validatePage(sized, withPhone({ size: 5 }))).toEqual([]);
+    });
+
+    it("refuses a prop that is not marked perDevice, or has no field", () => {
+      expect(validatePage(sized, withPhone({ text: "ok", nope: 1 }))).toEqual([
+        { id: "a", code: "phone-props", key: "text", issue: "not-per-device" },
+        { id: "a", code: "phone-props", key: "nope", issue: "not-per-device" },
+      ]);
+      const own = JSON.parse('{"constructor": 1}');
+      expect(validatePage(sized, withPhone(own))).toEqual([
+        { id: "a", code: "phone-props", key: "constructor", issue: "not-per-device" },
+      ]);
+    });
+
+    it("refuses a value its field refuses, for the same reason as props", () => {
+      expect(validatePage(sized, withPhone({ size: 99 }))).toEqual([
+        { id: "a", code: "phone-props", key: "size", issue: "range" },
+      ]);
+      expect(validatePage(sized, withPhone({ size: "big" }))).toEqual([
+        { id: "a", code: "phone-props", key: "size", issue: "type" },
+      ]);
+    });
+
+    it("has nothing to check a block of an unknown kind against", () => {
+      const page = pageOf({ ...node("a", "Heart"), phoneProps: { size: 1 } });
+      expect(validatePage(sized, page)).toEqual([{ id: "a", code: "unknown-type" }]);
+    });
+  });
 });

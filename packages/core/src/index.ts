@@ -52,6 +52,7 @@ export {
   updateNode,
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
+export { propsFor, withPhoneProp } from "./tree/phone-props";
 export { type Pick, pickBlock } from "./tree/pick";
 export { type Reorder, reorderNode } from "./tree/reorder";
 export { type ReparentOptions, reparentNode } from "./tree/reparent";

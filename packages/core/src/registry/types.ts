@@ -4,7 +4,15 @@ import type { JsonValue } from "../tree/types";
  * A prop a person can edit, and the rules its value must follow. The registry stays plain data, so
  * it can be tested, and the editor can build its fields from it.
  */
-export type Field =
+export type Field = FieldKind & {
+  /**
+   * True when a person may give the prop another value for the phone, which is then kept in the
+   * `phoneProps` of the block. Only for a prop that makes sense per screen, like the size of a text.
+   */
+  perDevice?: boolean;
+};
+
+type FieldKind =
   | { type: "text"; label: string; maxLength?: number }
   | { type: "number"; label: string; min?: number; max?: number }
   | { type: "select"; label: string; options: readonly string[] }

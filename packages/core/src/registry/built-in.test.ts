@@ -53,6 +53,15 @@ describe("builtInRegistry", () => {
     expect(builtInRegistry.Image?.fields.src).toEqual({ type: "image", label: "Picture address" });
   });
 
+  it("lets the size of a text be set for the phone, and nothing else", () => {
+    const perDevice = Object.entries(builtInRegistry).flatMap(([type, def]) =>
+      Object.entries(def.fields)
+        .filter(([, field]) => field.perDevice)
+        .map(([name]) => `${type}.${name}`),
+    );
+    expect(perDevice).toEqual(["Text.size"]);
+  });
+
   it("starts a text centred", () => {
     expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
   });

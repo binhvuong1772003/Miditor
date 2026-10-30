@@ -21,7 +21,7 @@ export const builtInRegistry: Registry = {
     defaultProps: { text: "Your text", size: 24, color: "#111111", bold: false, align: "center" },
     fields: {
       text: { type: "text", label: "Text", maxLength: 2000 },
-      size: { type: "number", label: "Size", min: 1, max: 400 },
+      size: { type: "number", label: "Size", min: 1, max: 400, perDevice: true },
       color: { type: "color", label: "Colour" },
       bold: { type: "boolean", label: "Bold" },
       align: { type: "select", label: "Align", options: ["left", "center", "right"] },

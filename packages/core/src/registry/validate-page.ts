@@ -6,11 +6,14 @@ import { type PropIssue, validateProps } from "./validate-props";
  * What is wrong with one block of a page. `unknown-type`: the registry has no such kind (the editor
  * still draws an empty box there, so the page does not break). `props`: a prop its kind refuses, see
  * `PropIssue`. `cannot-contain`: it has blocks inside, but its kind does not allow that.
+ * `phone-props`: a value kept for the phone that is wrong, either because the prop is not marked
+ * `perDevice` (`not-per-device`, which also covers a prop with no field) or for the reason of `props`.
  */
 export type PageIssue = { id: string } & (
   | { code: "unknown-type" }
   | { code: "props"; key: string; issue: PropIssue["code"] }
   | { code: "cannot-contain" }
+  | { code: "phone-props"; key: string; issue: PropIssue["code"] | "not-per-device" }
 );
 
 /**
@@ -30,6 +33,16 @@ export function validatePage(registry: Registry, page: PageData): PageIssue[] {
     } else {
       for (const { key, code } of validateProps(def, node.props)) {
         issues.push({ id: node.id, code: "props", key, issue: code });
+      }
+      for (const [key, value] of Object.entries(node.phoneProps ?? {})) {
+        const field = Object.hasOwn(def.fields, key) ? def.fields[key] : undefined;
+        if (field?.perDevice !== true) {
+          issues.push({ id: node.id, code: "phone-props", key, issue: "not-per-device" });
+          continue;
+        }
+        for (const { code } of validateProps(def, { [key]: value })) {
+          issues.push({ id: node.id, code: "phone-props", key, issue: code });
+        }
       }
       if (!def.canContain && node.children.length > 0) {
         issues.push({ id: node.id, code: "cannot-contain" });

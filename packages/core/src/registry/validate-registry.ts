@@ -24,6 +24,7 @@ const isLabel = (value: unknown) => typeof value === "string" && value.trim() !=
 /** Why a field could never be filled in, or `undefined` when it is a usable field. */
 function fieldIsBroken(field: unknown): boolean {
   if (!isObject(field) || !isLabel(field.label)) return true;
+  if (field.perDevice !== undefined && typeof field.perDevice !== "boolean") return true;
   switch (field.type) {
     case "text":
       return field.maxLength !== undefined && !isCount(field.maxLength);

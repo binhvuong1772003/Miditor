@@ -386,6 +386,37 @@ describe("isPageData", () => {
     });
   });
 
+  describe("phone props", () => {
+    const withProps = (value: unknown) =>
+      broken((p) => {
+        a(p).phoneProps = value;
+      });
+
+    it("accepts props set for the phone, on a free node or a flow node, also after JSON", () => {
+      expect(isPageData(withProps({ size: 16, deep: { list: [1, "a", null, true] } }))).toBe(true);
+      expect(isPageData(withProps({}))).toBe(true);
+      expect(isPageData(JSON.parse(JSON.stringify(withProps({ size: 16 }))))).toBe(true);
+      expect(
+        isPageData(broken((p) => (p.root.children[0].children[0].phoneProps = { size: 1 }))),
+      ).toBe(true);
+    });
+
+    it("refuses phone props that are not a plain object of JSON values", () => {
+      for (const value of [
+        null,
+        5,
+        "x",
+        [],
+        [1],
+        { f: () => 1 },
+        { n: Number.NaN },
+        { u: undefined },
+      ]) {
+        expect(isPageData(withProps(value)), JSON.stringify(value)).toBe(false);
+      }
+    });
+  });
+
   describe("phone placement", () => {
     const phone = {
       x: { anchor: "scale", start: 5, size: 90 },

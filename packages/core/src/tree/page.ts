@@ -118,6 +118,7 @@ const NODE_KEYS = [
   "size",
   "rotation",
   "phone",
+  "phoneProps",
 ];
 
 /** The placement set by hand on a phone: every number of `FreeBox`, and nothing else. */
@@ -169,6 +170,8 @@ function isNode(value: unknown, depth: number, seen: Set<string>): value is Tree
     type !== "" &&
     isPlainObject(props) &&
     isJsonValue(props, 0) &&
+    (!("phoneProps" in value) ||
+      (isPlainObject(value.phoneProps) && isJsonValue(value.phoneProps, 0))) &&
     isStyles(styles) &&
     hasValidPlacement(value) &&
     Array.isArray(children) &&
