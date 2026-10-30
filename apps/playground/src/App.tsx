@@ -45,6 +45,22 @@ const renderers: Record<string, Renderer> = {
   ),
 };
 
+/**
+ * A stand-in for the host's upload (Cloudinary, S3...): it keeps the picture inside the page as a
+ * `data:` address, which the editor accepts up to 200000 characters, so about 150 KB of picture.
+ */
+const uploadImage = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("could not read the file"));
+    reader.onload = () => {
+      const url = String(reader.result);
+      if (url.length > 200_000) reject(new Error("the demo keeps pictures under 150 KB"));
+      else resolve(url);
+    };
+    reader.readAsDataURL(file);
+  });
+
 export function App() {
   const [page] = useState(openPage);
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
@@ -54,7 +70,7 @@ export function App() {
     <>
       <Editor
         data={page}
-        config={{ components, renderers }}
+        config={{ components, renderers, uploadImage }}
         onChange={(data) => storePage(window.localStorage, data)}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
       />

@@ -58,6 +58,7 @@ import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
+import type { UploadImage } from "./upload-image";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -91,8 +92,15 @@ export interface EditorProps {
    * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
    * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
    * `renderers` draws the kinds the host added, by name; a built-in kind is always drawn by the editor.
+   * `uploadImage` gives every picture field an Upload button: it is called with the file the person
+   * chose and answers with the address of the uploaded picture (Cloudinary's `secure_url`, for
+   * example). The editor keeps no keys and no files, only that address.
    */
-  config?: { components?: Registry; renderers?: Readonly<Record<string, Renderer>> };
+  config?: {
+    components?: Registry;
+    renderers?: Readonly<Record<string, Renderer>>;
+    uploadImage?: UploadImage;
+  };
 }
 
 // Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
@@ -891,6 +899,7 @@ export function Editor({
           onDiscard={() => setDraft(null)}
           onDelete={deleteBlock}
           onAnchor={changeAnchor}
+          uploadImage={config?.uploadImage}
         />
       </aside>
     </div>
