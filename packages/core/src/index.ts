@@ -22,6 +22,13 @@ export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { isImageUrl } from "./styles/image-url";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
+export {
+  clipboardText,
+  copyNodes,
+  type PasteOptions,
+  parseClipboard,
+  pasteNodes,
+} from "./tree/clipboard";
 export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { duplicateNode } from "./tree/duplicate";
 export { freeBoxOf, isFreeNode, withFreeBox, withPhoneBox } from "./tree/free-box";

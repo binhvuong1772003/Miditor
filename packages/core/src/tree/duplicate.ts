@@ -3,21 +3,24 @@ import { resolveRect } from "../position/resolve-rect";
 import type { Container } from "../position/types";
 import { boxFor } from "./device";
 import { isFreeNode, withFreeBox, withPhoneBox } from "./free-box";
-import { findNode, idsOf, parentOf, updateNode } from "./nodes";
+import { countNodes, findNode, freeIds, parentOf, updateNode } from "./nodes";
 import type { TreeNode } from "./types";
 
-/** How many nodes there are in this one and under it. */
-const sizeOf = (node: TreeNode): number =>
-  1 + node.children.reduce((total, child) => total + sizeOf(child), 0);
-
-/** The ids `n1`, `n2`... that no node of the tree has, in order. */
-function freeIds(root: TreeNode, count: number): string[] {
-  const taken = idsOf(root);
-  const found: string[] = [];
-  for (let n = 1; found.length < count; n++) {
-    if (!taken.has(`n${n}`)) found.push(`n${n}`);
-  }
-  return found;
+/**
+ * A free block moved by `shift` px, down and to the right when positive, in a parent of the size
+ * `container`; its phone placement is dropped, so it follows the shifted desktop one. Any other
+ * block comes back as it is.
+ */
+export function shiftBlock(
+  node: TreeNode,
+  shift: { x: number; y: number },
+  container: Container,
+): TreeNode {
+  if (!isFreeNode(node)) return node;
+  const box = boxFor(node, "desktop");
+  const rect = resolveRect(box, container);
+  const moved = inferBox(box, { ...rect, x: rect.x + shift.x, y: rect.y + shift.y }, container);
+  return withPhoneBox(withFreeBox(node, moved), undefined);
 }
 
 /**
@@ -38,23 +41,14 @@ export function duplicateNode(
   const node = findNode(root, id);
   const parent = parentOf(root, id);
   if (!node || !parent) return root;
-  const ids = freeIds(root, sizeOf(node));
+  const ids = freeIds(root, countNodes(node));
   const copyOf = (original: TreeNode): TreeNode => ({
     ...original,
     id: ids.shift() as string,
     children: original.children.map(copyOf),
   });
   let copy = copyOf(node);
-  if (options && isFreeNode(copy)) {
-    const box = boxFor(copy, "desktop");
-    const rect = resolveRect(box, options.container);
-    const moved = inferBox(
-      box,
-      { ...rect, x: rect.x + options.shift.x, y: rect.y + options.shift.y },
-      options.container,
-    );
-    copy = withPhoneBox(withFreeBox(copy, moved), undefined);
-  }
+  if (options) copy = shiftBlock(copy, options.shift, options.container);
   return updateNode(root, parent.id, (p) => {
     const at = p.children.indexOf(node) + 1;
     return { ...p, children: [...p.children.slice(0, at), copy, ...p.children.slice(at)] };

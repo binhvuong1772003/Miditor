@@ -59,6 +59,20 @@ export function idsOf(root: TreeNode, into: Set<string> = new Set()): Set<string
   return into;
 }
 
+/** How many nodes there are in this one and under it. */
+export const countNodes = (node: TreeNode): number =>
+  1 + node.children.reduce((total, child) => total + countNodes(child), 0);
+
+/** The ids `n1`, `n2`... that no node of the tree has, in order, `count` of them. */
+export function freeIds(root: TreeNode, count: number): string[] {
+  const taken = idsOf(root);
+  const found: string[] = [];
+  for (let n = 1; found.length < count; n++) {
+    if (!taken.has(`n${n}`)) found.push(`n${n}`);
+  }
+  return found;
+}
+
 /** An id for a new node: `n1`, `n2`... the first one that no node of the tree has. */
 export function nextId(root: TreeNode): string {
   const taken = idsOf(root);
