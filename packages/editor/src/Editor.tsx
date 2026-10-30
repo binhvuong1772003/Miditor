@@ -45,6 +45,7 @@ import {
   validateRegistry,
   withFreeBox,
   withPhoneBox,
+  withPhoneProp,
   withStyle,
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
@@ -127,8 +128,19 @@ const withBoxFor = (node: FreeNode, device: Device, box: FreeBox): FreeNode =>
   device === "phone" ? withPhoneBox(node, box) : withFreeBox(node, box);
 
 /** The node with the change of a patch applied. A rotation only changes a free node, on this screen. */
-const applyPatch = (node: TreeNode, patch: PanelPatch, device: Device): TreeNode => {
+const applyPatch = (
+  node: TreeNode,
+  patch: PanelPatch,
+  device: Device,
+  registry: Registry,
+): TreeNode => {
   if (patch.key === "prop") {
+    // A prop marked perDevice is kept apart for the phone, so the desktop keeps its own value.
+    const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
+    const field = def && Object.hasOwn(def.fields, patch.name) ? def.fields[patch.name] : undefined;
+    if (device === "phone" && field?.perDevice === true) {
+      return withPhoneProp(node, patch.name, patch.value);
+    }
     return node.props[patch.name] === patch.value
       ? node
       : { ...node, props: { ...node.props, [patch.name]: patch.value } };
@@ -150,9 +162,10 @@ const withDraft = (
   data: PageData,
   draft: PanelPatch & { id: string },
   device: Device,
+  registry: Registry,
 ): PageData => ({
   ...data,
-  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device)),
+  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device, registry)),
 });
 
 /** The page the editor starts from: the host's, once it is checked, or an empty one. */
@@ -250,8 +263,8 @@ export function Editor({
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
   const shown = useMemo<PageData>(
-    () => (draft ? withDraft(data, draft, frame) : data),
-    [data, draft, frame],
+    () => (draft ? withDraft(data, draft, frame, registry) : data),
+    [data, draft, frame, registry],
   );
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
   // The kind of the selected node, or `undefined` for one nobody registered.
@@ -404,7 +417,7 @@ export function Editor({
   const commitPatch = (id: string, patch: PanelPatch) => {
     setDraft(null);
     setData((prev) => {
-      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame));
+      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame, registry));
       return root === prev.root ? prev : { ...prev, root };
     });
   };
@@ -626,11 +639,18 @@ export function Editor({
 
   /** The selected block gets its automatic phone placement again; the desktop one is not touched. */
   const resetPhone = () => {
-    if (!selectedNode || !isFreeNode(selectedNode) || !selectedNode.phone) return;
+    if (!selectedNode) return;
+    const placed = isFreeNode(selectedNode) && selectedNode.phone !== undefined;
+    if (!placed && !selectedNode.phoneProps) return;
     const id = selectedNode.id;
     setData((prev) => ({
       ...prev,
-      root: updateNode(prev.root, id, (n) => (isFreeNode(n) ? withPhoneBox(n, undefined) : n)),
+      root: updateNode(prev.root, id, (n) =>
+        Object.keys(n.phoneProps ?? {}).reduce(
+          (node, name) => withPhoneProp(node, name, undefined),
+          isFreeNode(n) ? withPhoneBox(n, undefined) : n,
+        ),
+      ),
     }));
   };
 
@@ -987,7 +1007,7 @@ export function Editor({
               // A change that is still pending is stored first, and it is part of what is saved.
               const pending = draft;
               if (pending) commitPatch(pending.id, pending);
-              onSave(pending ? withDraft(data, pending, frame) : data);
+              onSave(pending ? withDraft(data, pending, frame, registry) : data);
             }}
           >
             Save

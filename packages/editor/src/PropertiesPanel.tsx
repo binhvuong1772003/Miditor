@@ -8,6 +8,7 @@ import {
   parseAngle,
   parseHexColor,
   parsePixelLength,
+  propsFor,
   type TreeNode,
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
@@ -89,11 +90,11 @@ export function PropertiesPanel({
       {def && (
         <PropFields
           def={def}
-          props={node.props}
+          props={propsFor(node, device)}
           onChange={(name, value) => onCommit({ key: "prop", name, value })}
         />
       )}
-      {device === "phone" && isFreeNode(node) && node.phone && (
+      {device === "phone" && ((isFreeNode(node) && node.phone) || node.phoneProps) && (
         <button type="button" className={styles.reset} onClick={onResetPhone}>
           Reset to automatic
         </button>
