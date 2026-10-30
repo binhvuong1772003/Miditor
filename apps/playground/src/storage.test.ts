@@ -36,6 +36,14 @@ describe("loadPage", () => {
     warn.mockRestore();
   });
 
+  it("opens the sample and says why when the stored page is from a newer version", () => {
+    const warn = quiet();
+    const newer = { ...emptyPage(), schemaVersion: 999 };
+    expect(loadPage(fakeStorage({ [STORAGE_KEY]: JSON.stringify(newer) }))).toBe(SAMPLE_PAGE);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("too-new"));
+    warn.mockRestore();
+  });
+
   it("opens the sample when the stored value is JSON but not a page", () => {
     const warn = quiet();
     for (const text of [

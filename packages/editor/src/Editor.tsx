@@ -15,7 +15,7 @@ import {
   inferBox,
   insertNode,
   isFreeNode,
-  isPageData,
+  migratePage,
   minSize,
   moveRect,
   type NewNodeOverrides,
@@ -68,8 +68,8 @@ export interface EditorProps {
   /**
    * The page to open. It is read once, when the editor mounts: the editor keeps its own working copy
    * from then on, so a later change of this prop does not reset it (give the editor a new `key` to
-   * open another page). It must pass `isPageData`, or the editor throws. Without it the editor opens
-   * an empty page.
+   * open another page). It is opened with `migratePage`, so a page of an older version is upgraded,
+   * and the editor throws for one it cannot open. Without it the editor opens an empty page.
    */
   data?: PageData;
   /**
@@ -152,10 +152,19 @@ const withDraft = (
 /** The page the editor starts from: the host's, once it is checked, or an empty one. */
 function openPage(data: PageData | undefined): PageData {
   if (data === undefined) return emptyPage();
-  if (!isPageData(data)) {
-    throw new Error("[midito] `data` is not a page this editor can open: check it with isPageData");
+  // A page of an older version is upgraded; anything else that cannot be opened is told apart.
+  const opened = migratePage(data);
+  if (!opened.ok) {
+    const why = {
+      "not-a-page": "it is not a page",
+      "too-new": "it was made by a newer version",
+      invalid: "it is not valid",
+    }[opened.reason];
+    throw new Error(
+      `[midito] \`data\` is not a page this editor can open: ${why} (check it with migratePage)`,
+    );
   }
-  return data;
+  return opened.page;
 }
 
 /** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */

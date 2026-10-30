@@ -1,4 +1,4 @@
-import { isPageData, type PageData } from "@midito-kitchen/editor";
+import { migratePage, type PageData } from "@midito-kitchen/editor";
 import { SAMPLE_PAGE } from "./sample-page";
 
 /** Where the playground keeps the page. The editor knows nothing about this: it only calls `onChange`. */
@@ -21,8 +21,11 @@ export function loadPage(storage: PageStorage, reset = false): PageData {
     const text = storage.getItem(STORAGE_KEY);
     if (text === null) return SAMPLE_PAGE;
     const value: unknown = JSON.parse(text);
-    if (isPageData(value)) return value;
-    console.warn("[playground] the stored page is not valid, opening the sample instead");
+    const opened = migratePage(value);
+    if (opened.ok) return opened.page;
+    console.warn(
+      `[playground] the stored page is not valid (${opened.reason}), opening the sample instead`,
+    );
   } catch (error) {
     console.warn(
       "[playground] the stored page could not be read, opening the sample instead",

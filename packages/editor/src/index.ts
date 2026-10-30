@@ -3,6 +3,8 @@ export {
   emptyPage,
   type Field,
   isPageData,
+  type MigrateResult,
+  migratePage,
   type PageData,
   type Registry,
   SCHEMA_VERSION,
