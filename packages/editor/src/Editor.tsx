@@ -1,14 +1,11 @@
 import {
-  type AlignTo,
   type AxisAnchor,
-  alignRects,
   boxFor,
   builtInRegistry,
   type Container,
   canInsert,
   canMove,
   type Device,
-  distributeRects,
   duplicateNode,
   emptyPage,
   type FreeBox,
@@ -590,40 +587,6 @@ export function Editor({
     setPicked(copies.slice(0, -1));
   };
 
-  /**
-   * Line the selected blocks up, or spread them out. One block is lined up with its parent, several
-   * with each other. They share a parent, so they are measured in the same box. On the phone it
-   * writes the phone placement, as a drag does.
-   */
-  const rearrange = (make: (rects: Rect[], whole: Rect) => Rect[], needed = 1) => {
-    const container = parentSize();
-    if (!selectedId || selectedId === data.root.id || !container) return;
-    const nodes = [selectedId, ...picked].flatMap((id) => findNode(data.root, id) ?? []);
-    if (nodes.length < needed || !nodes.every(isFreeNode)) return;
-    if (draft) commitPatch(draft.id, draft);
-    const rects = nodes.map((node) => resolveRect(boxFor(node, frame), container));
-    const out = make(rects, { x: 0, y: 0, w: container.w, h: container.h });
-    const same = out.every((r, i) => {
-      const was = rects[i] as Rect;
-      return Math.abs(r.x - was.x) < 0.005 && Math.abs(r.y - was.y) < 0.005;
-    });
-    if (same) return;
-    const next = new Map(
-      nodes.map((node, i) => [node.id, inferBox(boxFor(node, frame), out[i] as Rect, container)]),
-    );
-    setData((prev) => ({
-      ...prev,
-      root: [...next].reduce(
-        (tree, [id, box]) =>
-          updateNode(tree, id, (n) => (isFreeNode(n) ? withBoxFor(n, frame, box) : n)),
-        prev.root,
-      ),
-    }));
-  };
-  const alignSelected = (to: AlignTo) =>
-    rearrange((rects, whole) => alignRects(rects, to, picked.length === 0 ? whole : undefined));
-  const spreadSelected = (axis: "x" | "y") => rearrange((rects) => distributeRects(rects, axis), 3);
-
   /** The selected blocks become one group, selected, where they were. */
   const groupSelected = () => {
     if (onPhone) return;
@@ -809,49 +772,6 @@ export function Editor({
           >
             Duplicate
           </button>
-        </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div className={styles.group} role="group" aria-label="Align">
-          {(
-            [
-              ["left", "Left", "Align left"],
-              ["center", "Centre", "Align centres across"],
-              ["right", "Right", "Align right"],
-              ["top", "Top", "Align top"],
-              ["middle", "Middle", "Align centres down"],
-              ["bottom", "Bottom", "Align bottom"],
-            ] as const
-          ).map(([to, label, title]) => (
-            <button
-              key={to}
-              type="button"
-              className={`${styles.button} ${styles.secondary}`}
-              disabled={!selectedId || selectedId === data.root.id}
-              title={
-                picked.length === 0 ? `${title} (with the page)` : `${title} (with each other)`
-              }
-              onClick={() => alignSelected(to)}
-            >
-              {label}
-            </button>
-          ))}
-          {(
-            [
-              ["x", "Spread across"],
-              ["y", "Spread down"],
-            ] as const
-          ).map(([axis, label]) => (
-            <button
-              key={axis}
-              type="button"
-              className={`${styles.button} ${styles.secondary}`}
-              disabled={picked.length < 2}
-              title={`${label}: equal gaps, needs three blocks`}
-              onClick={() => spreadSelected(axis)}
-            >
-              {label}
-            </button>
-          ))}
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.group} role="group" aria-label="Order">
