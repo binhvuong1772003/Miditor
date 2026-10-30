@@ -1,3 +1,4 @@
+export { type AlignTo, alignRects, distributeRects } from "./position/align";
 export { cssFor, type PositionStyle } from "./position/css-for";
 export { inferBox } from "./position/infer-box";
 export { moveRect } from "./position/move-rect";
