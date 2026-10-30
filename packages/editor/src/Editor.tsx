@@ -243,6 +243,8 @@ export function Editor({
     container: Container;
     /** Where the block was on the screen when the gesture began. */
     screen: DOMRect;
+    /** The other selected blocks, which a drag moves along. */
+    others: { before: FreeNode; start: Rect }[];
   } | null>(null);
   const editorRoot = useRef<HTMLDivElement>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
@@ -419,6 +421,12 @@ export function Editor({
       start: resolveRect(boxFor(node, frame), container),
       container,
       screen: block?.getBoundingClientRect() ?? new DOMRect(),
+      others: picked.flatMap((id) => {
+        const other = findNode(data.root, id);
+        return other && isFreeNode(other)
+          ? [{ before: other, start: resolveRect(boxFor(other, frame), container) }]
+          : [];
+      }),
     };
   };
 
@@ -443,7 +451,7 @@ export function Editor({
    */
   const dropTarget = (g: NonNullable<typeof gesture.current>, dist: { x: number; y: number }) => {
     const from = block?.parentElement;
-    if (onPhone || !block || !from) return undefined;
+    if (onPhone || !block || !from || g.others.length > 0) return undefined;
     const x = g.screen.left + g.screen.width / 2 + dist.x;
     const y = g.screen.top + g.screen.height / 2 + dist.y;
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
@@ -485,6 +493,29 @@ export function Editor({
 
   const endDrag = (dist: { x: number; y: number }) => {
     const g = gesture.current;
+    if (g && g.others.length > 0) {
+      // Several blocks: all move by the same distance on the screen, and stay in their parent.
+      gesture.current = null;
+      const turn = boxFor(g.before, frame).rotation;
+      const all = [{ before: g.before, start: g.start }, ...g.others];
+      setData((prev) => ({
+        ...prev,
+        root: all.reduce(
+          (root, { before, start }) =>
+            updateNode(root, before.id, (n) =>
+              isFreeNode(n)
+                ? withBoxFor(
+                    n,
+                    frame,
+                    inferBox(boxFor(before, frame), moveRect(start, dist, turn), g.container),
+                  )
+                : n,
+            ),
+          prev.root,
+        ),
+      }));
+      return;
+    }
     const target = g ? dropTarget(g, dist) : undefined;
     if (!g || !target) {
       endGesture((done) => moveRect(done.start, dist, boxFor(done.before, frame).rotation));
@@ -999,6 +1030,7 @@ export function Editor({
           target={block}
           container={workspace}
           className={styles.selection}
+          companions={picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))}
           lockRatio={selectedDef?.lockRatio === true}
           minSize={minSize(selectedNode?.styles)}
           angle={

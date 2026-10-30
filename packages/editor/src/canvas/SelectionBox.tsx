@@ -41,6 +41,12 @@ export interface SelectionBoxProps {
   minSize: number;
   /** The node's current rotation in degrees, which Shift snaps the turn against. */
   angle: number;
+  /**
+   * Other blocks that move with the target while it is dragged, each shown moved by the same distance
+   * on the screen. Only drags move them; they are put back when the gesture ends, for the editor to
+   * store the new places.
+   */
+  companions?: readonly HTMLElement[] | undefined;
   /** A drag or a resize begins. Read whatever the commit will need here. */
   onGestureStart: () => void;
   /**
@@ -116,6 +122,7 @@ export function SelectionBox({
   lockRatio = false,
   minSize,
   angle,
+  companions,
   onGestureStart,
   onDragEnd,
   onDragMove,
@@ -128,6 +135,8 @@ export function SelectionBox({
   const lastSize = useRef<ResizeResult | null>(null);
   const lastTurn = useRef(0);
   const saved = useRef<Saved>({ transform: "", width: "", height: "" });
+  // The companions and the transform each had when the drag began.
+  const moving = useRef<{ el: HTMLElement; transform: string }[]>([]);
   // Shift at a corner keeps the ratio. Moveable reads this prop on every event of the gesture.
   const [keepRatio, setKeepRatio] = useState(false);
 
@@ -153,6 +162,10 @@ export function SelectionBox({
   const begin = (el: HTMLElement) => {
     busy.current = true;
     saved.current = save(el);
+    moving.current = (companions ?? []).map((other) => ({
+      el: other,
+      transform: other.style.transform,
+    }));
     el.dataset.dragging = "";
     onGestureStart();
   };
@@ -172,7 +185,22 @@ export function SelectionBox({
     }
   };
 
+  /** Show the companions moved by `dist`, which is in the target's own (turned) axes. */
+  const moveCompanions = (dist: { x: number; y: number }) => {
+    const turn = (angle * Math.PI) / 180;
+    const x = dist.x * Math.cos(turn) - dist.y * Math.sin(turn);
+    const y = dist.x * Math.sin(turn) + dist.y * Math.cos(turn);
+    for (const { el, transform } of moving.current) {
+      el.style.transform = `translate(${x}px, ${y}px) ${transform === "none" ? "" : transform}`;
+    }
+  };
+
   const end = (el: HTMLElement) => {
+    for (const { el: other, transform } of moving.current) {
+      if (transform) other.style.transform = transform;
+      else other.style.removeProperty("transform");
+    }
+    moving.current = [];
     busy.current = false;
     delete el.dataset.dragging;
     setKeepRatio(false);
@@ -218,6 +246,7 @@ export function SelectionBox({
         // Moveable previews the move itself; React state stays untouched until release.
         Object.assign((e.target as HTMLElement).style, e.style);
         lastDist.current = { x: e.dist[0] ?? 0, y: e.dist[1] ?? 0 };
+        moveCompanions(lastDist.current);
         onDragMove?.(lastDist.current);
       })}
       onDragEnd={guarded((e: OnDragEnd) => {
