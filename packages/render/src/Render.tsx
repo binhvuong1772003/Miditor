@@ -1,6 +1,13 @@
 import type { Device, JsonValue, PageData, TreeNode } from "@midito-kitchen/core";
 import type { ReactNode } from "react";
-import { shapeLayerStyle, textOf, textStyle } from "./kind-style";
+import {
+  imageOf,
+  imagePlaceholderStyle,
+  imageStyle,
+  shapeLayerStyle,
+  textOf,
+  textStyle,
+} from "./kind-style";
 import { isBuiltIn, nodeStyle } from "./node-style";
 
 /** What a host's drawing function is given for one block of its own kind. */
@@ -64,6 +71,24 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
   }
   // A text is its words: it has no blocks inside, so any in the data are not drawn.
   if (node.type === "Text") return <div {...common}>{textOf(node.props)}</div>;
+  // A picture is its picture: like a text it has no blocks inside. A missing or unsafe address is a grey box.
+  if (node.type === "Image") {
+    const picture = imageOf(node.props);
+    return (
+      <div {...common}>
+        {picture ? (
+          <img
+            src={picture.src}
+            alt={picture.alt}
+            draggable={false}
+            style={imageStyle(node.props)}
+          />
+        ) : (
+          <div aria-hidden="true" style={imagePlaceholderStyle} />
+        )}
+      </div>
+    );
+  }
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(node.props)} />}

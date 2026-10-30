@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { Device, FlowNode, FreeNode, PageData } from "@midito-kitchen/core";
+import type { Device, FlowNode, FreeNode, JsonValue, PageData } from "@midito-kitchen/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Render, type Renderer } from "./Render";
@@ -384,5 +384,46 @@ describe("<Render> renderers", () => {
   it("ignores a name on the prototype", () => {
     const data = page(flow("root", "Page", [{ ...flow("t", "toString") }]));
     expect(tagOf(draw(data, {}), "t")).toContain("data-midito-unknown");
+  });
+});
+
+describe("<Render> Image", () => {
+  const image = (props: Record<string, JsonValue>, children: (FlowNode | FreeNode)[] = []) =>
+    page(flow("root", "Page", [{ ...flow("pic", "Image", children), props }]));
+  const picture = (markup: string) => /<img[^>]*>/.exec(markup)?.[0] ?? "";
+
+  it("draws the picture filling its box, with its description and fit", () => {
+    const tag = picture(html(image({ src: "https://e.co/a.png", alt: "A cat", fit: "contain" })));
+    expect(tag).toContain('src="https://e.co/a.png"');
+    expect(tag).toContain('alt="A cat"');
+    expect(tag).toContain("object-fit:contain");
+    expect(tag).toContain("width:100%");
+    expect(tag).toContain("height:100%");
+    expect(tag).toContain('draggable="false"');
+  });
+
+  it("falls back to cover for a fit it does not know, and to no description", () => {
+    const tag = picture(html(image({ src: "/a.png", fit: "stretch" })));
+    expect(tag).toContain("object-fit:cover");
+    expect(tag).toContain('alt=""');
+    expect(picture(html(image({ src: "/a.png", alt: 5 })))).toContain('alt=""');
+  });
+
+  it("draws a grey box and no img when there is no picture or the address is not safe", () => {
+    for (const src of ["", "javascript:alert(1)", "data:image/svg+xml;base64,AAAA", 5, null]) {
+      const markup = html(image({ src }));
+      expect(markup, String(src)).not.toContain("<img");
+      expect(markup, String(src)).toContain("background-color:#e2e8f0");
+    }
+    expect(html(image({}))).not.toContain("<img");
+  });
+
+  it("does not draw blocks inside a picture", () => {
+    const markup = html(image({ src: "/a.png" }, [free("in")]));
+    expect(markup).not.toContain('data-midito-id="in"');
+  });
+
+  it("clips the picture to its box", () => {
+    expect(tagOf(html(image({ src: "/a.png" })), "pic")).toContain("overflow:hidden");
   });
 });

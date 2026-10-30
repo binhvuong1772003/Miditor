@@ -1,4 +1,10 @@
-import { type Device, isHexColor, type JsonValue, PHONE_RATIO } from "@midito-kitchen/core";
+import {
+  type Device,
+  isHexColor,
+  isImageUrl,
+  type JsonValue,
+  PHONE_RATIO,
+} from "@midito-kitchen/core";
 import type { CSSProperties } from "react";
 
 type Props = Record<string, JsonValue>;
@@ -64,3 +70,33 @@ export function shapeLayerStyle(props: Props): CSSProperties {
     clipPath: shape === "triangle" ? "polygon(50% 0, 100% 100%, 0 100%)" : "none",
   };
 }
+
+const FITS = ["cover", "contain"] as const;
+/** The grey of a picture that has no address yet, or one that is not safe to load. */
+const PLACEHOLDER = "#e2e8f0";
+
+/** What an `Image` block draws: the picture, or a plain grey box when `src` is not a safe address. */
+export function imageOf(props: Props): { src: string; alt: string } | undefined {
+  const { src, alt } = props;
+  return isImageUrl(src) ? { src, alt: typeof alt === "string" ? alt : "" } : undefined;
+}
+
+/** The look of the picture itself, which fills its block. Every key is written. */
+export function imageStyle(props: Props): CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    height: "100%",
+    margin: 0,
+    padding: 0,
+    border: 0,
+    objectFit: FITS.find((fit) => fit === props.fit) ?? "cover",
+  };
+}
+
+/** The grey box drawn in place of a picture that is not there. */
+export const imagePlaceholderStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  backgroundColor: PLACEHOLDER,
+};

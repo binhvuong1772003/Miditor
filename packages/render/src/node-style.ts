@@ -38,6 +38,8 @@ const BY_TYPE: Record<string, CSSProperties> = {
     overflowWrap: "anywhere",
   },
   Shape: { display: "block" },
+  // A picture never spills out of its box.
+  Image: { display: "block", overflow: "hidden" },
   // A group has no look of its own: it is only the box that holds its blocks.
   Group: { display: "block" },
 };
