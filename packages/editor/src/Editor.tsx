@@ -55,6 +55,7 @@ import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/Selec
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 
@@ -205,6 +206,8 @@ export function Editor({
   const [picked, setPicked] = useState<string[]>([]);
   // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
   const [dropId, setDropId] = useState<string | null>(null);
+  // The box a person is dragging out on the empty page to select the blocks it touches, in screen px.
+  const [marquee, setMarquee] = useState<Edges | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
@@ -268,6 +271,50 @@ export function Editor({
     };
   }, [workspace, dropId, shown]);
 
+  /**
+   * A drag from the empty page draws a box, and on release the blocks it touches are selected: the
+   * first in tree order is the main one, the others are picked. They are the children of the page, or
+   * with Shift of the parent of the selected block, to be added to it. A move under 4 px is a click.
+   */
+  const startMarquee = (event: PointerEvent<HTMLElement>) => {
+    const from = { x: event.clientX, y: event.clientY };
+    const add = event.shiftKey && selectedId !== null;
+    const parent = (add ? parentOf(data.root, selectedId as string) : undefined) ?? data.root;
+    const box = (e: { clientX: number; clientY: number }) =>
+      boxBetween(from, { x: e.clientX, y: e.clientY });
+    const dragged = (b: Edges) => b.right - b.left >= 4 || b.bottom - b.top >= 4;
+    const move = (e: globalThis.PointerEvent) => {
+      const b = box(e);
+      setMarquee(dragged(b) ? b : null);
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", stop);
+      setMarquee(null);
+    };
+    const up = (e: globalThis.PointerEvent) => {
+      stop();
+      const b = box(e);
+      if (!workspace || !dragged(b)) return;
+      const items = parent.children.flatMap((child) => {
+        const element = elementOf(workspace, child.id);
+        return element ? [{ id: child.id, rect: element.getBoundingClientRect() }] : [];
+      });
+      const ids = touched(b, items);
+      if (add && selectedId) {
+        const more = ids.filter((id) => id !== selectedId && !picked.includes(id));
+        setPicked((list) => [...list, ...more.filter((id) => !list.includes(id))]);
+      } else if (ids.length > 0) {
+        setSelectedId(ids[0] as string);
+        setPicked(ids.slice(1));
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", stop);
+  };
+
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
     const target = event.target as Element;
@@ -284,6 +331,12 @@ export function Editor({
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+    // A press on the empty page may turn into a box drag; a plain click still just clears (below).
+    if (id === undefined) {
+      startMarquee(event);
+      // Shift keeps what is selected, so the box can add to it.
+      if (event.shiftKey && selectedId) return;
+    }
     // Shift adds a block to the selection, or takes it out, when it has the same parent as the one
     // selected: they are the blocks that can be grouped.
     if (event.shiftKey && selectedId && hit) {
@@ -792,6 +845,22 @@ export function Editor({
           renderers={config?.renderers}
           className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
         />
+        {marquee && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              left: marquee.left,
+              top: marquee.top,
+              width: marquee.right - marquee.left,
+              height: marquee.bottom - marquee.top,
+              border: "1px solid var(--_focus)",
+              background: "color-mix(in srgb, var(--_focus) 15%, transparent)",
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          />
+        )}
         <SelectionBox
           target={block}
           container={workspace}
