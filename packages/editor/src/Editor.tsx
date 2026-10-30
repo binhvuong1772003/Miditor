@@ -686,11 +686,14 @@ export function Editor({
    * The selected blocks go on the clipboard, as text that only this editor reads. It is the browser's
    * own copy event, so no permission is needed and it works between tabs. A field keeps its own copy.
    */
+  // How many times the text on the clipboard was pasted in a row, so each paste steps further.
+  const pasted = useRef({ text: "", times: 0 });
   const copySelected = (event: ClipboardEvent) => {
     if (isEditableTarget(event.target) || !selectedId) return;
     const nodes = copyNodes(data.root, [selectedId, ...picked]);
     if (nodes.length === 0) return;
     event.clipboardData.setData("text/plain", clipboardText(nodes));
+    pasted.current = { text: "", times: 0 };
     event.preventDefault();
   };
 
@@ -708,7 +711,8 @@ export function Editor({
    */
   const pasteBlocks = (event: ClipboardEvent) => {
     if (onPhone || isEditableTarget(event.target) || !workspace) return;
-    const nodes = parseClipboard(event.clipboardData.getData("text/plain"));
+    const text = event.clipboardData.getData("text/plain");
+    const nodes = parseClipboard(text);
     if (!nodes) return;
     const holder = {
       schemaVersion: data.schemaVersion,
@@ -721,11 +725,15 @@ export function Editor({
     const element = elementOf(workspace, parent.id);
     if (!element) return;
     const container = { w: element.clientWidth, h: element.clientHeight };
-    const done = pasteNodes(data.root, parent.id, nodes, { shift: { x: 16, y: 16 }, container });
+    // The same text pasted again goes another step further down and to the right.
+    const times = pasted.current.text === text ? pasted.current.times + 1 : 1;
+    const shift = { x: 16 * times, y: 16 * times };
+    const done = pasteNodes(data.root, parent.id, nodes, { shift, container });
     if (done.ids.length === 0) return;
+    pasted.current = { text, times };
     setData((prev) => ({
       ...prev,
-      root: pasteNodes(prev.root, parent.id, nodes, { shift: { x: 16, y: 16 }, container }).root,
+      root: pasteNodes(prev.root, parent.id, nodes, { shift, container }).root,
     }));
     setSelectedId(done.ids[0] ?? null);
     setPicked(done.ids.slice(1));
