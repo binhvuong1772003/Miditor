@@ -12,7 +12,7 @@ const page = { w: 960, h: 640 };
 
 describe("builtInRegistry", () => {
   it("has the kinds the editor starts with", () => {
-    expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape", "Group"]);
+    expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape", "Image", "Group"]);
   });
 
   it("starts a text wide and a shape square, at the size of their kind", () => {
@@ -41,6 +41,16 @@ describe("builtInRegistry", () => {
     expect(grouped.root.children.map((n) => n.type)).toEqual(["Group"]);
     expect(isPageData(grouped)).toBe(true);
     expect(validatePage(builtInRegistry, grouped)).toEqual([]);
+  });
+
+  it("starts an image empty, 240 by 160, keeping its ratio and holding nothing", () => {
+    expect(builtInRegistry.Image).toMatchObject({
+      size: { w: 240, h: 160 },
+      lockRatio: true,
+      canContain: false,
+      defaultProps: { src: "", alt: "", fit: "cover" },
+    });
+    expect(builtInRegistry.Image?.fields.src).toEqual({ type: "image", label: "Picture address" });
   });
 
   it("starts a text centred", () => {
@@ -86,7 +96,7 @@ describe("builtInRegistry", () => {
   it("can be extended by spreading, without changing it", () => {
     const heart = { label: "Heart", canContain: false, defaultProps: {}, fields: {} };
     const mine = { ...builtInRegistry, Heart: heart };
-    expect(Object.keys(mine)).toEqual(["Container", "Text", "Shape", "Group", "Heart"]);
-    expect(Object.keys(builtInRegistry)).toHaveLength(4);
+    expect(Object.keys(mine)).toEqual(["Container", "Text", "Shape", "Image", "Group", "Heart"]);
+    expect(Object.keys(builtInRegistry)).toHaveLength(5);
   });
 });

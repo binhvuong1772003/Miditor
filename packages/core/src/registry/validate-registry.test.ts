@@ -67,6 +67,7 @@ describe("validateRegistry", () => {
     ["no type", { label: "X" }],
     ["unknown type", { type: "slider", label: "X" }],
     ["not an object", 5],
+    ["image with no label", { type: "image" }],
     ["negative maxLength", { type: "text", label: "X", maxLength: -1 }],
     ["fractional maxLength", { type: "text", label: "X", maxLength: 1.5 }],
     ["min over max", { type: "number", label: "X", min: 5, max: 1 }],
@@ -85,6 +86,7 @@ describe("validateRegistry", () => {
       a: { type: "number", label: "A", min: 2, max: 2 },
       b: { type: "number", label: "B" },
       c: { type: "text", label: "C", maxLength: 0 },
+      d: { type: "image", label: "D" },
     };
     expect(validateRegistry(with_({ fields, defaultProps: {} }))).toEqual([]);
   });

@@ -10,7 +10,9 @@ export type Field =
   | { type: "select"; label: string; options: readonly string[] }
   | { type: "boolean"; label: string }
   /** A stored `#rrggbb`, see `isHexColor`. */
-  | { type: "color"; label: string };
+  | { type: "color"; label: string }
+  /** A stored picture address, see `isImageUrl`; an empty string means no picture yet. */
+  | { type: "image"; label: string };
 
 /** One kind of block: what it is called, what it starts with and what a person may change on it. */
 export interface ComponentDef {

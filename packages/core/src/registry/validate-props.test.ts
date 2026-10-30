@@ -13,6 +13,7 @@ const def: ComponentDef = {
     shape: { type: "select", label: "Shape", options: ["circle", "square"] },
     shown: { type: "boolean", label: "Shown" },
     tint: { type: "color", label: "Tint" },
+    photo: { type: "image", label: "Photo" },
   },
 };
 
@@ -28,6 +29,23 @@ describe("validateProps", () => {
       }),
     ).toEqual([]);
     expect(validateProps(def, {})).toEqual([]);
+  });
+
+  it("accepts no picture yet or a safe address for an image, and refuses the rest", () => {
+    for (const photo of ["", "https://e.co/a.png", "/a.png", "data:image/png;base64,AAAA"]) {
+      expect(validateProps(def, { photo }), photo).toEqual([]);
+    }
+    for (const photo of [
+      "javascript:alert(1)",
+      "a.png",
+      "data:image/svg+xml;base64,AAAA",
+      5,
+      null,
+    ]) {
+      expect(validateProps(def, { photo }), String(photo)).toEqual([
+        { key: "photo", code: "type" },
+      ]);
+    }
   });
 
   it("refuses a prop that has no field, also one named like something on the prototype", () => {

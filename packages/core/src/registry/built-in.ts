@@ -38,6 +38,19 @@ export const builtInRegistry: Registry = {
       fill: { type: "color", label: "Fill" },
     },
   },
+  /** A picture from an address. It keeps its ratio when resized, so it is not squashed. */
+  Image: {
+    label: "Image",
+    size: { w: 240, h: 160 },
+    lockRatio: true,
+    canContain: false,
+    defaultProps: { src: "", alt: "", fit: "cover" },
+    fields: {
+      src: { type: "image", label: "Picture address" },
+      alt: { type: "text", label: "Description", maxLength: 500 },
+      fit: { type: "select", label: "Fit", options: ["cover", "contain"] },
+    },
+  },
   /**
    * Several blocks gathered, see `groupNodes`. It has no look of its own, so a group is only the
    * blocks in it, moved and resized together. Made by grouping, so it is not offered when adding.

@@ -19,6 +19,7 @@ export { type PropIssue, validateProps } from "./registry/validate-props";
 export { type RegistryIssue, validateRegistry } from "./registry/validate-registry";
 export { isAngle, normalizeAngle, parseAngle } from "./styles/angle";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
+export { isImageUrl } from "./styles/image-url";
 export { minSize } from "./styles/min-size";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
