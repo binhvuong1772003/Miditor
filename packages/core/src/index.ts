@@ -68,6 +68,7 @@ export { propsFor, withPhoneProp } from "./tree/phone-props";
 export { type Pick, pickBlock } from "./tree/pick";
 export { type Reorder, reorderNode } from "./tree/reorder";
 export { type ReparentOptions, reparentNode } from "./tree/reparent";
+export { replaceColor } from "./tree/replace-color";
 export { withStyle } from "./tree/styles";
 export { turnOf } from "./tree/turn-of";
 export type {
