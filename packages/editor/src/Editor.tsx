@@ -4,6 +4,7 @@ import {
   builtInRegistry,
   type Container,
   canInsert,
+  canMove,
   type Device,
   duplicateNode,
   emptyPage,
@@ -28,6 +29,7 @@ import {
   type Reorder,
   removeNode,
   reorderNode,
+  reparentNode,
   resizeRotated,
   resolveRect,
   setAnchor,
@@ -204,7 +206,13 @@ export function Editor({
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   const [block, setBlock] = useState<HTMLElement | null>(null);
-  const gesture = useRef<{ before: FreeNode; start: Rect; container: Container } | null>(null);
+  const gesture = useRef<{
+    before: FreeNode;
+    start: Rect;
+    container: Container;
+    /** Where the block was on the screen when the gesture began. */
+    screen: DOMRect;
+  } | null>(null);
   const editorRoot = useRef<HTMLDivElement>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
@@ -316,6 +324,7 @@ export function Editor({
       before: node,
       start: resolveRect(boxFor(node, frame), container),
       container,
+      screen: block?.getBoundingClientRect() ?? new DOMRect(),
     };
   };
 
@@ -333,8 +342,68 @@ export function Editor({
     }));
   };
 
-  const endDrag = (dist: { x: number; y: number }) =>
-    endGesture((g) => moveRect(g.start, dist, boxFor(g.before, frame).rotation));
+  /**
+   * The block a dragged block was dropped on, with the sizes to measure in, or `undefined` when it
+   * stays in its parent: on the phone, over its own parent or over nothing, over a block that may not
+   * hold it, or when either parent is turned (the maths ignore a turn).
+   */
+  const dropTarget = (g: NonNullable<typeof gesture.current>, dist: { x: number; y: number }) => {
+    const from = block?.parentElement;
+    if (onPhone || !block || !from) return undefined;
+    const x = g.screen.left + g.screen.width / 2 + dist.x;
+    const y = g.screen.top + g.screen.height / 2 + dist.y;
+    // Topmost first, so the deepest block under the pointer is met before the ones around it.
+    const under = block.ownerDocument
+      .elementsFromPoint(x, y)
+      .filter(
+        (el): el is HTMLElement => el instanceof HTMLElement && el.dataset.miditoId !== undefined,
+      );
+    const hit = under.find((el) =>
+      canMove(registry, data.root, g.before.id, el.dataset.miditoId as string),
+    );
+    const id = hit?.dataset.miditoId;
+    if (!hit || id === undefined || id === parentOf(data.root, g.before.id)?.id) return undefined;
+    const turned = (el: HTMLElement) => {
+      const node = el.dataset.miditoId ? findNode(data.root, el.dataset.miditoId) : undefined;
+      return node !== undefined && isFreeNode(node) && boxFor(node, frame).rotation !== 0;
+    };
+    if (turned(hit) || turned(from)) return undefined;
+    const corner = (el: HTMLElement) => ({
+      x: el.getBoundingClientRect().left + el.clientLeft,
+      y: el.getBoundingClientRect().top + el.clientTop,
+    });
+    const [a, b] = [corner(from), corner(hit)];
+    return {
+      id,
+      options: {
+        from: g.container,
+        to: { w: hit.clientWidth, h: hit.clientHeight },
+        shift: { x: b.x - a.x, y: b.y - a.y },
+      },
+    };
+  };
+
+  const endDrag = (dist: { x: number; y: number }) => {
+    const g = gesture.current;
+    const target = g ? dropTarget(g, dist) : undefined;
+    if (!g || !target) {
+      endGesture((done) => moveRect(done.start, dist, boxFor(done.before, frame).rotation));
+      return;
+    }
+    gesture.current = null;
+    const moved = inferBox(
+      boxFor(g.before, frame),
+      moveRect(g.start, dist, boxFor(g.before, frame).rotation),
+      g.container,
+    );
+    // Moved in its old parent first, then carried into the new one where it stands.
+    setData((prev) => {
+      const placed = updateNode(prev.root, g.before.id, (n) =>
+        isFreeNode(n) ? withBoxFor(n, frame, moved) : n,
+      );
+      return { ...prev, root: reparentNode(placed, g.before.id, target.id, target.options) };
+    });
+  };
 
   // Position maths ignore the rotation, so a turn only changes the angle: no `inferBox`.
   const endRotate = (dist: number) => {
