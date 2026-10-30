@@ -55,6 +55,48 @@ describe("newNode", () => {
     }
   });
 
+  it("starts with the size and the props it is given, and the defaults for the rest", () => {
+    const node = newNode(registry, "Text", "n1", page, {
+      size: { w: 200, h: 100 },
+      props: { size: 40 },
+    });
+    expect(node?.size).toEqual({ w: { kind: "px", v: 200 }, h: { kind: "px", v: 100 } });
+    expect(node?.position.x).toEqual({ anchor: "center", offset: 0 });
+    expect(node?.props).toEqual({ text: "Your text", size: 40 });
+  });
+
+  it("keeps the size of its kind when the given size is not usable", () => {
+    const sized: Registry = {
+      Heart: {
+        label: "Heart",
+        canContain: false,
+        size: { w: 80, h: 64 },
+        defaultProps: {},
+        fields: {},
+      },
+    };
+    for (const size of [
+      { w: 0, h: 10 },
+      { w: 10, h: -1 },
+      { w: Number.NaN, h: 10 },
+      { w: Number.POSITIVE_INFINITY, h: 10 },
+      { w: 10, h: Number.POSITIVE_INFINITY },
+    ]) {
+      expect(newNode(sized, "Heart", "n1", page, { size })?.size).toEqual({
+        w: { kind: "px", v: 80 },
+        h: { kind: "px", v: 64 },
+      });
+    }
+  });
+
+  it("does not share the props it is given, and the registry stays as it was", () => {
+    const given = { text: "Mine", size: 20 };
+    const node = newNode(registry, "Text", "n1", page, { props: given });
+    expect(node?.props).toEqual(given);
+    expect(node?.props).not.toBe(given);
+    expect(registry.Text?.defaultProps).toEqual({ text: "Your text", size: 16 });
+  });
+
   it("gives every call its own props object, without touching the registry", () => {
     const a = newNode(registry, "Text", "n1", page);
     const b = newNode(registry, "Text", "n2", page);
