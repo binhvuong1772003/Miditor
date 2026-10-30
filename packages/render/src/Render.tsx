@@ -3,6 +3,7 @@ import {
   type JsonValue,
   type PageData,
   propsFor,
+  type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
 import type { ReactNode } from "react";
@@ -21,6 +22,8 @@ export interface RendererContext {
   /** The props stored on the node, as they are: nothing fills in defaults. */
   props: Record<string, JsonValue>;
   device: Device;
+  /** The theme of the page, for a function that draws a colour or a font of its own (see `resolveColor`). */
+  theme: Theme | undefined;
   /** The blocks inside this one, already drawn. A function that leaves them out hides them. */
   children: ReactNode;
 }
@@ -53,9 +56,10 @@ interface NodeProps {
   isRoot: boolean;
   device: Device;
   renderers: Readonly<Record<string, Renderer>> | undefined;
+  theme: Theme | undefined;
 }
 
-function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
+function RenderNode({ node, isRoot, device, renderers, theme }: NodeProps) {
   // What the node has on this screen: on a phone the values set by hand for it come over the others.
   const props = propsFor(node, device);
   // A text size that a person set for the phone is the size, with no shrinking by the page ratio.
@@ -68,8 +72,8 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
     "data-midito-type": node.type,
     style:
       node.type === "Text"
-        ? { ...nodeStyle(node, isRoot, device), ...textStyle(props, sizeDevice) }
-        : nodeStyle(node, isRoot, device),
+        ? { ...nodeStyle(node, isRoot, device, theme), ...textStyle(props, sizeDevice, theme) }
+        : nodeStyle(node, isRoot, device, theme),
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
   if (!isBuiltIn(node.type)) {
@@ -77,7 +81,9 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
       renderers && Object.hasOwn(renderers, node.type) ? renderers[node.type] : undefined;
     if (!draw) return <div {...common} data-midito-unknown="" />;
     return (
-      <div {...common}>{draw({ props, device, children: kids(node, device, renderers) })}</div>
+      <div {...common}>
+        {draw({ props, device, theme, children: kids(node, device, renderers, theme) })}
+      </div>
     );
   }
   // A text is its words: it has no blocks inside, so any in the data are not drawn.
@@ -97,15 +103,27 @@ function RenderNode({ node, isRoot, device, renderers }: NodeProps) {
   }
   return (
     <div {...common}>
-      {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props)} />}
-      {kids(node, device, renderers)}
+      {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props, theme)} />}
+      {kids(node, device, renderers, theme)}
     </div>
   );
 }
 
-const kids = (node: TreeNode, device: Device, renderers: NodeProps["renderers"]) =>
+const kids = (
+  node: TreeNode,
+  device: Device,
+  renderers: NodeProps["renderers"],
+  theme: Theme | undefined,
+) =>
   node.children.map((child) => (
-    <RenderNode key={child.id} node={child} isRoot={false} device={device} renderers={renderers} />
+    <RenderNode
+      key={child.id}
+      node={child}
+      isRoot={false}
+      device={device}
+      renderers={renderers}
+      theme={theme}
+    />
   ));
 
 /**
@@ -120,7 +138,13 @@ export function Render({ data, className, device, renderers }: RenderProps) {
       data-midito-render=""
       style={{ display: "flex", flexDirection: "column" }}
     >
-      <RenderNode node={data.root} isRoot device={screen} renderers={renderers} />
+      <RenderNode
+        node={data.root}
+        isRoot
+        device={screen}
+        renderers={renderers}
+        theme={data.theme}
+      />
     </div>
   );
 }

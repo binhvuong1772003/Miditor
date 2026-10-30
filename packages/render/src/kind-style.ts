@@ -1,9 +1,11 @@
 import {
   type Device,
-  isHexColor,
+  isFontStack,
   isImageUrl,
   type JsonValue,
   PHONE_RATIO,
+  resolveColor,
+  type Theme,
 } from "@midito-kitchen/core";
 import type { CSSProperties } from "react";
 
@@ -20,6 +22,18 @@ const PHONE_MIN_SIZE = 12;
 /** Where a text of each alignment sits across its box, which is a flex row. */
 const JUSTIFY = { left: "flex-start", center: "center", right: "flex-end" } as const;
 
+/** The font of the page when the theme gives none. */
+export const DEFAULT_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+/** The font stack of the theme for `body` or `heading`, when it is a safe one. */
+const themeFont = (theme: Theme | undefined, which: "body" | "heading") => {
+  const stack = theme?.fonts?.[which];
+  return isFontStack(stack) ? stack : undefined;
+};
+
+/** The font the whole page is set in: the theme's body font, or the default. */
+export const pageFont = (theme?: Theme) => themeFont(theme, "body") ?? DEFAULT_FONT;
+
 /** The text a `Text` block shows: its `text` prop, or nothing when that is not a string. */
 export const textOf = (props: Props) => (typeof props.text === "string" ? props.text : "");
 
@@ -28,7 +42,7 @@ export const textOf = (props: Props) => (typeof props.text === "string" ? props.
  * edit changes a value and removes no key. On a phone the size follows the page, as the rest of the
  * block does, but stays readable: it is not made smaller than 12 px, nor larger than on the desktop.
  */
-export function textStyle(props: Props, device: Device = "desktop"): CSSProperties {
+export function textStyle(props: Props, device: Device = "desktop", theme?: Theme): CSSProperties {
   const { size, color, bold, align } = props;
   const desktop =
     typeof size === "number" && Number.isFinite(size)
@@ -41,7 +55,9 @@ export function textStyle(props: Props, device: Device = "desktop"): CSSProperti
   const alignment = ALIGNS.find((a) => a === align) ?? "center";
   return {
     fontSize: `${px}px`,
-    color: isHexColor(color) ? color : DEFAULT_COLOUR,
+    color: resolveColor(color, theme) ?? DEFAULT_COLOUR,
+    fontFamily:
+      (props.font === "heading" ? themeFont(theme, "heading") : undefined) ?? pageFont(theme),
     fontWeight: bold === true ? 700 : 400,
     textAlign: alignment,
     justifyContent: JUSTIFY[alignment],
@@ -52,7 +68,7 @@ export function textStyle(props: Props, device: Device = "desktop"): CSSProperti
  * The layer a `Shape` block draws its shape on: it fills the block, sits under the blocks inside
  * it and lets the pointer through, so clipping a triangle never clips what is inside.
  */
-export function shapeLayerStyle(props: Props): CSSProperties {
+export function shapeLayerStyle(props: Props, theme?: Theme): CSSProperties {
   const { shape, fill } = props;
   return {
     position: "absolute",
@@ -65,7 +81,7 @@ export function shapeLayerStyle(props: Props): CSSProperties {
     border: 0,
     boxSizing: "border-box",
     pointerEvents: "none",
-    backgroundColor: isHexColor(fill) ? fill : DEFAULT_FILL,
+    backgroundColor: resolveColor(fill, theme) ?? DEFAULT_FILL,
     borderRadius: shape === "ellipse" ? "50%" : "0",
     clipPath: shape === "triangle" ? "polygon(50% 0, 100% 100%, 0 100%)" : "none",
   };

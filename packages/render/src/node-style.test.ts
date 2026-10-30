@@ -347,3 +347,42 @@ describe("nodeStyle, a style never adds or removes a key", () => {
     );
   });
 });
+
+describe("nodeStyle, the theme", () => {
+  const theme = {
+    colors: { primary: "#112233", line: "#445566" },
+    fonts: { body: "Inter, sans-serif" },
+  };
+  const styled = (styles: Record<string, unknown>) =>
+    ({ ...flow("Container"), styles }) as unknown as TreeNode;
+
+  it("draws a background and a border in the colours that references name", () => {
+    const style = nodeStyle(
+      styled({ background: "@primary", borderColor: "@line", borderWidth: 2 }),
+      false,
+      "desktop",
+      theme,
+    );
+    expect(style.backgroundColor).toBe("#112233");
+    expect(style.border).toBe("2px solid #445566");
+  });
+
+  it("falls back to the defaults for a reference the theme does not have, or when there is no theme", () => {
+    const node = styled({ background: "@missing", borderColor: "@missing", borderWidth: 2 });
+    expect(nodeStyle(node, false, "desktop", theme)).toMatchObject({
+      backgroundColor: "transparent",
+      border: "2px solid currentcolor",
+    });
+    expect(nodeStyle(styled({ background: "@primary" }), false).backgroundColor).toBe(
+      "transparent",
+    );
+  });
+
+  it("sets the page in the body font of the theme, on the root only", () => {
+    expect(nodeStyle(flow("Page", "root"), true, "desktop", theme).fontFamily).toBe(
+      "Inter, sans-serif",
+    );
+    expect(nodeStyle(flow("Page", "root"), true).fontFamily).toContain("system-ui");
+    expect(nodeStyle(flow("Container"), false, "desktop", theme).fontFamily).toBeUndefined();
+  });
+});

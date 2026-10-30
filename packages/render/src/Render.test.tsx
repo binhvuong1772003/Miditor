@@ -1,5 +1,12 @@
 // @vitest-environment node
-import type { Device, FlowNode, FreeNode, JsonValue, PageData } from "@midito-kitchen/core";
+import {
+  type Device,
+  type FlowNode,
+  type FreeNode,
+  type JsonValue,
+  type PageData,
+  resolveColor,
+} from "@midito-kitchen/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Render, type Renderer } from "./Render";
@@ -462,5 +469,65 @@ describe("<Render> phone props", () => {
       renderToStaticMarkup(<Render data={data} device={device} renderers={{ Heart: Probe }} />);
     expect(seen("phone")).toContain('data-c="#00ff00"');
     expect(seen("desktop")).toContain('data-c="#ff0000"');
+  });
+});
+
+const Read: Renderer = ({ props, theme: t }) => (
+  <b data-c={resolveColor(props.color, t) ?? "none"}>{props.color as string}</b>
+);
+
+describe("<Render> theme", () => {
+  const themed = (theme: PageData["theme"]): PageData => ({
+    ...page(
+      flow("root", "Page", [
+        {
+          ...flow("t", "Text"),
+          props: { text: "Hi", color: "@primary", font: "heading" },
+          styles: { background: "@primary" },
+        },
+        { ...flow("h", "Heart"), props: { color: "@primary" } },
+      ]),
+    ),
+    ...(theme ? { theme } : {}),
+  });
+  const theme = { colors: { primary: "#112233" }, fonts: { heading: "Playfair Display, serif" } };
+
+  it("draws the colours and fonts of the theme", () => {
+    const markup = html(themed(theme));
+    const tag = tagOf(markup, "t");
+    expect(tag).toContain("background-color:#112233");
+    expect(tag).toContain("color:#112233");
+    expect(tag).toContain("font-family:Playfair Display, serif");
+  });
+
+  it("fills a shape with a theme colour", () => {
+    const data: PageData = {
+      ...page(flow("root", "Page", [{ ...flow("s", "Shape"), props: { fill: "@primary" } }])),
+      theme,
+    };
+    expect(html(data)).toContain("background-color:#112233");
+  });
+
+  it("changes every block when the theme changes", () => {
+    const other = html(themed({ ...theme, colors: { primary: "#abcdef" } }));
+    expect(tagOf(other, "t")).toContain("background-color:#abcdef");
+    expect(tagOf(other, "t")).toContain("color:#abcdef");
+  });
+
+  it("draws the defaults when the page has no theme", () => {
+    const tag = tagOf(html(themed(undefined)), "t");
+    expect(tag).toContain("background-color:transparent");
+    expect(tag).toContain("color:#111111");
+  });
+
+  it("gives the function of a host the theme, so it can read a colour of its own", () => {
+    const markup = renderToStaticMarkup(
+      <Render data={themed(theme)} renderers={{ Heart: Read }} />,
+    );
+    expect(markup).toContain('data-c="#112233"');
+    const bare = renderToStaticMarkup(
+      <Render data={themed(undefined)} renderers={{ Heart: Read }} />,
+    );
+    expect(bare).toContain('data-c="none"');
   });
 });

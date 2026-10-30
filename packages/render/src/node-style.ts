@@ -3,12 +3,14 @@ import {
   cssFor,
   type Device,
   isFreeNode,
-  isHexColor,
   isPixelLength,
   type NodeStyles,
+  resolveColor,
+  type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
 import type { CSSProperties } from "react";
+import { pageFont } from "./kind-style";
 
 /**
  * Explicit box values on every node, so rules of the host page (Tailwind's preflight, `* { margin }`
@@ -45,12 +47,12 @@ const BY_TYPE: Record<string, CSSProperties> = {
 };
 
 /** Typography the whole page inherits, written out so the host's inherited styles do not leak in. */
-const PAGE_TEXT: CSSProperties = {
-  fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+const pageText = (theme?: Theme): CSSProperties => ({
+  fontFamily: pageFont(theme),
   fontSize: "16px",
   lineHeight: "1.5",
   color: "#1b2330",
-};
+});
 
 /** A length as CSS, rounded to 0.01, or 0 when it is not a usable length. */
 const drawn = (value: unknown) => (isPixelLength(value) ? Math.round(value * 100) / 100 : 0);
@@ -62,14 +64,14 @@ const drawn = (value: unknown) => (isPixelLength(value) ? Math.round(value * 100
  * longhands makes React warn and leaves a width undeclared when one of them goes. Only values that
  * pass the strict checks reach CSS; anything else is the default.
  */
-function lookOf(styles: NodeStyles | undefined): CSSProperties {
+function lookOf(styles: NodeStyles | undefined, theme?: Theme): CSSProperties {
   // Data comes from outside, so `styles` may be missing and a value may be anything.
   const { background, borderWidth, borderColor, borderRadius } = styles ?? {};
   const width = drawn(borderWidth);
   const radius = drawn(borderRadius);
-  const color = isHexColor(borderColor) ? borderColor : "currentcolor";
+  const color = resolveColor(borderColor, theme) ?? "currentcolor";
   return {
-    backgroundColor: isHexColor(background) ? background : "transparent",
+    backgroundColor: resolveColor(background, theme) ?? "transparent",
     border: width > 0 ? `${width}px solid ${color}` : "0",
     borderRadius: radius > 0 ? `${radius}px` : "0",
   };
@@ -93,13 +95,14 @@ export function nodeStyle(
   node: TreeNode,
   isRoot: boolean,
   device: Device = "desktop",
+  theme?: Theme,
 ): CSSProperties {
   const style: CSSProperties = {
     all: isRoot ? "initial" : "revert",
     ...BOX,
     ...(isBuiltIn(node.type) ? BY_TYPE[node.type] : { display: "block" }),
-    ...(isRoot ? { ...PAGE_TEXT, flexGrow: 1, minWidth: 0 } : {}),
-    ...lookOf(node.styles),
+    ...(isRoot ? { ...pageText(theme), flexGrow: 1, minWidth: 0 } : {}),
+    ...lookOf(node.styles, theme),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it, on this screen.

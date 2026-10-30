@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shapeLayerStyle, textOf, textStyle } from "./kind-style";
+import { DEFAULT_FONT, pageFont, shapeLayerStyle, textOf, textStyle } from "./kind-style";
 
 describe("textOf", () => {
   it("is the text prop when it is a string, and empty otherwise", () => {
@@ -14,6 +14,7 @@ describe("textStyle", () => {
     expect(textStyle({ size: 30, color: "#ff0000", bold: true, align: "center" })).toEqual({
       fontSize: "30px",
       color: "#ff0000",
+      fontFamily: DEFAULT_FONT,
       fontWeight: 700,
       textAlign: "center",
       justifyContent: "center",
@@ -24,6 +25,7 @@ describe("textStyle", () => {
     const plain = {
       fontSize: "24px",
       color: "#111111",
+      fontFamily: DEFAULT_FONT,
       fontWeight: 400,
       textAlign: "center",
       justifyContent: "center",
@@ -108,5 +110,49 @@ describe("textStyle on a phone", () => {
   it("is the desktop size on the desktop", () => {
     expect(textStyle({ size: 40 }, "desktop").fontSize).toBe("40px");
     expect(textStyle({ size: 40 }).fontSize).toBe("40px");
+  });
+});
+
+describe("the theme", () => {
+  const theme = {
+    colors: { primary: "#112233" },
+    fonts: { body: "Inter, sans-serif", heading: "Playfair Display, serif" },
+  };
+
+  it("gives the page the body font of the theme, or the default one", () => {
+    expect(pageFont(theme)).toBe("Inter, sans-serif");
+    expect(pageFont({ colors: {} })).toBe(DEFAULT_FONT);
+    expect(pageFont()).toBe(DEFAULT_FONT);
+    expect(pageFont({ fonts: { body: "a;b" } })).toBe(DEFAULT_FONT);
+  });
+
+  it("draws a text in the colour a reference names, and in the default one when it is not there", () => {
+    expect(textStyle({ color: "@primary" }, "desktop", theme).color).toBe("#112233");
+    expect(textStyle({ color: "@missing" }, "desktop", theme).color).toBe("#111111");
+    expect(textStyle({ color: "@primary" }).color).toBe("#111111");
+  });
+
+  it("sets a text in the body font, or the heading font when it asks for it", () => {
+    expect(textStyle({}, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+    expect(textStyle({ font: "body" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+    expect(textStyle({ font: "heading" }, "desktop", theme).fontFamily).toBe(
+      "Playfair Display, serif",
+    );
+    expect(textStyle({ font: "other" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+  });
+
+  it("falls back from the heading font to the body font, and from that to the default", () => {
+    expect(textStyle({ font: "heading" }, "desktop", { fonts: { body: "Inter" } }).fontFamily).toBe(
+      "Inter",
+    );
+    expect(textStyle({ font: "heading" }, "desktop", {}).fontFamily).toBe(DEFAULT_FONT);
+    expect(
+      textStyle({ font: "heading" }, "desktop", { fonts: { heading: "a;b" } }).fontFamily,
+    ).toBe(DEFAULT_FONT);
+  });
+
+  it("fills a shape with a theme colour", () => {
+    expect(shapeLayerStyle({ fill: "@primary" }, theme).backgroundColor).toBe("#112233");
+    expect(shapeLayerStyle({ fill: "@missing" }, theme).backgroundColor).toBe("#cbd5e1");
   });
 });
