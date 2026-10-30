@@ -10,6 +10,7 @@ import {
   type Device,
   duplicateNode,
   emptyPage,
+  type Frame,
   type FreeBox,
   type FreeNode,
   findNode,
@@ -39,6 +40,7 @@ import {
   resolveRect,
   setAnchor,
   type TreeNode,
+  turnOf,
   ungroupNode,
   updateNode,
   validatePage,
@@ -460,7 +462,7 @@ export function Editor({
   /**
    * The block a dragged block was dropped on, with the sizes to measure in, or `undefined` when it
    * stays in its parent: on the phone, over its own parent or over nothing, over a block that may not
-   * hold it, or when either parent is turned (the maths ignore a turn).
+   * hold it. A parent may be turned: both are measured as frames.
    */
   const dropTarget = (g: NonNullable<typeof gesture.current>, dist: { x: number; y: number }) => {
     const from = block?.parentElement;
@@ -478,24 +480,17 @@ export function Editor({
     );
     const id = hit?.dataset.miditoId;
     if (!hit || id === undefined || id === parentOf(data.root, g.before.id)?.id) return undefined;
-    const turned = (el: HTMLElement) => {
-      const node = el.dataset.miditoId ? findNode(data.root, el.dataset.miditoId) : undefined;
-      return node !== undefined && isFreeNode(node) && boxFor(node, frame).rotation !== 0;
+    // Each parent as a frame on the screen: its padding box, where its middle is (the middle of a
+    // turned element is the middle of the box around it) and how far it and its parents are turned.
+    const frameOf = (el: HTMLElement): Frame => {
+      const box = el.getBoundingClientRect();
+      return {
+        size: { w: el.clientWidth, h: el.clientHeight },
+        center: { x: box.left + box.width / 2, y: box.top + box.height / 2 },
+        rotation: turnOf(data.root, el.dataset.miditoId ?? "", frame),
+      };
     };
-    if (turned(hit) || turned(from)) return undefined;
-    const corner = (el: HTMLElement) => ({
-      x: el.getBoundingClientRect().left + el.clientLeft,
-      y: el.getBoundingClientRect().top + el.clientTop,
-    });
-    const [a, b] = [corner(from), corner(hit)];
-    return {
-      id,
-      options: {
-        from: g.container,
-        to: { w: hit.clientWidth, h: hit.clientHeight },
-        shift: { x: b.x - a.x, y: b.y - a.y },
-      },
-    };
+    return { id, options: { from: frameOf(from), to: frameOf(hit) } };
   };
 
   /** Tell the page where a drag would drop, so the block there is outlined. Only a changed target is stored. */
