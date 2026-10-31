@@ -473,3 +473,25 @@ select.input {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
 }
+
+/* The facts a developer asks for, shut until someone wants them. */
+.developer {
+  margin-block-start: 0.25rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--_border);
+}
+
+.developer summary {
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.developer summary:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.developer .facts {
+  margin-block-start: 0.5rem;
+}

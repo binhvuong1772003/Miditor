@@ -207,22 +207,26 @@ export function PropertiesPanel({
               />
             )}
             <h3 className={styles.section}>Border</h3>
-            <LengthField
-              label="Border width"
-              hint="In pixels, like 2. Leave it empty or 0 for no border."
-              {...length("borderWidth")}
-            />
-            <ColourField
-              label="Border colour"
-              pickerLabel="Border colour picker"
-              hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
-              {...colour("borderColor")}
-            />
-            <LengthField
-              label="Radius"
-              hint="In pixels, like 4. Leave it empty or 0 for square corners."
-              {...length("borderRadius")}
-            />
+            <div className={styles.grid2}>
+              <LengthField
+                label="Width"
+                hint="In pixels, like 2. Leave it empty or 0 for no border."
+                {...length("borderWidth")}
+              />
+              <LengthField
+                label="Radius"
+                hint="In pixels, like 4. Leave it empty or 0 for square corners."
+                {...length("borderRadius")}
+              />
+              <div className={styles.span2}>
+                <ColourField
+                  label="Colour"
+                  pickerLabel="Border colour picker"
+                  hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
+                  {...colour("borderColor")}
+                />
+              </div>
+            </div>
           </>
         ) : (
           <>
@@ -244,10 +248,12 @@ export function PropertiesPanel({
                     onDiscard={onDiscard}
                   />
                 </div>
-                <h3 className={styles.section}>Anchors</h3>
-                <p className={styles.hint}>
-                  What the block sticks to when the page changes size, for example on a phone.
-                </p>
+                <h3
+                  className={styles.section}
+                  title="What the block sticks to when the page changes size, for example on a phone."
+                >
+                  Anchors
+                </h3>
                 <AnchorSelect
                   label="Horizontal"
                   axis="x"
@@ -260,16 +266,15 @@ export function PropertiesPanel({
                   value={box.y.anchor}
                   onChange={(a) => onAnchor("y", a)}
                 />
-                <label className={styles.check}>
-                  <input
-                    type="checkbox"
-                    checked={keepsRatio(node, def)}
-                    onChange={(event) =>
-                      onCommit({ key: "lockRatio", value: event.target.checked })
-                    }
-                  />
-                  Keep proportions when resizing
-                </label>
+                <button
+                  type="button"
+                  className={styles.chip}
+                  aria-pressed={keepsRatio(node, def)}
+                  title="Resizing keeps the width to height ratio"
+                  onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
+                >
+                  Keep proportions
+                </button>
                 <h3 className={styles.section}>Phone</h3>
                 {device === "phone" ? (
                   <div className={styles.row}>
@@ -298,13 +303,15 @@ export function PropertiesPanel({
                 )}
               </>
             )}
-            <h3 className={styles.section}>Developer info</h3>
-            <dl className={styles.facts}>
-              <dt>type</dt>
-              <dd>{node.type}</dd>
-              <dt>id</dt>
-              <dd>{node.id}</dd>
-            </dl>
+            <details className={styles.developer}>
+              <summary>Developer info</summary>
+              <dl className={styles.facts}>
+                <dt>type</dt>
+                <dd>{node.type}</dd>
+                <dt>id</dt>
+                <dd>{node.id}</dd>
+              </dl>
+            </details>
           </>
         )}
       </div>
