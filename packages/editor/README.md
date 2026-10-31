@@ -163,13 +163,17 @@ Tell the editor what a button can do:
   data={page}
   config={{
     actions: [
-      { name: "add-to-cart", label: "Add to cart", params: [
-        { name: "sku", label: "Product code" },
-        { name: "qty", label: "How many", type: "number" },
-      ] },
+      {
+        name: "add-to-cart",
+        label: "Add to cart",
+        params: [
+          { name: "sku", label: "Product code" },
+          { name: "qty", label: "How many", type: "number" },
+        ],
+      },
     ],
   }}
-/>
+/>;
 ```
 
 A button's properties then get an Action list and a field for each value of the chosen action.
@@ -178,7 +182,12 @@ Without `actions` a button has only its link.
 Handle it where you draw the published page:
 
 ```tsx
-<Render data={page} onAction={(action, payload, nodeId) => { /* your code */ }} />
+<Render
+  data={page}
+  onAction={(action, payload, nodeId) => {
+    /* your code */
+  }}
+/>;
 ```
 
 `payload` holds text (up to 200 characters), numbers and yes or no values, at most 8 of them. When a
