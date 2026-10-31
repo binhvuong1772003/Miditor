@@ -43,6 +43,17 @@ export function commit<T>(history: History<T>, next: T, limit: unknown): History
   };
 }
 
+/**
+ * Makes `next` the present without a step of its own: what was there before is dropped, and the step
+ * before it stays the one `undo` goes back to. For a run of small changes that are one thing to a
+ * person, such as holding an arrow key. With nothing to amend onto, it is an ordinary `commit`.
+ */
+export function amend<T>(history: History<T>, next: T, limit: unknown): History<T> {
+  if (next === history.present) return history;
+  if (history.past.length === 0) return commit(history, next, limit);
+  return { past: history.past, present: next, future: [] };
+}
+
 export const canUndo = (history: History<unknown>) => history.past.length > 0;
 export const canRedo = (history: History<unknown>) => history.future.length > 0;
 

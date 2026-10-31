@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+  amend,
   canRedo,
   canUndo,
   commit,
@@ -126,6 +127,32 @@ describe("commit", () => {
     undo(h);
     redo(undo(h));
     expect(JSON.stringify(h)).toBe(snapshot);
+  });
+});
+
+describe("amend", () => {
+  it("replaces the present and keeps the step before it", () => {
+    const h = amend(through([1, 2]), 3, 100);
+    expect(h.present).toBe(3);
+    expect(h.past).toEqual([1]);
+    expect(undo(h).present).toBe(1);
+  });
+  it("clears redo, like a commit", () => {
+    const h = amend(undo(through([1, 2, 3])), 9, 100);
+    expect(h.future).toEqual([]);
+  });
+  it("is a commit when there is no step to amend onto, and nothing for the same value", () => {
+    const start = createHistory(1);
+    expect(amend(start, 2, 100)).toEqual(commit(start, 2, 100));
+    expect(amend(start, 1, 100)).toBe(start);
+  });
+  it("a run of amends is one step to undo", () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer(), { minLength: 1, maxLength: 20 }), (values) => {
+        const h = values.reduce((acc, v) => amend(acc, v, 100), commit(createHistory(-1), 0, 100));
+        return h.past.length === 1 && undo(h).present === -1;
+      }),
+    );
   });
 });
 

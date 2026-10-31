@@ -87,10 +87,11 @@ import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
-import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
 import { boxBetween, type Edges, touched } from "./marquee";
+import { isNudgeKey, nudgeRect } from "./nudge";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
@@ -284,6 +285,9 @@ function openPage(data: PageData | undefined, theme?: Theme): PageData {
   return opened.page;
 }
 
+/** How close together, in ms, arrow-key presses are one step of history. */
+const NUDGE_MERGE_MS = 500;
+
 /** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */
 const elementOf = (scope: HTMLElement, id: string) =>
   [...scope.querySelectorAll<HTMLElement>("[data-midito-id]")].find(
@@ -396,6 +400,9 @@ export function Editor({
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // The selection and the time of the last arrow-key move, so a run of them is one step of history.
+  const lastNudge = useRef({ key: "", at: Number.NEGATIVE_INFINITY });
+  const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
   // A drag of the selected blocks is on, from the press to the release.
   const [dragging, setDragging] = useState(false);
   // The menu of a right press on a block: where it opens. The blocks it acts on are the selected ones.
@@ -740,6 +747,12 @@ export function Editor({
     setDragging(true);
     const over = () => {
       setDragging(false);
+      // A press on the selected block that never became a drag leaves no end event to clear the
+      // gesture, and the keys of the editor would wait for it for ever. Moveable's own end event
+      // comes first, so only what it left behind is cleared.
+      setTimeout(() => {
+        gesture.current = null;
+      }, 0);
       window.removeEventListener("pointerup", over);
       window.removeEventListener("pointercancel", over);
     };
@@ -1033,12 +1046,15 @@ export function Editor({
    * The selected blocks moved by `make`, which is given where they are in their parent and answers
    * where they should be. One history step. Only free blocks have a place to change.
    */
-  const arrange = (make: (rects: Rect[], container: { w: number; h: number }) => Rect[]) => {
+  const arrange = (
+    make: (rects: Rect[], container: { w: number; h: number }) => Rect[],
+    merge = false,
+  ) => {
     const container = parentSize();
     if (!selectedId || selectedId === data.root.id || !container) return;
     if (draft) commitPatch(draft.id, draft);
     const ids = [selectedId, ...picked];
-    setData((prev) => {
+    const change = (prev: PageData): PageData => {
       const nodes = ids.flatMap((id) => {
         const node = findNode(prev.root, id);
         return node && isFreeNode(node) ? [node] : [];
@@ -1058,7 +1074,10 @@ export function Editor({
         prev.root,
       );
       return root === prev.root ? prev : { ...prev, root };
-    });
+    };
+    // A run of small moves, such as a held arrow key, is one step to undo.
+    if (merge) setHistory((h) => amend(h, change(h.present), historyLimit));
+    else setData(change);
   };
 
   /** Line the selected blocks up with each other, or one block with its parent. */
@@ -1342,6 +1361,25 @@ export function Editor({
           return;
         }
         if (gesture.current) return;
+        if (
+          isNudgeKey(event.key) &&
+          selectedId &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey
+        ) {
+          // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
+          // on the same blocks, are one step to undo.
+          event.preventDefault();
+          const same = lastNudge.current.key === selectionKey;
+          const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
+          lastNudge.current = { key: selectionKey, at: event.timeStamp };
+          arrange(
+            (rects) => rects.map((rect) => nudgeRect(rect, event.key, event.shiftKey)),
+            merge,
+          );
+          return;
+        }
         if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
           // The browser's own page zoom would scale the whole editor; here it is the canvas.
           event.preventDefault();
