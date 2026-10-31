@@ -50,6 +50,7 @@ import {
   updateNode,
   validatePage,
   validateRegistry,
+  withEffects,
   withFreeBox,
   withLockRatio,
   withPhoneBox,
@@ -210,6 +211,7 @@ const applyPatch = (
   if (patch.key === "lockRatio") {
     return isFreeNode(node) ? withLockRatio(node, patch.value) : node;
   }
+  if (patch.key === "effects") return withEffects(node, patch.value);
   if (patch.key === "phoneLayout") {
     // The phone starts from the placement it has now, which is made from the desktop one.
     return isFreeNode(node) && !node.phone ? withPhoneBox(node, boxFor(node, "phone")) : node;
@@ -321,6 +323,14 @@ export function Editor({
       ),
     [wait, maxWait],
   );
+  // The motion of the page plays on the canvas only when asked for, for a moment, so blocks never
+  // move under a person's hand while they edit.
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (!playing) return;
+    const timer = setTimeout(() => setPlaying(false), 3500);
+    return () => clearTimeout(timer);
+  }, [playing]);
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => () => debounced.flush(), [debounced]);
   useEffect(() => {
@@ -1242,6 +1252,7 @@ export function Editor({
           data={shown}
           device={frame}
           links="inert"
+          motion={playing ? "live" : "off"}
           renderers={config?.renderers}
           className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
         />
@@ -1318,6 +1329,7 @@ export function Editor({
           node={selectedNode}
           device={frame}
           onResetPhone={resetPhone}
+          onPlayMotion={() => setPlaying(true)}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
