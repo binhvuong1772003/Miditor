@@ -165,15 +165,12 @@ export function PropertiesPanel({
         {tab === "design" ? (
           <>
             {hasFields && def && (
-              <>
-                <h3 className={styles.section}>Content</h3>
-                <PropFields
-                  def={def}
-                  props={propsFor(node, device)}
-                  theme={theme}
-                  onChange={(name, value) => onCommit({ key: "prop", name, value })}
-                />
-              </>
+              <PropFields
+                def={def}
+                props={propsFor(node, device)}
+                theme={theme}
+                onChange={(name, value) => onCommit({ key: "prop", name, value })}
+              />
             )}
             <h3 className={styles.section}>Background</h3>
             {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
