@@ -121,11 +121,45 @@ select.input {
 }
 
 /* The title of the block and what it is. */
+/* Nothing is selected: it starts where the panel's own headings start, a little down from the top. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  color: var(--_muted);
+}
+
+.emptyTitle {
+  margin: 0.25rem 0 0;
+  color: var(--_text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.emptyText {
+  margin: 0;
+  max-inline-size: 22rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
 .heading {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   padding: 1rem 1rem 0.75rem;
+}
+
+/* The name of the selected block, or of the page theme: a plain heading, not the browser's big one. */
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .heading .meta {

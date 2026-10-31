@@ -123,7 +123,15 @@ export function PropertiesPanel({
   const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
   if (!node) {
-    return <p className={styles.empty}>Select a block to edit its properties.</p>;
+    return (
+      <div className={styles.empty}>
+        <Icon name="pointer" size={20} />
+        <h2 className={styles.emptyTitle}>Nothing selected</h2>
+        <p className={styles.emptyText}>
+          Click a block on the page to edit its words, colours and position.
+        </p>
+      </div>
+    );
   }
   const colour = (key: "background" | "borderColor") => ({
     stored: node.styles[key],

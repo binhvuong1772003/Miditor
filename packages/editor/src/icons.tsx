@@ -67,6 +67,7 @@ const ICONS = {
       <circle cx="12.5" cy="8" r="1" fill="currentColor" />
     </>
   ),
+  pointer: <path d="M3.5 2.5 12.5 6.5 8.2 8 6.6 12.5z" />,
   edgeLeft: <path d="M2.5 2v12M5.5 4.5h8M5.5 9.5h5" />,
   edgeCenter: <path d="M8 2v12M3.5 4.5h9M5 9.5h6" />,
   edgeRight: <path d="M13.5 2v12M2.5 4.5h8M5.5 9.5h5" />,
