@@ -74,6 +74,7 @@ import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/Selec
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
@@ -288,6 +289,10 @@ export function Editor({
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
   const [themeOpen, setThemeOpen] = useState(false);
+  // The words of a block being typed on the block itself, which block and which of its props.
+  const [editing, setEditing] = useState<{ id: string; prop: string; multiline: boolean } | null>(
+    null,
+  );
   // The block whose children a press selects: the page at the start, a group once it is entered.
   const [scopeId, setScopeId] = useState(data.root.id);
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
@@ -453,6 +458,22 @@ export function Editor({
    */
   const enter = (event: MouseEvent<HTMLElement>) => {
     if (!selectedId) return;
+    // A block whose kind has words to type on it opens them, when the pointer is over that block.
+    const edit = selectedDef?.inlineText;
+    const own = workspace ? elementOf(workspace, selectedId) : null;
+    if (edit && own) {
+      const rect = own.getBoundingClientRect();
+      const over =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom;
+      if (over) {
+        if (draft) commitPatch(draft.id, draft);
+        setEditing({ id: selectedId, prop: edit.prop, multiline: edit.multiline === true });
+        return;
+      }
+    }
     const under = document
       .elementsFromPoint(event.clientX, event.clientY)
       .find((element) => !isMoveableLayer(element) && element.closest("[data-midito-id]"));
@@ -904,6 +925,29 @@ export function Editor({
     setHistory(move);
   };
 
+  // The block whose words are being typed, the element that draws it, and the limit of the field.
+  const editingNode = editing ? findNode(data.root, editing.id) : undefined;
+  const editingElement = editing && workspace ? elementOf(workspace, editing.id) : null;
+  const editingDef =
+    editingNode && Object.hasOwn(registry, editingNode.type)
+      ? registry[editingNode.type]
+      : undefined;
+  const editingField = editing && editingDef ? editingDef.fields[editing.prop] : undefined;
+  const editingLimit = editingField?.type === "text" ? editingField.maxLength : undefined;
+  // A block that is gone (undone, say) ends the edit.
+  useEffect(() => {
+    if (editing && !editingNode) setEditing(null);
+  }, [editing, editingNode]);
+  // The words of the block are hidden while they are typed over it, so they are not seen twice.
+  useLayoutEffect(() => {
+    if (!editingElement) return;
+    const before = editingElement.style.color;
+    editingElement.style.color = "transparent";
+    return () => {
+      editingElement.style.color = before;
+    };
+  }, [editingElement]);
+
   // Where the selected block is on this screen, in its parent's px: what the number fields show.
   const parentOfSelected = parentSize();
   const selectedRect =
@@ -1192,8 +1236,24 @@ export function Editor({
             }}
           />
         )}
+        {editing && editingElement && editingNode && (
+          <InlineEdit
+            element={editingElement}
+            value={String(editingNode.props[editing.prop] ?? "")}
+            multiline={editing.multiline}
+            maxLength={editingLimit}
+            rotation={turnOf(data.root, editing.id, frame)}
+            onDone={(value) => {
+              setEditing(null);
+              if (editingNode.props[editing.prop] !== value) {
+                commitPatch(editing.id, { key: "prop", name: editing.prop, value });
+              }
+            }}
+            onCancel={() => setEditing(null)}
+          />
+        )}
         <SelectionBox
-          target={block}
+          target={editing ? null : block}
           container={workspace}
           className={styles.selection}
           companions={picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))}
