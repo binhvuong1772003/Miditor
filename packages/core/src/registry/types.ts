@@ -10,11 +10,31 @@ export type Field = FieldKind & {
    * `phoneProps` of the block. Only for a prop that makes sense per screen, like the size of a text.
    */
   perDevice?: boolean;
+  /**
+   * The name of the section of the panel this field is shown under, such as "Typography". Fields with
+   * the same name are shown together, in the order of the registry; a field with none is shown first.
+   */
+  group?: string;
+  /** One short sentence about the field, which the panel shows when it is pointed at. */
+  help?: string;
 };
 
 type FieldKind =
-  | { type: "text"; label: string; maxLength?: number }
-  | { type: "number"; label: string; min?: number; max?: number }
+  | {
+      type: "text";
+      label: string;
+      maxLength?: number;
+      /** The words can run over several lines, so the panel gives them a box instead of one line. */
+      multiline?: boolean;
+    }
+  | {
+      type: "number";
+      label: string;
+      min?: number;
+      max?: number;
+      /** What the number counts, shown after it: "px", "%", "°". */
+      unit?: string;
+    }
   | { type: "select"; label: string; options: readonly string[] }
   | { type: "boolean"; label: string }
   /** A stored `#rrggbb` or a theme colour such as `@primary`, see `isColorValue`. */

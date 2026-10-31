@@ -71,7 +71,7 @@ describe("builtInRegistry", () => {
 
   it("lets a text be set in the body or the heading font, starting in the body font", () => {
     expect(builtInRegistry.Text?.defaultProps.font).toBe("body");
-    expect(builtInRegistry.Text?.fields.font).toEqual({
+    expect(builtInRegistry.Text?.fields.font).toMatchObject({
       type: "select",
       label: "Font",
       options: ["body", "heading"],
@@ -91,7 +91,7 @@ describe("builtInRegistry", () => {
         size: 16,
       },
     });
-    expect(builtInRegistry.Button?.fields.href).toEqual({ type: "link", label: "Link" });
+    expect(builtInRegistry.Button?.fields.href).toMatchObject({ type: "link", label: "Link" });
     expect(builtInRegistry.Button?.fields.shape).toMatchObject({
       options: ["rounded", "pill", "square"],
     });
@@ -113,6 +113,28 @@ describe("builtInRegistry", () => {
       if (!def.inlineText) continue;
       expect(def.fields[def.inlineText.prop]?.type, type).toBe("text");
     }
+  });
+
+  it("shows the words of a text in a box of lines, and sets the rest of a text under Typography", () => {
+    const fields = builtInRegistry.Text?.fields ?? {};
+    expect(fields.text).toMatchObject({ type: "text", multiline: true, group: "Text" });
+    for (const name of ["font", "size", "color", "bold", "align"]) {
+      expect(fields[name]?.group, name).toBe("Typography");
+    }
+    expect(Object.keys(fields)).toEqual(["text", "font", "size", "color", "bold", "align"]);
+    expect(fields.size).toMatchObject({ unit: "px" });
+  });
+
+  it("sets a button's label and link under Content and its looks under Style", () => {
+    const fields = builtInRegistry.Button?.fields ?? {};
+    expect(["label", "href"].map((n) => fields[n]?.group)).toEqual(["Content", "Content"]);
+    expect(["fill", "textColor", "shape", "size"].map((n) => fields[n]?.group)).toEqual([
+      "Style",
+      "Style",
+      "Style",
+      "Style",
+    ]);
+    expect(fields.size).toMatchObject({ unit: "px" });
   });
 
   it("starts a text centred", () => {

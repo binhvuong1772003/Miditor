@@ -22,15 +22,27 @@ const isPositive = (value: unknown) =>
 const isCount = (value: unknown) => Number.isInteger(value) && (value as number) >= 0;
 const isLabel = (value: unknown) => typeof value === "string" && value.trim() !== "";
 
+/** A name of a section of the panel: not empty, not padded, at most 40 characters. */
+const isGroupName = (value: unknown) =>
+  typeof value === "string" && value !== "" && value.trim() === value && value.length <= 40;
+
 /** Why a field could never be filled in, or `undefined` when it is a usable field. */
 function fieldIsBroken(field: unknown): boolean {
   if (!isObject(field) || !isLabel(field.label)) return true;
   if (field.perDevice !== undefined && typeof field.perDevice !== "boolean") return true;
+  if (field.group !== undefined && !isGroupName(field.group)) return true;
+  if (field.help !== undefined && !(typeof field.help === "string" && field.help.length <= 200)) {
+    return true;
+  }
   switch (field.type) {
     case "text":
+      if (field.multiline !== undefined && typeof field.multiline !== "boolean") return true;
       return field.maxLength !== undefined && !isCount(field.maxLength);
     case "number": {
-      const { min, max } = field;
+      const { min, max, unit } = field;
+      if (unit !== undefined && !(typeof unit === "string" && unit !== "" && unit.length <= 8)) {
+        return true;
+      }
       if (min !== undefined && (typeof min !== "number" || Number.isNaN(min))) return true;
       if (max !== undefined && (typeof max !== "number" || Number.isNaN(max))) return true;
       return typeof min === "number" && typeof max === "number" && min > max;

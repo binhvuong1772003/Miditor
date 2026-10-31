@@ -138,6 +138,39 @@ describe("validateRegistry", () => {
     expect(validateRegistry(with_({ keywords: [], icon: "a", category: "A" }))).toEqual([]);
   });
 
+  it.each([
+    ["group that is empty", { type: "text", label: "X", group: "" }],
+    ["group that is padded", { type: "text", label: "X", group: " Style" }],
+    ["group that is too long", { type: "text", label: "X", group: "g".repeat(41) }],
+    ["group that is not text", { type: "text", label: "X", group: 5 }],
+    ["help that is too long", { type: "text", label: "X", help: "h".repeat(201) }],
+    ["help that is not text", { type: "text", label: "X", help: 5 }],
+    ["multiline that is not a boolean", { type: "text", label: "X", multiline: "yes" }],
+    ["unit that is empty", { type: "number", label: "X", unit: "" }],
+    ["unit that is too long", { type: "number", label: "X", unit: "u".repeat(9) }],
+    ["unit that is not text", { type: "number", label: "X", unit: 5 }],
+  ])("reports a broken field with a %s", (_name, field) => {
+    expect(validateRegistry(with_({ fields: { x: field }, defaultProps: {} }))).toEqual([
+      { type: "Heart", key: "x", code: "field" },
+    ]);
+  });
+
+  it("accepts a group, a help, a box of lines and a unit at their limits", () => {
+    const fields = {
+      a: {
+        type: "text",
+        label: "A",
+        multiline: true,
+        group: "g".repeat(40),
+        help: "h".repeat(200),
+      },
+      b: { type: "text", label: "B", multiline: false },
+      c: { type: "number", label: "C", unit: "u".repeat(8), group: "Size" },
+      d: { type: "number", label: "D", unit: "°" },
+    };
+    expect(validateRegistry(with_({ fields, defaultProps: {} }))).toEqual([]);
+  });
+
   it("accepts the edges of a field", () => {
     const fields = {
       a: { type: "number", label: "A", min: 2, max: 2 },
