@@ -396,11 +396,8 @@ export function Editor({
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
-  // The selection the pointer last moved over. The move cursor of the selected block waits for the
-  // pointer to move after the selection changes, as in Canva: a block just pressed does not at once
-  // turn the cursor into a cross.
-  const [movedFor, setMovedFor] = useState("");
-  const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
+  // A drag of the selected blocks is on, from the press to the release.
+  const [dragging, setDragging] = useState(false);
   // The menu of a right press on a block: where it opens. The blocks it acts on are the selected ones.
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
@@ -499,7 +496,6 @@ export function Editor({
     const colour = "color-mix(in srgb, var(--_focus) 70%, transparent)";
     target.style.outline = `2px solid ${colour}`;
     target.style.outlineOffset = "-1px";
-    target.style.cursor = "pointer";
     // The outline fades in, so moving across the page reads as a soft trail and not a flicker.
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       target.animate?.([{ outlineColor: "transparent" }, { outlineColor: colour }], {
@@ -510,14 +506,14 @@ export function Editor({
     return () => {
       target.style.removeProperty("outline");
       target.style.removeProperty("outline-offset");
-      target.style.removeProperty("cursor");
     };
   }, [workspace, hoverId, shown]);
 
-  // A selected block can be dragged: its cursor says so. The handles bring their own (resize).
+  // While a block is dragged, the cursor is the cross of the move. Not before: a block at rest, even
+  // the selected one, keeps the plain cursor, and so does one that is only pointed at.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
   useLayoutEffect(() => {
-    if (!workspace || editing || movedFor !== selectionKey) return;
+    if (!workspace || !dragging) return;
     const own = [selectedId, ...picked].flatMap((id) =>
       id ? (elementOf(workspace, id) ?? []) : [],
     );
@@ -525,7 +521,7 @@ export function Editor({
     return () => {
       for (const element of own) element.style.removeProperty("cursor");
     };
-  }, [workspace, selectedId, picked, editing, movedFor, selectionKey, shown]);
+  }, [workspace, dragging, selectedId, picked, shown]);
 
   // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
@@ -587,7 +583,6 @@ export function Editor({
   /** The pointer moved over the canvas: the block a press here would select is the one to outline. */
   const hover = (event: PointerEvent<HTMLElement>) => {
     const target = event.target as Element;
-    setMovedFor(selectionKey);
     let next: string | null = null;
     // Nothing is outlined while a button is down (a drag, a box) or over the selected block's handles.
     if (event.buttons === 0 && !editing && !isMoveableLayer(target)) {
@@ -742,6 +737,14 @@ export function Editor({
 
   /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
   const startGesture = () => {
+    setDragging(true);
+    const over = () => {
+      setDragging(false);
+      window.removeEventListener("pointerup", over);
+      window.removeEventListener("pointercancel", over);
+    };
+    window.addEventListener("pointerup", over);
+    window.addEventListener("pointercancel", over);
     const node = selectedId ? findNode(data.root, selectedId) : undefined;
     const parent = block?.parentElement;
     if (!node || !isFreeNode(node) || !parent) return;
