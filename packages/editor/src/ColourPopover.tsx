@@ -14,6 +14,7 @@ import {
   useState,
 } from "react";
 import styles from "./ColourPopover.module.css";
+import { parseColourText } from "./colour-text";
 import { type Hsv, hexToHsv, hsvToHex } from "./hsv";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
@@ -243,6 +244,60 @@ interface Dropper {
 const dropperOf = (): (new () => Dropper) | undefined =>
   (window as unknown as { EyeDropper?: new () => Dropper }).EyeDropper;
 
+/** The colour as a code, to type or paste: `#2563eb`, `2563eb` or `rgb(37, 99, 235)`. */
+function CodeInput({
+  value,
+  onValue,
+  onDone,
+}: {
+  value: string;
+  onValue: (hex: string) => void;
+  onDone: () => void;
+}) {
+  const [text, setText] = useState(value);
+  const [invalid, setInvalid] = useState(false);
+  const changed = useRef(false);
+
+  // A drag of the square or a change of a number rewrites the code; what is typed is left alone.
+  useEffect(() => {
+    setText((typed) => (parseColourText(typed) === value ? typed : value));
+    setInvalid(false);
+  }, [value]);
+
+  const finish = () => {
+    setText(value);
+    setInvalid(false);
+    if (changed.current) onDone();
+    changed.current = false;
+  };
+
+  return (
+    <label className={styles.channel} data-invalid={invalid}>
+      <span aria-hidden="true">#</span>
+      <input
+        aria-label="Colour code"
+        aria-invalid={invalid}
+        spellCheck={false}
+        autoComplete="off"
+        placeholder="2563eb"
+        value={text.replace(/^#/, "")}
+        onChange={(event) => {
+          setText(event.target.value);
+          const hex = parseColourText(event.target.value);
+          setInvalid(hex === undefined && event.target.value.trim() !== "");
+          if (hex === undefined) return;
+          changed.current = hex !== value;
+          onValue(hex);
+        }}
+        onBlur={finish}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") finish();
+        }}
+      />
+    </label>
+  );
+}
+
 const toRgb = (hex: string): [number, number, number] => [
   Number.parseInt(hex.slice(1, 3), 16),
   Number.parseInt(hex.slice(3, 5), 16),
@@ -437,6 +492,7 @@ function FreePicker({
           </button>
         )}
       </div>
+      <CodeInput value={current} onValue={(hex) => move(hexToHsv(hex))} onDone={done} />
       <div className={styles.channels}>
         {(
           [

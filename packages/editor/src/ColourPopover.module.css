@@ -261,6 +261,10 @@
   font-weight: 500;
 }
 
+.channel[data-invalid="true"] {
+  border-color: var(--_danger);
+}
+
 .channel:focus-within {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
