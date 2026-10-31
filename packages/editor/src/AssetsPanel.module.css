@@ -1,0 +1,38 @@
+/* The Assets panel: the upload button and a hint. Fields come from the properties panel's styles. */
+.upload {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  inline-size: 100%;
+  block-size: var(--_control);
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  box-shadow: var(--_lift);
+  color: var(--_text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.upload:hover:not(:disabled) {
+  background: var(--_soft);
+}
+
+.upload:disabled {
+  color: var(--_muted);
+  cursor: default;
+}
+
+.upload:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--_muted);
+  font-size: 0.8125rem;
+}

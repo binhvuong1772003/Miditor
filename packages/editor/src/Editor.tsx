@@ -70,6 +70,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AssetsPanel } from "./AssetsPanel";
 import { BlocksPanel } from "./BlocksPanel";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
@@ -121,7 +122,7 @@ export interface EditorProps {
    * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
    * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
    * `renderers` draws the kinds the host added, by name; a built-in kind is always drawn by the editor.
-   * `uploadImage` adds an Upload image button to the toolbar: it is called with the file the person
+   * `uploadImage` adds an Upload image button to the Assets panel: it is called with the file the person
    * chose and answers with the address of the uploaded picture (Cloudinary's `secure_url`, for
    * example), and an Image block showing it is added. The editor keeps no keys and no files, only
    * that address.
@@ -306,7 +307,7 @@ export function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const [themeOpen, setThemeOpen] = useState(false);
+  const [tool, setTool] = useState<"blocks" | "assets" | "theme">("blocks");
   // The words of a block being typed on the block itself, which block and which of its props.
   const [editing, setEditing] = useState<{ id: string; prop: string; multiline: boolean } | null>(
     null,
@@ -1111,30 +1112,30 @@ export function Editor({
         </div>
       </header>
       <nav className={styles.rail} aria-label="Tools">
-        <button
-          type="button"
-          className={styles.railButton}
-          aria-current={themeOpen ? undefined : "true"}
-          onClick={() => setThemeOpen(false)}
-        >
-          <Icon name="grid" size={18} />
-          Blocks
-        </button>
-        <button
-          type="button"
-          className={styles.railButton}
-          aria-current={themeOpen ? "true" : undefined}
-          onClick={() => setThemeOpen(true)}
-        >
-          <Icon name="palette" size={18} />
-          Theme
-        </button>
+        {(
+          [
+            ["blocks", "Blocks", "grid"],
+            ["assets", "Assets", "img"],
+            ["theme", "Theme", "palette"],
+          ] as const
+        ).map(([id, name, icon]) => (
+          <button
+            key={id}
+            type="button"
+            className={styles.railButton}
+            aria-current={tool === id ? "true" : undefined}
+            onClick={() => setTool(id)}
+          >
+            <Icon name={icon} size={18} />
+            {name}
+          </button>
+        ))}
       </nav>
       <aside
         className={`${styles.panel} ${styles.start}`}
-        aria-label={themeOpen ? "Page theme" : "Blocks"}
+        aria-label={tool === "theme" ? "Page theme" : tool === "assets" ? "Assets" : "Blocks"}
       >
-        {themeOpen ? (
+        {tool === "theme" && (
           <ThemePanel
             theme={data.theme}
             onSetColor={setThemeColor}
@@ -1142,13 +1143,13 @@ export function Editor({
             onDeleteColor={deleteThemeColor}
             onSetFont={setThemeFont}
           />
-        ) : (
+        )}
+        {tool === "assets" && (
           <>
             <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-            <BlocksPanel
-              registry={registry}
+            <AssetsPanel
+              node={selectedNode}
               disabled={onPhone}
-              onAdd={(type) => addBlockOf(type)}
               upload={
                 config?.uploadImage
                   ? {
@@ -1158,8 +1159,13 @@ export function Editor({
                     }
                   : undefined
               }
+              uploadImage={config?.uploadImage}
+              onChange={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
             />
           </>
+        )}
+        {tool === "blocks" && (
+          <BlocksPanel registry={registry} disabled={onPhone} onAdd={(type) => addBlockOf(type)} />
         )}
       </aside>
       <section

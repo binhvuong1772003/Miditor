@@ -73,7 +73,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
                 disabled={state.busy}
                 onClick={() => chooser.current?.click()}
               >
-                {state.busy ? "Uploading…" : address ? "Change image" : "Upload image"}
+                {state.busy ? "Uploading…" : address ? "Change image" : "Upload background"}
               </button>
             </>
           ) : (
