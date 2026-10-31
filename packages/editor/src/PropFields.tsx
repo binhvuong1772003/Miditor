@@ -5,7 +5,7 @@ import {
   type Theme,
   validateProps,
 } from "@midito-kitchen/core";
-import { type KeyboardEvent, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useState } from "react";
 import { ColourPopover } from "./ColourPopover";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
@@ -66,8 +66,18 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
   return ordered.map(([section, fields]) => (
     <Section key={section} title={section}>
       <div className={styles.grid2}>
-        {fields.map(({ name, field }) => {
-          const stored = Object.hasOwn(props, name) ? props[name] : def.defaultProps[name];
+        {cellsOf(fields).map((cell) => {
+          if (cell.kind === "switches") {
+            return (
+              <div
+                key={cell.items.map(({ name }) => `${name}:${storedOf(def, props, name)}`).join()}
+              >
+                <SwitchGroup def={def} items={cell.items} props={props} onChange={onChange} />
+              </div>
+            );
+          }
+          const { name, field } = cell;
+          const stored = storedOf(def, props, name);
           // A new key when the stored value changes (undo, redo), so the typed text starts again from it.
           return (
             <div
@@ -88,6 +98,84 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
       </div>
     </Section>
   ));
+}
+
+type Named = { name: string; field: Field };
+
+/** A field of a section, or a run of yes-or-no fields that sit together as one row of switches. */
+type Cell = ({ kind: "field" } & Named) | { kind: "switches"; items: Named[] };
+
+/** Two or more yes-or-no fields in a row become one group of switches; a lone one stays a chip. */
+function cellsOf(fields: Named[]): Cell[] {
+  const cells: Cell[] = [];
+  let run: Named[] = [];
+  const flush = () => {
+    if (run.length >= 2) cells.push({ kind: "switches", items: run });
+    else for (const item of run) cells.push({ kind: "field", ...item });
+    run = [];
+  };
+  for (const item of fields) {
+    if (item.field.type === "boolean") run.push(item);
+    else {
+      flush();
+      cells.push({ kind: "field", ...item });
+    }
+  }
+  flush();
+  return cells;
+}
+
+const storedOf = (def: ComponentDef, props: Record<string, JsonValue>, name: string) =>
+  Object.hasOwn(props, name) ? props[name] : def.defaultProps[name];
+
+/** How a switch looks: the letter of a text style is drawn in that style. */
+const SWITCH_LOOK: Record<string, { letter: string; style: CSSProperties }> = {
+  bold: { letter: "B", style: { fontWeight: 700 } },
+  italic: { letter: "I", style: { fontStyle: "italic" } },
+  underline: { letter: "U", style: { textDecoration: "underline" } },
+};
+
+/** Yes-or-no fields side by side in one box, each a button that stays pressed. */
+function SwitchGroup({
+  def,
+  items,
+  props,
+  onChange,
+}: {
+  def: ComponentDef;
+  items: Named[];
+  props: Record<string, JsonValue>;
+  onChange: PropFieldsProps["onChange"];
+}) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+    <div
+      role="group"
+      aria-label={items.map(({ field }) => field.label).join(", ")}
+      className={styles.seg}
+    >
+      {items.map(({ name, field }) => {
+        const stored = storedOf(def, props, name);
+        const look = SWITCH_LOOK[name];
+        return (
+          <button
+            key={name}
+            type="button"
+            className={styles.segButton}
+            aria-pressed={stored === true}
+            aria-label={field.label}
+            title={field.help ?? field.label}
+            onClick={() => {
+              const next = stored !== true;
+              if (validateProps(def, { [name]: next }).length === 0) onChange(name, next);
+            }}
+          >
+            <span style={look?.style}>{look?.letter ?? field.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 interface PropFieldProps {
