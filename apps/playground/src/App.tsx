@@ -1,4 +1,4 @@
-import { Editor, type PageData, type SaveStatus } from "@midito-kitchen/editor";
+import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitchen/editor";
 import { useState } from "react";
 import { components, renderers } from "./kinds";
 import { Preview } from "./Preview";
@@ -18,19 +18,10 @@ function openPage(): PageData {
 
 /**
  * A stand-in for the host's upload (Cloudinary, S3...): it keeps the picture inside the page as a
- * `data:` address, which the editor accepts up to 200000 characters, so about 150 KB of picture.
+ * `data:` address. `embedImage` makes a big picture smaller first, so any photo fits; a host with a
+ * back end would use `postImage("/api/images")` here.
  */
-const uploadImage = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("could not read the file"));
-    reader.onload = () => {
-      const url = String(reader.result);
-      if (url.length > 200_000) reject(new Error("the demo keeps pictures under 150 KB"));
-      else resolve(url);
-    };
-    reader.readAsDataURL(file);
-  });
+const uploadImage = embedImage();
 
 export function App() {
   // `?preview` shows the stored page the way a visitor would get it, for any width.
