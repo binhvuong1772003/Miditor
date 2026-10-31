@@ -95,6 +95,8 @@ export function PropertiesPanel({
   uploadImage,
 }: PropertiesPanelProps) {
   const [tab, setTab] = useState<Tab>("design");
+  // Whether the background is a colour or a picture; it starts as what the block has.
+  const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
@@ -112,6 +114,7 @@ export function PropertiesPanel({
     onCommit: (value: number | undefined) => onCommit({ key, value }),
     onDiscard,
   });
+  const backgroundKind = fill ?? (node.styles.backgroundImage !== undefined ? "image" : "color");
   const box = isFreeNode(node) ? boxFor(node, device) : undefined;
   const hasFields = def !== undefined && Object.values(def.fields).some((f) => f.type !== "image");
   const byHand = (isFreeNode(node) && node.phone !== undefined) || node.phoneProps !== undefined;
@@ -171,18 +174,41 @@ export function PropertiesPanel({
                 />
               </>
             )}
-            <h3 className={styles.section}>Appearance</h3>
-            <ColourField
-              label="Fill"
-              pickerLabel="Fill colour picker"
-              hint="Hex colour, like #d5dae3. Leave it empty for no fill."
-              {...colour("background")}
-            />
-            <BackgroundFields
-              styles={node.styles}
-              uploadImage={uploadImage}
-              onChange={(patch) => onCommit(patch)}
-            />
+            <h3 className={styles.section}>Background</h3>
+            {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+            <div role="group" aria-label="Kind of background" className={styles.tabs}>
+              {(
+                [
+                  ["color", "Color"],
+                  ["image", "Image"],
+                ] as const
+              ).map(([id, name]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={styles.tab}
+                  aria-pressed={backgroundKind === id}
+                  onClick={() => setFill(id)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            {backgroundKind === "color" ? (
+              <ColourField
+                label="Fill"
+                pickerLabel="Fill colour picker"
+                hint="Hex colour, like #d5dae3. Leave it empty for no fill."
+                {...colour("background")}
+              />
+            ) : (
+              <BackgroundFields
+                styles={node.styles}
+                uploadImage={uploadImage}
+                onChange={(patch) => onCommit(patch)}
+              />
+            )}
+            <h3 className={styles.section}>Border</h3>
             <LengthField
               label="Border width"
               hint="In pixels, like 2. Leave it empty or 0 for no border."

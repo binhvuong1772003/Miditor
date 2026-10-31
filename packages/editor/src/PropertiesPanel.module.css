@@ -232,7 +232,8 @@ select.input {
   transition: background-color 120ms ease-out;
 }
 
-.tab[aria-selected="true"] {
+.tab[aria-selected="true"],
+.tab[aria-pressed="true"] {
   background: var(--_canvas);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
   font-weight: 600;

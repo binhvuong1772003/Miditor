@@ -59,7 +59,6 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
 
   return (
     <>
-      <h3 className={styles.section}>Background image</h3>
       <div className={styles.field}>
         <div className={styles.row}>
           <span
