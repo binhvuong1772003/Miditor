@@ -21,6 +21,7 @@ export { type PageIssue, validatePage } from "./registry/validate-page";
 export { type PropIssue, validateProps } from "./registry/validate-props";
 export { type RegistryIssue, validateRegistry } from "./registry/validate-registry";
 export { isAngle, normalizeAngle, parseAngle } from "./styles/angle";
+export { parseCoordinate } from "./styles/coordinate";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { isImageUrl } from "./styles/image-url";
 export { minSize } from "./styles/min-size";
