@@ -32,10 +32,11 @@ describe("builtInRegistry", () => {
     expect(box?.position.x.anchor).toBe("scale");
   });
 
-  it("has a group that holds blocks and is not offered when adding, and nothing else hidden", () => {
+  it("has a group that holds blocks, and an image that comes from an upload, not offered when adding", () => {
     expect(builtInRegistry.Group).toMatchObject({ canContain: true, hidden: true });
+    expect(builtInRegistry.Image).toMatchObject({ hidden: true });
     const hidden = Object.entries(builtInRegistry).filter(([, def]) => def.hidden);
-    expect(hidden.map(([type]) => type)).toEqual(["Group"]);
+    expect(hidden.map(([type]) => type)).toEqual(["Image", "Group"]);
   });
 
   it("accepts what groupNodes makes", () => {

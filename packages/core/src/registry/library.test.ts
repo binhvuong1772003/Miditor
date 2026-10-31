@@ -105,15 +105,14 @@ describe("searchRegistry", () => {
     expect(types(searchRegistry(odd, ""))).toEqual(["Good"]);
   });
 
-  it("finds the built-in kinds that the library lists, and not the group", () => {
+  it("finds the built-in kinds that the library lists, and not the group or the image", () => {
     expect(types(searchRegistry(builtInRegistry, ""))).toEqual([
       "Container",
       "Text",
       "Shape",
-      "Image",
       "Button",
     ]);
-    expect(types(searchRegistry(builtInRegistry, "picture"))).toEqual(["Image"]);
+    expect(types(searchRegistry(builtInRegistry, "picture"))).toEqual([]);
     // "cta" is also inside the keyword "rectangle", but only a keyword that is the query comes first.
     expect(types(searchRegistry(builtInRegistry, "cta"))).toEqual(["Button", "Shape"]);
   });
@@ -161,7 +160,7 @@ describe("libraryOf", () => {
   it("lists the built-in kinds in Basic", () => {
     const groups = libraryOf(builtInRegistry);
     expect(groups.map((g) => [g.category, types(g.items)])).toEqual([
-      [BASIC_CATEGORY, ["Container", "Text", "Shape", "Image", "Button"]],
+      [BASIC_CATEGORY, ["Container", "Text", "Shape", "Button"]],
     ]);
   });
 });

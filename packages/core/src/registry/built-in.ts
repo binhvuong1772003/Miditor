@@ -74,9 +74,13 @@ export const builtInRegistry: Registry = {
       fill: { type: "color", label: "Fill" },
     },
   },
-  /** A picture from an address. It keeps its ratio when resized, so it is not squashed. */
+  /**
+   * A picture from an address. It keeps its ratio when resized, so it is not squashed. It is not
+   * offered among the blocks: a picture comes in through the Upload image button of the Assets panel.
+   */
   Image: {
     category: "Basic",
+    hidden: true,
     icon: "img",
     keywords: ["picture", "photo", "upload"],
     label: "Image",
