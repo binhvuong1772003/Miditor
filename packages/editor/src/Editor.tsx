@@ -285,13 +285,9 @@ export function Editor({
   }, [registry]);
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // The panel on the right shows the theme of the page instead of the selected block.
+  // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
+  // right keeps the properties of the selected block, so both can be used together.
   const [themeOpen, setThemeOpen] = useState(false);
-  const showTheme = themeOpen || selectedId === null;
-  // Selecting a block brings its properties back.
-  useEffect(() => {
-    if (selectedId !== null) setThemeOpen(false);
-  }, [selectedId]);
   // The block whose children a press selects: the page at the start, a group once it is entered.
   const [scopeId, setScopeId] = useState(data.root.id);
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
@@ -1116,7 +1112,7 @@ export function Editor({
         <button
           type="button"
           className={styles.railButton}
-          aria-current={showTheme ? undefined : "true"}
+          aria-current={themeOpen ? undefined : "true"}
           onClick={() => setThemeOpen(false)}
         >
           <Icon name="grid" size={18} />
@@ -1125,25 +1121,44 @@ export function Editor({
         <button
           type="button"
           className={styles.railButton}
-          aria-current={showTheme ? "true" : undefined}
+          aria-current={themeOpen ? "true" : undefined}
           onClick={() => setThemeOpen(true)}
         >
           <Icon name="palette" size={18} />
           Theme
         </button>
       </nav>
-      <aside className={`${styles.panel} ${styles.start}`} aria-label="Blocks">
-        <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-        <BlocksPanel
-          registry={registry}
-          disabled={onPhone}
-          onAdd={(type) => addBlockOf(type)}
-          upload={
-            config?.uploadImage
-              ? { busy: adding.busy, error: adding.error, onChoose: () => chooser.current?.click() }
-              : undefined
-          }
-        />
+      <aside
+        className={`${styles.panel} ${styles.start}`}
+        aria-label={themeOpen ? "Page theme" : "Blocks"}
+      >
+        {themeOpen ? (
+          <ThemePanel
+            theme={data.theme}
+            onSetColor={setThemeColor}
+            onRenameColor={renameThemeColor}
+            onDeleteColor={deleteThemeColor}
+            onSetFont={setThemeFont}
+          />
+        ) : (
+          <>
+            <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
+            <BlocksPanel
+              registry={registry}
+              disabled={onPhone}
+              onAdd={(type) => addBlockOf(type)}
+              upload={
+                config?.uploadImage
+                  ? {
+                      busy: adding.busy,
+                      error: adding.error,
+                      onChoose: () => chooser.current?.click(),
+                    }
+                  : undefined
+              }
+            />
+          </>
+        )}
       </aside>
       <section
         ref={setWorkspace}
@@ -1195,32 +1210,22 @@ export function Editor({
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
-        {showTheme ? (
-          <ThemePanel
-            theme={data.theme}
-            onSetColor={setThemeColor}
-            onRenameColor={renameThemeColor}
-            onDeleteColor={deleteThemeColor}
-            onSetFont={setThemeFont}
-          />
-        ) : (
-          <PropertiesPanel
-            // A new panel for each node, so text typed for one is never applied to another.
-            key={selectedNode?.id ?? "none"}
-            node={selectedNode}
-            device={frame}
-            onResetPhone={resetPhone}
-            def={selectedDef}
-            onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-            onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
-            onDiscard={() => setDraft(null)}
-            onAnchor={changeAnchor}
-            rect={selectedRect}
-            onRect={setRect}
-            theme={data.theme}
-            uploadImage={config?.uploadImage}
-          />
-        )}
+        <PropertiesPanel
+          // A new panel for each node, so text typed for one is never applied to another.
+          key={selectedNode?.id ?? "none"}
+          node={selectedNode}
+          device={frame}
+          onResetPhone={resetPhone}
+          def={selectedDef}
+          onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
+          onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
+          onDiscard={() => setDraft(null)}
+          onAnchor={changeAnchor}
+          rect={selectedRect}
+          onRect={setRect}
+          theme={data.theme}
+          uploadImage={config?.uploadImage}
+        />
       </aside>
     </div>
   );
