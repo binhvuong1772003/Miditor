@@ -386,3 +386,122 @@ describe("nodeStyle, the theme", () => {
     expect(nodeStyle(flow("Container"), false, "desktop", theme).fontFamily).toBeUndefined();
   });
 });
+
+describe("nodeStyle, the background picture", () => {
+  const picture = (styles: Record<string, unknown>) =>
+    ({ ...flow("Container"), styles }) as unknown as TreeNode;
+  const keys = [
+    "backgroundImage",
+    "backgroundSize",
+    "backgroundPosition",
+    "backgroundRepeat",
+  ] as const;
+
+  it("has no picture, covers and centres and does not tile when nothing is set", () => {
+    const style = nodeStyle(flow("Container"), false);
+    expect(style.backgroundImage).toBe("none");
+    expect(style.backgroundSize).toBe("cover");
+    expect(style.backgroundPosition).toBe("center");
+    expect(style.backgroundRepeat).toBe("no-repeat");
+  });
+
+  it("writes the picture, its size, its position and its repeat", () => {
+    const style = nodeStyle(
+      picture({
+        backgroundImage: "https://e.co/a.png",
+        backgroundSize: "contain",
+        backgroundPosition: "bottom right",
+        backgroundRepeat: "repeat",
+      }),
+      false,
+    );
+    expect(style.backgroundImage).toBe('url("https://e.co/a.png")');
+    expect(style.backgroundSize).toBe("contain");
+    expect(style.backgroundPosition).toBe("bottom right");
+    expect(style.backgroundRepeat).toBe("repeat");
+  });
+
+  it("accepts a path and a picture inside the page", () => {
+    expect(nodeStyle(picture({ backgroundImage: "/a.png" }), false).backgroundImage).toBe(
+      'url("/a.png")',
+    );
+    expect(
+      nodeStyle(picture({ backgroundImage: "data:image/png;base64,AAAA" }), false).backgroundImage,
+    ).toBe('url("data:image/png;base64,AAAA")');
+  });
+
+  it("keeps the colour next to the picture, which goes over it", () => {
+    const style = nodeStyle(picture({ background: "#112233", backgroundImage: "/a.png" }), false);
+    expect(style.backgroundColor).toBe("#112233");
+    expect(style.backgroundImage).toBe('url("/a.png")');
+  });
+
+  it("draws no picture for an address that is not a safe one, and never lets one end the string it is in", () => {
+    for (const value of [
+      "",
+      "javascript:alert(1)",
+      "a.png",
+      "//e.co/a.png",
+      'https://e.co/a"), url("https://evil.co/x.png',
+      "https://e.co/a b.png",
+      "data:image/svg+xml;base64,AAAA",
+      "url(/a.png)",
+      5,
+      null,
+    ]) {
+      expect(
+        nodeStyle(picture({ backgroundImage: value }), false).backgroundImage,
+        String(value),
+      ).toBe("none");
+    }
+  });
+
+  it("uses the default for a size, a position or a repeat that is not one of the choices", () => {
+    const style = nodeStyle(
+      picture({
+        backgroundSize: "50%",
+        backgroundPosition: "10px 20px",
+        backgroundRepeat: "repeat-x",
+      }),
+      false,
+    );
+    expect(style.backgroundSize).toBe("cover");
+    expect(style.backgroundPosition).toBe("center");
+    expect(style.backgroundRepeat).toBe("no-repeat");
+  });
+
+  it("writes every key whether or not a picture is set, so an edit never removes one", () => {
+    const plain = Object.keys(nodeStyle(flow("Container"), false));
+    const set = Object.keys(
+      nodeStyle(
+        picture({
+          backgroundImage: "/a.png",
+          backgroundSize: "auto",
+          backgroundPosition: "top",
+          backgroundRepeat: "repeat",
+        }),
+        false,
+      ),
+    );
+    expect(set).toEqual(plain);
+    for (const key of keys) expect(plain).toContain(key);
+  });
+
+  it("draws it on the page itself and on a block placed freely", () => {
+    expect(
+      nodeStyle(
+        { ...flow("Page", "root"), styles: { backgroundImage: "/a.png" } } as TreeNode,
+        true,
+      ).backgroundImage,
+    ).toBe('url("/a.png")');
+    expect(
+      nodeStyle(
+        {
+          ...free({ anchor: "start", offset: 0 }),
+          styles: { backgroundImage: "/a.png" },
+        } as TreeNode,
+        false,
+      ).backgroundImage,
+    ).toBe('url("/a.png")');
+  });
+});

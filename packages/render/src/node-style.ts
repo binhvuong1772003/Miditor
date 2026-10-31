@@ -2,7 +2,11 @@ import {
   boxFor,
   cssFor,
   type Device,
+  isBackgroundPosition,
+  isBackgroundRepeat,
+  isBackgroundSize,
   isFreeNode,
+  isImageUrl,
   isPixelLength,
   type NodeStyles,
   resolveColor,
@@ -68,12 +72,27 @@ const drawn = (value: unknown) => (isPixelLength(value) ? Math.round(value * 100
  */
 function lookOf(styles: NodeStyles | undefined, theme?: Theme): CSSProperties {
   // Data comes from outside, so `styles` may be missing and a value may be anything.
-  const { background, borderWidth, borderColor, borderRadius } = styles ?? {};
+  const {
+    background,
+    borderWidth,
+    borderColor,
+    borderRadius,
+    backgroundImage,
+    backgroundSize,
+    backgroundPosition,
+    backgroundRepeat,
+  } = styles ?? {};
   const width = drawn(borderWidth);
   const radius = drawn(borderRadius);
   const color = resolveColor(borderColor, theme) ?? "currentcolor";
   return {
     backgroundColor: resolveColor(background, theme) ?? "transparent",
+    // The picture goes over the colour. The address is one `isImageUrl` accepts, which has no quote
+    // or backslash in it, so it cannot end the string it is written in.
+    backgroundImage: isImageUrl(backgroundImage) ? `url("${backgroundImage}")` : "none",
+    backgroundSize: isBackgroundSize(backgroundSize) ? backgroundSize : "cover",
+    backgroundPosition: isBackgroundPosition(backgroundPosition) ? backgroundPosition : "center",
+    backgroundRepeat: isBackgroundRepeat(backgroundRepeat) ? backgroundRepeat : "no-repeat",
     border: width > 0 ? `${width}px solid ${color}` : "0",
     borderRadius: radius > 0 ? `${radius}px` : "0",
   };

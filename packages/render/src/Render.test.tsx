@@ -903,3 +903,33 @@ describe("<Render> responsive", () => {
     expect(strip(html(data))).not.toContain("--m-");
   });
 });
+
+describe("<Render> background picture", () => {
+  const box = (styles: Record<string, unknown>) =>
+    page(flow("root", "Page", [{ ...flow("b", "Container"), styles } as unknown as FlowNode]));
+
+  it("puts the picture behind a block", () => {
+    const tag = tagOf(
+      html(box({ backgroundImage: "https://e.co/a.png", backgroundSize: "contain" })),
+      "b",
+    );
+    expect(tag).toContain("background-image:url(&quot;https://e.co/a.png&quot;)");
+    expect(tag).toContain("background-size:contain");
+    expect(tag).toContain("background-position:center");
+    expect(tag).toContain("background-repeat:no-repeat");
+  });
+
+  it("draws no picture for an address that is not a safe one", () => {
+    const tag = tagOf(html(box({ backgroundImage: "javascript:alert(1)" })), "b");
+    expect(tag).toContain("background-image:none");
+    expect(tag).not.toContain("javascript");
+  });
+
+  it("is the same on a phone and a desktop in a responsive page, with no variable for it", () => {
+    const markup = renderToStaticMarkup(
+      <Render data={box({ backgroundImage: "/a.png" })} responsive={{}} />,
+    );
+    expect(tagOf(markup, "b")).toContain("background-image:url(&quot;/a.png&quot;)");
+    expect(tagOf(markup, "b")).not.toContain("--m-background-image");
+  });
+});
