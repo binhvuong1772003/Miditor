@@ -1,7 +1,8 @@
 /* The menu at the pointer: the same small white card as the toolbar's menu, a little roomier. */
 .menu {
   position: fixed;
-  z-index: 60;
+  /* Over the handles of the selection, which moveable draws at 3000. */
+  z-index: 4000;
   display: flex;
   flex-direction: column;
   min-inline-size: 13rem;

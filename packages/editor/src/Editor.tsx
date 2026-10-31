@@ -1681,7 +1681,7 @@ export function Editor({
             tone="selected"
           />
         )}
-        {block && workspace && !editing && selectedId && selectedId !== data.root.id && (
+        {block && workspace && !editing && !menuAt && selectedId && selectedId !== data.root.id && (
           <QuickActions
             target={block}
             workspace={workspace}
