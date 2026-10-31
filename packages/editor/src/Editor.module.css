@@ -283,6 +283,17 @@
   --moveable-color: var(--_focus);
 }
 
+/*
+ * The handle that turns a block shows a turning arrow, not moveable's plain "alias". It is moveable's
+ * own class, which its style tag scopes with a generated class that out-ranks any rule here, so only `!important` wins.
+ */
+.workspace .selection :global(.moveable-rotation-control) {
+  --_turn-cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'><g stroke='white' stroke-width='4'><path d='M20 12a8 8 0 1 1-2.6-5.9'/><path d='M20 4v5h-5'/></g><g stroke='black' stroke-width='2'><path d='M20 12a8 8 0 1 1-2.6-5.9'/><path d='M20 4v5h-5'/></g></svg>");
+  cursor:
+    var(--_turn-cursor) 12 12,
+    alias !important;
+}
+
 /* Buttons: one shape for the whole editor, 36px tall. */
 .button {
   appearance: none;

@@ -489,6 +489,7 @@ export function Editor({
     const colour = "color-mix(in srgb, var(--_focus) 70%, transparent)";
     target.style.outline = `2px solid ${colour}`;
     target.style.outlineOffset = "-1px";
+    target.style.cursor = "pointer";
     // The outline fades in, so moving across the page reads as a soft trail and not a flicker.
     if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       target.animate?.([{ outlineColor: "transparent" }, { outlineColor: colour }], {
@@ -499,8 +500,22 @@ export function Editor({
     return () => {
       target.style.removeProperty("outline");
       target.style.removeProperty("outline-offset");
+      target.style.removeProperty("cursor");
     };
   }, [workspace, hoverId, shown]);
+
+  // A selected block can be dragged: its cursor says so. The handles bring their own (resize).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
+  useLayoutEffect(() => {
+    if (!workspace || editing) return;
+    const own = [selectedId, ...picked].flatMap((id) =>
+      id ? (elementOf(workspace, id) ?? []) : [],
+    );
+    for (const element of own) element.style.cursor = "move";
+    return () => {
+      for (const element of own) element.style.removeProperty("cursor");
+    };
+  }, [workspace, selectedId, picked, editing, shown]);
 
   // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
