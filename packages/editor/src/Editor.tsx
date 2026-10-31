@@ -20,6 +20,7 @@ import {
   insertNode,
   isFreeNode,
   isTheme,
+  keepsRatio,
   migratePage,
   minSize,
   moveRect,
@@ -1124,7 +1125,7 @@ export function Editor({
           container={workspace}
           className={styles.selection}
           companions={picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))}
-          lockRatio={selectedDef?.lockRatio === true}
+          lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
           minSize={minSize(selectedNode?.styles)}
           angle={
             selectedNode && isFreeNode(selectedNode) ? boxFor(selectedNode, frame).rotation : 0
