@@ -29,6 +29,9 @@ importers:
       '@midito-kitchen/editor':
         specifier: workspace:*
         version: link:../../packages/editor
+      '@midito-kitchen/render':
+        specifier: workspace:*
+        version: link:../../packages/render
       react:
         specifier: ^19.3.1
         version: 19.3.1
