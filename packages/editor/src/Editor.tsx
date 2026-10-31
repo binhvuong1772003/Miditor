@@ -63,6 +63,7 @@ import {
   type ClipboardEvent,
   type MouseEvent,
   type PointerEvent,
+  type ReactNode,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -105,6 +106,11 @@ export interface EditorProps {
    * when this is given.
    */
   onSave?: (data: PageData) => void | Promise<void>;
+  /**
+   * Extra controls of the host for the right end of the header, before Save: a link to a preview, a
+   * Publish button. The editor draws them as given and styles nothing of them.
+   */
+  headerActions?: ReactNode;
   /**
    * How many steps undo can go back, 100 when not given. A whole number from 1 up, or `Infinity` for
    * no limit; anything else uses 100. It is read at each change, so a new value trims the oldest
@@ -255,6 +261,7 @@ export function Editor({
   data: initialData,
   onChange,
   onSave,
+  headerActions,
   historyLimit,
   config,
 }: EditorProps) {
@@ -1081,6 +1088,7 @@ export function Editor({
           </button>
         </div>
         <div className={styles.toolbarEnd}>
+          {headerActions}
           {onSave && (
             <button
               type="button"

@@ -50,11 +50,13 @@ function Playground() {
         config={{ components, renderers, uploadImage }}
         onChange={(data) => storePage(window.localStorage, data)}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
+        headerActions={
+          <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
+            Responsive preview
+          </a>
+        }
       />
       {sent !== null && <SentDataDialog json={sent} onClose={() => setSent(null)} />}
-      <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
-        Responsive preview
-      </a>
     </>
   );
 }
