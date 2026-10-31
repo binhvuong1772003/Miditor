@@ -283,6 +283,13 @@ export function Editor({
   const addKind = addable.some(([type]) => type === kind) ? kind : (addable[0]?.[0] ?? "");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The panel on the right shows the theme of the page instead of the selected block.
+  const [themeOpen, setThemeOpen] = useState(false);
+  const showTheme = themeOpen || selectedId === null;
+  // Selecting a block brings its properties back.
+  useEffect(() => {
+    if (selectedId !== null) setThemeOpen(false);
+  }, [selectedId]);
   // The block whose children a press selects: the page at the start, a group once it is entered.
   const [scopeId, setScopeId] = useState(data.root.id);
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
@@ -939,7 +946,10 @@ export function Editor({
       }}
     >
       <header className={styles.toolbar}>
-        <div className={styles.group}>
+        <div className={styles.toolbarStart}>
+          <span className={styles.logo} aria-hidden="true">
+            M
+          </span>
           <button
             type="button"
             className={`${styles.button} ${styles.ghost} ${styles.icon}`}
@@ -961,7 +971,137 @@ export function Editor({
             <Icon name="redo" size={18} />
           </button>
         </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+        <div className={styles.segmented} role="group" aria-label="Frame">
+          <button
+            type="button"
+            className={styles.segment}
+            aria-pressed={frame === "desktop"}
+            onClick={() => setFrame("desktop")}
+          >
+            <Icon name="desk" />
+            Desktop
+          </button>
+          <button
+            type="button"
+            className={styles.segment}
+            aria-pressed={frame === "phone"}
+            onClick={() => setFrame("phone")}
+          >
+            <Icon name="phone" />
+            Phone
+          </button>
+        </div>
+        <div className={styles.toolbarEnd}>
+          {onSave && (
+            <button
+              type="button"
+              className={`${styles.button} ${styles.primary}`}
+              onClick={() => {
+                // A change that is still pending is stored first, and it is part of what is saved.
+                const pending = draft;
+                if (pending) commitPatch(pending.id, pending);
+                onSave(pending ? withDraft(data, pending, frame, registry) : data);
+              }}
+            >
+              Save
+            </button>
+          )}
+        </div>
+      </header>
+      <div className={styles.actions} role="toolbar" aria-label="Block actions">
         <div className={styles.group}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.ghost}`}
+            disabled={onPhone || !selectedId || picked.length === 0}
+            title={
+              onPhone
+                ? "Switch to Desktop to group blocks"
+                : "Group the selected blocks (Ctrl+G). Select more with Shift."
+            }
+            onClick={groupSelected}
+          >
+            Group
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.ghost}`}
+            disabled={onPhone || selectedNode?.type !== "Group"}
+            title="Ungroup (Shift+Ctrl+G)"
+            onClick={ungroupSelected}
+          >
+            Ungroup
+          </button>
+        </div>
+        <div className={styles.group}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+            aria-label="Duplicate"
+            disabled={onPhone || !selectedId}
+            title={onPhone ? "Switch to Desktop to duplicate blocks" : "Duplicate (Ctrl+D)"}
+            onClick={duplicateSelected}
+          >
+            <Icon name="copy" size={18} />
+          </button>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.ghost} ${styles.icon} ${styles.danger}`}
+            aria-label="Delete"
+            disabled={onPhone || !selectedId || selectedId === data.root.id}
+            title={onPhone ? "Switch to Desktop to delete blocks" : "Delete (Del)"}
+            onClick={deleteBlock}
+          >
+            <Icon name="trash" size={18} />
+          </button>
+        </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+        <div className={styles.group} role="group" aria-label="Order">
+          {(
+            [
+              ["front", "front", "Bring to front"],
+              ["forward", "up", "Bring forward"],
+              ["backward", "down", "Send backward"],
+              ["back", "back", "Send to back"],
+            ] as const
+          ).map(([to, icon, title]) => (
+            <button
+              key={to}
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label={title}
+              disabled={onPhone || !selectedId || selectedId === data.root.id}
+              title={onPhone ? "Switch to Desktop to change the order" : title}
+              onClick={() => reorderSelected(to)}
+            >
+              <Icon name={icon} size={18} />
+            </button>
+          ))}
+        </div>
+      </div>
+      <nav className={styles.rail} aria-label="Tools">
+        <button
+          type="button"
+          className={styles.railButton}
+          aria-current={showTheme ? undefined : "true"}
+          onClick={() => setThemeOpen(false)}
+        >
+          <Icon name="grid" size={18} />
+          Blocks
+        </button>
+        <button
+          type="button"
+          className={styles.railButton}
+          aria-current={showTheme ? "true" : undefined}
+          onClick={() => setThemeOpen(true)}
+        >
+          <Icon name="palette" size={18} />
+          Theme
+        </button>
+      </nav>
+      <aside className={`${styles.panel} ${styles.start}`} aria-label="Blocks">
+        <div className={styles.library}>
           <select
             className={styles.select}
             aria-label="Kind of block to add"
@@ -1006,102 +1146,7 @@ export function Editor({
             </>
           )}
         </div>
-        <div className={styles.group}>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost}`}
-            disabled={onPhone || !selectedId || picked.length === 0}
-            title={
-              onPhone
-                ? "Switch to Desktop to group blocks"
-                : "Group the selected blocks (Ctrl+G). Select more with Shift."
-            }
-            onClick={groupSelected}
-          >
-            Group
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost}`}
-            disabled={onPhone || selectedNode?.type !== "Group"}
-            title="Ungroup (Shift+Ctrl+G)"
-            onClick={ungroupSelected}
-          >
-            Ungroup
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-            aria-label="Duplicate"
-            disabled={onPhone || !selectedId}
-            title={onPhone ? "Switch to Desktop to duplicate blocks" : "Duplicate (Ctrl+D)"}
-            onClick={duplicateSelected}
-          >
-            <Icon name="copy" size={18} />
-          </button>
-        </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div className={styles.group} role="group" aria-label="Order">
-          {(
-            [
-              ["front", "front", "Bring to front"],
-              ["forward", "up", "Bring forward"],
-              ["backward", "down", "Send backward"],
-              ["back", "back", "Send to back"],
-            ] as const
-          ).map(([to, icon, title]) => (
-            <button
-              key={to}
-              type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label={title}
-              disabled={onPhone || !selectedId || selectedId === data.root.id}
-              title={onPhone ? "Switch to Desktop to change the order" : title}
-              onClick={() => reorderSelected(to)}
-            >
-              <Icon name={icon} size={18} />
-            </button>
-          ))}
-        </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div className={styles.group} role="group" aria-label="Frame">
-          <div className={styles.segmented}>
-            <button
-              type="button"
-              className={styles.segment}
-              aria-pressed={frame === "desktop"}
-              onClick={() => setFrame("desktop")}
-            >
-              <Icon name="desk" />
-              Desktop
-            </button>
-            <button
-              type="button"
-              className={styles.segment}
-              aria-pressed={frame === "phone"}
-              onClick={() => setFrame("phone")}
-            >
-              <Icon name="phone" />
-              Phone
-            </button>
-          </div>
-        </div>
-        {onSave && (
-          <button
-            type="button"
-            className={`${styles.button} ${styles.primary} ${styles.save}`}
-            onClick={() => {
-              // A change that is still pending is stored first, and it is part of what is saved.
-              const pending = draft;
-              if (pending) commitPatch(pending.id, pending);
-              onSave(pending ? withDraft(data, pending, frame, registry) : data);
-            }}
-          >
-            Save
-          </button>
-        )}
-      </header>
-      <aside className={`${styles.panel} ${styles.start}`} aria-label="Layers" />
+      </aside>
       <section
         ref={setWorkspace}
         className={styles.workspace}
@@ -1152,29 +1197,28 @@ export function Editor({
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
-        <PropertiesPanel
-          // A new panel for each node, so text typed for one is never applied to another.
-          key={selectedNode?.id ?? "none"}
-          node={selectedNode}
-          device={frame}
-          onResetPhone={resetPhone}
-          canDelete={!onPhone}
-          def={selectedDef}
-          onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-          onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
-          onDiscard={() => setDraft(null)}
-          onDelete={deleteBlock}
-          onAnchor={changeAnchor}
-          theme={data.theme}
-          uploadImage={config?.uploadImage}
-        />
-        {!selectedNode && (
+        {showTheme ? (
           <ThemePanel
             theme={data.theme}
             onSetColor={setThemeColor}
             onRenameColor={renameThemeColor}
             onDeleteColor={deleteThemeColor}
             onSetFont={setThemeFont}
+          />
+        ) : (
+          <PropertiesPanel
+            // A new panel for each node, so text typed for one is never applied to another.
+            key={selectedNode?.id ?? "none"}
+            node={selectedNode}
+            device={frame}
+            onResetPhone={resetPhone}
+            def={selectedDef}
+            onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
+            onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
+            onDiscard={() => setDraft(null)}
+            onAnchor={changeAnchor}
+            theme={data.theme}
+            uploadImage={config?.uploadImage}
           />
         )}
       </aside>

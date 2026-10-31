@@ -16,7 +16,6 @@ import {
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
-import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { ThemePicker } from "./ThemePicker";
@@ -56,10 +55,6 @@ export interface PropertiesPanelProps {
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
   onResetPhone: () => void;
-  /** False when the blocks cannot be changed from this screen, so the button that deletes one is off. */
-  canDelete: boolean;
-  /** Delete the selected block and everything in it. */
-  onDelete: () => void;
   /** Anchor one axis of the selected free block another way; the block stays where it is. */
   onAnchor: (axis: "x" | "y", anchor: AxisAnchor) => void;
 }
@@ -72,12 +67,10 @@ export function PropertiesPanel({
   node,
   device,
   onResetPhone,
-  canDelete,
   def,
   onPreview,
   onCommit,
   onDiscard,
-  onDelete,
   onAnchor,
   theme,
   uploadImage,
@@ -168,18 +161,6 @@ export function PropertiesPanel({
         hint="In pixels, like 4. Leave it empty or 0 for square corners."
         {...length("borderRadius")}
       />
-      <div className={styles.footer}>
-        <button
-          type="button"
-          className={styles.delete}
-          disabled={!canDelete}
-          title={canDelete ? "Delete (Del)" : "Switch to Desktop to delete blocks"}
-          onClick={onDelete}
-        >
-          <Icon name="trash" />
-          Delete block
-        </button>
-      </div>
     </div>
   );
 }

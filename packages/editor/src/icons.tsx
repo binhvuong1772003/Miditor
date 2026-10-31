@@ -39,6 +39,32 @@ const ICONS = {
     </>
   ),
   trash: <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" />,
+  grid: (
+    <>
+      <rect x="2.5" y="2.5" width="4.5" height="4.5" />
+      <rect x="9" y="2.5" width="4.5" height="4.5" />
+      <rect x="2.5" y="9" width="4.5" height="4.5" />
+      <rect x="9" y="9" width="4.5" height="4.5" />
+    </>
+  ),
+  palette: (
+    <path d="M8 2a6 6 0 1 0 0 12c1 0 1.4-.7 1-1.5s-.2-1.5.8-1.5H12a2 2 0 0 0 2-2C14 4.7 11.3 2 8 2z" />
+  ),
+  text: <path d="M3 4V3h10v1M8 3v10M6 13h4" />,
+  shape: (
+    <>
+      <rect x="2.5" y="2.5" width="6" height="6" />
+      <circle cx="10.5" cy="10.5" r="3" />
+    </>
+  ),
+  box: <rect x="2.5" y="2.5" width="11" height="11" rx="2" />,
+  button: <rect x="2" y="5" width="12" height="6" rx="3" />,
+  search: (
+    <>
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="m10.5 10.5 3 3" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

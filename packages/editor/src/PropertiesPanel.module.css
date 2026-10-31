@@ -72,13 +72,6 @@
   line-height: 1.25;
 }
 
-.footer {
-  display: flex;
-  margin-block-start: 0.5rem;
-  padding-block-start: 1rem;
-  border-block-start: 1px solid var(--_border);
-}
-
 .title {
   margin: 0;
   font-size: 1rem;
