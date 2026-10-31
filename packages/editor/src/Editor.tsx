@@ -391,6 +391,7 @@ export function Editor({
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
   const [dropId, setDropId] = useState<string | null>(null);
   // The box a person is dragging out on the empty page to select the blocks it touches, in screen px.
@@ -475,6 +476,28 @@ export function Editor({
     };
   }, [workspace, picked, shown]);
 
+  // The block a press would select, outlined while the pointer rests on it, like a design tool does.
+  // Inline, for the same reason as the marks above: the block's own `all: revert` beats a rule.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
+  useLayoutEffect(() => {
+    const target = workspace && hoverId ? elementOf(workspace, hoverId) : null;
+    if (!target) return;
+    const colour = "color-mix(in srgb, var(--_focus) 70%, transparent)";
+    target.style.outline = `2px solid ${colour}`;
+    target.style.outlineOffset = "-1px";
+    // The outline fades in, so moving across the page reads as a soft trail and not a flicker.
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      target.animate?.([{ outlineColor: "transparent" }, { outlineColor: colour }], {
+        duration: 120,
+        easing: "ease-out",
+      });
+    }
+    return () => {
+      target.style.removeProperty("outline");
+      target.style.removeProperty("outline-offset");
+    };
+  }, [workspace, hoverId, shown]);
+
   // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
   useLayoutEffect(() => {
@@ -530,6 +553,21 @@ export function Editor({
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", stop);
+  };
+
+  /** The pointer moved over the canvas: the block a press here would select is the one to outline. */
+  const hover = (event: PointerEvent<HTMLElement>) => {
+    const target = event.target as Element;
+    let next: string | null = null;
+    // Nothing is outlined while a button is down (a drag, a box) or over the selected block's handles.
+    if (event.buttons === 0 && !editing && !isMoveableLayer(target)) {
+      const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+      const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+      if (hit && hit.id !== data.root.id && hit.id !== selectedId && !picked.includes(hit.id)) {
+        next = hit.id;
+      }
+    }
+    setHoverId((now) => (now === next ? now : next));
   };
 
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
@@ -1399,6 +1437,8 @@ export function Editor({
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
         tabIndex={0}
         onPointerDown={press}
+        onPointerMove={hover}
+        onPointerLeave={() => setHoverId(null)}
         onDoubleClick={enter}
       >
         <div
