@@ -118,9 +118,10 @@ export function PropertiesPanel({
   const box = isFreeNode(node) ? boxFor(node, device) : undefined;
   const hasFields = def !== undefined && Object.values(def.fields).some((f) => f.type !== "image");
   const byHand = (isFreeNode(node) && node.phone !== undefined) || node.phoneProps !== undefined;
-  const coordinate = (label: string, field: "x" | "y" | "w" | "h") => (
+  const coordinate = (label: string, name: string, field: "x" | "y" | "w" | "h") => (
     <CoordinateField
       label={label}
+      name={name}
       stored={rect?.[field]}
       onCommit={(value) => value !== undefined && onRect(field, value)}
     />
@@ -232,19 +233,20 @@ export function PropertiesPanel({
               <>
                 <h3 className={styles.section}>Position and size</h3>
                 <div className={styles.pair}>
-                  {coordinate("X", "x")}
-                  {coordinate("Y", "y")}
-                  {coordinate("Width", "w")}
-                  {coordinate("Height", "h")}
+                  {coordinate("X", "X position", "x")}
+                  {coordinate("Y", "Y position", "y")}
+                  {coordinate("W", "Width", "w")}
+                  {coordinate("H", "Height", "h")}
+                  <AngleField
+                    label="R"
+                    name="Rotation"
+                    hint=""
+                    stored={box.rotation}
+                    onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
+                    onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
+                    onDiscard={onDiscard}
+                  />
                 </div>
-                <AngleField
-                  label="Rotation"
-                  hint="In degrees, from -180 to 180, like 45. Leave it empty for 0."
-                  stored={box.rotation}
-                  onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
-                  onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
-                  onDiscard={onDiscard}
-                />
                 <h3 className={styles.section}>Anchors</h3>
                 <p className={styles.hint}>
                   What the block sticks to when the page changes size, for example on a phone.
@@ -572,16 +574,19 @@ const readCoordinate = (text: string): Reading<number> => parseCoordinate(text) 
 /** A number of where a block is or how big, in px; it can be negative, since a block may stick out. */
 function CoordinateField({
   label,
+  name,
   stored,
   onCommit,
 }: {
   label: string;
+  name: string;
   stored: number | undefined;
   onCommit: (value: number | undefined) => void;
 }) {
   return (
     <NumberField
       label={label}
+      name={name}
       hint=""
       stored={stored === undefined ? undefined : Math.round(stored * 100) / 100}
       unit="px"
@@ -595,7 +600,7 @@ function CoordinateField({
   );
 }
 
-function AngleField(field: FieldProps<number>) {
+function AngleField(field: FieldProps<number> & { name?: string }) {
   return (
     <NumberField
       {...field}
@@ -609,6 +614,7 @@ function AngleField(field: FieldProps<number>) {
 
 function NumberField({
   label,
+  name,
   hint,
   unit,
   placeholder,
@@ -619,6 +625,8 @@ function NumberField({
   onCommit,
   onDiscard,
 }: FieldProps<number> & {
+  /** What the field is called to assistive technology when its label is short, like "W". */
+  name?: string;
   unit: string;
   placeholder: string;
   error: string;
@@ -648,6 +656,7 @@ function NumberField({
           placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
+          aria-label={name}
           aria-invalid={invalid}
           aria-describedby={invalid ? errorId : hint !== "" ? hintId : undefined}
           onChange={(event) => typed(event.target.value)}

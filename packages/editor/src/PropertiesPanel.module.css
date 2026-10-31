@@ -263,7 +263,7 @@ select.input {
   border-block-start: 0;
 }
 
-/* X and Y, then width and height. */
+/* X and Y, then W and H, then R: the short labels of the kit. */
 .pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
