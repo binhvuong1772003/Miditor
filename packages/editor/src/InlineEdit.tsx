@@ -101,6 +101,8 @@ export function InlineEdit({
         fontFamily: look.fontFamily,
         fontSize: look.fontSize,
         fontWeight: look.fontWeight,
+        fontStyle: look.fontStyle,
+        textDecoration: look.textDecoration,
         lineHeight: look.lineHeight,
         letterSpacing: look.letterSpacing,
         textAlign: look.textAlign as "left",

@@ -50,7 +50,7 @@ const sizeOnScreen = (desktop: number, device: Device) =>
  * block does, but stays readable: it is not made smaller than 12 px, nor larger than on the desktop.
  */
 export function textStyle(props: Props, device: Device = "desktop", theme?: Theme): CSSProperties {
-  const { size, color, bold, align } = props;
+  const { size, color, bold, italic, underline, align } = props;
   const desktop =
     typeof size === "number" && Number.isFinite(size)
       ? Math.round(Math.min(400, Math.max(1, size)) * 100) / 100
@@ -63,6 +63,8 @@ export function textStyle(props: Props, device: Device = "desktop", theme?: Them
     fontFamily:
       (props.font === "heading" ? themeFont(theme, "heading") : undefined) ?? pageFont(theme),
     fontWeight: bold === true ? 700 : 400,
+    fontStyle: italic === true ? "italic" : "normal",
+    textDecoration: underline === true ? "underline" : "none",
     textAlign: alignment,
     justifyContent: JUSTIFY[alignment],
   };

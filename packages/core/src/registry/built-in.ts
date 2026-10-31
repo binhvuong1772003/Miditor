@@ -30,6 +30,8 @@ export const builtInRegistry: Registry = {
       size: 24,
       color: "#111111",
       bold: false,
+      italic: false,
+      underline: false,
       align: "center",
       font: "body",
     },
@@ -52,6 +54,8 @@ export const builtInRegistry: Registry = {
       },
       color: { type: "color", label: "Colour", group: "Typography" },
       bold: { type: "boolean", label: "Bold", group: "Typography" },
+      italic: { type: "boolean", label: "Italic", group: "Typography" },
+      underline: { type: "boolean", label: "Underline", group: "Typography" },
       align: {
         type: "select",
         label: "Align",

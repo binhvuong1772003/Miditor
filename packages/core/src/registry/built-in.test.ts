@@ -119,10 +119,23 @@ describe("builtInRegistry", () => {
   it("shows the words of a text in a box of lines, and sets the rest of a text under Typography", () => {
     const fields = builtInRegistry.Text?.fields ?? {};
     expect(fields.text).toMatchObject({ type: "text", multiline: true, group: "Text" });
-    for (const name of ["font", "size", "color", "bold", "align"]) {
+    for (const name of ["font", "size", "color", "bold", "italic", "underline", "align"]) {
       expect(fields[name]?.group, name).toBe("Typography");
     }
-    expect(Object.keys(fields)).toEqual(["text", "font", "size", "color", "bold", "align"]);
+    expect(Object.keys(fields)).toEqual([
+      "text",
+      "font",
+      "size",
+      "color",
+      "bold",
+      "italic",
+      "underline",
+      "align",
+    ]);
+    for (const name of ["bold", "italic", "underline"]) {
+      expect(fields[name]?.type, name).toBe("boolean");
+      expect(builtInRegistry.Text?.defaultProps[name], name).toBe(false);
+    }
     expect(fields.size).toMatchObject({ unit: "px" });
   });
 

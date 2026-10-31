@@ -16,9 +16,32 @@ describe("textStyle", () => {
       color: "#ff0000",
       fontFamily: DEFAULT_FONT,
       fontWeight: 700,
+      fontStyle: "normal",
+      textDecoration: "none",
       textAlign: "center",
       justifyContent: "center",
     });
+  });
+
+  it("draws italic and underline when they are on, and only when they are exactly true", () => {
+    expect(textStyle({ italic: true, underline: true })).toMatchObject({
+      fontStyle: "italic",
+      textDecoration: "underline",
+    });
+    expect(textStyle({ italic: false, underline: false })).toMatchObject({
+      fontStyle: "normal",
+      textDecoration: "none",
+    });
+    expect(textStyle({ italic: "yes", underline: 1 })).toMatchObject({
+      fontStyle: "normal",
+      textDecoration: "none",
+    });
+    // The three switches do not touch each other.
+    expect(textStyle({ bold: true })).toMatchObject({
+      fontStyle: "normal",
+      textDecoration: "none",
+    });
+    expect(textStyle({ italic: true })).toMatchObject({ fontWeight: 400, textDecoration: "none" });
   });
 
   it("uses the defaults for missing or bad values, and always writes every key", () => {
@@ -27,6 +50,8 @@ describe("textStyle", () => {
       color: "#111111",
       fontFamily: DEFAULT_FONT,
       fontWeight: 400,
+      fontStyle: "normal",
+      textDecoration: "none",
       textAlign: "center",
       justifyContent: "center",
     };
