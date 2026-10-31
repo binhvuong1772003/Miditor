@@ -2,6 +2,7 @@ import {
   type AlignTo,
   type AxisAnchor,
   alignRects,
+  type Pick as BlockPick,
   boxFor,
   builtInRegistry,
   type Container,
@@ -90,6 +91,7 @@ import { isEditableTarget } from "./editable";
 import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
+import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
@@ -659,6 +661,29 @@ export function Editor({
     if (isMoveableLayer(target)) return;
     // What is pressed gets its own frame and tag; the ones for hovering go until the pointer moves.
     setHoverId(null);
+    // Alt goes down through the blocks that lie over each other where it was pressed.
+    if (event.altKey && !event.shiftKey) {
+      const stack: BlockPick[] = [];
+      for (const element of document.elementsFromPoint(event.clientX, event.clientY)) {
+        if (!(element instanceof HTMLElement) || isMoveableLayer(element)) continue;
+        if (!workspace?.contains(element)) continue;
+        const under = element.dataset.miditoId;
+        const pick = under === undefined ? undefined : pickBlock(data.root, scopeId, under);
+        if (pick && !stack.some((item) => item.id === pick.id)) stack.push(pick);
+      }
+      const next = nextLayer(
+        stack.map((item) => item.id),
+        selectedId,
+      );
+      const chosen = stack.find((item) => item.id === next);
+      if (chosen) {
+        setPicked([]);
+        setSelectedId(chosen.id);
+        setScopeId(chosen.scopeId);
+        editorRoot.current?.focus({ preventScroll: true });
+        return;
+      }
+    }
     const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
