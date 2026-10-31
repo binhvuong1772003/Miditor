@@ -1362,6 +1362,25 @@ export function Editor({
         }
         if (gesture.current) return;
         if (
+          event.key === "Enter" &&
+          selectedId &&
+          selectedDef?.inlineText &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey &&
+          !event.shiftKey
+        ) {
+          // Enter on a block that has words goes into them, like a double press on the block does.
+          event.preventDefault();
+          if (draft) commitPatch(draft.id, draft);
+          setEditing({
+            id: selectedId,
+            prop: selectedDef.inlineText.prop,
+            multiline: selectedDef.inlineText.multiline === true,
+          });
+          return;
+        }
+        if (
           isNudgeKey(event.key) &&
           selectedId &&
           !event.ctrlKey &&
