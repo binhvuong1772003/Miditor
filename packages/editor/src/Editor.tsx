@@ -82,7 +82,12 @@ import type { ActionDef } from "./actions";
 import { BlockLabel } from "./BlockLabel";
 import { BlocksPanel } from "./BlocksPanel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
-import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
+import {
+  isMoveableLayer,
+  type ResizeResult,
+  SelectionBox,
+  type SelectionControls,
+} from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
 import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
@@ -414,6 +419,9 @@ export function Editor({
   const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
   // A drag of the selected blocks is on, from the press to the release.
   const [dragging, setDragging] = useState(false);
+  // A press that just selected a block, still down: it goes on to drag the block once the box has it.
+  const dragControls = useRef<SelectionControls | null>(null);
+  const pendingDrag = useRef<{ press: globalThis.PointerEvent; up: boolean } | null>(null);
   // Whether Alt is held: the distances to neighbours are shown only then, as in Figma.
   const [altHeld, setAltHeld] = useState(false);
   useEffect(() => {
@@ -540,6 +548,14 @@ export function Editor({
   useLayoutEffect(() => {
     setBlock(workspace && selectedId ? elementOf(workspace, selectedId) : null);
   });
+
+  // The box has the block that was just pressed: the press, if it is still down, goes on to drag it.
+  useLayoutEffect(() => {
+    const pending = pendingDrag.current;
+    if (!pending || !block || block.dataset.miditoId !== selectedId) return;
+    pendingDrag.current = null;
+    if (!pending.up) dragControls.current?.dragStart(pending.press);
+  }, [block, selectedId]);
 
   // Mark the other selected blocks. The elements belong to `<Render>`, so the mark is put on after
   // each render and taken off again before the next. It is an inline style: every block has an
@@ -770,6 +786,19 @@ export function Editor({
         );
       }
       return;
+    }
+    // A press on a block that is not selected yet selects it and, if it moves, drags it, as in
+    // Canva. The box only has the block after the next render, so the drag starts then.
+    if (hit && hit.id !== selectedId) {
+      const pending = { press: event.nativeEvent, up: false };
+      pendingDrag.current = pending;
+      window.addEventListener(
+        "pointerup",
+        () => {
+          pending.up = true;
+        },
+        { once: true },
+      );
     }
     setPicked([]);
     setSelectedId(hit?.id ?? null);
@@ -1926,6 +1955,7 @@ export function Editor({
           target={editing ? null : block}
           container={workspace}
           className={styles.selection}
+          controls={dragControls}
           companions={picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))}
           lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
           minSize={minSize(selectedNode?.styles)}

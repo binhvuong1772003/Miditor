@@ -60,15 +60,21 @@ export function QuickActions(props: QuickActionsProps) {
   useEffect(() => {
     workspace.addEventListener("scroll", place_, { passive: true });
     window.addEventListener("resize", place_);
-    // While a gesture is on, the block carries `data-dragging`; the toolbar waits for it to end.
-    const watch = new MutationObserver(() => setDragging(target.hasAttribute("data-dragging")));
-    watch.observe(target, { attributes: true, attributeFilter: ["data-dragging"] });
     return () => {
       workspace.removeEventListener("scroll", place_, { passive: true } as EventListenerOptions);
       window.removeEventListener("resize", place_);
-      watch.disconnect();
     };
   });
+
+  // While a gesture is on, the block carries `data-dragging`; the toolbar waits for it to end. Watched
+  // for as long as this is the block (see `BlockLabel`), with one look at the start.
+  useEffect(() => {
+    const sync = () => setDragging(target.hasAttribute("data-dragging"));
+    sync();
+    const watch = new MutationObserver(sync);
+    watch.observe(target, { attributes: true, attributeFilter: ["data-dragging"] });
+    return () => watch.disconnect();
+  }, [target]);
 
   // The menu closes when something else is pressed.
   useEffect(() => {

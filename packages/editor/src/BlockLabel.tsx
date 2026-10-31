@@ -40,15 +40,23 @@ export function BlockLabel({ target, workspace, text, tone }: BlockLabelProps) {
   useEffect(() => {
     workspace.addEventListener("scroll", locate, { passive: true });
     window.addEventListener("resize", locate);
-    // While a gesture is on, the block carries `data-dragging`; the label waits for it to end.
-    const watch = new MutationObserver(() => setDragging(target.hasAttribute("data-dragging")));
-    watch.observe(target, { attributes: true, attributeFilter: ["data-dragging"] });
     return () => {
       workspace.removeEventListener("scroll", locate, { passive: true } as EventListenerOptions);
       window.removeEventListener("resize", locate);
-      watch.disconnect();
     };
   });
+
+  // While a gesture is on, the block carries `data-dragging`; the label waits for it to end. Watched
+  // for as long as this is the block, not again after every render: a change that came between two
+  // renders would be missed, and the label would stay away. It also looks once at the start, for a
+  // gesture that began before the watch did.
+  useEffect(() => {
+    const sync = () => setDragging(target.hasAttribute("data-dragging"));
+    sync();
+    const watch = new MutationObserver(sync);
+    watch.observe(target, { attributes: true, attributeFilter: ["data-dragging"] });
+    return () => watch.disconnect();
+  }, [target]);
 
   if (!place || dragging) return null;
   return (

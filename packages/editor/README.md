@@ -154,6 +154,7 @@ are refused, whatever the host returns. If the function throws, its message is s
 ## On the canvas
 
 - Pointing at a block outlines it and names its kind; the selected block carries a solid tag.
+- Press a block that is not selected and drag: it is selected and moved in the same press.
 - Right-click a block for its menu: duplicate, delete, order in the stack, group and ungroup.
 - Drag a card from the Blocks panel onto the page to add it where you let go, into the block under
   the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels

@@ -28,6 +28,12 @@ export interface ResizeResult {
 const SNAP_PX = 6;
 const SNAP_EDGES = { left: true, top: true, right: true, bottom: true, center: true, middle: true };
 
+/** What the editor can ask of the box from outside. */
+export interface SelectionControls {
+  /** Begin dragging the target with this press, which has not been let go. */
+  dragStart: (press: MouseEvent) => void;
+}
+
 export interface SelectionBoxProps {
   /** The element to drag and resize. Pass it as state, not a ref: a ref is still null on the first render. */
   target: HTMLElement | null;
@@ -47,6 +53,11 @@ export interface SelectionBoxProps {
    * store the new places.
    */
   companions?: readonly HTMLElement[] | undefined;
+  /**
+   * Filled in with a way to start a drag from outside the box: for a press that selected the block,
+   * so the same press can go on to drag it without a second one. Give it the press that is still down.
+   */
+  controls?: { current: SelectionControls | null } | undefined;
   /** A drag or a resize begins. Read whatever the commit will need here. */
   onGestureStart: () => void;
   /**
@@ -123,6 +134,7 @@ export function SelectionBox({
   minSize,
   angle,
   companions,
+  controls,
   onGestureStart,
   onDragEnd,
   onDragMove,
@@ -158,6 +170,34 @@ export function SelectionBox({
   useEffect(() => {
     if (!busy.current) moveable.current?.updateRect();
   });
+
+  // The way in from outside, for a press that selects a block and then drags it.
+  useEffect(() => {
+    if (!controls) return;
+    controls.current = {
+      // The press is played again on the block, now that the box has it: the box starts a drag on a
+      // mouse press on its target, and the real button is still down, so the moves that follow are
+      // the person's own. Moveable's own `dragStart(event)` was tried first and did not drag.
+      dragStart: (press) => {
+        target?.dispatchEvent(
+          new MouseEvent("mousedown", {
+            bubbles: true,
+            cancelable: true,
+            clientX: press.clientX,
+            clientY: press.clientY,
+            button: 0,
+            buttons: 1,
+            ctrlKey: press.ctrlKey,
+            metaKey: press.metaKey,
+            altKey: press.altKey,
+          }),
+        );
+      },
+    };
+    return () => {
+      controls.current = null;
+    };
+  }, [controls, target]);
 
   const begin = (el: HTMLElement) => {
     busy.current = true;
