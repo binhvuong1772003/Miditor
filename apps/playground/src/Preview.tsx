@@ -1,5 +1,5 @@
-import { Render } from "@midito-kitchen/render";
-import { useState } from "react";
+import { pageMeta, Render } from "@midito-kitchen/render";
+import { useEffect, useState } from "react";
 import { renderers } from "./kinds";
 import { loadPage } from "./storage";
 
@@ -15,6 +15,11 @@ const WIDTHS = [
  */
 export function Preview() {
   const [page] = useState(() => loadPage(window.localStorage));
+  // The host puts the title of the page in its tab; the description and picture go in the head the same way.
+  useEffect(() => {
+    const { title } = pageMeta(page);
+    if (title) document.title = title;
+  }, [page]);
   const [width, setWidth] = useState(1100);
   // What the host did with the last action. A real one would call its own code here.
   const [message, setMessage] = useState("");

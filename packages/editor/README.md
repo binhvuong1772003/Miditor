@@ -194,6 +194,20 @@ Handle it where you draw the published page:
 button has an action and `onAction` is given, the action wins over the link; without `onAction`
 the button falls back to its link. Inside the editor a button does nothing.
 
+## Page info
+
+The Assets panel has a Page info section: a title, a description and a share picture (a full
+`https://` address). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
+
+```tsx
+import { pageMeta } from "@midito-kitchen/render";
+
+const { title, description, image } = pageMeta(page); // each may be undefined
+```
+
+Use them for `<title>`, `<meta name="description">` and `og:` tags, or in your framework's metadata
+function. Anything that is not valid comes back as no value.
+
 ## Your own blocks
 
 ```tsx
