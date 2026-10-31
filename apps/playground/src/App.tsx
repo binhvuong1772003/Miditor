@@ -1,4 +1,4 @@
-import { Editor, type PageData } from "@midito-kitchen/editor";
+import { Editor, type PageData, type SaveStatus } from "@midito-kitchen/editor";
 import { useState } from "react";
 import { components, renderers } from "./kinds";
 import { Preview } from "./Preview";
@@ -42,13 +42,23 @@ function Playground() {
   const [page] = useState(openPage);
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
   const [sent, setSent] = useState<string | null>(null);
+  // How the stand-in "server" is doing, for the header. A real host sets it from its own request.
+  const [status, setStatus] = useState<SaveStatus>("saved");
 
   return (
     <>
       <Editor
         data={page}
         config={{ components, renderers, uploadImage }}
-        onChange={(data) => storePage(window.localStorage, data)}
+        // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
+        onChangeDebounce={{ wait: 800, maxWait: 4000 }}
+        status={status}
+        onChange={(data) => {
+          setStatus("saving");
+          storePage(window.localStorage, data);
+          // A request to a back end takes a moment; this is that moment.
+          window.setTimeout(() => setStatus("saved"), 300);
+        }}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         headerActions={
           <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
