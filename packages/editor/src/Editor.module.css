@@ -8,21 +8,21 @@
    * cards. A host changes any of it with the public variables.
    */
   --_chrome: var(--midito-chrome, #ffffff);
-  --_workspace: var(--midito-workspace, #f4f4f5);
-  --_soft: var(--midito-soft, #f4f4f5);
+  --_workspace: var(--midito-workspace, #e4e4e7);
+  --_soft: var(--midito-soft, #ececef);
   --_canvas: var(--midito-canvas, #ffffff);
-  --_border: var(--midito-border, #d4d4d8);
+  --_border: var(--midito-border, #a9a9b2);
   /* Inputs and selects get a darker edge than dividers, so a field reads as a field. */
-  --_input: var(--midito-border-input, #8a8a92);
+  --_input: var(--midito-border-input, #71717a);
   --_text: var(--midito-text, #09090b);
-  --_focus: var(--midito-focus, #2563eb);
-  --_scrollbar: var(--midito-scrollbar, #a1a1aa);
-  --_muted: var(--midito-muted, #52525b);
-  --_danger: var(--midito-danger, #dc2626);
+  --_focus: var(--midito-focus, #1d4ed8);
+  --_scrollbar: var(--midito-scrollbar, #71717a);
+  --_muted: var(--midito-muted, #3f3f46);
+  --_danger: var(--midito-danger, #b91c1c);
   --_radius: var(--midito-radius, 6px);
   --_radius-card: var(--midito-radius-card, 8px);
   --_control: var(--midito-control, 2.25rem);
-  --_lift: 0 1px 2px rgb(0 0 0 / 0.05);
+  --_lift: 0 1px 2px rgb(0 0 0 / 0.12);
   /* The width of the left panel; it is nothing when the person shuts it. */
   --_start: 19rem;
 
