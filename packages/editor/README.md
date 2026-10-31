@@ -162,13 +162,14 @@ are refused, whatever the host returns. If the function throws, its message is s
 - The arrow keys move the selected blocks 1 px, 10 px with Shift; a run of presses is one undo step.
 - Enter on a block with words goes into them, like a double press.
 - Alt+click selects the block under the selected one, and again goes down through the layers.
-- While a block is dragged, lines show the distance in px to its neighbours and to the edges of
-  its parent.
+- Hold Alt to see the distance in px from the selected block to its neighbours and to the edges of
+  its parent, while dragging it or while pointing at another block of the same parent.
 
 ## Zoom
 
 The toolbar has zoom controls (25% to 200%) and a Fit button. Ctrl or Cmd with `+`, `-` and `0`
-zoom the canvas, not the browser, while the editor has focus. Zoom changes only how the page is
+zoom the canvas, not the browser, while the editor has focus. Ctrl or Cmd with the mouse wheel (or a
+pinch on a trackpad) zooms around the pointer. Zoom changes only how the page is
 shown: block sizes and positions stay in the page's own px.
 
 ## Align

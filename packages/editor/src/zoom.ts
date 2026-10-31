@@ -31,3 +31,14 @@ export function stageWidth(room: number, page: number, zoom: number): number {
 
 /** The text of a zoom, such as `75%`. */
 export const zoomText = (zoom: number) => `${Math.round(zoom * 100)}%`;
+
+/**
+ * The zoom after a turn of the wheel with Ctrl or Cmd held, or a pinch on a trackpad (which arrives
+ * the same way). The change is by a factor of the distance turned, so a small pinch is a small change
+ * and a notch of a mouse wheel is about a quarter. It is kept inside the range and rounded to 1%.
+ */
+export function zoomBy(zoom: number, deltaY: number): number {
+  if (!Number.isFinite(deltaY)) return zoom;
+  const next = zoom * Math.exp(-deltaY * 0.0025);
+  return Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next)) * 100) / 100;
+}

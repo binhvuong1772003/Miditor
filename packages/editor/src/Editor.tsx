@@ -102,7 +102,7 @@ import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
 import { ThemePanel } from "./ThemePanel";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
-import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomText } from "./zoom";
+import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -351,6 +351,11 @@ export function Editor({
   const [zoom, setZoom] = useState(1);
   const [stageBox, setStageBox] = useState({ room: 0, page: 0, height: 0 });
   const stage = useRef<HTMLDivElement>(null);
+  // The newest zoom for the wheel listener, and the point of the page under the pointer when a wheel
+  // zoom began, so the page can be scrolled to keep that point where the pointer is.
+  const zoomNow = useRef(zoom);
+  zoomNow.current = zoom;
+  const anchor = useRef<{ x: number; y: number; lx: number; ly: number } | null>(null);
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => () => debounced.flush(), [debounced]);
   useEffect(() => {
@@ -409,6 +414,23 @@ export function Editor({
   const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
   // A drag of the selected blocks is on, from the press to the release.
   const [dragging, setDragging] = useState(false);
+  // Whether Alt is held: the distances to neighbours are shown only then, as in Figma.
+  const [altHeld, setAltHeld] = useState(false);
+  useEffect(() => {
+    const note = (event: KeyboardEvent) => {
+      if (event.key === "Alt") setAltHeld(event.type === "keydown");
+    };
+    const clear = () => setAltHeld(false);
+    window.addEventListener("keydown", note);
+    window.addEventListener("keyup", note);
+    // The key can go up while the window is not looking.
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("keydown", note);
+      window.removeEventListener("keyup", note);
+      window.removeEventListener("blur", clear);
+    };
+  }, []);
   // The distances to what is next to the block being dragged, and where they are on the screen.
   const [measure, setMeasure] = useState<{
     gaps: Gap[];
@@ -422,6 +444,43 @@ export function Editor({
   const [marquee, setMarquee] = useState<Edges | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
+  // Ctrl or Cmd with the wheel (a pinch on a trackpad too) zooms the canvas, not the browser. A
+  // listener of its own: React's are passive, and this one has to stop the browser's page zoom.
+  useEffect(() => {
+    if (!workspace) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const box = stage.current?.getBoundingClientRect();
+      const was = zoomNow.current;
+      const next = zoomBy(was, event.deltaY);
+      if (next === was) return;
+      anchor.current = box
+        ? {
+            x: event.clientX,
+            y: event.clientY,
+            lx: (event.clientX - box.left) / was,
+            ly: (event.clientY - box.top) / was,
+          }
+        : null;
+      zoomNow.current = next;
+      setZoom(next);
+    };
+    workspace.addEventListener("wheel", onWheel, { passive: false });
+    return () => workspace.removeEventListener("wheel", onWheel);
+  }, [workspace]);
+
+  // After a wheel zoom the page is scrolled so the point that was under the pointer still is.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new zoom is the trigger, not a value read
+  useLayoutEffect(() => {
+    const at = anchor.current;
+    anchor.current = null;
+    const box = stage.current?.getBoundingClientRect();
+    if (!at || !box || !workspace) return;
+    workspace.scrollLeft += box.left + at.lx * zoom - at.x;
+    workspace.scrollTop += box.top + at.ly * zoom - at.y;
+  }, [zoom]);
+
   // What the zoomed stage needs to know: the room the workspace has, the width the page has at
   // 100% and the height of the stage before it is scaled. Measured again when any of them changes.
   useEffect(() => {
@@ -880,6 +939,38 @@ export function Editor({
     const box = parentElement.getBoundingClientRect();
     return {
       gaps: gapsAround(moving, others, { x: 0, y: 0, w: g.container.w, h: g.container.h }),
+      origin: {
+        left: box.left + parentElement.clientLeft * zoom,
+        top: box.top + parentElement.clientTop * zoom,
+        scale: zoom,
+      },
+    };
+  };
+
+  /**
+   * With Alt held and a block selected, the distances to the block the pointer rests on, when both
+   * are free blocks of the same parent: the same lines as while dragging, for measuring a layout
+   * without moving anything.
+   */
+  const measureBetween = () => {
+    if (!block || !selectedId || !hoverId || hoverId === selectedId) return null;
+    const parentNode = parentOf(data.root, selectedId);
+    const parentElement = block.parentElement;
+    if (!parentNode || !parentElement || parentOf(data.root, hoverId)?.id !== parentNode.id) {
+      return null;
+    }
+    if (picked.length > 0 || turnOf(data.root, parentNode.id, frame) !== 0) return null;
+    const own = findNode(data.root, selectedId);
+    const other = findNode(data.root, hoverId);
+    if (!own || !other || !isFreeNode(own) || !isFreeNode(other)) return null;
+    const container = { w: parentElement.clientWidth, h: parentElement.clientHeight };
+    const box = parentElement.getBoundingClientRect();
+    return {
+      gaps: gapsAround(
+        resolveRect(boxFor(own, frame), container),
+        [resolveRect(boxFor(other, frame), container)],
+        { x: 0, y: 0, w: container.w, h: container.h },
+      ),
       origin: {
         left: box.left + parentElement.clientLeft * zoom,
         top: box.top + parentElement.clientTop * zoom,
@@ -1395,6 +1486,9 @@ export function Editor({
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, boxFor(g.before, frame).rotation, handle, w, h));
 
+  // The distances to show, only with Alt held: those of a drag that is on, or else those to the block pointed at.
+  const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
+
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it
     <div
@@ -1782,7 +1876,7 @@ export function Editor({
             onCancel={() => setEditing(null)}
           />
         )}
-        {measure && <GapLabels gaps={measure.gaps} origin={measure.origin} />}
+        {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
         {menuAt && (
           <ContextMenu
             x={menuAt.x}

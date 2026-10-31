@@ -1,6 +1,15 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, ZOOM_STEPS, zoomText } from "./zoom";
+import {
+  fitZoom,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  stageWidth,
+  stepZoom,
+  ZOOM_STEPS,
+  zoomBy,
+  zoomText,
+} from "./zoom";
 
 describe("stepZoom", () => {
   it("goes to the next step and stops at the ends", () => {
@@ -55,5 +64,35 @@ describe("zoomText", () => {
   it("writes a percentage", () => {
     expect(zoomText(0.75)).toBe("75%");
     expect(zoomText(1)).toBe("100%");
+  });
+});
+
+describe("zoomBy", () => {
+  it("zooms in for a wheel turned away and out for one turned toward, and stays in range", () => {
+    expect(zoomBy(1, -100)).toBeGreaterThan(1);
+    expect(zoomBy(1, 100)).toBeLessThan(1);
+    expect(zoomBy(MAX_ZOOM, -1000)).toBe(MAX_ZOOM);
+    expect(zoomBy(MIN_ZOOM, 1000)).toBe(MIN_ZOOM);
+  });
+  it("a small turn is a small change, and nothing for a delta that is not a number", () => {
+    expect(Math.abs(zoomBy(1, -2) - 1)).toBeLessThan(0.02);
+    expect(zoomBy(1, Number.NaN)).toBe(1);
+    expect(zoomBy(1, 0)).toBe(1);
+  });
+  it("always stays inside the range and is rounded to 1%", () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: 0.25, max: 2, noNaN: true }),
+        fc.integer({ min: -2000, max: 2000 }),
+        (z, d) => {
+          const next = zoomBy(z, d);
+          return (
+            next >= MIN_ZOOM &&
+            next <= MAX_ZOOM &&
+            Math.abs(next * 100 - Math.round(next * 100)) < 1e-9
+          );
+        },
+      ),
+    );
   });
 });
