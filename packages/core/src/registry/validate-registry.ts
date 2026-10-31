@@ -57,6 +57,8 @@ function fieldIsBroken(field: unknown): boolean {
     case "color":
     case "image":
     case "link":
+    case "action":
+    case "payload":
       return false;
     default:
       return true;

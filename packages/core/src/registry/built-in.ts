@@ -110,6 +110,8 @@ export const builtInRegistry: Registry = {
     defaultProps: {
       label: "Button",
       href: "",
+      action: "",
+      payload: {},
       fill: "#111111",
       textColor: "#ffffff",
       shape: "rounded",
@@ -118,6 +120,13 @@ export const builtInRegistry: Registry = {
     fields: {
       label: { type: "text", label: "Label", maxLength: 100, group: "Content" },
       href: { type: "link", label: "Link", group: "Content" },
+      action: {
+        type: "action",
+        label: "Action",
+        group: "Content",
+        help: "What the page does when the button is pressed. It wins over the link.",
+      },
+      payload: { type: "payload", label: "Details", group: "Content" },
       fill: { type: "color", label: "Fill", group: "Style" },
       textColor: { type: "color", label: "Text colour", group: "Style" },
       shape: {

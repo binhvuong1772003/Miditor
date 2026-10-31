@@ -29,6 +29,14 @@ export type { ComponentDef, Field, Registry } from "./registry/types";
 export { type PageIssue, validatePage } from "./registry/validate-page";
 export { type PropIssue, validateProps } from "./registry/validate-props";
 export { type RegistryIssue, validateRegistry } from "./registry/validate-registry";
+export {
+  isActionName,
+  isPayload,
+  MAX_PAYLOAD_KEYS,
+  MAX_PAYLOAD_TEXT,
+  type Payload,
+  type PayloadValue,
+} from "./styles/action";
 export { isAngle, normalizeAngle, parseAngle } from "./styles/angle";
 export {
   BACKGROUND_POSITIONS,

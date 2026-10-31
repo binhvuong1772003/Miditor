@@ -1,3 +1,4 @@
+import { isActionName, isPayload } from "../styles/action";
 import { isImageUrl } from "../styles/image-url";
 import { isLinkUrl } from "../styles/link-url";
 import { isColorValue } from "../styles/theme";
@@ -31,6 +32,10 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
       return value === "" || isImageUrl(value) ? undefined : "type";
     case "link":
       return value === "" || isLinkUrl(value) ? undefined : "type";
+    case "action":
+      return value === "" || isActionName(value) ? undefined : "type";
+    case "payload":
+      return isPayload(value) ? undefined : "type";
   }
 }
 

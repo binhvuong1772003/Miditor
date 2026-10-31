@@ -42,7 +42,11 @@ type FieldKind =
   /** A stored picture address, see `isImageUrl`; an empty string means no picture yet. */
   | { type: "image"; label: string }
   /** A stored link address, see `isLinkUrl`; an empty string means no link yet. */
-  | { type: "link"; label: string };
+  | { type: "link"; label: string }
+  /** The name of an action the host handles, see `isActionName`; an empty string means none. */
+  | { type: "action"; label: string }
+  /** The values handed to the action, see `isPayload`. */
+  | { type: "payload"; label: string };
 
 /** One kind of block: what it is called, what it starts with and what a person may change on it. */
 export interface ComponentDef {
