@@ -1,3 +1,4 @@
+import { MAX_COORDINATE } from "../position/limits";
 import type { Axis, Size } from "../position/types";
 import { isPixelLength } from "../styles/pixel-length";
 import { isColorValue, isTheme } from "../styles/theme";
@@ -25,8 +26,6 @@ export function emptyPage(): PageData {
 const MAX_DEPTH = 100;
 const MAX_NODES = 20000;
 const MAX_PROP_DEPTH = 32;
-/** The largest offset or size a position may hold, in px or percent. */
-const MAX_COORDINATE = 1_000_000;
 
 /** True for an object made by `JSON.parse` or by a literal, not an array, a Date, a Map or a class instance. */
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
