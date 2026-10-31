@@ -159,6 +159,11 @@ are refused, whatever the host returns. If the function throws, its message is s
   the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels
   a drag, and letting go off the page adds nothing.
 - An empty page offers a first block.
+- The arrow keys move the selected blocks 1 px, 10 px with Shift; a run of presses is one undo step.
+- Enter on a block with words goes into them, like a double press.
+- Alt+click selects the block under the selected one, and again goes down through the layers.
+- While a block is dragged, lines show the distance in px to its neighbours and to the edges of
+  its parent.
 
 ## Zoom
 

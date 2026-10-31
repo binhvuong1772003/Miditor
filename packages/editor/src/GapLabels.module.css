@@ -1,0 +1,27 @@
+/* The measures drawn while a block is dragged: over the page and the handles, under the menus. */
+.layer {
+  --_gap: #e11d48;
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  pointer-events: none;
+}
+
+.line {
+  position: fixed;
+  background: var(--_gap);
+}
+
+/* Centred on the middle of its line, on a small pill so the number reads over the line. */
+.label {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--_gap);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}

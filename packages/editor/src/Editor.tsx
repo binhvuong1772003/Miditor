@@ -88,6 +88,8 @@ import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
+import { GapLabels } from "./GapLabels";
+import { type Gap, gapsAround } from "./gaps";
 import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
@@ -407,6 +409,11 @@ export function Editor({
   const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
   // A drag of the selected blocks is on, from the press to the release.
   const [dragging, setDragging] = useState(false);
+  // The distances to what is next to the block being dragged, and where they are on the screen.
+  const [measure, setMeasure] = useState<{
+    gaps: Gap[];
+    origin: { left: number; top: number; scale: number };
+  } | null>(null);
   // The menu of a right press on a block: where it opens. The blocks it acts on are the selected ones.
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
@@ -851,9 +858,40 @@ export function Editor({
     return { id, options: { from: frameOf(from), to: frameOf(hit) } };
   };
 
+  /**
+   * The distances from the dragged block to the blocks next to it and to the edges of its parent, in
+   * the parent's own px, with where the parent is on the screen. Nothing for several blocks, for a
+   * parent that is turned (its px are not upright on the screen) or when there is no parent.
+   */
+  const measureAround = (
+    g: NonNullable<typeof gesture.current>,
+    dist: { x: number; y: number },
+  ) => {
+    const parentNode = parentOf(data.root, g.before.id);
+    const parentElement = block?.parentElement;
+    if (!parentNode || !parentElement || g.others.length > 0) return null;
+    if (turnOf(data.root, parentNode.id, frame) !== 0) return null;
+    const moving = moveRect(g.start, dist, boxFor(g.before, frame).rotation);
+    const others = parentNode.children.flatMap((child) =>
+      child.id !== g.before.id && isFreeNode(child)
+        ? [resolveRect(boxFor(child, frame), g.container)]
+        : [],
+    );
+    const box = parentElement.getBoundingClientRect();
+    return {
+      gaps: gapsAround(moving, others, { x: 0, y: 0, w: g.container.w, h: g.container.h }),
+      origin: {
+        left: box.left + parentElement.clientLeft * zoom,
+        top: box.top + parentElement.clientTop * zoom,
+        scale: zoom,
+      },
+    };
+  };
+
   /** Tell the page where a drag would drop, so the block there is outlined. Only a changed target is stored. */
   const dragMove = (dist: { x: number; y: number } | null) => {
     const g = gesture.current;
+    setMeasure(g && dist ? measureAround(g, dist) : null);
     setDropId(g && dist ? (dropTarget(g, dist)?.id ?? null) : null);
   };
 
@@ -1744,6 +1782,7 @@ export function Editor({
             onCancel={() => setEditing(null)}
           />
         )}
+        {measure && <GapLabels gaps={measure.gaps} origin={measure.origin} />}
         {menuAt && (
           <ContextMenu
             x={menuAt.x}
