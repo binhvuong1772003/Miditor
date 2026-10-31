@@ -1,11 +1,15 @@
 import {
   type ComponentDef,
   type Field,
+  isPayload,
   type JsonValue,
+  MAX_PAYLOAD_TEXT,
+  type Payload,
   type Theme,
   validateProps,
 } from "@midito-kitchen/core";
-import { type CSSProperties, type KeyboardEvent, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "react";
+import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
@@ -19,6 +23,8 @@ export interface PropFieldsProps {
   onChange: (name: string, value: JsonValue) => void;
   /** The theme of the page, for a colour field to offer its colours. */
   theme?: Theme | undefined;
+  /** What a button can do. Without any, the fields for an action are not shown. */
+  actions?: readonly ActionDef[] | undefined;
 }
 
 /** The heading of the fields that name no section. */
@@ -45,6 +51,8 @@ const wide = (name: string, field: Field) =>
   field.type === "text" ||
   field.type === "link" ||
   field.type === "color" ||
+  field.type === "action" ||
+  field.type === "payload" ||
   (field.type === "select" && field.options.length === 3 && !isAlign(name, field));
 
 /**
@@ -52,10 +60,11 @@ const wide = (name: string, field: Field) =>
  * order it first appears. Within a section small fields sit two to a row and wide ones take a row.
  * A picture has no field here: it is added and changed on the canvas.
  */
-export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
+export function PropFields({ def, props, onChange, theme, actions }: PropFieldsProps) {
   const sections = new Map<string, { name: string; field: Field }[]>();
   for (const [name, field] of Object.entries(def.fields)) {
     if (field.type === "image") continue;
+    if ((field.type === "action" || field.type === "payload") && !actions?.length) continue;
     const section = field.group ?? DEFAULT_SECTION;
     sections.set(section, [...(sections.get(section) ?? []), { name, field }]);
   }
@@ -79,9 +88,10 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
           const { name, field } = cell;
           const stored = storedOf(def, props, name);
           // A new key when the stored value changes (undo, redo), so the typed text starts again from it.
+          // The details keep theirs: each value there follows the stored one itself, so focus stays while typing.
           return (
             <div
-              key={`${name}:${JSON.stringify(stored)}`}
+              key={field.type === "payload" ? name : `${name}:${JSON.stringify(stored)}`}
               className={`${styles.stack} ${wide(name, field) ? styles.span2 : ""}`}
             >
               <PropField
@@ -91,6 +101,8 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
                 stored={stored}
                 onChange={onChange}
                 theme={theme}
+                actions={actions}
+                action={storedOf(def, props, "action")}
               />
             </div>
           );
@@ -185,9 +197,12 @@ interface PropFieldProps {
   stored: JsonValue | undefined;
   onChange: PropFieldsProps["onChange"];
   theme: Theme | undefined;
+  actions: readonly ActionDef[] | undefined;
+  /** The action chosen on the same block, which decides what the payload asks for. */
+  action: JsonValue | undefined;
 }
 
-function PropField({ def, name, field, stored, onChange, theme }: PropFieldProps) {
+function PropField({ def, name, field, stored, onChange, theme, actions, action }: PropFieldProps) {
   const shown = stored === undefined ? "" : String(stored);
   const [text, setText] = useState(shown);
   /** Stores `value` when the kind accepts it; otherwise the field goes back to what is stored. */
@@ -223,6 +238,50 @@ function PropField({ def, name, field, stored, onChange, theme }: PropFieldProps
       >
         {field.label}
       </button>
+    );
+  }
+
+  if (field.type === "action") {
+    const current = typeof stored === "string" ? stored : "";
+    return (
+      <label className={styles.box} title={field.help}>
+        <span className={styles.tag}>{field.label}</span>
+        <select
+          value={current}
+          onChange={(event) => {
+            apply(event.target.value);
+            // The details of one action mean nothing to another.
+            if (isPayload(def.defaultProps.payload)) onChange("payload", {});
+          }}
+        >
+          <option value="">None</option>
+          {actions?.map((item) => (
+            <option key={item.name} value={item.name}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.type === "payload") {
+    const params = actions?.find((item) => item.name === action)?.params ?? [];
+    const values: Payload = isPayload(stored) ? stored : {};
+    return (
+      <>
+        {params.map((param) => (
+          <PayloadParam
+            key={param.name}
+            param={param}
+            value={values[param.name]}
+            onChange={(next) => {
+              const { [param.name]: _gone, ...rest } = values;
+              onChange("payload", next === undefined ? rest : { ...rest, [param.name]: next });
+            }}
+          />
+        ))}
+      </>
     );
   }
 
@@ -343,5 +402,57 @@ function ColourRow({
         }}
       />
     </div>
+  );
+}
+
+/** One value that the chosen action asks for: text, a number or a yes or no. An empty one is left out. */
+function PayloadParam({
+  param,
+  value,
+  onChange,
+}: {
+  param: ActionParam;
+  value: string | number | boolean | undefined;
+  onChange: (value: string | number | boolean | undefined) => void;
+}) {
+  const shown = value === undefined ? "" : String(value);
+  const [text, setText] = useState(shown);
+  // Undo, redo and a new action change the stored value from outside: the typed text starts again from it.
+  useEffect(() => setText(shown), [shown]);
+  if (param.type === "boolean") {
+    return (
+      <button
+        type="button"
+        className={styles.chip}
+        aria-pressed={value === true}
+        onClick={() => onChange(value === true ? undefined : true)}
+      >
+        {param.label}
+      </button>
+    );
+  }
+  const commit = () => {
+    const trimmed = text.trim();
+    if (trimmed === "") return onChange(undefined);
+    if (param.type === "number") {
+      const number = Number(trimmed);
+      return Number.isFinite(number)
+        ? onChange(number)
+        : setText(value === undefined ? "" : String(value));
+    }
+    onChange(trimmed.slice(0, MAX_PAYLOAD_TEXT));
+  };
+  return (
+    <label className={styles.box}>
+      <span className={styles.tag}>{param.label}</span>
+      <input
+        type={param.type === "number" ? "number" : "text"}
+        value={text}
+        maxLength={MAX_PAYLOAD_TEXT}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => event.key === "Enter" && commit()}
+      />
+    </label>
   );
 }

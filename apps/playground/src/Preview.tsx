@@ -16,6 +16,8 @@ const WIDTHS = [
 export function Preview() {
   const [page] = useState(() => loadPage(window.localStorage));
   const [width, setWidth] = useState(1100);
+  // What the host did with the last action. A real one would call its own code here.
+  const [message, setMessage] = useState("");
   return (
     <div className="preview">
       <header className="preview-bar">
@@ -37,9 +39,19 @@ export function Preview() {
           </button>
         ))}
       </header>
+      {message && (
+        <p className="preview-message" role="status">
+          Action: {message}
+        </p>
+      )}
       <div className="preview-stage">
         <div className="preview-box" style={{ inlineSize: `min(${width}px, 100%)` }}>
-          <Render data={page} responsive={{}} renderers={renderers} />
+          <Render
+            data={page}
+            responsive={{}}
+            renderers={renderers}
+            onAction={(action, payload) => setMessage(`${action} ${JSON.stringify(payload)}`)}
+          />
         </div>
       </div>
     </div>

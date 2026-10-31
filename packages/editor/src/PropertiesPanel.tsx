@@ -16,6 +16,7 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
+import type { ActionDef } from "./actions";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import { EffectsFields } from "./EffectsFields";
@@ -69,6 +70,8 @@ export interface PropertiesPanelProps {
   theme?: Theme | undefined;
   /** The host's way to upload a picture, for the background picture of a block. */
   uploadImage?: UploadImage | undefined;
+  /** What a button can do, for its Action field. */
+  actions?: readonly ActionDef[] | undefined;
   /** Play the entrances of the page once on the canvas. */
   onPlayMotion?: (() => void) | undefined;
   /** Drop the preview and show what is stored. */
@@ -105,6 +108,7 @@ export function PropertiesPanel({
   theme,
   uploadImage,
   onPlayMotion,
+  actions,
 }: PropertiesPanelProps) {
   const [tab, setTab] = useState<Tab>("design");
   // Whether the background is a colour or a picture; it starts as what the block has.
@@ -205,6 +209,7 @@ export function PropertiesPanel({
                 def={def}
                 props={propsFor(node, device)}
                 theme={theme}
+                actions={actions}
                 onChange={(name, value) => onCommit({ key: "prop", name, value })}
               />
             )}

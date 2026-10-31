@@ -72,6 +72,7 @@ import {
   useState,
 } from "react";
 import { AssetsPanel } from "./AssetsPanel";
+import type { ActionDef } from "./actions";
 import { BlocksPanel } from "./BlocksPanel";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
@@ -148,6 +149,12 @@ export interface EditorProps {
     components?: Registry;
     renderers?: Readonly<Record<string, Renderer>>;
     uploadImage?: UploadImage;
+    /**
+     * What a button can do. With any, a button's properties get an Action field to choose from them
+     * and a field for each value the action asks for; without, a button has only its link. The page
+     * stores the name and the values, and `<Render onAction>` hands them to the host.
+     */
+    actions?: readonly ActionDef[];
     /** The theme of a new page, for a host that has its own colours and fonts. */
     theme?: Theme;
   };
@@ -1330,6 +1337,7 @@ export function Editor({
           device={frame}
           onResetPhone={resetPhone}
           onPlayMotion={() => setPlaying(true)}
+          actions={config?.actions}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
           onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
