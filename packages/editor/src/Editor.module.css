@@ -231,9 +231,28 @@
   }
 }
 
+/* The boxes the canvas zoom scales: plain columns at 100%, so the page lays out as it always did. */
+.zoomOuter {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+.zoomBar {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-inline-end: 0.5rem;
+}
+
+.zoomValue {
+  min-inline-size: 3.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .page {
   flex: 1 0 auto;
-  inline-size: 100%;
+  inline-size: var(--_zoom-page, 100%);
   max-inline-size: var(--_page-desktop);
   min-block-size: 40rem;
   margin-inline: auto;

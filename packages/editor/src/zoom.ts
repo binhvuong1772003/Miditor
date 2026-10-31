@@ -10,10 +10,14 @@ export function stepZoom(zoom: number, direction: 1 | -1): number {
   return [...ZOOM_STEPS].reverse().find((step) => step < zoom - 1e-9) ?? zoom;
 }
 
-/** The zoom that makes a page of `page` px wide fill `room` px, kept inside the range and rounded to 1%. */
-export function fitZoom(room: number, page: number): number {
-  if (!(room > 0) || !(page > 0)) return 1;
-  return Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, room / page)) * 100) / 100;
+/**
+ * The zoom that makes the whole page, `page` px wide and `height` px tall, fit the `room` and
+ * `roomHeight` px the workspace has: the tighter of the two, kept inside the range and rounded to 1%.
+ */
+export function fitZoom(room: number, page: number, roomHeight: number, height: number): number {
+  if (![room, page, roomHeight, height].every((n) => n > 0 && Number.isFinite(n))) return 1;
+  const fit = Math.min(room / page, roomHeight / height);
+  return Math.round(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, fit)) * 100) / 100;
 }
 
 /**

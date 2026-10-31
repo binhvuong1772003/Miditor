@@ -12,6 +12,8 @@ export interface InlineEditProps {
   maxLength: number | undefined;
   /** How far the block is turned on the screen, parents included, in degrees. */
   rotation: number;
+  /** The zoom of the canvas: the box on the screen is this many times the block's own size. */
+  zoom: number;
   /** The edit ended with these words. */
   onDone: (value: string) => void;
   /** The edit was dropped. */
@@ -42,6 +44,7 @@ export function InlineEdit({
   multiline,
   maxLength,
   rotation,
+  zoom,
   onDone,
   onCancel,
 }: InlineEditProps) {
@@ -93,7 +96,7 @@ export function InlineEdit({
         width: element.offsetWidth,
         height: element.offsetHeight,
         boxSizing: "border-box",
-        transform: rotation === 0 ? "none" : `rotate(${rotation}deg)`,
+        transform: rotation === 0 && zoom === 1 ? "none" : `rotate(${rotation}deg) scale(${zoom})`,
         display: "flex",
         alignItems: "center",
         justifyContent: look.justifyContent,

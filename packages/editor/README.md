@@ -151,6 +151,12 @@ An address is accepted only if it is `https://` or `http://`, a path that starts
 short `data:` PNG, JPEG, GIF, WebP or AVIF. SVG, `javascript:` and addresses with spaces or quotes
 are refused, whatever the host returns. If the function throws, its message is shown to the person.
 
+## Zoom
+
+The toolbar has zoom controls (25% to 200%) and a Fit button. Ctrl or Cmd with `+`, `-` and `0`
+zoom the canvas, not the browser, while the editor has focus. Zoom changes only how the page is
+shown: block sizes and positions stay in the page's own px.
+
 ## Button actions
 
 A button can do something on your page when it is pressed. The page data holds only a name and a few

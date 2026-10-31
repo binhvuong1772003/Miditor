@@ -24,12 +24,16 @@ describe("stepZoom", () => {
 });
 
 describe("fitZoom", () => {
-  it("fills the room, within the range, and is 1 for nothing to measure", () => {
-    expect(fitZoom(500, 1000)).toBe(0.5);
-    expect(fitZoom(100, 1000)).toBe(MIN_ZOOM);
-    expect(fitZoom(9000, 100)).toBe(MAX_ZOOM);
-    expect(fitZoom(0, 1000)).toBe(1);
-    expect(fitZoom(500, Number.NaN)).toBe(1);
+  it("fits the tighter of the width and the height, within the range", () => {
+    expect(fitZoom(1000, 1000, 500, 1000)).toBe(0.5);
+    expect(fitZoom(500, 1000, 5000, 1000)).toBe(0.5);
+    expect(fitZoom(100, 1000, 100, 1000)).toBe(MIN_ZOOM);
+    expect(fitZoom(9000, 100, 9000, 100)).toBe(MAX_ZOOM);
+  });
+  it("is 1 when there is nothing to measure", () => {
+    expect(fitZoom(0, 1000, 500, 500)).toBe(1);
+    expect(fitZoom(500, Number.NaN, 500, 500)).toBe(1);
+    expect(fitZoom(500, 500, 500, 0)).toBe(1);
   });
 });
 

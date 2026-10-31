@@ -64,6 +64,7 @@ import { Render, type Renderer } from "@midito-kitchen/render";
 import {
   type ChangeEvent,
   type ClipboardEvent,
+  type CSSProperties,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -90,6 +91,7 @@ import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
 import { ThemePanel } from "./ThemePanel";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
+import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomText } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -340,6 +342,10 @@ export function Editor({
     const timer = setTimeout(() => setPlaying(false), 3500);
     return () => clearTimeout(timer);
   }, [playing]);
+  // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
+  const [zoom, setZoom] = useState(1);
+  const [stageBox, setStageBox] = useState({ room: 0, page: 0, height: 0 });
+  const stage = useRef<HTMLDivElement>(null);
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => () => debounced.flush(), [debounced]);
   useEffect(() => {
@@ -398,6 +404,34 @@ export function Editor({
   const [marquee, setMarquee] = useState<Edges | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
+  // What the zoomed stage needs to know: the room the workspace has, the width the page has at
+  // 100% and the height of the stage before it is scaled. Measured again when any of them changes.
+  useEffect(() => {
+    const box = stage.current;
+    if (!workspace || !box || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const look = getComputedStyle(workspace);
+      const room =
+        workspace.clientWidth - parseFloat(look.paddingLeft) - parseFloat(look.paddingRight);
+      const page = box.querySelector<HTMLElement>("[data-midito-render]");
+      const widest = page ? Number.parseFloat(getComputedStyle(page).maxWidth) : Number.NaN;
+      setStageBox((prev) => {
+        const next = {
+          room,
+          page: Number.isFinite(widest) ? Math.min(widest, room) : room,
+          height: box.offsetHeight,
+        };
+        return prev.room === next.room && prev.page === next.page && prev.height === next.height
+          ? prev
+          : next;
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [workspace]);
   const [block, setBlock] = useState<HTMLElement | null>(null);
   const gesture = useRef<{
     before: FreeNode;
@@ -643,8 +677,9 @@ export function Editor({
   const dropTarget = (g: NonNullable<typeof gesture.current>, dist: { x: number; y: number }) => {
     const from = block?.parentElement;
     if (onPhone || !block || !from || g.others.length > 0) return undefined;
-    const x = g.screen.left + g.screen.width / 2 + dist.x;
-    const y = g.screen.top + g.screen.height / 2 + dist.y;
+    // `dist` is in the page's own px; the screen is `zoom` times that.
+    const x = g.screen.left + g.screen.width / 2 + dist.x * zoom;
+    const y = g.screen.top + g.screen.height / 2 + dist.y * zoom;
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
     const under = block.ownerDocument
       .elementsFromPoint(x, y)
@@ -662,7 +697,7 @@ export function Editor({
       const box = el.getBoundingClientRect();
       return {
         size: { w: el.clientWidth, h: el.clientHeight },
-        center: { x: box.left + box.width / 2, y: box.top + box.height / 2 },
+        center: { x: (box.left + box.width / 2) / zoom, y: (box.top + box.height / 2) / zoom },
         rotation: turnOf(data.root, el.dataset.miditoId ?? "", frame),
       };
     };
@@ -1094,6 +1129,12 @@ export function Editor({
           return;
         }
         if (gesture.current) return;
+        if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
+          // The browser's own page zoom would scale the whole editor; here it is the canvas.
+          event.preventDefault();
+          setZoom((z) => (event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1)));
+          return;
+        }
         if (
           (event.key === "Delete" || event.key === "Backspace") &&
           !event.ctrlKey &&
@@ -1178,6 +1219,53 @@ export function Editor({
           </button>
         </div>
         <div className={styles.toolbarEnd}>
+          {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+          <div className={styles.zoomBar} role="group" aria-label="Zoom">
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label="Zoom out"
+              title="Zoom out (Ctrl or Cmd and -)"
+              disabled={zoom <= MIN_ZOOM}
+              onClick={() => setZoom((z) => stepZoom(z, -1))}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
+              title="Back to 100% (Ctrl or Cmd and 0)"
+              onClick={() => setZoom(1)}
+            >
+              {zoomText(zoom)}
+            </button>
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label="Zoom in"
+              title="Zoom in (Ctrl or Cmd and +)"
+              disabled={zoom >= MAX_ZOOM}
+              onClick={() => setZoom((z) => stepZoom(z, 1))}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost}`}
+              title="Make the whole page fit the canvas"
+              onClick={() => {
+                const look = workspace ? getComputedStyle(workspace) : undefined;
+                const roomHeight = workspace
+                  ? workspace.clientHeight -
+                    Number.parseFloat(look?.paddingTop ?? "0") -
+                    Number.parseFloat(look?.paddingBottom ?? "0")
+                  : 0;
+                setZoom(fitZoom(stageBox.room, stageBox.page, roomHeight, stageBox.height));
+              }}
+            >
+              Fit
+            </button>
+          </div>
           {headerActions}
           {onSave && (
             <button
@@ -1272,14 +1360,44 @@ export function Editor({
         onPointerDown={press}
         onDoubleClick={enter}
       >
-        <Render
-          data={shown}
-          device={frame}
-          links="inert"
-          motion={playing ? "live" : "off"}
-          renderers={config?.renderers}
-          className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
-        />
+        <div
+          className={styles.zoomOuter}
+          style={
+            zoom === 1
+              ? undefined
+              : {
+                  inlineSize: stageWidth(stageBox.room, stageBox.page, zoom) * zoom,
+                  blockSize: stageBox.height * zoom,
+                  marginInline: "auto",
+                }
+          }
+        >
+          <div
+            ref={stage}
+            className={styles.zoomOuter}
+            style={
+              zoom === 1
+                ? undefined
+                : ({
+                    inlineSize: stageWidth(stageBox.room, stageBox.page, zoom),
+                    // Its own height, not the scaled one the outer box has, or each measure would grow it.
+                    flex: "none",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "0 0",
+                    "--_zoom-page": `${stageBox.page}px`,
+                  } as CSSProperties)
+            }
+          >
+            <Render
+              data={shown}
+              device={frame}
+              links="inert"
+              motion={playing ? "live" : "off"}
+              renderers={config?.renderers}
+              className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
+            />
+          </div>
+        </div>
         {marquee && (
           <div
             aria-hidden="true"
@@ -1303,6 +1421,7 @@ export function Editor({
             multiline={editing.multiline}
             maxLength={editingLimit}
             rotation={turnOf(data.root, editing.id, frame)}
+            zoom={zoom}
             onDone={(value) => {
               setEditing(null);
               if (editingNode.props[editing.prop] !== value) {
