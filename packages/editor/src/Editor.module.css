@@ -238,6 +238,11 @@
   flex: 1 0 auto;
 }
 
+/* The outer box holds the notice of an empty page, which is laid over it. */
+.stageBox {
+  position: relative;
+}
+
 .zoomBar {
   display: flex;
   align-items: center;

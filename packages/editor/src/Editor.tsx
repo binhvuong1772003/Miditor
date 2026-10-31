@@ -84,6 +84,7 @@ import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
 import styles from "./Editor.module.css";
+import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { InlineEdit } from "./InlineEdit";
@@ -1510,7 +1511,7 @@ export function Editor({
         onDoubleClick={enter}
       >
         <div
-          className={styles.zoomOuter}
+          className={`${styles.zoomOuter} ${styles.stageBox}`}
           style={
             zoom === 1
               ? undefined
@@ -1545,6 +1546,16 @@ export function Editor({
               className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
             />
           </div>
+          {data.root.children.length === 0 && !editing && (
+            <EmptyPage
+              disabled={onPhone}
+              onAdd={() => addBlockOf("Container")}
+              onOpenBlocks={() => {
+                setTool("blocks");
+                setPanelOpen(true);
+              }}
+            />
+          )}
         </div>
         {marquee && (
           <div
