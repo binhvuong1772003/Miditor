@@ -19,6 +19,7 @@ export const builtInRegistry: Registry = {
   },
   Text: {
     category: "Basic",
+    inlineText: { prop: "text", multiline: true },
     icon: "text",
     keywords: ["heading", "title", "paragraph", "words"],
     label: "Text",
@@ -74,6 +75,7 @@ export const builtInRegistry: Registry = {
   /** A button that can lead somewhere: its label and where it goes are props, its looks are colours. */
   Button: {
     category: "Basic",
+    inlineText: { prop: "label" },
     icon: "button",
     keywords: ["link", "cta", "action"],
     label: "Button",

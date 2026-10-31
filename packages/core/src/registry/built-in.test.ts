@@ -106,6 +106,15 @@ describe("builtInRegistry", () => {
     }
   });
 
+  it("lets a text and a button be edited on the block: the words in lines, the label in one", () => {
+    expect(builtInRegistry.Text?.inlineText).toEqual({ prop: "text", multiline: true });
+    expect(builtInRegistry.Button?.inlineText).toEqual({ prop: "label" });
+    for (const [type, def] of Object.entries(builtInRegistry)) {
+      if (!def.inlineText) continue;
+      expect(def.fields[def.inlineText.prop]?.type, type).toBe("text");
+    }
+  });
+
   it("starts a text centred", () => {
     expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
   });

@@ -75,6 +75,17 @@ describe("validateRegistry", () => {
       { type: "Heart", key: "keywords", code: "meta" },
     ],
     [{ description: 5 }, { type: "Heart", key: "description", code: "meta" }],
+    [{ inlineText: { prop: "nope" } }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [{ inlineText: { prop: "n" } }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [{ inlineText: { prop: "color" } }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [
+      { inlineText: { prop: "t", multiline: "yes" } },
+      { type: "Heart", key: "inlineText", code: "meta" },
+    ],
+    [{ inlineText: "t" }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [{ inlineText: null }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [{ inlineText: { prop: 5 } }, { type: "Heart", key: "inlineText", code: "meta" }],
+    [{ inlineText: { prop: "toString" } }, { type: "Heart", key: "inlineText", code: "meta" }],
     [{ description: "x".repeat(201) }, { type: "Heart", key: "description", code: "meta" }],
   ])("reports %j", (change, issue) => {
     expect(validateRegistry(with_(change))).toEqual([issue]);
@@ -99,6 +110,21 @@ describe("validateRegistry", () => {
   ])("reports a broken field: %s", (_name, field) => {
     const out = validateRegistry(with_({ fields: { x: field }, defaultProps: {} }));
     expect(out).toEqual([{ type: "Heart", key: "x", code: "field" }]);
+  });
+
+  it("reports editing on the block that names a field when the kind has no fields at all", () => {
+    expect(
+      validateRegistry(with_({ inlineText: { prop: "t" }, fields: undefined, defaultProps: {} })),
+    ).toEqual([
+      { type: "Heart", key: "inlineText", code: "meta" },
+      { type: "Heart", code: "field" },
+    ]);
+  });
+
+  it("accepts a text field named for editing on the block, with or without lines", () => {
+    expect(validateRegistry(with_({ inlineText: { prop: "t" } }))).toEqual([]);
+    expect(validateRegistry(with_({ inlineText: { prop: "t", multiline: true } }))).toEqual([]);
+    expect(validateRegistry(with_({ inlineText: { prop: "t", multiline: false } }))).toEqual([]);
   });
 
   it("accepts the library details at their limits", () => {

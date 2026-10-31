@@ -7,7 +7,7 @@ import { validateProps } from "./validate-props";
  * about when there is one. `name`: the kind has an empty name or is `Page`. `label`: no label to show.
  * `canContain`, `flag`: a value that is not a boolean. `size`: not a positive width and height.
  * `default`: a default prop that `validateProps` refuses. `field`: a field that can never accept a value.
- * `meta`: a `category`, `icon`, `keywords` or `description` (the `key`) that is not what the library can use.
+ * `meta`: a `category`, `icon`, `keywords`, `description` or `inlineText` (the `key`) that is not what the library can use.
  */
 export interface RegistryIssue {
   type: string;
@@ -112,6 +112,22 @@ export function validateRegistry(registry: Registry): RegistryIssue[] {
       !(typeof def.description === "string" && def.description.length <= 200)
     ) {
       add("meta", "description");
+    }
+    if (def.inlineText !== undefined) {
+      const { inlineText: edit, fields: declared } = def;
+      const field =
+        isObject(edit) &&
+        typeof edit.prop === "string" &&
+        isObject(declared) &&
+        Object.hasOwn(declared, edit.prop)
+          ? declared[edit.prop]
+          : undefined;
+      const ok =
+        isObject(field) &&
+        field.type === "text" &&
+        isObject(edit) &&
+        (edit.multiline === undefined || typeof edit.multiline === "boolean");
+      if (!ok) add("meta", "inlineText");
     }
     const fields = isObject(def.fields) ? def.fields : {};
     if (!isObject(def.fields)) add("field");

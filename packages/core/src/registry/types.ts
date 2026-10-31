@@ -55,6 +55,12 @@ export interface ComponentDef {
   keywords?: readonly string[];
   /** One line about the kind, which the library may show and searches. */
   description?: string;
+  /**
+   * The prop that a person types on the block itself, by double-pressing it, instead of in a panel:
+   * the name of a `text` field of this kind. `multiline` lets Enter start a new line; without it Enter
+   * ends the edit. A kind without this has no editing on the block.
+   */
+  inlineText?: { prop: string; multiline?: boolean };
   /** Whether resizing keeps the width to height ratio, for a picture that must not be squashed. */
   lockRatio?: boolean;
 }
