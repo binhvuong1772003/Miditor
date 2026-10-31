@@ -96,18 +96,10 @@
   cursor: default;
 }
 
-.empty,
-.error {
+.empty {
   margin: 0;
   font-size: 0.75rem;
-}
-
-.empty {
   color: var(--_muted);
-}
-
-.error {
-  color: var(--_danger);
 }
 
 @media (prefers-reduced-motion: reduce) {

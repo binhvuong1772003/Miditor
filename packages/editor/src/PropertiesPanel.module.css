@@ -5,8 +5,7 @@
 }
 
 /* Outline buttons, the same shape as the toolbar's. */
-.reset,
-.delete {
+.reset {
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -32,30 +31,13 @@
   background: var(--_soft);
 }
 
-.delete {
-  border-color: color-mix(in srgb, var(--_danger) 45%, var(--_border));
-  color: var(--_danger);
-}
-
-.delete:hover:not(:disabled) {
-  /* A light tint: the red text on it keeps 4.5:1. */
-  background: color-mix(in srgb, var(--_danger) 4%, var(--_canvas));
-}
-
-.delete:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .reset,
-  .delete {
+  .reset {
     transition: none;
   }
 }
 
-.reset:focus-visible,
-.delete:focus-visible {
+.reset:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
 }

@@ -1,4 +1,4 @@
-/* The Assets panel: the upload button and a hint. Fields come from the properties panel's styles. */
+/* The Assets panel: the upload button. Fields come from the properties panel's styles. */
 .upload {
   appearance: none;
   display: flex;
@@ -29,10 +29,4 @@
 .upload:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
-}
-
-.hint {
-  margin: 0;
-  color: var(--_muted);
-  font-size: 0.8125rem;
 }

@@ -56,7 +56,7 @@ describe("runMigrations", () => {
     ...data,
     schemaVersion: (data.schemaVersion as number) + 1,
   });
-  const any = (value: unknown): value is PageData => true;
+  const any = (_value: unknown): _value is PageData => true;
   const log =
     (seen: number[]): Migration =>
     (data) => {
