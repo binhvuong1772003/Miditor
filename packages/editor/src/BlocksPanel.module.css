@@ -1,0 +1,117 @@
+/* The library of blocks, drawn after the kit's Blocks panel. The colours come from the editor root. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  block-size: var(--_control);
+  padding-inline: 0.75rem;
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  box-shadow: var(--_lift);
+  color: var(--_muted);
+}
+
+.search:focus-within {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.search input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+}
+
+.search input::placeholder {
+  color: #6b7280;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-inline-size: 0;
+  block-size: 4rem;
+  padding: 0.25rem;
+  border: 1px solid var(--_border);
+  border-radius: var(--_radius-card);
+  background: var(--_canvas);
+  color: var(--_text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: background-color 120ms ease-out;
+}
+
+.card:hover:not(:disabled) {
+  background: var(--_soft);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.card:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.empty,
+.error {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.empty {
+  color: var(--_muted);
+}
+
+.error {
+  color: var(--_danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

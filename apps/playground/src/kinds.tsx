@@ -3,7 +3,10 @@ import { type Registry, type Renderer, resolveColor } from "@midito-kitchen/edit
 /** A kind of the host's own, to try `config`: it keeps its ratio when resized. */
 export const components: Registry = {
   Heart: {
-    label: "Heart (demo)",
+    label: "Heart",
+    category: "From your website",
+    icon: "heart",
+    keywords: ["love", "like", "demo"],
     size: { w: 120, h: 100 },
     lockRatio: true,
     canContain: false,

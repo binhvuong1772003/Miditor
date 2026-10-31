@@ -67,6 +67,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { BlocksPanel } from "./BlocksPanel";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -273,14 +274,6 @@ export function Editor({
       console.error(`[midito] config.components.${type}${key ? `.${key}` : ""}: ${code}`);
     }
   }, [registry]);
-  // The kind the Add button makes. A kind that is no longer in the registry falls back to the first.
-  const [kind, setKind] = useState("Text");
-  // Kinds that are made another way (a group) are not offered.
-  const addable = useMemo(
-    () => Object.entries(registry).filter(([, def]) => def.hidden !== true),
-    [registry],
-  );
-  const addKind = addable.some(([type]) => type === kind) ? kind : (addable[0]?.[0] ?? "");
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the right shows the theme of the page instead of the selected block.
@@ -636,8 +629,6 @@ export function Editor({
     setPicked([]);
     setScopeId(parentId);
   };
-
-  const addBlock = () => addBlockOf(addKind);
 
   // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
   const latestAdd = useRef(addBlockOf);
@@ -1101,51 +1092,17 @@ export function Editor({
         </button>
       </nav>
       <aside className={`${styles.panel} ${styles.start}`} aria-label="Blocks">
-        <div className={styles.library}>
-          <select
-            className={styles.select}
-            aria-label="Kind of block to add"
-            disabled={onPhone}
-            value={addKind}
-            onChange={(event) => setKind(event.target.value)}
-          >
-            {addable.map(([type, def]) => (
-              <option key={type} value={type}>
-                {def.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.secondary}`}
-            disabled={onPhone}
-            title={onPhone ? "Switch to Desktop to add blocks" : "Add a block"}
-            onClick={addBlock}
-          >
-            <Icon name="plus" />
-            Add
-          </button>
-          {config?.uploadImage && (
-            <>
-              <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-              <button
-                type="button"
-                className={`${styles.button} ${styles.secondary}`}
-                disabled={onPhone || adding.busy}
-                title={onPhone ? "Switch to Desktop to add blocks" : "Upload a picture and add it"}
-                onClick={() => chooser.current?.click()}
-              >
-                <Icon name="img" />
-                {adding.busy ? "Uploading…" : "Upload image"}
-              </button>
-              {adding.error && (
-                <span role="alert" className={styles.addError}>
-                  {adding.error}
-                </span>
-              )}
-            </>
-          )}
-        </div>
+        <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
+        <BlocksPanel
+          registry={registry}
+          disabled={onPhone}
+          onAdd={(type) => addBlockOf(type)}
+          upload={
+            config?.uploadImage
+              ? { busy: adding.busy, error: adding.error, onChoose: () => chooser.current?.click() }
+              : undefined
+          }
+        />
       </aside>
       <section
         ref={setWorkspace}
