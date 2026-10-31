@@ -2,6 +2,7 @@ import {
   type Device,
   type JsonValue,
   type PageData,
+  type Payload,
   propsFor,
   type Theme,
   type TreeNode,
@@ -9,6 +10,7 @@ import {
 import type { CSSProperties, ReactNode } from "react";
 import { effectsCss, type Motion, motionOf, pageHasMotion, type Slot } from "./effects";
 import {
+  buttonActionStyle,
   buttonLabelStyle,
   buttonOf,
   buttonStyle,
@@ -71,6 +73,13 @@ export interface RenderProps {
    */
   responsive?: ResponsiveOptions | undefined;
   /**
+   * What a button with an action does when it is pressed: it is given the name of the action, its
+   * details and the id of the block. The data holds no code, so the host decides what each name
+   * means. Without it a button with an action falls back to its link, and in an editor
+   * (`links="inert"`) a button does nothing.
+   */
+  onAction?: ((action: string, payload: Payload, nodeId: string) => void) | undefined;
+  /**
    * Whether the motion in the data runs: `"live"` (the default) or `"off"`, which draws the same
    * page with none, for an editor that must not move under a person's hand. A style sheet comes
    * with a page that has motion.
@@ -93,6 +102,7 @@ interface NodeProps {
   theme: Theme | undefined;
   inert: boolean;
   motion: boolean;
+  onAction: RenderProps["onAction"];
   /** Where the node is among its brothers, for a stagger. */
   slot?: Slot | undefined;
 }
@@ -157,7 +167,7 @@ function onlyOn(style: CSSProperties, screen: Device): CSSProperties {
 }
 
 function RenderNode(all: NodeProps) {
-  const { node, isRoot, screen, only, renderers, theme, inert, motion, slot } = all;
+  const { node, isRoot, screen, only, renderers, theme, inert, motion, slot, onAction } = all;
   const responsive = screen === "responsive";
   if (responsive && !only && differsInside(node)) {
     return (
@@ -201,7 +211,7 @@ function RenderNode(all: NodeProps) {
           device,
           responsive,
           theme,
-          children: kids(node, screen, renderers, theme, inert, motion),
+          children: kids(node, screen, renderers, theme, inert, motion, onAction),
         })}
       </div>
     );
@@ -210,7 +220,20 @@ function RenderNode(all: NodeProps) {
   if (node.type === "Text") return <div {...common}>{textOf(props)}</div>;
   // A button is its label, a link when it has a safe address and the screen is not an editor's.
   if (node.type === "Button") {
-    const { label, href } = buttonOf(props);
+    const { label, href, action, payload } = buttonOf(props);
+    if (action && onAction && !inert) {
+      return (
+        <div {...common}>
+          <button
+            type="button"
+            style={buttonActionStyle}
+            onClick={() => onAction(action, payload, node.id)}
+          >
+            {label}
+          </button>
+        </div>
+      );
+    }
     return (
       <div {...common}>
         {href && !inert ? (
@@ -239,7 +262,7 @@ function RenderNode(all: NodeProps) {
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props, theme)} />}
-      {kids(node, screen, renderers, theme, inert, motion)}
+      {kids(node, screen, renderers, theme, inert, motion, onAction)}
     </div>
   );
 }
@@ -251,11 +274,13 @@ const kids = (
   theme: Theme | undefined,
   inert: boolean,
   motion: boolean,
+  onAction: RenderProps["onAction"],
 ) =>
   node.children.map((child, index) => (
     <RenderNode
       key={child.id}
       motion={motion}
+      onAction={onAction}
       slot={{ index, stagger: node.effects?.stagger ?? 0 }}
       node={child}
       isRoot={false}
@@ -278,6 +303,7 @@ export function Render({
   links,
   responsive,
   motion,
+  onAction,
   styleNonce,
 }: RenderProps) {
   const moving = motion !== "off" && pageHasMotion(data);
@@ -303,6 +329,7 @@ export function Render({
         theme={data.theme}
         inert={links === "inert"}
         motion={moving}
+        onAction={onAction}
       />
     </div>
   );

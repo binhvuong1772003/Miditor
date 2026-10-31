@@ -1,9 +1,12 @@
 import {
   type Device,
+  isActionName,
   isFontStack,
   isImageUrl,
   isLinkUrl,
+  isPayload,
   type JsonValue,
+  type Payload,
   PHONE_RATIO,
   resolveColor,
   type Theme,
@@ -129,11 +132,18 @@ const BUTTON_FILL = "#111111";
 const BUTTON_TEXT = "#ffffff";
 
 /** What a `Button` block shows: its label, and where it goes when that is a safe address. */
-export function buttonOf(props: Props): { label: string; href: string | undefined } {
-  const { label, href } = props;
+export function buttonOf(props: Props): {
+  label: string;
+  href: string | undefined;
+  action: string | undefined;
+  payload: Payload;
+} {
+  const { label, href, action, payload } = props;
   return {
     label: typeof label === "string" ? label : "",
     href: isLinkUrl(href) ? href : undefined,
+    action: isActionName(action) ? action : undefined,
+    payload: isPayload(payload) ? payload : {},
   };
 }
 
@@ -176,4 +186,15 @@ export const buttonLabelStyle: CSSProperties = {
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
+};
+
+/** The label of a button that runs an action: a real `<button>`, drawn like the label of a link. */
+export const buttonActionStyle: CSSProperties = {
+  ...buttonLabelStyle,
+  appearance: "none",
+  background: "transparent",
+  border: 0,
+  margin: 0,
+  font: "inherit",
+  cursor: "pointer",
 };
