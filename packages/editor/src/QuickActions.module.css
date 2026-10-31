@@ -10,6 +10,20 @@
   border: 1px solid var(--_border);
   border-radius: var(--_radius-card);
   box-shadow: 0 4px 16px rgb(31 35 40 / 0.16);
+  animation: bar-in 120ms ease-out;
+}
+
+@keyframes bar-in {
+  from {
+    opacity: 0;
+    translate: 0 -3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
 }
 
 .button {

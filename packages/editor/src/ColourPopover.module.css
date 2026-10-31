@@ -64,6 +64,17 @@
     0 2px 6px rgb(0 0 0 / 0.08);
   color: var(--_text);
   font-size: 0.8125rem;
+  /* It grows out of the colour box it opens from, a little, so it reads as attached to it. */
+  transform-origin: top left;
+  animation: pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -4px;
+  }
 }
 
 .head {
@@ -313,5 +324,6 @@
 @media (prefers-reduced-motion: reduce) {
   .pop {
     transition: none;
+    animation: none;
   }
 }
