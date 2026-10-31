@@ -1,0 +1,39 @@
+/* The name of a block on the corner of its frame: small, on top of the page, never in the way of a press. */
+.label {
+  position: fixed;
+  z-index: 40;
+  max-inline-size: 12rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  animation: label-in 120ms ease-out;
+}
+
+.selected {
+  background: var(--_focus);
+  color: #fff;
+}
+
+.hover {
+  background: color-mix(in srgb, var(--_focus) 14%, var(--_canvas));
+  color: var(--_focus);
+  border: 1px solid color-mix(in srgb, var(--_focus) 45%, transparent);
+}
+
+@keyframes label-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label {
+    animation: none;
+  }
+}

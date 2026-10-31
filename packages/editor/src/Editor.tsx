@@ -78,6 +78,7 @@ import {
 } from "react";
 import { AssetsPanel } from "./AssetsPanel";
 import type { ActionDef } from "./actions";
+import { BlockLabel } from "./BlockLabel";
 import { BlocksPanel } from "./BlocksPanel";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
@@ -444,6 +445,9 @@ export function Editor({
     [data, draft, frame, registry],
   );
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
+  // The block under the pointer, for its name tag. Its element comes from the last render.
+  const hoverNode = hoverId ? findNode(data.root, hoverId) : undefined;
+  const hoverElement = workspace && hoverId ? elementOf(workspace, hoverId) : null;
   // The kind of the selected node, or `undefined` for one nobody registered.
   const selectedDef =
     selectedNode && Object.hasOwn(registry, selectedNode.type)
@@ -582,6 +586,8 @@ export function Editor({
     if (active instanceof HTMLElement && isEditableTarget(active)) active.blur();
     if (draft) commitPatch(draft.id, draft);
     if (isMoveableLayer(target)) return;
+    // What is pressed gets its own frame and tag; the ones for hovering go until the pointer moves.
+    setHoverId(null);
     const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
@@ -1509,6 +1515,22 @@ export function Editor({
               }
             }}
             onCancel={() => setEditing(null)}
+          />
+        )}
+        {workspace && !editing && hoverId && hoverElement && hoverNode && (
+          <BlockLabel
+            target={hoverElement}
+            workspace={workspace}
+            text={registry[hoverNode.type]?.label ?? hoverNode.type}
+            tone="hover"
+          />
+        )}
+        {block && workspace && !editing && selectedNode && selectedId !== data.root.id && (
+          <BlockLabel
+            target={block}
+            workspace={workspace}
+            text={selectedDef?.label ?? selectedNode.type}
+            tone="selected"
           />
         )}
         {block && workspace && !editing && selectedId && selectedId !== data.root.id && (
