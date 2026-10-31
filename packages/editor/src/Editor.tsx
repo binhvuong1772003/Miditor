@@ -83,6 +83,7 @@ import { BlocksPanel } from "./BlocksPanel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
+import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
@@ -897,6 +898,62 @@ export function Editor({
     setScopeId(parentId);
   };
 
+  /**
+   * The block a card dragged from the library would land in at `point` on the screen: the topmost
+   * block under it that can hold this kind. Nothing when the pointer is off the page, or on the phone.
+   */
+  const landingFor = (kind: string, point: { x: number; y: number }) => {
+    const probe = newNode(registry, kind, "probe", { w: 1, h: 1 });
+    if (!probe || onPhone || !workspace) return undefined;
+    for (const element of document.elementsFromPoint(point.x, point.y)) {
+      if (!(element instanceof HTMLElement) || !workspace.contains(element)) continue;
+      const id = element.dataset.miditoId;
+      if (id !== undefined && canInsert(registry, data.root, id, probe)) return { id, element };
+    }
+    return undefined;
+  };
+
+  /** A card is over the page: outline the block it would land in (the page itself needs no outline). */
+  const dragFromLibrary = (kind: string, point: { x: number; y: number } | null) => {
+    const landing = point ? landingFor(kind, point) : undefined;
+    setDropId(landing && landing.id !== data.root.id ? landing.id : null);
+  };
+
+  /** A card was let go at `point`: a block of its kind is added there, centred on the pointer. */
+  const dropFromLibrary = (kind: string, point: { x: number; y: number }) => {
+    const landing = landingFor(kind, point);
+    if (!landing) return;
+    if (draft) commitPatch(draft.id, draft);
+    const { id: parentId, element } = landing;
+    const id = nextId(data.root);
+    const container = { w: element.clientWidth, h: element.clientHeight };
+    const made = newNode(registry, kind, id, container);
+    if (!made) return;
+    // A parent that is turned has no simple map from the screen: the block goes in its middle.
+    const node =
+      turnOf(data.root, parentId, frame) === 0
+        ? placeAt(
+            made,
+            container,
+            localPoint(
+              point,
+              // Not a spread: the numbers of a DOMRect are not its own properties.
+              {
+                left: element.getBoundingClientRect().left,
+                top: element.getBoundingClientRect().top,
+                clientLeft: element.clientLeft,
+                clientTop: element.clientTop,
+              },
+              zoom,
+            ),
+          )
+        : made;
+    setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
+    setSelectedId(id);
+    setPicked([]);
+    setScopeId(parentId);
+  };
+
   // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
   const latestAdd = useRef(addBlockOf);
   latestAdd.current = addBlockOf;
@@ -1495,7 +1552,13 @@ export function Editor({
           </>
         )}
         {tool === "blocks" && (
-          <BlocksPanel registry={registry} disabled={onPhone} onAdd={(type) => addBlockOf(type)} />
+          <BlocksPanel
+            registry={registry}
+            disabled={onPhone}
+            onAdd={(type) => addBlockOf(type)}
+            onDragMove={dragFromLibrary}
+            onDrop={dropFromLibrary}
+          />
         )}
       </aside>
       <section

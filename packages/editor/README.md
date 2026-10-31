@@ -151,6 +151,15 @@ An address is accepted only if it is `https://` or `http://`, a path that starts
 short `data:` PNG, JPEG, GIF, WebP or AVIF. SVG, `javascript:` and addresses with spaces or quotes
 are refused, whatever the host returns. If the function throws, its message is shown to the person.
 
+## On the canvas
+
+- Pointing at a block outlines it and names its kind; the selected block carries a solid tag.
+- Right-click a block for its menu: duplicate, delete, order in the stack, group and ungroup.
+- Drag a card from the Blocks panel onto the page to add it where you let go, into the block under
+  the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels
+  a drag, and letting go off the page adds nothing.
+- An empty page offers a first block.
+
 ## Zoom
 
 The toolbar has zoom controls (25% to 200%) and a Fit button. Ctrl or Cmd with `+`, `-` and `0`

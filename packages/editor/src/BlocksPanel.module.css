@@ -78,6 +78,7 @@
   line-height: 1.2;
   text-align: center;
   cursor: pointer;
+  user-select: none;
   overflow-wrap: anywhere;
   transition: background-color 120ms ease-out;
 }
@@ -106,4 +107,25 @@
   .card {
     transition: none;
   }
+}
+
+/* The card that goes with the pointer while a block is dragged out of the library. */
+.ghost {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--_focus);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  box-shadow: 0 8px 24px rgb(31 35 40 / 0.22);
+  color: var(--_text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  /* The middle of the card is on the pointer, so the drop point is where the card is. */
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.92;
 }
