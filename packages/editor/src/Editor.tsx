@@ -79,6 +79,7 @@ import { Icon } from "./icons";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
+import { QuickActions } from "./QuickActions";
 import { ThemePanel } from "./ThemePanel";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 
@@ -1081,77 +1082,6 @@ export function Editor({
           )}
         </div>
       </header>
-      <div className={styles.actions} role="toolbar" aria-label="Block actions">
-        <div className={styles.group}>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost}`}
-            disabled={onPhone || !selectedId || picked.length === 0}
-            title={
-              onPhone
-                ? "Switch to Desktop to group blocks"
-                : "Group the selected blocks (Ctrl+G). Select more with Shift."
-            }
-            onClick={groupSelected}
-          >
-            Group
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost}`}
-            disabled={onPhone || selectedNode?.type !== "Group"}
-            title="Ungroup (Shift+Ctrl+G)"
-            onClick={ungroupSelected}
-          >
-            Ungroup
-          </button>
-        </div>
-        <div className={styles.group}>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-            aria-label="Duplicate"
-            disabled={onPhone || !selectedId}
-            title={onPhone ? "Switch to Desktop to duplicate blocks" : "Duplicate (Ctrl+D)"}
-            onClick={duplicateSelected}
-          >
-            <Icon name="copy" size={18} />
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost} ${styles.icon} ${styles.danger}`}
-            aria-label="Delete"
-            disabled={onPhone || !selectedId || selectedId === data.root.id}
-            title={onPhone ? "Switch to Desktop to delete blocks" : "Delete (Del)"}
-            onClick={deleteBlock}
-          >
-            <Icon name="trash" size={18} />
-          </button>
-        </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div className={styles.group} role="group" aria-label="Order">
-          {(
-            [
-              ["front", "front", "Bring to front"],
-              ["forward", "up", "Bring forward"],
-              ["backward", "down", "Send backward"],
-              ["back", "back", "Send to back"],
-            ] as const
-          ).map(([to, icon, title]) => (
-            <button
-              key={to}
-              type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label={title}
-              disabled={onPhone || !selectedId || selectedId === data.root.id}
-              title={onPhone ? "Switch to Desktop to change the order" : title}
-              onClick={() => reorderSelected(to)}
-            >
-              <Icon name={icon} size={18} />
-            </button>
-          ))}
-        </div>
-      </div>
       <nav className={styles.rail} aria-label="Tools">
         <button
           type="button"
@@ -1250,6 +1180,23 @@ export function Editor({
               }
             }}
             onCancel={() => setEditing(null)}
+          />
+        )}
+        {block && workspace && !editing && selectedId && selectedId !== data.root.id && (
+          <QuickActions
+            target={block}
+            workspace={workspace}
+            disabled={onPhone}
+            canGroup={picked.length > 0}
+            canUngroup={selectedNode?.type === "Group"}
+            onForward={() => reorderSelected("forward")}
+            onBackward={() => reorderSelected("backward")}
+            onDuplicate={duplicateSelected}
+            onDelete={deleteBlock}
+            onGroup={groupSelected}
+            onUngroup={ungroupSelected}
+            onFront={() => reorderSelected("front")}
+            onBack={() => reorderSelected("back")}
           />
         )}
         <SelectionBox

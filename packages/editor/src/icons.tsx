@@ -60,6 +60,13 @@ const ICONS = {
   box: <rect x="2.5" y="2.5" width="11" height="11" rx="2" />,
   button: <rect x="2" y="5" width="12" height="6" rx="3" />,
   heart: <path d="M8 13.5S2.5 10 2.5 6.2A3 3 0 0 1 8 5a3 3 0 0 1 5.5 1.2C13.5 10 8 13.5 8 13.5z" />,
+  more: (
+    <>
+      <circle cx="3.5" cy="8" r="1" fill="currentColor" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" />
+      <circle cx="12.5" cy="8" r="1" fill="currentColor" />
+    </>
+  ),
   search: (
     <>
       <circle cx="7" cy="7" r="4.5" />

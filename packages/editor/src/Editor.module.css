@@ -25,9 +25,9 @@
   --_lift: 0 1px 2px rgb(0 0 0 / 0.05);
 
   display: grid;
-  /* The tool rail, the blocks, the canvas, the properties; the header and the block actions span them. */
+  /* The tool rail, the blocks, the canvas, the properties; the header spans them. */
   grid-template-columns: 5.5rem 19rem minmax(0, 1fr) 19rem;
-  grid-template-rows: 3.5rem 3.25rem minmax(0, 1fr);
+  grid-template-rows: 3.5rem minmax(0, 1fr);
   box-sizing: border-box;
   inline-size: 100%;
   block-size: 100%;
@@ -93,19 +93,6 @@
   font-weight: 700;
 }
 
-/* What can be done with the selected block. */
-.actions {
-  display: flex;
-  grid-column: 1 / -1;
-  align-items: center;
-  gap: 0.25rem;
-  padding-inline: 1rem;
-  background: var(--_chrome);
-  border-block-end: 1px solid var(--_border);
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
 /* The tools down the left edge, one at a time, the way the kit draws them. */
 .rail {
   display: flex;
@@ -151,19 +138,6 @@
 .railButton:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
-}
-
-.group {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-/* A thin rule between groups of controls. */
-.group + .group {
-  margin-inline-start: 0.5rem;
-  padding-inline-start: 0.5rem;
-  border-inline-start: 1px solid var(--_border);
 }
 
 /* The Save button, when there is one, goes to the far end. */
