@@ -359,7 +359,7 @@ select.input {
 /* The choice between a colour of the theme and a colour of the block's own, next to the colour. */
 .pick {
   flex: none;
-  inline-size: 6.5rem;
+  inline-size: 5.5rem;
 }
 
 .grid2 {
