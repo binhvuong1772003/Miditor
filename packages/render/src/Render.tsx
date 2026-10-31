@@ -19,7 +19,7 @@ import {
   textStyle,
 } from "./kind-style";
 import { isBuiltIn, nodeStyle } from "./node-style";
-import { type ResponsiveOptions, responsiveCss, splitStyles } from "./responsive";
+import { PHONE_VAR, type ResponsiveOptions, responsiveCss, splitStyles } from "./responsive";
 
 /** What a host's drawing function is given for one block of its own kind. */
 export interface RendererContext {
@@ -80,6 +80,8 @@ interface NodeProps {
   node: TreeNode;
   isRoot: boolean;
   screen: Screen;
+  /** Set when a block that looks different on the two screens is drawn once for each: which one this is. */
+  only?: Device;
   renderers: Readonly<Record<string, Renderer>> | undefined;
   theme: Theme | undefined;
   inert: boolean;
@@ -101,17 +103,76 @@ function styleOn(node: TreeNode, isRoot: boolean, device: Device, theme: Theme |
       : base;
 }
 
-function RenderNode({ node, isRoot, screen, renderers, theme, inert }: NodeProps) {
+/**
+ * The props that are drawn inside a block, not on its box, by built-in type: what has to be drawn
+ * twice when it differs between the screens, since a style cannot change it. The box (position,
+ * colours, text size) is switched with variables, so it is not here. A kind of the host has no list:
+ * any prop that differs counts.
+ */
+const INSIDE: Record<string, readonly string[]> = {
+  Text: ["text"],
+  Button: ["label", "href"],
+  Image: ["src", "alt", "fit"],
+  Shape: ["shape", "fill"],
+};
+
+/** Whether a block has something inside that is not the same on a phone and on a desktop. */
+function differsInside(node: TreeNode): boolean {
+  if (!node.phoneProps) return false;
+  const desktop = propsFor(node, "desktop");
+  const phone = propsFor(node, "phone");
+  const keys = isBuiltIn(node.type)
+    ? (INSIDE[node.type] ?? [])
+    : Object.keys({ ...desktop, ...phone });
+  return keys.some((key) => JSON.stringify(desktop[key]) !== JSON.stringify(phone[key]));
+}
+
+/**
+ * The style of one of the two drawings of a block, which is hidden on the other screen: its display
+ * is its own on its screen and `none` on the other, switched by a variable like the rest.
+ */
+function onlyOn(style: CSSProperties, screen: Device): CSSProperties {
+  const shown = String(style.display ?? "block");
+  return screen === "desktop"
+    ? {
+        ...style,
+        display: `var(--m-hide-d, ${shown})`,
+        ["--m-hide-d" as string]: `var(${PHONE_VAR}) none`,
+      }
+    : {
+        ...style,
+        display: `var(--m-show-p, none)`,
+        ["--m-show-p" as string]: `var(${PHONE_VAR}) ${shown}`,
+      };
+}
+
+function RenderNode(all: NodeProps) {
+  const { node, isRoot, screen, only, renderers, theme, inert } = all;
   const responsive = screen === "responsive";
-  const device: Device = screen === "phone" ? "phone" : "desktop";
+  if (responsive && !only && differsInside(node)) {
+    return (
+      <>
+        {(["desktop", "phone"] as const).map((side) => (
+          <RenderNode key={side} {...all} only={side} />
+        ))}
+      </>
+    );
+  }
+  const device: Device = only ?? (screen === "phone" ? "phone" : "desktop");
   // What the node has on this screen: on a phone the values set by hand for it come over the others.
   const props = propsFor(node, device);
   const common = {
     "data-midito-id": node.id,
     "data-midito-type": node.type,
-    style: responsive
-      ? splitStyles(styleOn(node, isRoot, "desktop", theme), styleOn(node, isRoot, "phone", theme))
-      : styleOn(node, isRoot, device, theme),
+    ...(only ? { "data-midito-screen": only } : {}),
+    style: only
+      ? onlyOn(styleOn(node, isRoot, only, theme), only)
+      : responsive
+        ? splitStyles(
+            styleOn(node, isRoot, "desktop", theme),
+            styleOn(node, isRoot, "phone", theme),
+          )
+        : styleOn(node, isRoot, device, theme),
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
   if (!isBuiltIn(node.type)) {

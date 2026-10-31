@@ -641,6 +641,142 @@ const Seen: Renderer = ({ device, responsive }) => (
   <b data-d={device} data-r={String(responsive)} />
 );
 
+const Colour: Renderer = ({ props, device, responsive }) => (
+  <b data-device={device} data-responsive={String(responsive)} data-c={String(props.color)} />
+);
+
+describe("<Render> responsive, a block that differs inside", () => {
+  const draw = (data: PageData) => renderToStaticMarkup(<Render data={data} responsive={{}} />);
+  const count = (markup: string, id: string) =>
+    (markup.match(new RegExp(`data-midito-id="${id}"`, "g")) ?? []).length;
+  const one = (
+    type: string,
+    props: Record<string, JsonValue>,
+    phoneProps?: Record<string, JsonValue>,
+  ) =>
+    page(
+      flow("root", "Page", [{ ...flow("n", type), props, ...(phoneProps ? { phoneProps } : {}) }]),
+    );
+
+  it("draws a text with other words for the phone twice, each one hidden on the other screen", () => {
+    const markup = draw(one("Text", { text: "Desktop words" }, { text: "Phone words" }));
+    expect(count(markup, "n")).toBe(2);
+    const desktop = tagOf(markup, "n");
+    expect(desktop).toContain('data-midito-screen="desktop"');
+    expect(desktop).toContain("display:var(--m-hide-d, flex)");
+    expect(desktop).toContain("--m-hide-d:var(--midito-phone) none");
+    expect(markup).toContain('data-midito-screen="phone"');
+    expect(markup).toContain("display:var(--m-show-p, none)");
+    expect(markup).toContain("--m-show-p:var(--midito-phone) flex");
+    expect(markup.indexOf("Desktop words")).toBeLessThan(markup.indexOf("Phone words"));
+  });
+
+  it("draws each drawing in the placement of its own screen", () => {
+    const markup = draw(one("Text", { text: "A", size: 40 }, { text: "B", size: 20 }));
+    expect(markup).toContain("font-size:40px");
+    expect(markup).toContain("font-size:20px");
+    expect(markup).not.toContain("--m-font-size");
+  });
+
+  it("draws a button, a picture and a shape twice when what is inside them differs", () => {
+    expect(count(draw(one("Button", { label: "Go" }, { label: "Tap" })), "n")).toBe(2);
+    expect(count(draw(one("Button", { label: "Go", href: "/a" }, { href: "/b" })), "n")).toBe(2);
+    expect(count(draw(one("Image", { src: "/a.png" }, { src: "/b.png" })), "n")).toBe(2);
+    expect(count(draw(one("Image", { src: "/a.png", alt: "a" }, { alt: "b" })), "n")).toBe(2);
+    expect(
+      count(draw(one("Image", { src: "/a.png", fit: "cover" }, { fit: "contain" })), "n"),
+    ).toBe(2);
+    expect(count(draw(one("Shape", { fill: "#111111" }, { fill: "#222222" })), "n")).toBe(2);
+    expect(count(draw(one("Shape", { shape: "ellipse" }, { shape: "triangle" })), "n")).toBe(2);
+  });
+
+  it("draws a block once when only what the style switches differs, or nothing does", () => {
+    expect(count(draw(one("Text", { text: "A", size: 40 }, { size: 20 })), "n")).toBe(1);
+    expect(
+      count(draw(one("Text", { text: "A", color: "#000000" }, { color: "#ffffff" })), "n"),
+    ).toBe(1);
+    expect(
+      count(draw(one("Button", { label: "Go", fill: "#111111" }, { fill: "#222222" })), "n"),
+    ).toBe(1);
+    expect(count(draw(one("Text", { text: "A" }, { text: "A" })), "n")).toBe(1);
+    expect(count(draw(one("Text", { text: "A" })), "n")).toBe(1);
+    expect(count(draw(one("Container", { x: 1 }, { x: 2 })), "n")).toBe(1);
+  });
+
+  it("draws a kind of the host twice when any prop differs, and tells it which screen each is", () => {
+    const data = page(
+      flow("root", "Page", [
+        { ...flow("n", "Heart"), props: { color: "red" }, phoneProps: { color: "green" } },
+      ]),
+    );
+    const markup = renderToStaticMarkup(
+      <Render data={data} responsive={{}} renderers={{ Heart: Colour }} />,
+    );
+    expect(count(markup, "n")).toBe(2);
+    expect(markup).toContain('data-device="desktop" data-responsive="true" data-c="red"');
+    expect(markup).toContain('data-device="phone" data-responsive="true" data-c="green"');
+  });
+
+  it("draws a kind of the host once when its props are the same on both screens", () => {
+    const data = page(
+      flow("root", "Page", [
+        { ...flow("n", "Heart"), props: { color: "red" }, phoneProps: { color: "red" } },
+      ]),
+    );
+    const markup = renderToStaticMarkup(
+      <Render data={data} responsive={{}} renderers={{ Heart: Colour }} />,
+    );
+    expect(count(markup, "n")).toBe(1);
+  });
+
+  it("takes a prop that is a list or an object to be the same when it holds the same things", () => {
+    const data = page(
+      flow("root", "Page", [
+        {
+          ...flow("n", "Heart"),
+          props: { items: [1, { a: 2 }] },
+          phoneProps: { items: [1, { a: 2 }] },
+        },
+      ]),
+    );
+    const markup = renderToStaticMarkup(
+      <Render data={data} responsive={{}} renderers={{ Heart: Colour }} />,
+    );
+    expect(count(markup, "n")).toBe(1);
+    const other = page(
+      flow("root", "Page", [
+        { ...flow("n", "Heart"), props: { items: [1] }, phoneProps: { items: [1, 2] } },
+      ]),
+    );
+    expect(
+      count(
+        renderToStaticMarkup(<Render data={other} responsive={{}} renderers={{ Heart: Colour }} />),
+        "n",
+      ),
+    ).toBe(2);
+  });
+
+  it("draws the blocks inside a block that is drawn twice, in each drawing", () => {
+    const data = page(
+      flow("root", "Page", [
+        {
+          ...flow("n", "Shape", [free("in")]),
+          props: { fill: "#111111" },
+          phoneProps: { fill: "#222222" },
+        },
+      ]),
+    );
+    expect(count(draw(data), "in")).toBe(2);
+  });
+
+  it("never draws a block twice on a page for one screen", () => {
+    const data = one("Text", { text: "A" }, { text: "B" });
+    expect(count(html(data), "n")).toBe(1);
+    expect(count(html(data, undefined, "phone"), "n")).toBe(1);
+    expect(html(data, undefined, "phone")).toContain(">B<");
+  });
+});
+
 describe("<Render> responsive", () => {
   const draw = (
     data: PageData,
