@@ -162,7 +162,7 @@ select.input {
   appearance: none;
   flex: 1;
   block-size: 1.875rem;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
   color: var(--_text);
@@ -175,6 +175,7 @@ select.input {
 .tab[aria-selected="true"],
 .tab[aria-pressed="true"] {
   background: var(--_canvas);
+  border-color: var(--_input);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
   font-weight: 600;
 }

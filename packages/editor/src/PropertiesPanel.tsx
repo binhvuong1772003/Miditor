@@ -129,12 +129,32 @@ export function PropertiesPanel({
     <div className={styles.content}>
       <div className={styles.heading}>
         <h2 className={styles.title}>{def?.label ?? node.type}</h2>
-        <p className={styles.meta}>
-          {def ? `${def.category ?? "Custom"} block` : "Unknown kind of block"}
-        </p>
+        {!def && <p className={styles.meta}>Unknown kind of block</p>}
       </div>
       <div className={styles.tabsBar}>
-        <div role="tablist" aria-label="Properties" className={styles.tabs}>
+        <div
+          role="tablist"
+          aria-label="Properties"
+          className={styles.tabs}
+          onKeyDown={(event) => {
+            const names: Tab[] = ["design", "advanced"];
+            const at = names.indexOf(tab);
+            const next =
+              event.key === "ArrowRight"
+                ? names[(at + 1) % names.length]
+                : event.key === "ArrowLeft"
+                  ? names[(at + names.length - 1) % names.length]
+                  : event.key === "Home"
+                    ? names[0]
+                    : event.key === "End"
+                      ? names[names.length - 1]
+                      : undefined;
+            if (!next) return;
+            event.preventDefault();
+            setTab(next);
+            document.getElementById(`${tabsId}-${next}`)?.focus();
+          }}
+        >
           {(
             [
               ["design", "Design"],
@@ -148,6 +168,7 @@ export function PropertiesPanel({
               id={`${tabsId}-${id}`}
               aria-selected={tab === id}
               aria-controls={`${tabsId}-panel`}
+              tabIndex={tab === id ? 0 : -1}
               className={styles.tab}
               onClick={() => setTab(id)}
             >
@@ -184,7 +205,7 @@ export function PropertiesPanel({
                 >
                   {(
                     [
-                      ["color", "Color"],
+                      ["color", "Colour"],
                       ["image", "Image"],
                     ] as const
                   ).map(([id, name]) => (
