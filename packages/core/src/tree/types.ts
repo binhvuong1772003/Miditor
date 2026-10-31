@@ -1,6 +1,7 @@
 import type { Axis, FreeBox, Size } from "../position/types";
 import type { BackgroundPosition, BackgroundRepeat, BackgroundSize } from "../styles/background";
 import type { NodeEffects } from "../styles/effects";
+import type { PageMeta } from "../styles/page-meta";
 import type { Theme } from "../styles/theme";
 
 /** Anything that survives `JSON.stringify` and `JSON.parse` unchanged. */
@@ -100,4 +101,6 @@ export interface PageData {
   root: TreeNode;
   /** The colours and fonts the blocks can share. Without it a page has only the colours it holds. */
   theme?: Theme;
+  /** The title, description and share picture of the page. Without it a page says nothing about itself. */
+  meta?: PageMeta;
 }

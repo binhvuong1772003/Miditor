@@ -77,6 +77,13 @@ export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { isImageUrl } from "./styles/image-url";
 export { isLinkUrl } from "./styles/link-url";
 export { minSize } from "./styles/min-size";
+export {
+  isPageMeta,
+  MAX_DESCRIPTION,
+  MAX_TITLE,
+  type PageMeta,
+  tidyMeta,
+} from "./styles/page-meta";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export {
   colorRef,

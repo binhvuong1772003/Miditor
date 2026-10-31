@@ -3,6 +3,7 @@ import type { Axis, Size } from "../position/types";
 import { isBackgroundPosition, isBackgroundRepeat, isBackgroundSize } from "../styles/background";
 import { isEffects } from "../styles/effects";
 import { isImageUrl } from "../styles/image-url";
+import { isPageMeta } from "../styles/page-meta";
 import { isPixelLength } from "../styles/pixel-length";
 import { isColorValue, isTheme } from "../styles/theme";
 import type { PageData, TreeNode } from "./types";
@@ -197,8 +198,10 @@ function isNode(value: unknown, depth: number, seen: Set<string>): value is Tree
  * store, a server), so nothing is assumed and nothing throws: anything else is simply `false`.
  */
 export function isPageData(value: unknown): value is PageData {
-  if (!isPlainObject(value) || !hasOnly(value, ["schemaVersion", "root", "theme"])) return false;
+  if (!isPlainObject(value) || !hasOnly(value, ["schemaVersion", "root", "theme", "meta"]))
+    return false;
   if ("theme" in value && !isTheme(value.theme)) return false;
+  if ("meta" in value && !isPageMeta(value.meta)) return false;
   if (value.schemaVersion !== SCHEMA_VERSION) return false;
   const root = value.root;
   if (!isPlainObject(root) || !isPlainObject(root.position) || root.position.mode !== "flow") {
