@@ -1265,7 +1265,7 @@ export function Editor({
           rect={selectedRect}
           onRect={setRect}
           theme={data.theme}
-          uploadImage={config?.uploadImage}
+          onOpenAssets={() => setTool("assets")}
         />
       </aside>
     </div>
