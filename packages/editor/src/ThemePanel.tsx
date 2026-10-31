@@ -25,8 +25,10 @@ export function ThemePanel({
   const colors = Object.entries(theme?.colors ?? {});
   return (
     <div className={styles.content}>
-      <h2 className={styles.title}>Theme</h2>
-      <p className={styles.meta}>Shared by the whole page</p>
+      <div className={styles.heading}>
+        <h2 className={styles.title}>Page theme</h2>
+        <p className={styles.meta}>Whole page</p>
+      </div>
       <h3 className={styles.section}>Colours</h3>
       {colors.map(([name, color]) => (
         <ColorRow
@@ -54,7 +56,7 @@ export function ThemePanel({
       ))}
       <p className={styles.hint}>
         A font has to be loaded by the page that holds the editor (Google Fonts, @font-face): this
-        only names it.
+        only names it. Changes here apply to the whole page.
       </p>
     </div>
   );
