@@ -1,7 +1,6 @@
 import { MAX_COORDINATE } from "../position/limits";
 import type { Axis, Size } from "../position/types";
 import { isBackgroundPosition, isBackgroundRepeat, isBackgroundSize } from "../styles/background";
-import { isEffects } from "../styles/effects";
 import { isImageUrl } from "../styles/image-url";
 import { isPageMeta } from "../styles/page-meta";
 import { isPixelLength } from "../styles/pixel-length";
@@ -120,7 +119,6 @@ const NODE_KEYS = [
   "type",
   "props",
   "styles",
-  "effects",
   "children",
   "position",
   "size",
@@ -184,7 +182,6 @@ function isNode(value: unknown, depth: number, seen: Set<string>): value is Tree
     (!("phoneProps" in value) ||
       (isPlainObject(value.phoneProps) && isJsonValue(value.phoneProps, 0))) &&
     isStyles(styles) &&
-    (!("effects" in value) || isEffects(value.effects)) &&
     hasValidPlacement(value) &&
     Array.isArray(children) &&
     children.every((child) => isNode(child, depth + 1, seen))

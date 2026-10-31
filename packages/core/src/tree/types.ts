@@ -1,6 +1,5 @@
 import type { Axis, FreeBox, Size } from "../position/types";
 import type { BackgroundPosition, BackgroundRepeat, BackgroundSize } from "../styles/background";
-import type { NodeEffects } from "../styles/effects";
 import type { PageMeta } from "../styles/page-meta";
 import type { Theme } from "../styles/theme";
 
@@ -56,8 +55,6 @@ interface NodeBase {
   phoneProps?: Record<string, JsonValue>;
   /** How the node looks. Always present, `{}` when nothing is set. */
   styles: NodeStyles;
-  /** How the node moves: on hover, when pressed, when it comes into view. Without it, not at all. */
-  effects?: NodeEffects;
   /** Always present, empty for a leaf. Which kinds may hold children is the registry's decision. */
   children: TreeNode[];
 }

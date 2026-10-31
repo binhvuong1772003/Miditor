@@ -8,7 +8,6 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import type { CSSProperties, ReactNode } from "react";
-import { effectsCss, type Motion, motionOf, pageHasMotion, type Slot } from "./effects";
 import {
   buttonActionStyle,
   buttonLabelStyle,
@@ -79,12 +78,6 @@ export interface RenderProps {
    * (`links="inert"`) a button does nothing.
    */
   onAction?: ((action: string, payload: Payload, nodeId: string) => void) | undefined;
-  /**
-   * Whether the motion in the data runs: `"live"` (the default) or `"off"`, which draws the same
-   * page with none, for an editor that must not move under a person's hand. A style sheet comes
-   * with a page that has motion.
-   */
-  motion?: "live" | "off" | undefined;
   /** A nonce for the style sheet of a responsive page, for a host whose content security policy asks for one. */
   styleNonce?: string | undefined;
 }
@@ -101,10 +94,7 @@ interface NodeProps {
   renderers: Readonly<Record<string, Renderer>> | undefined;
   theme: Theme | undefined;
   inert: boolean;
-  motion: boolean;
   onAction: RenderProps["onAction"];
-  /** Where the node is among its brothers, for a stagger. */
-  slot?: Slot | undefined;
 }
 
 /** The inline style of a node on one screen. */
@@ -167,7 +157,7 @@ function onlyOn(style: CSSProperties, screen: Device): CSSProperties {
 }
 
 function RenderNode(all: NodeProps) {
-  const { node, isRoot, screen, only, renderers, theme, inert, motion, slot, onAction } = all;
+  const { node, isRoot, screen, only, renderers, theme, inert, onAction } = all;
   const responsive = screen === "responsive";
   if (responsive && !only && differsInside(node)) {
     return (
@@ -181,12 +171,10 @@ function RenderNode(all: NodeProps) {
   const device: Device = only ?? (screen === "phone" ? "phone" : "desktop");
   // What the node has on this screen: on a phone the values set by hand for it come over the others.
   const props = propsFor(node, device);
-  const fx: Motion = motion ? motionOf(node, slot) : { attrs: {}, style: {} };
   const common = {
     "data-midito-id": node.id,
     "data-midito-type": node.type,
     ...(only ? { "data-midito-screen": only } : {}),
-    ...fx.attrs,
     style: {
       ...(only
         ? onlyOn(styleOn(node, isRoot, only, theme), only)
@@ -196,7 +184,6 @@ function RenderNode(all: NodeProps) {
               styleOn(node, isRoot, "phone", theme),
             )
           : styleOn(node, isRoot, device, theme)),
-      ...fx.style,
     },
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
@@ -211,7 +198,7 @@ function RenderNode(all: NodeProps) {
           device,
           responsive,
           theme,
-          children: kids(node, screen, renderers, theme, inert, motion, onAction),
+          children: kids(node, screen, renderers, theme, inert, onAction),
         })}
       </div>
     );
@@ -262,7 +249,7 @@ function RenderNode(all: NodeProps) {
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props, theme)} />}
-      {kids(node, screen, renderers, theme, inert, motion, onAction)}
+      {kids(node, screen, renderers, theme, inert, onAction)}
     </div>
   );
 }
@@ -273,15 +260,12 @@ const kids = (
   renderers: NodeProps["renderers"],
   theme: Theme | undefined,
   inert: boolean,
-  motion: boolean,
   onAction: RenderProps["onAction"],
 ) =>
-  node.children.map((child, index) => (
+  node.children.map((child) => (
     <RenderNode
       key={child.id}
-      motion={motion}
       onAction={onAction}
-      slot={{ index, stagger: node.effects?.stagger ?? 0 }}
       node={child}
       isRoot={false}
       screen={screen}
@@ -302,11 +286,9 @@ export function Render({
   renderers,
   links,
   responsive,
-  motion,
   onAction,
   styleNonce,
 }: RenderProps) {
-  const moving = motion !== "off" && pageHasMotion(data);
   const screen: Screen = responsive ? "responsive" : device === "phone" ? "phone" : "desktop";
   return (
     <div
@@ -320,7 +302,6 @@ export function Render({
       }}
     >
       {responsive && <style nonce={styleNonce}>{responsiveCss(responsive)}</style>}
-      {moving && <style nonce={styleNonce}>{effectsCss()}</style>}
       <RenderNode
         node={data.root}
         isRoot
@@ -328,7 +309,6 @@ export function Render({
         renderers={renderers}
         theme={data.theme}
         inert={links === "inert"}
-        motion={moving}
         onAction={onAction}
       />
     </div>

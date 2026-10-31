@@ -55,7 +55,6 @@ import {
   updateNode,
   validatePage,
   validateRegistry,
-  withEffects,
   withFreeBox,
   withLockRatio,
   withPhoneBox,
@@ -225,7 +224,6 @@ const applyPatch = (
   if (patch.key === "lockRatio") {
     return isFreeNode(node) ? withLockRatio(node, patch.value) : node;
   }
-  if (patch.key === "effects") return withEffects(node, patch.value);
   if (patch.key === "phoneLayout") {
     // The phone starts from the placement it has now, which is made from the desktop one.
     return isFreeNode(node) && !node.phone ? withPhoneBox(node, boxFor(node, "phone")) : node;
@@ -337,14 +335,6 @@ export function Editor({
       ),
     [wait, maxWait],
   );
-  // The motion of the page plays on the canvas only when asked for, for a moment, so blocks never
-  // move under a person's hand while they edit.
-  const [playing, setPlaying] = useState(false);
-  useEffect(() => {
-    if (!playing) return;
-    const timer = setTimeout(() => setPlaying(false), 3500);
-    return () => clearTimeout(timer);
-  }, [playing]);
   // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
   const [zoom, setZoom] = useState(1);
   const [stageBox, setStageBox] = useState({ room: 0, page: 0, height: 0 });
@@ -1443,7 +1433,6 @@ export function Editor({
               data={shown}
               device={frame}
               links="inert"
-              motion={playing ? "live" : "off"}
               renderers={config?.renderers}
               className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
             />
@@ -1526,7 +1515,6 @@ export function Editor({
           selectedCount={1 + picked.length}
           onAlign={alignSelected}
           onDistribute={distributeSelected}
-          onPlayMotion={() => setPlaying(true)}
           actions={config?.actions}
           def={selectedDef}
           onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}

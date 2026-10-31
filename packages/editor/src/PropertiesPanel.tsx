@@ -7,7 +7,6 @@ import {
   isFreeNode,
   type JsonValue,
   keepsRatio,
-  type NodeEffects,
   parseAngle,
   parseCoordinate,
   parsePixelLength,
@@ -20,7 +19,6 @@ import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react"
 import type { ActionDef } from "./actions";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
-import { EffectsFields } from "./EffectsFields";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
@@ -45,17 +43,8 @@ export type PhoneLayoutPatch = { key: "phoneLayout"; value: "separate" };
 /** One prop of the node, set by a field that its kind in the registry declares. */
 export type PropPatch = { key: "prop"; name: string; value: JsonValue };
 
-/** The motion of the node: what it does on hover and press and how it comes in. `undefined` takes it all away. */
-export type EffectsPatch = { key: "effects"; value: NodeEffects | undefined };
-
 /** One change to one node, from any field of the panel. */
-export type PanelPatch =
-  | StylePatch
-  | RotationPatch
-  | PropPatch
-  | LockRatioPatch
-  | PhoneLayoutPatch
-  | EffectsPatch;
+export type PanelPatch = StylePatch | RotationPatch | PropPatch | LockRatioPatch | PhoneLayoutPatch;
 
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
@@ -80,8 +69,6 @@ export interface PropertiesPanelProps {
   onDistribute?: ((axis: "x" | "y") => void) | undefined;
   /** What a button can do, for its Action field. */
   actions?: readonly ActionDef[] | undefined;
-  /** Play the entrances of the page once on the canvas. */
-  onPlayMotion?: (() => void) | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -126,7 +113,6 @@ export function PropertiesPanel({
   onRect,
   theme,
   uploadImage,
-  onPlayMotion,
   actions,
   selectedCount = 1,
   onAlign,
@@ -299,14 +285,6 @@ export function PropertiesPanel({
                   />
                 </div>
               </div>
-            </Section>
-            <Section title="Effects" closed>
-              <EffectsFields
-                effects={node.effects}
-                holdsBlocks={def?.canContain === true}
-                onChange={(value) => onCommit({ key: "effects", value })}
-                onPlay={() => onPlayMotion?.()}
-              />
             </Section>
           </Fragment>
         ) : (
