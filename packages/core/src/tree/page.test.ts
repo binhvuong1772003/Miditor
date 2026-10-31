@@ -453,6 +453,54 @@ describe("isPageData", () => {
     });
   });
 
+  describe("background picture", () => {
+    const withStyles = (styles: Record<string, unknown>) => broken((p) => (a(p).styles = styles));
+
+    it("accepts a picture with its size, position and repeat, also after JSON", () => {
+      const styles = {
+        backgroundImage: "https://e.co/a.png",
+        backgroundSize: "contain",
+        backgroundPosition: "top left",
+        backgroundRepeat: "repeat",
+      };
+      expect(isPageData(withStyles(styles))).toBe(true);
+      expect(isPageData(JSON.parse(JSON.stringify(withStyles(styles))))).toBe(true);
+      expect(isPageData(withStyles({ backgroundImage: "/a.png" }))).toBe(true);
+      expect(isPageData(withStyles({ backgroundImage: "data:image/png;base64,AAAA" }))).toBe(true);
+      expect(isPageData(withStyles({ backgroundSize: "auto" }))).toBe(true);
+    });
+
+    it("refuses a picture address that is not a safe one", () => {
+      for (const value of [
+        "",
+        "javascript:alert(1)",
+        "a.png",
+        "//e.co/a.png",
+        'https://e.co/a".png',
+        "https://e.co/a b.png",
+        "data:image/svg+xml;base64,AAAA",
+        "url(https://e.co/a.png)",
+        5,
+        null,
+      ]) {
+        expect(isPageData(withStyles({ backgroundImage: value })), String(value)).toBe(false);
+      }
+    });
+
+    it("refuses a size, a position or a repeat that is not one of the choices", () => {
+      for (const [key, value] of [
+        ["backgroundSize", "50%"],
+        ["backgroundSize", "Cover"],
+        ["backgroundPosition", "10px 20px"],
+        ["backgroundPosition", "left top"],
+        ["backgroundRepeat", "repeat-x"],
+        ["backgroundRepeat", true],
+      ] as const) {
+        expect(isPageData(withStyles({ [key]: value })), `${key} ${value}`).toBe(false);
+      }
+    });
+  });
+
   describe("phone props", () => {
     const withProps = (value: unknown) =>
       broken((p) => {

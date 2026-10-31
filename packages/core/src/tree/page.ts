@@ -1,5 +1,7 @@
 import { MAX_COORDINATE } from "../position/limits";
 import type { Axis, Size } from "../position/types";
+import { isBackgroundPosition, isBackgroundRepeat, isBackgroundSize } from "../styles/background";
+import { isImageUrl } from "../styles/image-url";
 import { isPixelLength } from "../styles/pixel-length";
 import { isColorValue, isTheme } from "../styles/theme";
 import type { PageData, TreeNode } from "./types";
@@ -96,6 +98,10 @@ const STYLE_CHECKS: Record<string, (value: unknown) => boolean> = {
   borderWidth: isPixelLength,
   borderColor: isColorValue,
   borderRadius: isPixelLength,
+  backgroundImage: isImageUrl,
+  backgroundSize: isBackgroundSize,
+  backgroundPosition: isBackgroundPosition,
+  backgroundRepeat: isBackgroundRepeat,
 };
 
 function isStyles(value: unknown): boolean {

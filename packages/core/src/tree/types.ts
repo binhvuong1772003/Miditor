@@ -1,4 +1,5 @@
 import type { Axis, FreeBox, Size } from "../position/types";
+import type { BackgroundPosition, BackgroundRepeat, BackgroundSize } from "../styles/background";
 import type { Theme } from "../styles/theme";
 
 /** Anything that survives `JSON.stringify` and `JSON.parse` unchanged. */
@@ -24,6 +25,17 @@ export interface NodeStyles {
   borderColor?: string;
   /** The radius of all four corners in px, from 0 to `MAX_PIXEL_LENGTH`. */
   borderRadius?: number;
+  /**
+   * A picture behind the block's content and over its fill colour: an address `isImageUrl` accepts.
+   * Nothing but an address can be set, so no CSS goes in with it.
+   */
+  backgroundImage?: string;
+  /** How the background picture is sized. Without it, `cover`. */
+  backgroundSize?: BackgroundSize;
+  /** Where the background picture sits. Without it, `center`. */
+  backgroundPosition?: BackgroundPosition;
+  /** Whether the background picture is tiled. Without it, `no-repeat`. */
+  backgroundRepeat?: BackgroundRepeat;
 }
 
 /** What every node has, whatever the way it is placed. */
