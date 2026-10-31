@@ -484,8 +484,13 @@ select.input {
   cursor: pointer;
 }
 
-.chip:hover {
+.chip:hover:not(:disabled) {
   background: var(--_soft);
+}
+
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .chip[aria-pressed="true"] {

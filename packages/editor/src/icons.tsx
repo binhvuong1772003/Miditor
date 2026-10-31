@@ -67,6 +67,14 @@ const ICONS = {
       <circle cx="12.5" cy="8" r="1" fill="currentColor" />
     </>
   ),
+  edgeLeft: <path d="M2.5 2v12M5.5 4.5h8M5.5 9.5h5" />,
+  edgeCenter: <path d="M8 2v12M3.5 4.5h9M5 9.5h6" />,
+  edgeRight: <path d="M13.5 2v12M2.5 4.5h8M5.5 9.5h5" />,
+  edgeTop: <path d="M2 2.5h12M4.5 5.5v8M9.5 5.5v5" />,
+  edgeMiddle: <path d="M2 8h12M4.5 3.5v9M9.5 5v6" />,
+  edgeBottom: <path d="M2 13.5h12M4.5 2.5v8M9.5 5.5v5" />,
+  spreadX: <path d="M2.5 2v12M13.5 2v12M6 5v6M10 5v6" />,
+  spreadY: <path d="M2 2.5h12M2 13.5h12M5 6h6M5 10h6" />,
   alignLeft: <path d="M2.5 4h11M2.5 8h7M2.5 12h9" />,
   alignCenter: <path d="M2.5 4h11M4.5 8h7M3.5 12h9" />,
   alignRight: <path d="M2.5 4h11M6.5 8h7M4.5 12h9" />,

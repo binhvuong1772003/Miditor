@@ -157,6 +157,13 @@ The toolbar has zoom controls (25% to 200%) and a Fit button. Ctrl or Cmd with `
 zoom the canvas, not the browser, while the editor has focus. Zoom changes only how the page is
 shown: block sizes and positions stay in the page's own px.
 
+## Align
+
+The Advanced tab has an Align section. With several blocks selected, the six buttons line them up
+with each other, and Across and Down (three or more blocks) make the gaps between them equal. With
+one block selected it lines up with its parent. Blocks that are turned are lined up by the box they
+would have without the turn.
+
 ## Button actions
 
 A button can do something on your page when it is pressed. The page data holds only a name and a few

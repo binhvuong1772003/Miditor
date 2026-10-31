@@ -1,5 +1,7 @@
 import {
+  type AlignTo,
   type AxisAnchor,
+  alignRects,
   boxFor,
   builtInRegistry,
   type Container,
@@ -9,6 +11,7 @@ import {
   colorRef,
   copyNodes,
   type Device,
+  distributeRects,
   duplicateNode,
   emptyPage,
   type Frame,
@@ -864,6 +867,54 @@ export function Editor({
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
 
+  /**
+   * The selected blocks moved by `make`, which is given where they are in their parent and answers
+   * where they should be. One history step. Only free blocks have a place to change.
+   */
+  const arrange = (make: (rects: Rect[], container: { w: number; h: number }) => Rect[]) => {
+    const container = parentSize();
+    if (!selectedId || selectedId === data.root.id || !container) return;
+    if (draft) commitPatch(draft.id, draft);
+    const ids = [selectedId, ...picked];
+    setData((prev) => {
+      const nodes = ids.flatMap((id) => {
+        const node = findNode(prev.root, id);
+        return node && isFreeNode(node) ? [node] : [];
+      });
+      if (nodes.length === 0) return prev;
+      const next = make(
+        nodes.map((node) => resolveRect(boxFor(node, frame), container)),
+        container,
+      );
+      const root = nodes.reduce(
+        (tree, node, i) =>
+          updateNode(tree, node.id, (current) =>
+            isFreeNode(current) && next[i]
+              ? withBoxFor(current, frame, inferBox(boxFor(current, frame), next[i], container))
+              : current,
+          ),
+        prev.root,
+      );
+      return root === prev.root ? prev : { ...prev, root };
+    });
+  };
+
+  /** Line the selected blocks up with each other, or one block with its parent. */
+  const alignSelected = (to: AlignTo) =>
+    arrange((rects, container) =>
+      alignRects(
+        rects,
+        to,
+        picked.length === 0 ? { x: 0, y: 0, w: container.w, h: container.h } : undefined,
+      ),
+    );
+
+  /** Equal gaps between three or more selected blocks. */
+  const distributeSelected = (axis: "x" | "y") => {
+    if (picked.length < 2) return;
+    arrange((rects) => distributeRects(rects, axis));
+  };
+
   /** The selected block one place or all the way up or down among its siblings. Only the main one. */
   const reorderSelected = (to: Reorder) => {
     if (onPhone || !selectedId || selectedId === data.root.id) return;
@@ -1472,6 +1523,9 @@ export function Editor({
           node={selectedNode}
           device={frame}
           onResetPhone={resetPhone}
+          selectedCount={1 + picked.length}
+          onAlign={alignSelected}
+          onDistribute={distributeSelected}
           onPlayMotion={() => setPlaying(true)}
           actions={config?.actions}
           def={selectedDef}
