@@ -1,0 +1,183 @@
+/* The box that opens the colour popover, and the popover itself. The colours come from the editor. */
+.field {
+  position: relative;
+  flex: 1;
+  padding-inline-end: 0.25rem;
+}
+
+.trigger {
+  appearance: none;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.swatch {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: 1px solid var(--_border);
+  border-radius: 4px;
+}
+
+/* No colour: a diagonal line through an empty swatch. */
+.empty {
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    var(--_input) calc(50% - 1px),
+    var(--_input) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+.pop {
+  position: fixed;
+  z-index: 50;
+  box-sizing: border-box;
+  inline-size: 16.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--_border);
+  border-radius: 12px;
+  background: var(--_canvas);
+  box-shadow:
+    0 8px 24px rgb(0 0 0 / 0.12),
+    0 2px 6px rgb(0 0 0 / 0.08);
+  color: var(--_text);
+  font-size: 0.8125rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 500;
+}
+
+.close {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--_muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--_soft);
+  color: var(--_text);
+}
+
+.section {
+  margin: 0 0 0.375rem;
+  color: var(--_muted);
+  font-size: 0.75rem;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dot {
+  appearance: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--_input);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dot[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--_canvas),
+    0 0 0 3.5px var(--_text);
+}
+
+.close:focus-visible,
+.dot:focus-visible,
+.action:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0 -0.75rem -0.75rem;
+  padding: 0.375rem;
+  border-block-start: 1px solid var(--_border);
+}
+
+.action {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  block-size: 2rem;
+  padding: 0 0.375rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--_soft);
+}
+
+.wheel {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: 50%;
+  background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+
+/* The system picker is opened by the button above; the input only anchors it. */
+.native {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop {
+    transition: none;
+  }
+}

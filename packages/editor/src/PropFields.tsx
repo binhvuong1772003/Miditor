@@ -2,15 +2,14 @@ import {
   type ComponentDef,
   type Field,
   type JsonValue,
-  resolveColor,
   type Theme,
   validateProps,
 } from "@midito-kitchen/core";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useState } from "react";
+import { ColourPopover } from "./ColourPopover";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
-import { ThemePicker } from "./ThemePicker";
 
 export interface PropFieldsProps {
   def: ComponentDef;
@@ -229,7 +228,7 @@ function PropField({ def, name, field, stored, onChange, theme }: PropFieldProps
   );
 }
 
-/** A colour: the swatch to pick one, with its name, and the colours of the theme to choose from. */
+/** A colour: a box that opens the picker with the colours of the theme to choose from. */
 function ColourRow({
   label,
   help,
@@ -243,31 +242,18 @@ function ColourRow({
   theme: Theme | undefined;
   apply: (value: JsonValue) => void;
 }) {
-  const value = typeof stored === "string" ? stored : "";
-  const picker = useRef<HTMLInputElement>(null);
-  // The swatch fires on every move of the picker; only its own `change` says the pick is done.
-  const latest = useRef(apply);
-  latest.current = apply;
-  useEffect(() => {
-    const element = picker.current;
-    if (!element) return;
-    const done = () => latest.current(element.value);
-    element.addEventListener("change", done);
-    return () => element.removeEventListener("change", done);
-  }, []);
+  const value = typeof stored === "string" && stored !== "" ? stored : undefined;
   return (
     <div className={styles.row}>
-      <label className={`${styles.box} ${styles.colour}`} title={help}>
-        <input
-          ref={picker}
-          type="color"
-          className={styles.dot}
-          aria-label={`${label} picker`}
-          defaultValue={resolveColor(value, theme) ?? "#000000"}
-        />
-        <span className={styles.tag}>{label}</span>
-      </label>
-      <ThemePicker theme={theme} stored={value === "" ? undefined : value} onPick={apply} />
+      <ColourPopover
+        label={label}
+        hint={help}
+        theme={theme}
+        stored={value}
+        onCommit={(next) => {
+          if (next !== undefined) apply(next);
+        }}
+      />
     </div>
   );
 }

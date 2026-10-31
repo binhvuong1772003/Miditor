@@ -8,21 +8,18 @@ import {
   keepsRatio,
   parseAngle,
   parseCoordinate,
-  parseHexColor,
   parsePixelLength,
   propsFor,
   type Rect,
-  resolveColor,
   type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
-import { Fragment, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
-import { Icon } from "./icons";
+import { ColourPopover } from "./ColourPopover";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { Section } from "./Section";
-import { ThemePicker } from "./ThemePicker";
 import type { UploadImage } from "./upload-image";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
@@ -207,8 +204,8 @@ export function PropertiesPanel({
               {backgroundKind === "color" ? (
                 <ColourField
                   label="Fill"
-                  pickerLabel="Fill colour picker"
-                  hint="Hex colour, like #d5dae3. Leave it empty for no fill."
+                  noneLabel="No fill"
+                  hint="The colour that fills the block. Clear it for no fill."
                   {...colour("background")}
                 />
               ) : (
@@ -234,8 +231,8 @@ export function PropertiesPanel({
                 <div className={styles.span2}>
                   <ColourField
                     label="Colour"
-                    pickerLabel="Border colour picker"
-                    hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
+                    noneLabel="No border colour"
+                    hint="The colour of the border. Clear it to draw the border in the text colour."
                     {...colour("borderColor")}
                   />
                 </div>
@@ -456,55 +453,21 @@ function useTextField<T>(
 }
 
 function ColourField({
-  pickerLabel,
+  noneLabel,
   theme,
   ...field
-}: FieldProps<string> & { pickerLabel: string; theme: Theme | undefined }) {
-  const { label, hint, stored, onPreview, onCommit } = field;
-  const picker = useRef<HTMLInputElement>(null);
-  // The picker's own `change` event is the moment the choice is final, and the one handler it needs
-  // must see the latest callback.
-  const commitRef = useRef(onCommit);
-  commitRef.current = onCommit;
-
-  // React's `onChange` on a colour input fires on every `input` event while the picker is dragged;
-  // only the native `change` event says the pick is done.
-  useEffect(() => {
-    const element = picker.current;
-    if (!element) return;
-    const done = () => commitRef.current(parseHexColor(element.value));
-    element.addEventListener("change", done);
-    return () => element.removeEventListener("change", done);
-  }, []);
-
+}: FieldProps<string> & { noneLabel: string; theme: Theme | undefined }) {
+  const { label, hint, stored, onCommit } = field;
   return (
     <div className={styles.row}>
-      <label className={`${styles.box} ${styles.colour}`} title={hint !== "" ? hint : undefined}>
-        <input
-          ref={picker}
-          type="color"
-          className={styles.dot}
-          aria-label={pickerLabel}
-          value={resolveColor(stored, theme) ?? "#ffffff"}
-          onChange={(event) => onPreview(event.target.value)}
-        />
-        <span className={styles.tag}>{label}</span>
-        {stored !== undefined && (
-          <button
-            type="button"
-            className={styles.clear}
-            aria-label={`Clear ${label.toLowerCase()}`}
-            title="Take the colour away"
-            onClick={(event) => {
-              event.preventDefault();
-              onCommit(undefined);
-            }}
-          >
-            <Icon name="x" size={14} />
-          </button>
-        )}
-      </label>
-      <ThemePicker theme={theme} stored={stored} onPick={(value) => onCommit(value)} />
+      <ColourPopover
+        label={label}
+        hint={hint}
+        theme={theme}
+        stored={stored}
+        noneLabel={noneLabel}
+        onCommit={onCommit}
+      />
     </div>
   );
 }

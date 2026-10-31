@@ -391,12 +391,6 @@ select.input {
   min-inline-size: 0;
 }
 
-/* The choice between a colour of the theme and a colour of the block's own, next to the colour. */
-.pick {
-  flex: none;
-  inline-size: 5.5rem;
-}
-
 .grid2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -510,31 +504,6 @@ select.input {
 }
 
 /* A colour: the swatch sits inside the box with the name, and the whole box opens the picker. */
-.dot {
-  flex: none;
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-  padding: 0;
-  border: 1px solid var(--_border);
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.dot::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.dot::-webkit-color-swatch {
-  border: 0;
-  border-radius: 3px;
-}
-
-.dot::-moz-color-swatch {
-  border: 0;
-  border-radius: 3px;
-}
-
 .clear {
   appearance: none;
   display: inline-flex;
@@ -560,9 +529,4 @@ select.input {
 .clear:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
-}
-
-.colour {
-  flex: 1;
-  cursor: pointer;
 }
