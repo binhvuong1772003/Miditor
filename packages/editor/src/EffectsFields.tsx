@@ -127,24 +127,28 @@ export function EffectsFields({ effects = {}, holdsBlocks, onChange, onPlay }: E
               </button>
             ))}
           </div>
-          <NumberBox
-            label="Duration"
-            unit="ms"
-            hint="How long it takes. Not used for an entrance on scroll."
-            stored={enter.duration ?? DEFAULT_DURATION}
-            min={MIN_DURATION}
-            max={MAX_DURATION}
-            onCommit={(duration) => setEnter({ ...enter, duration })}
-          />
-          <NumberBox
-            label="Delay"
-            unit="ms"
-            hint="How long it waits before it starts."
-            stored={enter.delay ?? 0}
-            min={0}
-            max={MAX_DELAY}
-            onCommit={(delay) => setEnter({ ...enter, delay })}
-          />
+          <div className={styles.span2}>
+            <NumberBox
+              label="Duration"
+              unit="ms"
+              hint="How long it takes. Not used for an entrance on scroll."
+              stored={enter.duration ?? DEFAULT_DURATION}
+              min={MIN_DURATION}
+              max={MAX_DURATION}
+              onCommit={(duration) => setEnter({ ...enter, duration })}
+            />
+          </div>
+          <div className={styles.span2}>
+            <NumberBox
+              label="Delay"
+              unit="ms"
+              hint="How long it waits before it starts."
+              stored={enter.delay ?? 0}
+              min={0}
+              max={MAX_DELAY}
+              onCommit={(delay) => setEnter({ ...enter, delay })}
+            />
+          </div>
           <div className={styles.span2}>
             <label className={styles.box} title="The pace of the movement.">
               <span className={styles.tag}>Pace</span>
