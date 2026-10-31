@@ -351,6 +351,19 @@ export function Editor({
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
   const [tool, setTool] = useState<"blocks" | "assets" | "theme">("blocks");
+  // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
+  const [panelOpen, setPanelOpen] = useState(
+    () => typeof window === "undefined" || !window.matchMedia?.("(max-width: 1100px)").matches,
+  );
+  /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
+  const pickTool = (id: "blocks" | "assets" | "theme") => {
+    if (id === tool && panelOpen) {
+      setPanelOpen(false);
+      return;
+    }
+    setTool(id);
+    setPanelOpen(true);
+  };
   // The words of a block being typed on the block itself, which block and which of its props.
   const [editing, setEditing] = useState<{ id: string; prop: string; multiline: boolean } | null>(
     null,
@@ -1027,6 +1040,7 @@ export function Editor({
       className={rootClass}
       style={pageWidthVariables}
       data-midito-editor=""
+      data-panel={panelOpen ? "open" : "closed"}
       tabIndex={-1}
       onCopy={copySelected}
       onCut={cutSelected}
@@ -1167,8 +1181,9 @@ export function Editor({
             key={id}
             type="button"
             className={styles.railButton}
-            aria-current={tool === id ? "true" : undefined}
-            onClick={() => setTool(id)}
+            aria-current={tool === id && panelOpen ? "true" : undefined}
+            title={tool === id && panelOpen ? `Hide ${name}` : name}
+            onClick={() => pickTool(id)}
           >
             <Icon name={icon} size={18} />
             {name}

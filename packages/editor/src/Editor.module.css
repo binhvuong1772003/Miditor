@@ -23,10 +23,12 @@
   --_radius-card: var(--midito-radius-card, 8px);
   --_control: var(--midito-control, 2.25rem);
   --_lift: 0 1px 2px rgb(0 0 0 / 0.05);
+  /* The width of the left panel; it is nothing when the person shuts it. */
+  --_start: 19rem;
 
   display: grid;
   /* The tool rail, the blocks, the canvas, the properties; the header spans them. */
-  grid-template-columns: 5.5rem 19rem minmax(0, 1fr) 19rem;
+  grid-template-columns: 5.5rem var(--_start) minmax(0, 1fr) 19rem;
   grid-template-rows: 3.5rem minmax(0, 1fr);
   box-sizing: border-box;
   inline-size: 100%;
@@ -188,8 +190,20 @@
 /* Narrow screens: slimmer panels, then no rail or blocks, then the canvas alone. Editing on a phone is not a goal yet. */
 @media (max-width: 1100px) {
   .root {
-    grid-template-columns: 4.5rem 15rem minmax(0, 1fr) 16rem;
+    --_start: 15rem;
+    grid-template-columns: 4.5rem var(--_start) minmax(0, 1fr) 16rem;
   }
+}
+
+/* A shut panel gives its room to the page. This is more specific than the rules above, so it wins. */
+.root[data-panel="closed"] {
+  --_start: 0px;
+}
+
+/* Hidden, not removed: a grid item that is gone would let the canvas slip into its column. */
+.root[data-panel="closed"] .start {
+  visibility: hidden;
+  border-inline-end: 0;
 }
 
 @media (max-width: 900px) {
