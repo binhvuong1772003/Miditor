@@ -4,7 +4,6 @@ import {
   type ComponentDef,
   type Device,
   isFreeNode,
-  isImageUrl,
   type JsonValue,
   keepsRatio,
   parseAngle,
@@ -16,12 +15,12 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
-import type { BackgroundPatch } from "./BackgroundFields";
+import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
-import { imageName } from "./image-name";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { Section } from "./Section";
+import type { UploadImage } from "./upload-image";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
@@ -57,8 +56,8 @@ export interface PropertiesPanelProps {
   onCommit: (patch: PanelPatch) => void;
   /** The theme of the page: its colours can be picked for a colour. */
   theme?: Theme | undefined;
-  /** Open the Assets panel, where the background picture of the block is set. */
-  onOpenAssets: () => void;
+  /** The host's way to upload a picture, for the background picture of a block. */
+  uploadImage?: UploadImage | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -76,7 +75,7 @@ type Tab = "design" | "advanced";
 
 /**
  * The properties of the selected block in two tabs. Design is what the block says and how it looks:
- * the fields its kind declares, its fill and its border. Advanced is where it sits: its
+ * the fields its kind declares, its fill, its picture and its border. Advanced is where it sits: its
  * position and size, its anchors, the phone, and the facts a developer asks for.
  */
 export function PropertiesPanel({
@@ -91,9 +90,11 @@ export function PropertiesPanel({
   rect,
   onRect,
   theme,
-  onOpenAssets,
+  uploadImage,
 }: PropertiesPanelProps) {
   const [tab, setTab] = useState<Tab>("design");
+  // Whether the background is a colour or a picture; it starts as what the block has.
+  const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
@@ -111,6 +112,7 @@ export function PropertiesPanel({
     onCommit: (value: number | undefined) => onCommit({ key, value }),
     onDiscard,
   });
+  const backgroundKind = fill ?? (node.styles.backgroundImage !== undefined ? "image" : "color");
   const box = isFreeNode(node) ? boxFor(node, device) : undefined;
   const hasFields = def !== undefined && Object.values(def.fields).some((f) => f.type !== "image");
   const byHand = (isFreeNode(node) && node.phone !== undefined) || node.phoneProps !== undefined;
@@ -171,14 +173,48 @@ export function PropertiesPanel({
                 onChange={(name, value) => onCommit({ key: "prop", name, value })}
               />
             )}
-            <Section title="Background">
-              <ColourField
-                label="Fill"
-                noneLabel="No fill"
-                hint="The colour that fills the block. Clear it for no fill."
-                {...colour("background")}
-              />
-              <ImageRow address={node.styles.backgroundImage} onOpen={onOpenAssets} />
+            <Section
+              title="Background"
+              actions={
+                // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+                <div
+                  role="group"
+                  aria-label="Kind of background"
+                  className={`${styles.tabs} ${styles.mini}`}
+                >
+                  {(
+                    [
+                      ["color", "Color"],
+                      ["image", "Image"],
+                    ] as const
+                  ).map(([id, name]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={styles.tab}
+                      aria-pressed={backgroundKind === id}
+                      onClick={() => setFill(id)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              {backgroundKind === "color" ? (
+                <ColourField
+                  label="Fill"
+                  noneLabel="No fill"
+                  hint="The colour that fills the block. Clear it for no fill."
+                  {...colour("background")}
+                />
+              ) : (
+                <BackgroundFields
+                  styles={node.styles}
+                  uploadImage={uploadImage}
+                  onChange={(patch) => onCommit(patch)}
+                />
+              )}
             </Section>
             <Section title="Border">
               <div className={styles.grid2}>
@@ -414,26 +450,6 @@ function useTextField<T>(
   };
 
   return { text, setText, invalid, setInvalid, typed, keys, leave };
-}
-
-/** The picture behind the block, small, with a way to the Assets panel where it is changed. */
-function ImageRow({ address, onOpen }: { address: string | undefined; onOpen: () => void }) {
-  const shown = isImageUrl(address) ? address : undefined;
-  return (
-    <div className={styles.row}>
-      <span
-        className={styles.thumb}
-        aria-hidden="true"
-        style={shown ? { backgroundImage: `url("${shown}")` } : undefined}
-      />
-      <span className={styles.imageName} title={shown}>
-        {shown ? imageName(shown) : "No background image"}
-      </span>
-      <button type="button" className={styles.reset} onClick={onOpen}>
-        {shown ? "Change" : "Add"}
-      </button>
-    </div>
-  );
 }
 
 function ColourField({

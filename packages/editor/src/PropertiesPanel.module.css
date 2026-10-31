@@ -119,17 +119,6 @@ select.input {
   min-inline-size: 0;
 }
 
-/* The file name of the picture, beside its thumbnail. */
-.imageName {
-  flex: 1;
-  min-inline-size: 0;
-  overflow: hidden;
-  color: var(--_muted);
-  font-size: 0.8125rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* The picture behind a block, small. Its address went through `isImageUrl` before it got here. */
 .thumb {
   flex: none;
