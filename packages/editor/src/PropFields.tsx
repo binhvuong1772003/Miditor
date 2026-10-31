@@ -2,8 +2,6 @@ import {
   type ComponentDef,
   type Field,
   type JsonValue,
-  nameOfColorRef,
-  parseHexColor,
   resolveColor,
   type Theme,
   validateProps,
@@ -231,7 +229,7 @@ function PropField({ def, name, field, stored, onChange, theme }: PropFieldProps
   );
 }
 
-/** A colour: the swatch to pick one, its code to type, and the colours of the theme to choose from. */
+/** A colour: the swatch to pick one, with its name, and the colours of the theme to choose from. */
 function ColourRow({
   label,
   help,
@@ -246,7 +244,6 @@ function ColourRow({
   apply: (value: JsonValue) => void;
 }) {
   const value = typeof stored === "string" ? stored : "";
-  const [text, setText] = useState(value);
   const picker = useRef<HTMLInputElement>(null);
   // The swatch fires on every move of the picker; only its own `change` says the pick is done.
   const latest = useRef(apply);
@@ -258,39 +255,17 @@ function ColourRow({
     element.addEventListener("change", done);
     return () => element.removeEventListener("change", done);
   }, []);
-  const commit = () => {
-    const next = text.trim();
-    const hex = parseHexColor(next);
-    if (hex) apply(hex);
-    else if (nameOfColorRef(next) !== undefined) apply(next);
-    else setText(value);
-  };
   return (
     <div className={styles.row}>
-      <input
-        ref={picker}
-        type="color"
-        className={styles.swatch}
-        aria-label={`${label} picker`}
-        value={resolveColor(value, theme) ?? "#000000"}
-        onChange={(event) => setText(event.target.value)}
-      />
-      <label className={styles.box} title={help}>
-        <span className={styles.tag}>{label}</span>
+      <label className={`${styles.box} ${styles.colour}`} title={help}>
         <input
-          type="text"
-          className={styles.mono}
-          value={text}
-          placeholder="#rrggbb"
-          spellCheck={false}
-          autoComplete="off"
-          onChange={(event) => setText(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") commit();
-            if (event.key === "Escape") setText(value);
-          }}
+          ref={picker}
+          type="color"
+          className={styles.dot}
+          aria-label={`${label} picker`}
+          defaultValue={resolveColor(value, theme) ?? "#000000"}
         />
+        <span className={styles.tag}>{label}</span>
       </label>
       <ThemePicker theme={theme} stored={value === "" ? undefined : value} onPick={apply} />
     </div>

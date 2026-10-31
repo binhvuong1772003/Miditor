@@ -508,3 +508,61 @@ select.input {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
 }
+
+/* A colour: the swatch sits inside the box with the name, and the whole box opens the picker. */
+.dot {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding: 0;
+  border: 1px solid var(--_border);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dot::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.dot::-webkit-color-swatch {
+  border: 0;
+  border-radius: 3px;
+}
+
+.dot::-moz-color-swatch {
+  border: 0;
+  border-radius: 3px;
+}
+
+.clear {
+  appearance: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--_muted);
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--_soft);
+  color: var(--_text);
+}
+
+.clear:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.colour {
+  flex: 1;
+  cursor: pointer;
+}

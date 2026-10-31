@@ -6,7 +6,6 @@ import {
   isFreeNode,
   type JsonValue,
   keepsRatio,
-  nameOfColorRef,
   parseAngle,
   parseCoordinate,
   parseHexColor,
@@ -17,16 +16,9 @@ import {
   type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
-import {
-  type ChangeEvent,
-  Fragment,
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
+import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { Section } from "./Section";
@@ -463,26 +455,12 @@ function useTextField<T>(
   return { text, setText, invalid, setInvalid, typed, keys, leave };
 }
 
-const showColour = (value: string | undefined) => value ?? "";
-// A colour of the theme is written `@name` and is kept as it is.
-const readColour = (text: string): Reading<string> =>
-  text.trim() === ""
-    ? undefined
-    : (parseHexColor(text) ?? (nameOfColorRef(text.trim()) === undefined ? null : text.trim()));
-
 function ColourField({
   pickerLabel,
   theme,
   ...field
 }: FieldProps<string> & { pickerLabel: string; theme: Theme | undefined }) {
-  const { label, hint, stored, onPreview, onCommit, onDiscard } = field;
-  const { text, setText, invalid, setInvalid, typed, keys, leave } = useTextField(
-    stored,
-    showColour,
-    readColour,
-    { onPreview, onCommit, onDiscard },
-  );
-  const errorId = useId();
+  const { label, hint, stored, onPreview, onCommit } = field;
   const picker = useRef<HTMLInputElement>(null);
   // The picker's own `change` event is the moment the choice is final, and the one handler it needs
   // must see the latest callback.
@@ -499,54 +477,34 @@ function ColourField({
     return () => element.removeEventListener("change", done);
   }, []);
 
-  const picked = (event: ChangeEvent<HTMLInputElement>) => {
-    setText(event.target.value);
-    setInvalid(false);
-    onPreview(event.target.value);
-  };
-
   return (
-    <div className={styles.stack}>
-      <div className={styles.row}>
+    <div className={styles.row}>
+      <label className={`${styles.box} ${styles.colour}`} title={hint !== "" ? hint : undefined}>
         <input
           ref={picker}
           type="color"
-          className={styles.swatch}
+          className={styles.dot}
           aria-label={pickerLabel}
-          value={resolveColor(parseHexColor(text) ?? text.trim(), theme) ?? "#ffffff"}
-          onChange={picked}
+          value={resolveColor(stored, theme) ?? "#ffffff"}
+          onChange={(event) => onPreview(event.target.value)}
         />
-        <label className={styles.box} title={hint !== "" ? hint : undefined} aria-invalid={invalid}>
-          <span className={styles.tag}>{label}</span>
-          <input
-            type="text"
-            className={styles.mono}
-            value={text}
-            placeholder="#rrggbb"
-            spellCheck={false}
-            autoComplete="off"
-            aria-invalid={invalid}
-            aria-describedby={invalid ? errorId : undefined}
-            onChange={(event) => typed(event.target.value)}
-            onKeyDown={keys}
-            onBlur={leave}
-          />
-        </label>
-        <ThemePicker
-          theme={theme}
-          stored={stored}
-          onPick={(value) => {
-            setText(value);
-            setInvalid(false);
-            onCommit(value);
-          }}
-        />
-      </div>
-      {invalid && (
-        <p id={errorId} className={styles.error} role="alert">
-          Not a colour. Use a hex colour like #d5dae3.
-        </p>
-      )}
+        <span className={styles.tag}>{label}</span>
+        {stored !== undefined && (
+          <button
+            type="button"
+            className={styles.clear}
+            aria-label={`Clear ${label.toLowerCase()}`}
+            title="Take the colour away"
+            onClick={(event) => {
+              event.preventDefault();
+              onCommit(undefined);
+            }}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        )}
+      </label>
+      <ThemePicker theme={theme} stored={stored} onPick={(value) => onCommit(value)} />
     </div>
   );
 }

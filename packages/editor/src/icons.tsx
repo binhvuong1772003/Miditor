@@ -70,6 +70,7 @@ const ICONS = {
   alignLeft: <path d="M2.5 4h11M2.5 8h7M2.5 12h9" />,
   alignCenter: <path d="M2.5 4h11M4.5 8h7M3.5 12h9" />,
   alignRight: <path d="M2.5 4h11M6.5 8h7M4.5 12h9" />,
+  x: <path d="m4 4 8 8M12 4l-8 8" />,
   chevronDown: <path d="m4 6 4 4 4-4" />,
   chevronRight: <path d="m6 4 4 4-4 4" />,
   search: (
