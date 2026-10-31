@@ -118,6 +118,7 @@ const NODE_KEYS = [
   "rotation",
   "phone",
   "phoneProps",
+  "lockRatio",
 ];
 
 /** The placement set by hand on a phone: every number of `FreeBox`, and nothing else. */
@@ -139,7 +140,8 @@ function hasValidPlacement(node: Record<string, unknown>): boolean {
       hasOnly(position, ["mode"]) &&
       !("size" in node) &&
       !("rotation" in node) &&
-      !("phone" in node)
+      !("phone" in node) &&
+      !("lockRatio" in node)
     );
   }
   if (position.mode !== "free") return false;
@@ -153,7 +155,8 @@ function hasValidPlacement(node: Record<string, unknown>): boolean {
     isSize(size.w) &&
     isSize(size.h) &&
     isRotation(node.rotation) &&
-    (!("phone" in node) || isPhonePlacement(node.phone))
+    (!("phone" in node) || isPhonePlacement(node.phone)) &&
+    (!("lockRatio" in node) || typeof node.lockRatio === "boolean")
   );
 }
 

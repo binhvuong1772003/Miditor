@@ -45,3 +45,14 @@ export function withPhoneBox(node: FreeNode, box: FreeBox | undefined): FreeNode
   const { phone: _removed, ...rest } = node;
   return rest;
 }
+
+/**
+ * The same node with `lockRatio` set, or, with `undefined`, taken off, so the block follows its kind
+ * again. A node that already has that value (or none, when none is asked for) comes back as it is.
+ */
+export function withLockRatio(node: FreeNode, value: boolean | undefined): FreeNode {
+  if (node.lockRatio === value) return node;
+  if (value !== undefined) return { ...node, lockRatio: value };
+  const { lockRatio: _removed, ...rest } = node;
+  return rest;
+}

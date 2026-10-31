@@ -55,6 +55,7 @@ export interface FlowNode extends NodeBase {
   size?: never;
   rotation?: never;
   phone?: never;
+  lockRatio?: never;
 }
 
 /** A node placed by constraints against its container. It needs a size and a rotation. */
@@ -68,6 +69,11 @@ export interface FreeNode extends NodeBase {
    * the rotation, as `FreeBox` has them. Without it the phone gets its placement from the one above.
    */
   phone?: FreeBox;
+  /**
+   * Whether resizing keeps the width to height ratio of this block. Without it the block follows its
+   * kind (`ComponentDef.lockRatio`). See `keepsRatio`.
+   */
+  lockRatio?: boolean;
 }
 
 /** A nested tree: a node holds its children directly. */

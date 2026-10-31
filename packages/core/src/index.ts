@@ -14,6 +14,7 @@ export { type RectOptions, type RectPatch, withRect } from "./position/with-rect
 export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
 export { canMove } from "./registry/can-move";
+export { keepsRatio } from "./registry/keeps-ratio";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export type { ComponentDef, Field, Registry } from "./registry/types";
@@ -46,7 +47,13 @@ export {
 } from "./tree/clipboard";
 export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { duplicateNode } from "./tree/duplicate";
-export { freeBoxOf, isFreeNode, withFreeBox, withPhoneBox } from "./tree/free-box";
+export {
+  freeBoxOf,
+  isFreeNode,
+  withFreeBox,
+  withLockRatio,
+  withPhoneBox,
+} from "./tree/free-box";
 export { groupNodes, ungroupNode } from "./tree/group";
 export {
   MIGRATIONS,

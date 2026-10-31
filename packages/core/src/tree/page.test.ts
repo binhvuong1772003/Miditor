@@ -430,6 +430,29 @@ describe("isPageData", () => {
     });
   });
 
+  describe("lockRatio", () => {
+    it("accepts a true or false on a free node, also after JSON, and none", () => {
+      for (const value of [true, false]) {
+        expect(isPageData(broken((p) => (a(p).lockRatio = value)))).toBe(true);
+        expect(
+          isPageData(JSON.parse(JSON.stringify(broken((p) => (a(p).lockRatio = value))))),
+        ).toBe(true);
+      }
+      expect(isPageData(sample())).toBe(true);
+    });
+
+    it("refuses anything but a boolean", () => {
+      for (const value of [1, 0, "true", null, undefined, {}, []]) {
+        expect(isPageData(broken((p) => (a(p).lockRatio = value))), String(value)).toBe(false);
+      }
+    });
+
+    it("refuses it on a node placed by flow", () => {
+      expect(isPageData(broken((p) => (p.root.lockRatio = true)))).toBe(false);
+      expect(isPageData(broken((p) => (p.root.lockRatio = false)))).toBe(false);
+    });
+  });
+
   describe("phone props", () => {
     const withProps = (value: unknown) =>
       broken((p) => {
