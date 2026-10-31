@@ -71,6 +71,9 @@ const ICONS = {
   alignCenter: <path d="M2.5 4h11M4.5 8h7M3.5 12h9" />,
   alignRight: <path d="M2.5 4h11M6.5 8h7M4.5 12h9" />,
   x: <path d="m4 4 8 8M12 4l-8 8" />,
+  pipette: (
+    <path d="m9.5 3.5 3 3M11 2.5a1.4 1.4 0 0 1 2 2L11.5 6 10 4.5 11 2.5zM9.5 5.5l-6 6V13h1.5l6-6" />
+  ),
   chevronDown: <path d="m4 6 4 4 4-4" />,
   chevronRight: <path d="m6 4 4 4-4 4" />,
   search: (

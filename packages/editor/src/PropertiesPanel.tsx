@@ -466,6 +466,7 @@ function ColourField({
         theme={theme}
         stored={stored}
         noneLabel={noneLabel}
+        onPreview={field.onPreview}
         onCommit={onCommit}
       />
     </div>

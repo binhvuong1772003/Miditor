@@ -165,15 +165,105 @@
   background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
 }
 
-/* The system picker is opened by the button above; the input only anchors it. */
-.native {
+.free {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Saturation grows to the right, brightness upward: white and black laid over the hue. */
+.area {
+  position: relative;
+  block-size: 8.75rem;
+  border-radius: 8px;
+  background-image:
+    linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.area:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.knob {
   position: absolute;
-  inset-block-end: 0;
-  inset-inline-start: 0;
-  inline-size: 1px;
-  block-size: 1px;
-  opacity: 0;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+  transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+.hueRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Under .free so that it wins over the field box, which styles every input inside it. */
+.free .hue {
+  appearance: none;
+  flex: 1;
+  min-inline-size: 0;
+  block-size: 0.75rem;
+  margin: 0;
+  border-radius: 6px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  cursor: pointer;
+}
+
+.hue::-webkit-slider-thumb {
+  appearance: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+
+.hue::-moz-range-thumb {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+
+.hue:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 3px;
+}
+
+.eyedropper {
+  appearance: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--_muted);
+  cursor: pointer;
+}
+
+.eyedropper:hover {
+  background: var(--_soft);
+  color: var(--_text);
+}
+
+.eyedropper:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

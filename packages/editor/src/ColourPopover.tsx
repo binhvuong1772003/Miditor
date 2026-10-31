@@ -5,8 +5,16 @@ import {
   resolveColor,
   type Theme,
 } from "@midito-kitchen/core";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import styles from "./ColourPopover.module.css";
+import { type Hsv, hexToHsv, hsvToHex } from "./hsv";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { rememberColour, useRecentColours } from "./recent-colours";
@@ -19,6 +27,8 @@ export interface ColourPopoverProps {
   stored: string | undefined;
   /** Name of the way to leave the colour out ("No fill"); nothing means the colour is required. */
   noneLabel?: string | undefined;
+  /** A colour shown while the free picker is dragged; it is not final until `onCommit`. */
+  onPreview?: ((value: string) => void) | undefined;
   /** A new stored colour, or `undefined` to take the colour away. */
   onCommit: (value: string | undefined) => void;
 }
@@ -38,14 +48,15 @@ export function ColourPopover({
   theme,
   stored,
   noneLabel,
+  onPreview,
   onCommit,
 }: ColourPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState(false);
   const [place, setPlace] = useState<{ top: number; left: number } | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
-  const native = useRef<HTMLInputElement>(null);
   const recent = useRecentColours();
   const current = resolveColor(stored, theme);
   const currentRef = nameOfColorRef(stored);
@@ -53,13 +64,12 @@ export function ColourPopover({
   // "Colour" and "Text colour" already say what they are; "Fill" and "Border" need the word.
   const title = /colou?r/i.test(label) ? label : `${label} colour`;
 
-  const latest = useRef(onCommit);
-  latest.current = onCommit;
-
   // The popover goes under the box, with its right edge on the box's; above it when there is no room.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the free picker changes the height.
   useLayoutEffect(() => {
     if (!open) {
       setPlace(null);
+      setCustom(false);
       return;
     }
     const box = root.current?.getBoundingClientRect();
@@ -72,7 +82,7 @@ export function ColourPopover({
         ? Math.max(MARGIN, box.top - GAP - height)
         : below;
     setPlace({ top, left });
-  }, [open]);
+  }, [open, custom]);
 
   useEffect(() => {
     if (!open) return;
@@ -98,27 +108,6 @@ export function ColourPopover({
       window.removeEventListener("resize", close);
     };
   }, [open]);
-
-  // The native picker fires on every move; only its own `change` says the pick is done.
-  useEffect(() => {
-    const element = native.current;
-    if (!element) return;
-    const done = () => {
-      const hex = parseHexColor(element.value);
-      if (hex === undefined) return;
-      rememberColour(hex);
-      latest.current(hex);
-    };
-    element.addEventListener("change", done);
-    return () => element.removeEventListener("change", done);
-  }, []);
-
-  const openNative = () => {
-    const element = native.current;
-    if (!element) return;
-    element.value = current ?? "#000000";
-    element.click();
-  };
 
   const pickHex = (hex: string) => {
     rememberColour(hex);
@@ -153,14 +142,6 @@ export function ColourPopover({
           <Icon name="x" size={14} />
         </button>
       )}
-      <input
-        ref={native}
-        type="color"
-        className={styles.native}
-        tabIndex={-1}
-        aria-hidden="true"
-        defaultValue="#000000"
-      />
       {open && (
         <div
           ref={pop}
@@ -223,8 +204,20 @@ export function ColourPopover({
               </div>
             </div>
           )}
+          {custom && (
+            <FreePicker
+              start={current ?? "#2563eb"}
+              onPreview={(hex) => onPreview?.(hex)}
+              onCommit={pickHex}
+            />
+          )}
           <div className={styles.foot}>
-            <button type="button" className={styles.action} onClick={openNative}>
+            <button
+              type="button"
+              className={styles.action}
+              aria-expanded={custom}
+              onClick={() => setCustom((value) => !value)}
+            >
               <span className={styles.wheel} />
               Custom colour
             </button>
@@ -237,6 +230,140 @@ export function ColourPopover({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const clamp = (value: number) => Math.min(1, Math.max(0, value));
+
+interface Dropper {
+  open: () => Promise<{ sRGBHex: string }>;
+}
+
+const dropperOf = (): (new () => Dropper) | undefined =>
+  (window as unknown as { EyeDropper?: new () => Dropper }).EyeDropper;
+
+/**
+ * A free pick: a square for saturation and brightness, a slider for the hue, and the screen
+ * eyedropper where the browser has one. The colour is final when the pointer or key is released.
+ */
+function FreePicker({
+  start,
+  onPreview,
+  onCommit,
+}: {
+  start: string;
+  onPreview: (hex: string) => void;
+  onCommit: (hex: string) => void;
+}) {
+  const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(start));
+  const latest = useRef(hsv);
+  const area = useRef<HTMLDivElement>(null);
+  const Eyedropper = dropperOf();
+
+  const move = (next: Hsv) => {
+    latest.current = next;
+    setHsv(next);
+    onPreview(hsvToHex(next));
+  };
+  const done = () => onCommit(hsvToHex(latest.current));
+
+  const fromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const box = area.current?.getBoundingClientRect();
+    if (!box) return;
+    move({
+      ...latest.current,
+      s: clamp((event.clientX - box.left) / box.width),
+      v: 1 - clamp((event.clientY - box.top) / box.height),
+    });
+  };
+
+  const nudge = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 0.1 : 0.02;
+    const { s, v } = latest.current;
+    const next =
+      event.key === "ArrowLeft"
+        ? { s: clamp(s - step), v }
+        : event.key === "ArrowRight"
+          ? { s: clamp(s + step), v }
+          : event.key === "ArrowUp"
+            ? { s, v: clamp(v + step) }
+            : event.key === "ArrowDown"
+              ? { s, v: clamp(v - step) }
+              : undefined;
+    if (!next) return;
+    event.preventDefault();
+    move({ ...latest.current, ...next });
+  };
+
+  const current = hsvToHex(hsv);
+  return (
+    <div className={styles.free}>
+      <div
+        ref={area}
+        role="slider"
+        tabIndex={0}
+        aria-label="Saturation and brightness"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(hsv.s * 100)}
+        aria-valuetext={`Saturation ${Math.round(hsv.s * 100)}%, brightness ${Math.round(hsv.v * 100)}%`}
+        className={styles.area}
+        style={{ backgroundColor: hsvToHex({ h: hsv.h, s: 1, v: 1 }) }}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          fromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons === 1) fromPointer(event);
+        }}
+        onPointerUp={done}
+        onKeyDown={nudge}
+        onKeyUp={(event) => {
+          if (event.key.startsWith("Arrow")) done();
+        }}
+      >
+        <span
+          className={styles.knob}
+          style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: current }}
+        />
+      </div>
+      <div className={styles.hueRow}>
+        <input
+          type="range"
+          className={styles.hue}
+          aria-label="Hue"
+          min={0}
+          max={359}
+          value={Math.round(hsv.h)}
+          onChange={(event) => move({ ...latest.current, h: Number(event.target.value) })}
+          onPointerUp={done}
+          onKeyUp={done}
+        />
+        {Eyedropper && (
+          <button
+            type="button"
+            className={styles.eyedropper}
+            aria-label="Pick a colour from the screen"
+            title="Pick a colour from the screen"
+            onClick={() => {
+              new Eyedropper()
+                .open()
+                .then(({ sRGBHex }) => {
+                  const hex = parseHexColor(sRGBHex);
+                  if (hex === undefined) return;
+                  const next = hexToHsv(hex);
+                  latest.current = next;
+                  setHsv(next);
+                  onCommit(hex);
+                })
+                .catch(() => {});
+            }}
+          >
+            <Icon name="pipette" size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
