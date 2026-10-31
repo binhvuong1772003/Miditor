@@ -152,6 +152,9 @@ declare become the controls in the Properties panel. Draw the kind with the same
 
 ## Theme
 
-`config.theme` is the theme of a new page: named colours and a body and a heading font. A colour
-set to a theme colour is stored as `@name`, so changing the theme colour changes every place that
-uses it. A page that already has a theme keeps its own.
+A page can carry a theme: named colours and a body and a heading font. A colour set to a theme
+colour is stored as `@name`, so changing the theme colour changes every place that uses it. The
+theme is edited in the Theme tab.
+
+`config.theme` is the theme of a **new** page: it is used only when the editor opens without `data`.
+A page you pass in keeps the theme it has, or none.
