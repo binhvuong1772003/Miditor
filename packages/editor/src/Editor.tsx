@@ -124,12 +124,28 @@ export interface EditorProps {
   };
 }
 
-// Narrows `StylePatch` by its key, which TypeScript does not do on its own: `applyPatch` has two
-// identical branches so that each call to `withStyle` sees a matching key and value type.
-const isColourPatch = (
-  patch: StylePatch,
-): patch is Extract<StylePatch, { key: "background" | "borderColor" }> =>
-  patch.key === "background" || patch.key === "borderColor";
+/**
+ * The node with one style set. A switch, not one call: each case hands `withStyle` a key and a value
+ * that TypeScript can tell go together.
+ */
+const withStylePatch = (node: TreeNode, patch: StylePatch): TreeNode => {
+  switch (patch.key) {
+    case "background":
+    case "borderColor":
+      return withStyle(node, patch.key, patch.value);
+    case "borderWidth":
+    case "borderRadius":
+      return withStyle(node, patch.key, patch.value);
+    case "backgroundImage":
+      return withStyle(node, "backgroundImage", patch.value);
+    case "backgroundSize":
+      return withStyle(node, "backgroundSize", patch.value);
+    case "backgroundPosition":
+      return withStyle(node, "backgroundPosition", patch.value);
+    case "backgroundRepeat":
+      return withStyle(node, "backgroundRepeat", patch.value);
+  }
+};
 
 /**
  * The free node with the placement `box` for this screen: its own placement on the desktop, the one
@@ -163,9 +179,7 @@ const applyPatch = (
       ? node
       : withBoxFor(node, device, { ...box, rotation: patch.value });
   }
-  return isColourPatch(patch)
-    ? withStyle(node, patch.key, patch.value)
-    : withStyle(node, patch.key, patch.value);
+  return withStylePatch(node, patch);
 };
 
 /** The page with a pending change applied, for drawing it or for storing it. */
@@ -1152,6 +1166,7 @@ export function Editor({
           onDelete={deleteBlock}
           onAnchor={changeAnchor}
           theme={data.theme}
+          uploadImage={config?.uploadImage}
         />
         {!selectedNode && (
           <ThemePanel

@@ -15,15 +15,18 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { ThemePicker } from "./ThemePicker";
+import type { UploadImage } from "./upload-image";
 
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
   | { key: "background" | "borderColor"; value: string | undefined }
-  | { key: "borderWidth" | "borderRadius"; value: number | undefined };
+  | { key: "borderWidth" | "borderRadius"; value: number | undefined }
+  | BackgroundPatch;
 
 /** What the panel changes besides styles: the rotation, which every free node has and never loses. */
 export type RotationPatch = { key: "rotation"; value: number };
@@ -47,6 +50,8 @@ export interface PropertiesPanelProps {
   onCommit: (patch: PanelPatch) => void;
   /** The theme of the page: its colours can be picked for a colour. */
   theme?: Theme | undefined;
+  /** The host's way to upload a picture, for the background picture of a block. */
+  uploadImage?: UploadImage | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -75,6 +80,7 @@ export function PropertiesPanel({
   onDelete,
   onAnchor,
   theme,
+  uploadImage,
 }: PropertiesPanelProps) {
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
@@ -140,6 +146,11 @@ export function PropertiesPanel({
         pickerLabel="Fill colour picker"
         hint="Hex colour, like #d5dae3. Leave it empty for no fill."
         {...colour("background")}
+      />
+      <BackgroundFields
+        styles={node.styles}
+        uploadImage={uploadImage}
+        onChange={(patch) => onCommit(patch)}
       />
       <LengthField
         label="Border width"

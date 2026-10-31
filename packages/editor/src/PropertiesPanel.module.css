@@ -186,3 +186,22 @@ select.input {
 .error {
   color: var(--_danger);
 }
+
+/* The picture behind a block, small. Its address went through `isImageUrl` before it got here. */
+.thumb {
+  flex: none;
+  inline-size: var(--_control);
+  block-size: var(--_control);
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background-color: var(--_soft);
+  background-size: cover;
+  background-position: center;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--_text);
+}
