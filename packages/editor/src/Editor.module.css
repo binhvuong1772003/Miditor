@@ -176,8 +176,8 @@
   display: flex;
   flex-direction: column;
   min-inline-size: 0;
-  /* The rotate handle sits about 3rem above a node, so the room above the page keeps it in view for a node at the top. */
-  padding: 4rem 2rem 2rem;
+  /* A little room above the page. The turn handle of a block at the top of the page goes to its side instead (see SelectionBox). */
+  padding: 1.5rem 2rem 2rem;
   overflow: auto;
   scrollbar-color: var(--_scrollbar) transparent;
 }
@@ -217,7 +217,7 @@
   }
 
   .workspace {
-    padding: 4rem 1rem 1rem;
+    padding: 1.5rem 1rem 1rem;
   }
 }
 

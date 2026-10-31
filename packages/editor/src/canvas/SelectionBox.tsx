@@ -114,6 +114,9 @@ function restore(el: HTMLElement, saved: Saved) {
   }
 }
 
+/** How far above a block, in px, the turn handle needs to be seen; with less it goes to the side. */
+const TURN_HANDLE_ROOM = 56;
+
 /** The step, in degrees, that the angle snaps to while Shift is held. */
 const SNAP_DEGREES = 15;
 
@@ -248,6 +251,20 @@ export function SelectionBox({
 
   // What a drag or a resize snaps to: the other blocks next to this one, and the block around it.
   // Moveable draws the guide lines. The distance it reports at the end already includes the snap.
+  // The turn handle is above the block. With no room above (the block is at the top of the canvas)
+  // it would be cut off, so it goes to the side. Not changed in the middle of a gesture, where a
+  // handle that jumps would be under the pointer one moment and gone the next.
+  const room =
+    target && container
+      ? target.getBoundingClientRect().top - container.getBoundingClientRect().top
+      : Number.POSITIVE_INFINITY;
+  const [turnAt, setTurnAt] = useState<"top" | "right">("top");
+  useEffect(() => {
+    if (busy.current) return;
+    const next = room < TURN_HANDLE_ROOM ? "right" : "top";
+    setTurnAt((now) => (now === next ? now : next));
+  }, [room]);
+
   const guides = target?.parentElement
     ? [
         target.parentElement,
@@ -267,6 +284,7 @@ export function SelectionBox({
       draggable
       resizable
       rotatable
+      rotationPosition={turnAt}
       keepRatio={lockRatio || keepRatio}
       origin={false}
       snappable
