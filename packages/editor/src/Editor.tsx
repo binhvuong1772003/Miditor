@@ -1148,7 +1148,8 @@ export function Editor({
           <>
             <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
             <AssetsPanel
-              node={selectedNode}
+              page={data.root}
+              theme={data.theme}
               disabled={onPhone}
               upload={
                 config?.uploadImage
@@ -1160,7 +1161,8 @@ export function Editor({
                   : undefined
               }
               uploadImage={config?.uploadImage}
-              onChange={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
+              onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
+              onCommit={(patch) => commitPatch(data.root.id, patch)}
             />
           </>
         )}

@@ -1,29 +1,42 @@
-import type { TreeNode } from "@midito-kitchen/core";
+import type { Theme, TreeNode } from "@midito-kitchen/core";
 import styles from "./AssetsPanel.module.css";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
+import { ColourPopover } from "./ColourPopover";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
 import type { UploadImage } from "./upload-image";
 
 export interface AssetsPanelProps {
-  /** The selected block, or `undefined` when nothing is selected. */
-  node: TreeNode | undefined;
+  /** The page itself: its root node, whose styles are the background of the whole page. */
+  page: TreeNode;
+  /** The theme of the page: its colours can be picked for the background. */
+  theme?: Theme | undefined;
   /** Blocks cannot be added from this screen (the phone), so the upload is off. */
   disabled: boolean;
   /** The host can upload a picture: a button adds a picture block from a file. */
   upload?: { busy: boolean; error: string | null; onChoose: () => void } | undefined;
   /** The host's way to upload a picture, for the background picture of the block. */
   uploadImage?: UploadImage | undefined;
-  /** The background picture of the selected block changed. */
-  onChange: (patch: BackgroundPatch) => void;
+  /** A colour of the background is being picked: show it, but do not store it yet. */
+  onPreview: (patch: { key: "background"; value: string | undefined }) => void;
+  /** The background of the page changed: its colour or its picture. */
+  onCommit: (patch: BackgroundPatch | { key: "background"; value: string | undefined }) => void;
 }
 
 /**
- * The pictures of the page: a button to upload one as a picture block, and the picture behind the
- * selected block with how it sits.
+ * The pictures of the page: a button to upload one as a picture block, and the background of the
+ * whole page, a colour (of the theme or one's own) with a picture over it and how it sits.
  */
-export function AssetsPanel({ node, disabled, upload, uploadImage, onChange }: AssetsPanelProps) {
+export function AssetsPanel({
+  page,
+  theme,
+  disabled,
+  upload,
+  uploadImage,
+  onPreview,
+  onCommit,
+}: AssetsPanelProps) {
   return (
     <div>
       {upload && (
@@ -45,18 +58,19 @@ export function AssetsPanel({ node, disabled, upload, uploadImage, onChange }: A
           )}
         </Section>
       )}
-      <Section title="Background image" help="The picture behind the selected block.">
-        {node ? (
-          <BackgroundFields
-            // A new set of fields for each block, so an address typed for one is not applied to another.
-            key={node.id}
-            styles={node.styles}
-            uploadImage={uploadImage}
-            onChange={onChange}
+      <Section title="Page background" help="The background of the whole page.">
+        <div className={fieldStyles.row}>
+          <ColourPopover
+            label="Colour"
+            hint="The colour behind the whole page. Clear it for none."
+            theme={theme}
+            stored={page.styles.background}
+            noneLabel="No colour"
+            onPreview={(value) => onPreview({ key: "background", value })}
+            onCommit={(value) => onCommit({ key: "background", value })}
           />
-        ) : (
-          <p className={styles.hint}>Select a block to set its background image.</p>
-        )}
+        </div>
+        <BackgroundFields styles={page.styles} uploadImage={uploadImage} onChange={onCommit} />
       </Section>
     </div>
   );
