@@ -34,17 +34,17 @@ import { Render } from "@midito-kitchen/render";
 
 ## Props
 
-| Prop               | What it does                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------------ |
-| `data`             | The page to open. Read once.                                                                           |
-| `onSave`           | Called with the whole page when the person presses Save. The Save button shows only when it is given.  |
-| `onChange`         | Called with the whole page after each change that is final (see [Saving](#saving)).                    |
-| `onChangeDebounce` | A wait in ms, or `{ wait, maxWait }`, so a run of changes is one `onChange` call.                      |
-| `status`           | `"saved"`, `"unsaved"`, `"saving"` or `"error"`: what the header says about the host's storing.         |
-| `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                  |
-| `historyLimit`     | How many steps undo goes back. 100 by default; `Infinity` for no limit.                                |
-| `className`        | An extra class on the root element.                                                                    |
-| `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                       |
+| Prop               | What it does                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| `data`             | The page to open. Read once.                                                                          |
+| `onSave`           | Called with the whole page when the person presses Save. The Save button shows only when it is given. |
+| `onChange`         | Called with the whole page after each change that is final (see [Saving](#saving)).                   |
+| `onChangeDebounce` | A wait in ms, or `{ wait, maxWait }`, so a run of changes is one `onChange` call.                     |
+| `status`           | `"saved"`, `"unsaved"`, `"saving"` or `"error"`: what the header says about the host's storing.       |
+| `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                 |
+| `historyLimit`     | How many steps undo goes back. 100 by default; `Infinity` for no limit.                               |
+| `className`        | An extra class on the root element.                                                                   |
+| `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                      |
 
 ## Saving
 
@@ -100,22 +100,49 @@ type UploadImage = (file: File) => Promise<string>; // the address of the stored
 The editor keeps the address and nothing else. What the function does with the file is the host's
 choice.
 
-**Send it to a back end** (recommended). The page then holds a short address, the picture is served
-from storage or a CDN, and the database stores only the address:
+**Send it to a back end** (recommended) with `postImage`. The page then holds a short address, the
+picture is served from storage or a CDN, and the database stores only the address:
 
-```ts
-const uploadImage = async (file: File) => {
-  const body = new FormData();
-  body.append("file", file);
-  const response = await fetch("/api/images", { method: "POST", body });
-  if (!response.ok) throw new Error("the server refused the picture");
-  return (await response.json()).url; // "https://cdn.example.com/abc.jpg"
-};
+```tsx
+import { Editor, postImage } from "@midito-kitchen/editor";
+
+<Editor
+  config={{
+    uploadImage: postImage("/api/images", {
+      headers: { Authorization: `Bearer ${token}` }, // optional
+      // field: "file",   the name of the file in the form
+      // answer: "url",   where the address is in the JSON answer; "data.url" also works
+      // credentials: "include",
+    }),
+  }}
+/>;
 ```
 
-**Keep it in the page**, for a host with no server. Read the file as a `data:` address. The editor
-accepts a `data:` address of up to 200,000 characters, which is about 150 KB of picture, so shrink
-and compress the picture first; a larger one is refused with a message the person can read.
+It sends the file as a `multipart/form-data` POST and reads the address from the JSON the server
+answers with. A server that refuses, a broken answer or no network is shown to the person as the
+reason the upload failed. What the server checks, stores and cleans up is its own business.
+
+**Keep it in the page**, for a host with no server, with `embedImage`:
+
+```tsx
+import { embedImage } from "@midito-kitchen/editor";
+
+<Editor config={{ uploadImage: embedImage() }} />;
+// embedImage({ maxWidth: 1200, quality: 0.8 })
+```
+
+A small picture is kept as it is. A wider or heavier one is made narrower and compressed (WebP, or
+JPEG where the browser has no WebP) until it fits the 200,000 characters the editor accepts for a
+picture inside the page, so any photo can be used. It refuses only a picture that cannot be made to
+fit. The page grows by the size of every picture, so prefer a back end when you have one. An animated
+GIF that has to be shrunk stops moving.
+
+**Your own function.** Both helpers are only an `UploadImage`, so write your own for S3, Cloudinary
+or anything else; it takes the file and answers with the address:
+
+```ts
+type UploadImage = (file: File) => Promise<string>;
+```
 
 **No upload function.** The button is not drawn, and a person types the address of a picture that
 is already online.
