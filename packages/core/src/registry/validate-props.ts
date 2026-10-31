@@ -1,4 +1,5 @@
 import { isImageUrl } from "../styles/image-url";
+import { isLinkUrl } from "../styles/link-url";
 import { isColorValue } from "../styles/theme";
 import type { JsonValue } from "../tree/types";
 import type { ComponentDef, Field } from "./types";
@@ -28,6 +29,8 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
       return isColorValue(value) ? undefined : "type";
     case "image":
       return value === "" || isImageUrl(value) ? undefined : "type";
+    case "link":
+      return value === "" || isLinkUrl(value) ? undefined : "type";
   }
 }
 

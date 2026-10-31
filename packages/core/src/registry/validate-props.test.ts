@@ -14,6 +14,7 @@ const def: ComponentDef = {
     shown: { type: "boolean", label: "Shown" },
     tint: { type: "color", label: "Tint" },
     photo: { type: "image", label: "Photo" },
+    target: { type: "link", label: "Target" },
   },
 };
 
@@ -29,6 +30,17 @@ describe("validateProps", () => {
       }),
     ).toEqual([]);
     expect(validateProps(def, {})).toEqual([]);
+  });
+
+  it("accepts no link yet or a safe address for a link, and refuses the rest", () => {
+    for (const target of ["", "https://e.co", "/a", "#top", "mailto:a@b.co", "tel:+84901234567"]) {
+      expect(validateProps(def, { target }), target).toEqual([]);
+    }
+    for (const target of ["javascript:alert(1)", "a.html", "//e.co", "data:x", 5, null]) {
+      expect(validateProps(def, { target }), String(target)).toEqual([
+        { key: "target", code: "type" },
+      ]);
+    }
   });
 
   it("accepts a theme colour for a colour field, and refuses a name that is not one", () => {
