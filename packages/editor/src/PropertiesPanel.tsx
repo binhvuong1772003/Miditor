@@ -346,25 +346,17 @@ function AnchorSelect({
   value: AxisAnchor;
   onChange: (anchor: AxisAnchor) => void;
 }) {
-  const id = useId();
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        className={styles.input}
-        value={value}
-        onChange={(event) => onChange(event.target.value as AxisAnchor)}
-      >
+    <label className={styles.box}>
+      <span className={styles.tag}>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value as AxisAnchor)}>
         {ANCHORS.map((anchor) => (
           <option key={anchor} value={anchor}>
             {ANCHOR_NAMES[axis][anchor]}
           </option>
         ))}
       </select>
-    </div>
+    </label>
   );
 }
 
@@ -464,8 +456,6 @@ function ColourField({
     readColour,
     { onPreview, onCommit, onDiscard },
   );
-  const textId = useId();
-  const hintId = useId();
   const errorId = useId();
   const picker = useRef<HTMLInputElement>(null);
   // The picker's own `change` event is the moment the choice is final, and the one handler it needs
@@ -490,10 +480,7 @@ function ColourField({
   };
 
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={textId}>
-        {label}
-      </label>
+    <div className={styles.stack}>
       <div className={styles.row}>
         <input
           ref={picker}
@@ -503,40 +490,36 @@ function ColourField({
           value={resolveColor(parseHexColor(text) ?? text.trim(), theme) ?? "#ffffff"}
           onChange={picked}
         />
-        <input
-          id={textId}
-          type="text"
-          className={`${styles.input} ${styles.mono}`}
-          value={text}
-          placeholder="#rrggbb"
-          spellCheck={false}
-          autoComplete="off"
-          aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : hintId}
-          onChange={(event) => typed(event.target.value)}
-          onKeyDown={keys}
-          onBlur={leave}
+        <label className={styles.box} title={hint !== "" ? hint : undefined} aria-invalid={invalid}>
+          <span className={styles.tag}>{label}</span>
+          <input
+            type="text"
+            className={styles.mono}
+            value={text}
+            placeholder="#rrggbb"
+            spellCheck={false}
+            autoComplete="off"
+            aria-invalid={invalid}
+            aria-describedby={invalid ? errorId : undefined}
+            onChange={(event) => typed(event.target.value)}
+            onKeyDown={keys}
+            onBlur={leave}
+          />
+        </label>
+        <ThemePicker
+          theme={theme}
+          stored={stored}
+          onPick={(value) => {
+            setText(value);
+            setInvalid(false);
+            onCommit(value);
+          }}
         />
       </div>
-      <ThemePicker
-        theme={theme}
-        stored={stored}
-        onPick={(value) => {
-          setText(value);
-          setInvalid(false);
-          onCommit(value);
-        }}
-      />
-      {invalid ? (
+      {invalid && (
         <p id={errorId} className={styles.error} role="alert">
           Not a colour. Use a hex colour like #d5dae3.
         </p>
-      ) : (
-        hint !== "" && (
-          <p id={hintId} className={styles.hint}>
-            {hint}
-          </p>
-        )
       )}
     </div>
   );
@@ -637,43 +620,33 @@ function NumberField({
     onCommit,
     onDiscard,
   });
-  const textId = useId();
-  const hintId = useId();
   const errorId = useId();
 
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={textId}>
-        {label}
-      </label>
-      <div className={styles.row}>
+    <div className={styles.stack}>
+      <label className={styles.box} title={hint !== "" ? hint : undefined} aria-invalid={invalid}>
+        <span className={styles.tag}>{label}</span>
         <input
-          id={textId}
           type="text"
           inputMode="decimal"
-          className={styles.input}
           value={text}
           placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
           aria-label={name}
           aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : hint !== "" ? hintId : undefined}
+          aria-describedby={invalid ? errorId : undefined}
           onChange={(event) => typed(event.target.value)}
           onKeyDown={keys}
           onBlur={leave}
         />
-        <span className={styles.unit} aria-hidden="true">
+        <span className={styles.suffix} aria-hidden="true">
           {unit}
         </span>
-      </div>
-      {invalid ? (
+      </label>
+      {invalid && (
         <p id={errorId} className={styles.error} role="alert">
           {error}
-        </p>
-      ) : (
-        <p id={hintId} className={styles.hint}>
-          {hint}
         </p>
       )}
     </div>

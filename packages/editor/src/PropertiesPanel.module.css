@@ -285,3 +285,81 @@ select.input {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   overflow-wrap: anywhere;
 }
+
+/* The compact field of the panel: its name and its unit sit inside the box, so one field is one line. */
+.box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  block-size: var(--_control);
+  padding-inline: 0.75rem;
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  box-shadow: var(--_lift);
+}
+
+.box:focus-within {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.box[aria-invalid="true"] {
+  border-color: var(--_danger);
+}
+
+.tag {
+  flex: none;
+  color: var(--_muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.suffix {
+  flex: none;
+  color: var(--_muted);
+  font-size: 0.75rem;
+}
+
+.box input,
+.box select {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.box select {
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* A field and, under it, what is wrong with it. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-inline-size: 0;
+}
+
+/* The choice between a colour of the theme and a colour of the block's own, next to the colour. */
+.pick {
+  flex: none;
+  inline-size: 6.5rem;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.span2 {
+  grid-column: 1 / -1;
+}

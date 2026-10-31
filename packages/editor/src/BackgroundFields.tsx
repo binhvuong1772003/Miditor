@@ -42,8 +42,6 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
     busy: false,
     error: null,
   });
-  const sizeId = useId();
-  const positionId = useId();
   const address = isImageUrl(look.backgroundImage) ? look.backgroundImage : undefined;
 
   /** Upload the chosen file and make the address that comes back the picture. */
@@ -102,49 +100,43 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
       </div>
       {address && (
         <>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor={sizeId}>
-              Size
+          <div className={styles.grid2}>
+            <label className={styles.box}>
+              <span className={styles.tag}>Size</span>
+              <select
+                value={isBackgroundSize(look.backgroundSize) ? look.backgroundSize : "cover"}
+                onChange={(event) => {
+                  if (isBackgroundSize(event.target.value)) {
+                    onChange({ key: "backgroundSize", value: event.target.value });
+                  }
+                }}
+              >
+                {SIZES.map(([value, name]) => (
+                  <option key={value} value={value}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </label>
-            <select
-              id={sizeId}
-              className={styles.input}
-              value={isBackgroundSize(look.backgroundSize) ? look.backgroundSize : "cover"}
-              onChange={(event) => {
-                if (isBackgroundSize(event.target.value)) {
-                  onChange({ key: "backgroundSize", value: event.target.value });
+            <label className={styles.box}>
+              <span className={styles.tag}>Position</span>
+              <select
+                value={
+                  isBackgroundPosition(look.backgroundPosition) ? look.backgroundPosition : "center"
                 }
-              }}
-            >
-              {SIZES.map(([value, name]) => (
-                <option key={value} value={value}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor={positionId}>
-              Position
+                onChange={(event) => {
+                  if (isBackgroundPosition(event.target.value)) {
+                    onChange({ key: "backgroundPosition", value: event.target.value });
+                  }
+                }}
+              >
+                {BACKGROUND_POSITIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {label(value)}
+                  </option>
+                ))}
+              </select>
             </label>
-            <select
-              id={positionId}
-              className={styles.input}
-              value={
-                isBackgroundPosition(look.backgroundPosition) ? look.backgroundPosition : "center"
-              }
-              onChange={(event) => {
-                if (isBackgroundPosition(event.target.value)) {
-                  onChange({ key: "backgroundPosition", value: event.target.value });
-                }
-              }}
-            >
-              {BACKGROUND_POSITIONS.map((value) => (
-                <option key={value} value={value}>
-                  {label(value)}
-                </option>
-              ))}
-            </select>
           </div>
           <label className={styles.check}>
             <input
