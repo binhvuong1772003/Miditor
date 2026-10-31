@@ -72,7 +72,7 @@ select.input {
 }
 
 .input::placeholder {
-  color: #6b7280;
+  color: var(--_muted);
 }
 
 .input[aria-invalid="true"] {

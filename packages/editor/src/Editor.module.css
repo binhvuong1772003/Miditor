@@ -13,7 +13,7 @@
   --_canvas: var(--midito-canvas, #ffffff);
   --_border: var(--midito-border, #d4d4d8);
   /* Inputs and selects get a darker edge than dividers, so a field reads as a field. */
-  --_input: var(--midito-border-input, #8f8f96);
+  --_input: var(--midito-border-input, #8a8a92);
   --_text: var(--midito-text, #09090b);
   --_focus: var(--midito-focus, #2563eb);
   --_scrollbar: var(--midito-scrollbar, #a1a1aa);
