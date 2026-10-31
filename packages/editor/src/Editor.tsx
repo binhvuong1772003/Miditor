@@ -51,8 +51,10 @@ import {
   validatePage,
   validateRegistry,
   withFreeBox,
+  withLockRatio,
   withPhoneBox,
   withPhoneProp,
+  withRect,
   withStyle,
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
@@ -179,6 +181,13 @@ const applyPatch = (
     return box.rotation === patch.value
       ? node
       : withBoxFor(node, device, { ...box, rotation: patch.value });
+  }
+  if (patch.key === "lockRatio") {
+    return isFreeNode(node) ? withLockRatio(node, patch.value) : node;
+  }
+  if (patch.key === "phoneLayout") {
+    // The phone starts from the placement it has now, which is made from the desktop one.
+    return isFreeNode(node) && !node.phone ? withPhoneBox(node, boxFor(node, "phone")) : node;
   }
   return withStylePatch(node, patch);
 };
@@ -864,6 +873,31 @@ export function Editor({
       });
     });
 
+  /**
+   * A number of the rect of the selected block was typed: x, y, width or height. `withRect` works out
+   * the placement for this screen, with the proportions kept when the block keeps them, and one that
+   * changes nothing stores nothing.
+   */
+  const setRect = (field: "x" | "y" | "w" | "h", value: number) => {
+    const container = parentSize();
+    if (!selectedNode || !isFreeNode(selectedNode) || !container) return;
+    if (draft) commitPatch(draft.id, draft);
+    const id = selectedNode.id;
+    const options = {
+      minSize: minSize(selectedNode.styles),
+      lockRatio: keepsRatio(selectedNode, selectedDef),
+    };
+    setData((prev) => {
+      const root = updateNode(prev.root, id, (n) => {
+        if (!isFreeNode(n)) return n;
+        const before = boxFor(n, frame);
+        const after = withRect(before, { [field]: value }, container, options);
+        return after === before ? n : withBoxFor(n, frame, after);
+      });
+      return root === prev.root ? prev : { ...prev, root };
+    });
+  };
+
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = (move: typeof undo) => {
     const next = move(history).present;
@@ -873,6 +907,13 @@ export function Editor({
     setScopeId((id) => (findNode(next.root, id) ? id : next.root.id));
     setHistory(move);
   };
+
+  // Where the selected block is on this screen, in its parent's px: what the number fields show.
+  const parentOfSelected = parentSize();
+  const selectedRect =
+    selectedNode && isFreeNode(selectedNode) && parentOfSelected
+      ? resolveRect(boxFor(selectedNode, frame), parentOfSelected)
+      : undefined;
 
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, boxFor(g.before, frame).rotation, handle, w, h));
@@ -1174,6 +1215,8 @@ export function Editor({
             onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
             onDiscard={() => setDraft(null)}
             onAnchor={changeAnchor}
+            rect={selectedRect}
+            onRect={setRect}
             theme={data.theme}
             uploadImage={config?.uploadImage}
           />

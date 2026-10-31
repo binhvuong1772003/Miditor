@@ -198,3 +198,89 @@ select.input {
   gap: 0.5rem;
   color: var(--_text);
 }
+
+/* The title of the block and what it is. */
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.heading .meta {
+  margin: 0;
+}
+
+/* Two tabs in one track, the chosen one raised: the same as the kit's tabs. */
+.tabs {
+  display: flex;
+  padding: 3px;
+  background: var(--_soft);
+  border-radius: var(--_radius);
+}
+
+.tab {
+  appearance: none;
+  flex: 1;
+  block-size: 1.875rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--_canvas);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  font-weight: 600;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}
+
+.tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* The first heading of a tab has no hairline above it: the tabs are already there. */
+.tabpanel > .section:first-child {
+  margin-block-start: 0;
+  padding-block-start: 0;
+  border-block-start: 0;
+}
+
+/* X and Y, then width and height. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  color: var(--_muted);
+  font-size: 0.75rem;
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--_text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}

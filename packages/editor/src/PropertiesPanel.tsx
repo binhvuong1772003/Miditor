@@ -5,11 +5,14 @@ import {
   type Device,
   isFreeNode,
   type JsonValue,
+  keepsRatio,
   nameOfColorRef,
   parseAngle,
+  parseCoordinate,
   parseHexColor,
   parsePixelLength,
   propsFor,
+  type Rect,
   resolveColor,
   type Theme,
   type TreeNode,
@@ -30,11 +33,17 @@ export type StylePatch =
 /** What the panel changes besides styles: the rotation, which every free node has and never loses. */
 export type RotationPatch = { key: "rotation"; value: number };
 
+/** Whether resizing keeps the proportions of this block. `undefined` takes the choice back to its kind's. */
+export type LockRatioPatch = { key: "lockRatio"; value: boolean | undefined };
+
+/** The phone gets a placement of its own for this block, to start from the one it has now. */
+export type PhoneLayoutPatch = { key: "phoneLayout"; value: "separate" };
+
 /** One prop of the node, set by a field that its kind in the registry declares. */
 export type PropPatch = { key: "prop"; name: string; value: JsonValue };
 
 /** One change to one node, from any field of the panel. */
-export type PanelPatch = StylePatch | RotationPatch | PropPatch;
+export type PanelPatch = StylePatch | RotationPatch | PropPatch | LockRatioPatch | PhoneLayoutPatch;
 
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */
@@ -57,11 +66,19 @@ export interface PropertiesPanelProps {
   onResetPhone: () => void;
   /** Anchor one axis of the selected free block another way; the block stays where it is. */
   onAnchor: (axis: "x" | "y", anchor: AxisAnchor) => void;
+  /** Where the selected free block is and how big, on this screen, in px: what the number fields show. */
+  rect?: Rect | undefined;
+  /** A number of the rect was typed: x, y, width or height. */
+  onRect: (field: "x" | "y" | "w" | "h", value: number) => void;
 }
 
+/** The kinds of the kit's tabs: the content and look of a block, and where and how it sits. */
+type Tab = "design" | "advanced";
+
 /**
- * Temporary: fixed fields for any selected node (the rotation only for a free one). The fields will come from `config` and the
- * registry, so each kind of component can say what it lets a person edit.
+ * The properties of the selected block in two tabs. Design is what the block says and how it looks:
+ * the fields its kind declares, its fill, its picture and its border. Advanced is where it sits: its
+ * position and size, its anchors, the phone, and the facts a developer asks for.
  */
 export function PropertiesPanel({
   node,
@@ -72,9 +89,13 @@ export function PropertiesPanel({
   onCommit,
   onDiscard,
   onAnchor,
+  rect,
+  onRect,
   theme,
   uploadImage,
 }: PropertiesPanelProps) {
+  const [tab, setTab] = useState<Tab>("design");
+  const tabsId = useId();
   if (!node) {
     return <p className={styles.empty}>Select a block to edit its properties.</p>;
   }
@@ -91,89 +112,209 @@ export function PropertiesPanel({
     onCommit: (value: number | undefined) => onCommit({ key, value }),
     onDiscard,
   });
+  const box = isFreeNode(node) ? boxFor(node, device) : undefined;
+  const hasFields = def !== undefined && Object.values(def.fields).some((f) => f.type !== "image");
+  const byHand = (isFreeNode(node) && node.phone !== undefined) || node.phoneProps !== undefined;
+  const coordinate = (label: string, field: "x" | "y" | "w" | "h") => (
+    <CoordinateField
+      label={label}
+      stored={rect?.[field]}
+      onCommit={(value) => value !== undefined && onRect(field, value)}
+    />
+  );
+
   return (
     <div className={styles.content}>
-      <h2 className={styles.title}>{node.type}</h2>
-      <p className={styles.meta}>{node.id}</p>
-      {def && (
-        <PropFields
-          def={def}
-          props={propsFor(node, device)}
-          theme={theme}
-          onChange={(name, value) => onCommit({ key: "prop", name, value })}
-        />
-      )}
-      {device === "phone" && ((isFreeNode(node) && node.phone) || node.phoneProps) && (
-        <button type="button" className={styles.reset} onClick={onResetPhone}>
-          Reset to automatic
-        </button>
-      )}
-      {isFreeNode(node) && (
-        <>
-          <h3 className={styles.section}>Position</h3>
-          <AnchorSelect
-            label="Anchor X"
-            value={boxFor(node, device).x.anchor}
-            onChange={(a) => onAnchor("x", a)}
-          />
-          <AnchorSelect
-            label="Anchor Y"
-            value={boxFor(node, device).y.anchor}
-            onChange={(a) => onAnchor("y", a)}
-          />
-        </>
-      )}
-      {isFreeNode(node) && (
-        <AngleField
-          label="Rotation"
-          hint="In degrees, from -180 to 180, like 45. Leave it empty for 0."
-          stored={boxFor(node, device).rotation}
-          onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
-          onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
-          onDiscard={onDiscard}
-        />
-      )}
-      <h3 className={styles.section}>Appearance</h3>
-      <ColourField
-        label="Fill"
-        pickerLabel="Fill colour picker"
-        hint="Hex colour, like #d5dae3. Leave it empty for no fill."
-        {...colour("background")}
-      />
-      <BackgroundFields
-        styles={node.styles}
-        uploadImage={uploadImage}
-        onChange={(patch) => onCommit(patch)}
-      />
-      <LengthField
-        label="Border width"
-        hint="In pixels, like 2. Leave it empty or 0 for no border."
-        {...length("borderWidth")}
-      />
-      <ColourField
-        label="Border colour"
-        pickerLabel="Border colour picker"
-        hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
-        {...colour("borderColor")}
-      />
-      <LengthField
-        label="Radius"
-        hint="In pixels, like 4. Leave it empty or 0 for square corners."
-        {...length("borderRadius")}
-      />
+      <div className={styles.heading}>
+        <h2 className={styles.title}>{def?.label ?? node.type}</h2>
+        <p className={styles.meta}>
+          {def ? `${def.category ?? "Custom"} block` : "Unknown kind of block"}
+        </p>
+      </div>
+      <div role="tablist" aria-label="Properties" className={styles.tabs}>
+        {(
+          [
+            ["design", "Design"],
+            ["advanced", "Advanced"],
+          ] as const
+        ).map(([id, name]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`${tabsId}-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`${tabsId}-panel`}
+            className={styles.tab}
+            onClick={() => setTab(id)}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+      <div
+        role="tabpanel"
+        id={`${tabsId}-panel`}
+        aria-labelledby={`${tabsId}-${tab}`}
+        className={styles.tabpanel}
+      >
+        {tab === "design" ? (
+          <>
+            {hasFields && def && (
+              <>
+                <h3 className={styles.section}>Content</h3>
+                <PropFields
+                  def={def}
+                  props={propsFor(node, device)}
+                  theme={theme}
+                  onChange={(name, value) => onCommit({ key: "prop", name, value })}
+                />
+              </>
+            )}
+            <h3 className={styles.section}>Appearance</h3>
+            <ColourField
+              label="Fill"
+              pickerLabel="Fill colour picker"
+              hint="Hex colour, like #d5dae3. Leave it empty for no fill."
+              {...colour("background")}
+            />
+            <BackgroundFields
+              styles={node.styles}
+              uploadImage={uploadImage}
+              onChange={(patch) => onCommit(patch)}
+            />
+            <LengthField
+              label="Border width"
+              hint="In pixels, like 2. Leave it empty or 0 for no border."
+              {...length("borderWidth")}
+            />
+            <ColourField
+              label="Border colour"
+              pickerLabel="Border colour picker"
+              hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
+              {...colour("borderColor")}
+            />
+            <LengthField
+              label="Radius"
+              hint="In pixels, like 4. Leave it empty or 0 for square corners."
+              {...length("borderRadius")}
+            />
+          </>
+        ) : (
+          <>
+            {isFreeNode(node) && box && (
+              <>
+                <h3 className={styles.section}>Position and size</h3>
+                <div className={styles.pair}>
+                  {coordinate("X", "x")}
+                  {coordinate("Y", "y")}
+                  {coordinate("Width", "w")}
+                  {coordinate("Height", "h")}
+                </div>
+                <AngleField
+                  label="Rotation"
+                  hint="In degrees, from -180 to 180, like 45. Leave it empty for 0."
+                  stored={box.rotation}
+                  onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
+                  onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
+                  onDiscard={onDiscard}
+                />
+                <h3 className={styles.section}>Anchors</h3>
+                <p className={styles.hint}>
+                  What the block sticks to when the page changes size, for example on a phone.
+                </p>
+                <AnchorSelect
+                  label="Horizontal"
+                  axis="x"
+                  value={box.x.anchor}
+                  onChange={(a) => onAnchor("x", a)}
+                />
+                <AnchorSelect
+                  label="Vertical"
+                  axis="y"
+                  value={box.y.anchor}
+                  onChange={(a) => onAnchor("y", a)}
+                />
+                <label className={styles.check}>
+                  <input
+                    type="checkbox"
+                    checked={keepsRatio(node, def)}
+                    onChange={(event) =>
+                      onCommit({ key: "lockRatio", value: event.target.checked })
+                    }
+                  />
+                  Keep proportions when resizing
+                </label>
+                <h3 className={styles.section}>Phone</h3>
+                {device === "phone" ? (
+                  <div className={styles.row}>
+                    <span className={styles.label}>
+                      Layout: {byHand ? "set by hand" : "automatic"}
+                    </span>
+                    {byHand ? (
+                      <button type="button" className={styles.reset} onClick={onResetPhone}>
+                        Reset to automatic
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.reset}
+                        onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
+                      >
+                        Edit separately
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className={styles.hint}>
+                    Layout: {byHand ? "set by hand for the phone" : "automatic"}. Switch to Phone to
+                    place this block separately.
+                  </p>
+                )}
+              </>
+            )}
+            <h3 className={styles.section}>Developer info</h3>
+            <dl className={styles.facts}>
+              <dt>type</dt>
+              <dd>{node.type}</dd>
+              <dt>id</dt>
+              <dd>{node.id}</dd>
+            </dl>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 const ANCHORS: readonly AxisAnchor[] = ["start", "end", "center", "stretch", "scale"];
 
-/** Temporary: a plain select to try `setAnchor` by hand. */
+/** What each anchor is called to a person, which depends on the axis: left and right, or top and bottom. */
+const ANCHOR_NAMES: Record<"x" | "y", Record<AxisAnchor, string>> = {
+  x: {
+    start: "Stick left",
+    end: "Stick right",
+    center: "Keep centered",
+    stretch: "Stretch both sides",
+    scale: "Scale with page",
+  },
+  y: {
+    start: "Stick top",
+    end: "Stick bottom",
+    center: "Keep centered",
+    stretch: "Stretch both sides",
+    scale: "Scale with page",
+  },
+};
+
 function AnchorSelect({
   label,
+  axis,
   value,
   onChange,
 }: {
   label: string;
+  axis: "x" | "y";
   value: AxisAnchor;
   onChange: (anchor: AxisAnchor) => void;
 }) {
@@ -191,7 +332,7 @@ function AnchorSelect({
       >
         {ANCHORS.map((anchor) => (
           <option key={anchor} value={anchor}>
-            {anchor}
+            {ANCHOR_NAMES[axis][anchor]}
           </option>
         ))}
       </select>
@@ -363,9 +504,11 @@ function ColourField({
           Not a colour. Use a hex colour like #d5dae3.
         </p>
       ) : (
-        <p id={hintId} className={styles.hint}>
-          {hint}
-        </p>
+        hint !== "" && (
+          <p id={hintId} className={styles.hint}>
+            {hint}
+          </p>
+        )
       )}
     </div>
   );
@@ -393,6 +536,35 @@ function LengthField(field: FieldProps<number>) {
       placeholder="0"
       read={readLength}
       error="Not a length. Use a number from 0 to 1000, like 4."
+    />
+  );
+}
+
+/** Nothing typed is no number: a position or a size is never taken away. */
+const readCoordinate = (text: string): Reading<number> => parseCoordinate(text) ?? null;
+
+/** A number of where a block is or how big, in px; it can be negative, since a block may stick out. */
+function CoordinateField({
+  label,
+  stored,
+  onCommit,
+}: {
+  label: string;
+  stored: number | undefined;
+  onCommit: (value: number | undefined) => void;
+}) {
+  return (
+    <NumberField
+      label={label}
+      hint=""
+      stored={stored === undefined ? undefined : Math.round(stored * 100) / 100}
+      unit="px"
+      placeholder="0"
+      read={readCoordinate}
+      error="Not a number. Use pixels, like 120 or -8."
+      onPreview={() => {}}
+      onCommit={onCommit}
+      onDiscard={() => {}}
     />
   );
 }
@@ -451,7 +623,7 @@ function NumberField({
           spellCheck={false}
           autoComplete="off"
           aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : hintId}
+          aria-describedby={invalid ? errorId : hint !== "" ? hintId : undefined}
           onChange={(event) => typed(event.target.value)}
           onKeyDown={keys}
           onBlur={leave}
