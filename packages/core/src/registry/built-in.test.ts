@@ -12,7 +12,14 @@ const page = { w: 960, h: 640 };
 
 describe("builtInRegistry", () => {
   it("has the kinds the editor starts with", () => {
-    expect(Object.keys(builtInRegistry)).toEqual(["Container", "Text", "Shape", "Image", "Group"]);
+    expect(Object.keys(builtInRegistry)).toEqual([
+      "Container",
+      "Text",
+      "Shape",
+      "Image",
+      "Button",
+      "Group",
+    ]);
   });
 
   it("starts a text wide and a shape square, at the size of their kind", () => {
@@ -53,13 +60,13 @@ describe("builtInRegistry", () => {
     expect(builtInRegistry.Image?.fields.src).toEqual({ type: "image", label: "Picture address" });
   });
 
-  it("lets the size of a text be set for the phone, and nothing else", () => {
+  it("lets the size of a text and of a button be set for the phone, and nothing else", () => {
     const perDevice = Object.entries(builtInRegistry).flatMap(([type, def]) =>
       Object.entries(def.fields)
         .filter(([, field]) => field.perDevice)
         .map(([name]) => `${type}.${name}`),
     );
-    expect(perDevice).toEqual(["Text.size"]);
+    expect(perDevice).toEqual(["Text.size", "Button.size"]);
   });
 
   it("lets a text be set in the body or the heading font, starting in the body font", () => {
@@ -68,6 +75,25 @@ describe("builtInRegistry", () => {
       type: "select",
       label: "Font",
       options: ["body", "heading"],
+    });
+  });
+
+  it("starts a button that goes nowhere, dark with white text, 160 by 44, holding nothing", () => {
+    expect(builtInRegistry.Button).toMatchObject({
+      size: { w: 160, h: 44 },
+      canContain: false,
+      defaultProps: {
+        label: "Button",
+        href: "",
+        fill: "#111111",
+        textColor: "#ffffff",
+        shape: "rounded",
+        size: 16,
+      },
+    });
+    expect(builtInRegistry.Button?.fields.href).toEqual({ type: "link", label: "Link" });
+    expect(builtInRegistry.Button?.fields.shape).toMatchObject({
+      options: ["rounded", "pill", "square"],
     });
   });
 
@@ -114,7 +140,15 @@ describe("builtInRegistry", () => {
   it("can be extended by spreading, without changing it", () => {
     const heart = { label: "Heart", canContain: false, defaultProps: {}, fields: {} };
     const mine = { ...builtInRegistry, Heart: heart };
-    expect(Object.keys(mine)).toEqual(["Container", "Text", "Shape", "Image", "Group", "Heart"]);
-    expect(Object.keys(builtInRegistry)).toHaveLength(5);
+    expect(Object.keys(mine)).toEqual([
+      "Container",
+      "Text",
+      "Shape",
+      "Image",
+      "Button",
+      "Group",
+      "Heart",
+    ]);
+    expect(Object.keys(builtInRegistry)).toHaveLength(6);
   });
 });

@@ -59,6 +59,28 @@ export const builtInRegistry: Registry = {
       fit: { type: "select", label: "Fit", options: ["cover", "contain"] },
     },
   },
+  /** A button that can lead somewhere: its label and where it goes are props, its looks are colours. */
+  Button: {
+    label: "Button",
+    size: { w: 160, h: 44 },
+    canContain: false,
+    defaultProps: {
+      label: "Button",
+      href: "",
+      fill: "#111111",
+      textColor: "#ffffff",
+      shape: "rounded",
+      size: 16,
+    },
+    fields: {
+      label: { type: "text", label: "Label", maxLength: 100 },
+      href: { type: "link", label: "Link" },
+      fill: { type: "color", label: "Fill" },
+      textColor: { type: "color", label: "Text colour" },
+      shape: { type: "select", label: "Shape", options: ["rounded", "pill", "square"] },
+      size: { type: "number", label: "Text size", min: 8, max: 72, perDevice: true },
+    },
+  },
   /**
    * Several blocks gathered, see `groupNodes`. It has no look of its own, so a group is only the
    * blocks in it, moved and resized together. Made by grouping, so it is not offered when adding.
