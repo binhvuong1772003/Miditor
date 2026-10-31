@@ -97,6 +97,15 @@ describe("builtInRegistry", () => {
     });
   });
 
+  it("describes every kind that is offered for the library: a category, an icon, some keywords", () => {
+    for (const [type, def] of Object.entries(builtInRegistry)) {
+      if (def.hidden) continue;
+      expect(def.category, type).toBe("Basic");
+      expect(def.icon, type).toMatch(/^[a-z][a-z0-9-]*$/);
+      expect(def.keywords?.length, type).toBeGreaterThan(0);
+    }
+  });
+
   it("starts a text centred", () => {
     expect(builtInRegistry.Text?.defaultProps.align).toBe("center");
   });

@@ -58,6 +58,24 @@ describe("validateRegistry", () => {
       { type: "Heart", key: "extra", code: "default" },
     ],
     [{ defaultProps: undefined }, { type: "Heart", code: "default" }],
+    [{ category: "" }, { type: "Heart", key: "category", code: "meta" }],
+    [{ category: " Basic" }, { type: "Heart", key: "category", code: "meta" }],
+    [{ category: "x".repeat(41) }, { type: "Heart", key: "category", code: "meta" }],
+    [{ category: 5 }, { type: "Heart", key: "category", code: "meta" }],
+    [{ icon: "Text" }, { type: "Heart", key: "icon", code: "meta" }],
+    [{ icon: "<svg>" }, { type: "Heart", key: "icon", code: "meta" }],
+    [{ icon: "" }, { type: "Heart", key: "icon", code: "meta" }],
+    [{ icon: "a".repeat(33) }, { type: "Heart", key: "icon", code: "meta" }],
+    [{ keywords: "link" }, { type: "Heart", key: "keywords", code: "meta" }],
+    [{ keywords: ["ok", ""] }, { type: "Heart", key: "keywords", code: "meta" }],
+    [{ keywords: ["ok", 5] }, { type: "Heart", key: "keywords", code: "meta" }],
+    [{ keywords: ["x".repeat(41)] }, { type: "Heart", key: "keywords", code: "meta" }],
+    [
+      { keywords: Array.from({ length: 21 }, () => "k") },
+      { type: "Heart", key: "keywords", code: "meta" },
+    ],
+    [{ description: 5 }, { type: "Heart", key: "description", code: "meta" }],
+    [{ description: "x".repeat(201) }, { type: "Heart", key: "description", code: "meta" }],
   ])("reports %j", (change, issue) => {
     expect(validateRegistry(with_(change))).toEqual([issue]);
   });
@@ -81,6 +99,17 @@ describe("validateRegistry", () => {
   ])("reports a broken field: %s", (_name, field) => {
     const out = validateRegistry(with_({ fields: { x: field }, defaultProps: {} }));
     expect(out).toEqual([{ type: "Heart", key: "x", code: "field" }]);
+  });
+
+  it("accepts the library details at their limits", () => {
+    const edges = {
+      category: "x".repeat(40),
+      icon: `a${"b".repeat(31)}`,
+      keywords: Array.from({ length: 20 }, () => "k".repeat(40)),
+      description: "d".repeat(200),
+    };
+    expect(validateRegistry(with_(edges))).toEqual([]);
+    expect(validateRegistry(with_({ keywords: [], icon: "a", category: "A" }))).toEqual([]);
   });
 
   it("accepts the edges of a field", () => {

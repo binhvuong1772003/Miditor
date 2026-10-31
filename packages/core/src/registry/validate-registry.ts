@@ -7,11 +7,12 @@ import { validateProps } from "./validate-props";
  * about when there is one. `name`: the kind has an empty name or is `Page`. `label`: no label to show.
  * `canContain`, `flag`: a value that is not a boolean. `size`: not a positive width and height.
  * `default`: a default prop that `validateProps` refuses. `field`: a field that can never accept a value.
+ * `meta`: a `category`, `icon`, `keywords` or `description` (the `key`) that is not what the library can use.
  */
 export interface RegistryIssue {
   type: string;
   key?: string;
-  code: "name" | "label" | "canContain" | "flag" | "size" | "default" | "field";
+  code: "name" | "label" | "canContain" | "flag" | "size" | "default" | "field" | "meta";
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -76,6 +77,41 @@ export function validateRegistry(registry: Registry): RegistryIssue[] {
       !(isObject(def.size) && isPositive(def.size.w) && isPositive(def.size.h))
     ) {
       add("size");
+    }
+    if (
+      def.category !== undefined &&
+      !(
+        typeof def.category === "string" &&
+        def.category !== "" &&
+        def.category.trim() === def.category &&
+        def.category.length <= 40
+      )
+    ) {
+      add("meta", "category");
+    }
+    if (
+      def.icon !== undefined &&
+      !(typeof def.icon === "string" && /^[a-z][a-z0-9-]{0,31}$/.test(def.icon))
+    ) {
+      add("meta", "icon");
+    }
+    if (
+      def.keywords !== undefined &&
+      !(
+        Array.isArray(def.keywords) &&
+        def.keywords.length <= 20 &&
+        def.keywords.every(
+          (word) => typeof word === "string" && word.trim() !== "" && word.length <= 40,
+        )
+      )
+    ) {
+      add("meta", "keywords");
+    }
+    if (
+      def.description !== undefined &&
+      !(typeof def.description === "string" && def.description.length <= 200)
+    ) {
+      add("meta", "description");
     }
     const fields = isObject(def.fields) ? def.fields : {};
     if (!isObject(def.fields)) add("field");

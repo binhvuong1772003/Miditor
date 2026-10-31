@@ -9,12 +9,18 @@ import type { Registry } from "./types";
 export const builtInRegistry: Registry = {
   /** The empty box the editor has always added. It can hold other blocks. */
   Container: {
+    category: "Basic",
+    icon: "box",
+    keywords: ["frame", "section", "group", "div"],
     label: "Box",
     canContain: true,
     defaultProps: {},
     fields: {},
   },
   Text: {
+    category: "Basic",
+    icon: "text",
+    keywords: ["heading", "title", "paragraph", "words"],
     label: "Text",
     size: { w: 240, h: 60 },
     canContain: false,
@@ -37,6 +43,9 @@ export const builtInRegistry: Registry = {
   },
   /** A basic shape. It can hold other blocks, for example a square with two texts in it. */
   Shape: {
+    category: "Basic",
+    icon: "shape",
+    keywords: ["rectangle", "ellipse", "circle", "triangle"],
     label: "Shape",
     size: { w: 160, h: 160 },
     canContain: true,
@@ -48,6 +57,9 @@ export const builtInRegistry: Registry = {
   },
   /** A picture from an address. It keeps its ratio when resized, so it is not squashed. */
   Image: {
+    category: "Basic",
+    icon: "img",
+    keywords: ["picture", "photo", "upload"],
     label: "Image",
     size: { w: 240, h: 160 },
     lockRatio: true,
@@ -61,6 +73,9 @@ export const builtInRegistry: Registry = {
   },
   /** A button that can lead somewhere: its label and where it goes are props, its looks are colours. */
   Button: {
+    category: "Basic",
+    icon: "button",
+    keywords: ["link", "cta", "action"],
     label: "Button",
     size: { w: 160, h: 44 },
     canContain: false,

@@ -44,6 +44,17 @@ export interface ComponentDef {
   hidden?: boolean;
   /** Whether other blocks can be placed inside this one. Not the same as the `children` of a node. */
   canContain: boolean;
+  /** The group of the library this kind is listed under, such as "Basic". Without it, "Custom". */
+  category?: string;
+  /**
+   * The name of an icon in the editor's own set (`text`, `img`, `shape`...), not a drawing: an editor
+   * that does not know the name shows a plain one. Lowercase letters, digits and `-`.
+   */
+  icon?: string;
+  /** Other words that find this kind when someone searches the library. */
+  keywords?: readonly string[];
+  /** One line about the kind, which the library may show and searches. */
+  description?: string;
   /** Whether resizing keeps the width to height ratio, for a picture that must not be squashed. */
   lockRatio?: boolean;
 }

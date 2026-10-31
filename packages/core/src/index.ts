@@ -15,6 +15,14 @@ export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
 export { canMove } from "./registry/can-move";
 export { keepsRatio } from "./registry/keeps-ratio";
+export {
+  BASIC_CATEGORY,
+  DEFAULT_CATEGORY,
+  type LibraryGroup,
+  type LibraryItem,
+  libraryOf,
+  searchRegistry,
+} from "./registry/library";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export type { ComponentDef, Field, Registry } from "./registry/types";
