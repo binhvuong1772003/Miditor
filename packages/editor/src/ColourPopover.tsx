@@ -243,6 +243,70 @@ interface Dropper {
 const dropperOf = (): (new () => Dropper) | undefined =>
   (window as unknown as { EyeDropper?: new () => Dropper }).EyeDropper;
 
+const toRgb = (hex: string): [number, number, number] => [
+  Number.parseInt(hex.slice(1, 3), 16),
+  Number.parseInt(hex.slice(3, 5), 16),
+  Number.parseInt(hex.slice(5, 7), 16),
+];
+
+const fromRgb = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+
+/** One of the red, green or blue numbers, from 0 to 255. It keeps its text while it is typed. */
+function Channel({
+  letter,
+  name,
+  value,
+  onValue,
+  onDone,
+}: {
+  letter: string;
+  name: string;
+  value: number;
+  onValue: (value: number) => void;
+  onDone: () => void;
+}) {
+  const [text, setText] = useState(String(value));
+  const changed = useRef(false);
+
+  // A drag of the square or the slider changes the number; typing keeps what was typed.
+  useEffect(() => {
+    setText((typed) => (typed !== "" && Number(typed) === value ? typed : String(value)));
+  }, [value]);
+
+  const finish = () => {
+    setText(String(value));
+    if (changed.current) onDone();
+    changed.current = false;
+  };
+
+  return (
+    <label className={styles.channel}>
+      <span aria-hidden="true">{letter}</span>
+      <input
+        inputMode="numeric"
+        aria-label={name}
+        value={text}
+        onChange={(event) => {
+          const typed = event.target.value.replace(/\D/g, "").slice(0, 3);
+          setText(typed);
+          if (typed === "" || Number(typed) > 255) return;
+          changed.current = true;
+          onValue(Number(typed));
+        }}
+        onBlur={finish}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") finish();
+          if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+          event.preventDefault();
+          changed.current = true;
+          onValue(Math.min(255, Math.max(0, value + (event.key === "ArrowUp" ? 1 : -1))));
+        }}
+      />
+    </label>
+  );
+}
+
 /**
  * A free pick: a square for saturation and brightness, a slider for the hue, and the screen
  * eyedropper where the browser has one. The colour is final when the pointer or key is released.
@@ -267,6 +331,14 @@ function FreePicker({
     onPreview(hsvToHex(next));
   };
   const done = () => onCommit(hsvToHex(latest.current));
+
+  // A grey or a black has no hue of its own in its numbers, so the hue the person chose stays.
+  const setChannel = (at: 0 | 1 | 2, value: number) => {
+    const rgb = toRgb(hsvToHex(latest.current));
+    rgb[at] = value;
+    const next = hexToHsv(fromRgb(...rgb));
+    move(next.s === 0 || next.v === 0 ? { ...next, h: latest.current.h } : next);
+  };
 
   const fromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
     const box = area.current?.getBoundingClientRect();
@@ -297,6 +369,7 @@ function FreePicker({
   };
 
   const current = hsvToHex(hsv);
+  const rgb = toRgb(current);
   return (
     <div className={styles.free}>
       <div
@@ -363,6 +436,24 @@ function FreePicker({
             <Icon name="pipette" size={16} />
           </button>
         )}
+      </div>
+      <div className={styles.channels}>
+        {(
+          [
+            ["R", "Red"],
+            ["G", "Green"],
+            ["B", "Blue"],
+          ] as const
+        ).map(([letter, name], at) => (
+          <Channel
+            key={letter}
+            letter={letter}
+            name={name}
+            value={rgb[at] ?? 0}
+            onValue={(value) => setChannel(at as 0 | 1 | 2, value)}
+            onDone={done}
+          />
+        ))}
       </div>
     </div>
   );
