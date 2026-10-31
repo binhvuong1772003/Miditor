@@ -636,3 +636,134 @@ describe("<Render> Button", () => {
     expect(tagOf(markup, "b")).toContain("overflow:hidden");
   });
 });
+
+const Seen: Renderer = ({ device, responsive }) => (
+  <b data-d={device} data-r={String(responsive)} />
+);
+
+describe("<Render> responsive", () => {
+  const draw = (
+    data: PageData,
+    responsive: Parameters<typeof Render>[0]["responsive"] = {},
+    extra: { styleNonce?: string } = {},
+  ) => renderToStaticMarkup(<Render data={data} responsive={responsive} {...extra} />);
+  const withPhone = (): FreeNode => ({
+    ...free("a"),
+    phone: {
+      x: { anchor: "start", offset: 4 },
+      y: { anchor: "start", offset: 8 },
+      w: { kind: "percent", v: 90 },
+      h: { kind: "px", v: 50 },
+      rotation: 0,
+    },
+  });
+
+  it("makes the box around the page a container and brings the style sheet with it", () => {
+    const markup = draw(page(flow("root", "Page")));
+    expect(markup).toContain("container-type:inline-size");
+    expect(markup).toContain("<style>@container (max-width: 640px)");
+    expect(markup).toContain("--midito-phone: ;");
+  });
+
+  it("can follow the window, and then the box is no container", () => {
+    const markup = draw(page(flow("root", "Page")), { query: "viewport", breakpoint: 480 });
+    expect(markup).not.toContain("container-type");
+    expect(markup).toContain("@media (max-width: 480px)");
+  });
+
+  it("gives the style sheet a nonce when it is asked to", () => {
+    expect(draw(page(flow("root", "Page")), {}, { styleNonce: "abc123" })).toContain(
+      '<style nonce="abc123">',
+    );
+  });
+
+  it("draws no style sheet and no variable for a page that is for one screen", () => {
+    const markup = html(page(flow("root", "Page", [withPhone()])));
+    expect(markup).not.toContain("<style");
+    expect(markup).not.toContain("--m-");
+    expect(markup).not.toContain("container-type");
+  });
+
+  it("places a block on the desktop and on the phone through variables", () => {
+    const tag = tagOf(draw(page(flow("root", "Page", [{ ...withPhone(), id: "hero" }]))), "hero");
+    expect(tag).toContain("left:var(--m-left-p, var(--m-left-d))");
+    expect(tag).toContain("--m-left-d:");
+    expect(tag).toContain("--m-left-p:var(--midito-phone) 4px");
+    expect(tag).toContain("--m-top-p:var(--midito-phone) 8px");
+    expect(tag).toContain("--m-width-p:var(--midito-phone) 90%");
+    expect(tag).toContain("--m-height-p:var(--midito-phone) 50px");
+  });
+
+  it("writes what the two screens share as it is, and a block of the flow needs no variable", () => {
+    const markup = draw(page(flow("root", "Page", [flow("box", "Container")])));
+    expect(markup).not.toContain("--m-");
+    expect(tagOf(markup, "box")).toContain("position:relative");
+  });
+
+  it("shrinks a block that nobody placed for the phone, like a phone does", () => {
+    const tag = tagOf(draw(page(flow("root", "Page", [free("a")]))), "a");
+    expect(tag).toContain("--m-right-d:20px");
+    expect(tag).toContain("--m-right-p:var(--midito-phone) 7.81px");
+    expect(tag).toContain("--m-top-p:var(--midito-phone) 15.63px");
+    expect(tag).toContain("--m-height-d:96px");
+    expect(tag).toContain("--m-height-p:var(--midito-phone) 37.5px");
+  });
+
+  it("sets a text in its own size on each screen", () => {
+    const data = page(
+      flow("root", "Page", [
+        { ...flow("t", "Text"), props: { text: "Hi", size: 40 }, phoneProps: { size: 20 } },
+      ]),
+    );
+    const tag = tagOf(draw(data), "t");
+    expect(tag).toContain("font-size:var(--m-font-size-p, var(--m-font-size-d))");
+    expect(tag).toContain("--m-font-size-d:40px");
+    expect(tag).toContain("--m-font-size-p:var(--midito-phone) 20px");
+  });
+
+  it("shrinks the size of a text that has none of its own for the phone", () => {
+    const data = page(
+      flow("root", "Page", [{ ...flow("t", "Text"), props: { text: "Hi", size: 40 } }]),
+    );
+    const tag = tagOf(draw(data), "t");
+    expect(tag).toContain("--m-font-size-d:40px");
+    expect(tag).toContain("--m-font-size-p:var(--midito-phone) 15.63px");
+  });
+
+  it("gives a button the colours it has on each screen", () => {
+    const data = page(
+      flow("root", "Page", [
+        {
+          ...flow("b", "Button"),
+          props: { label: "Go", fill: "#111111" },
+          phoneProps: { fill: "#ff0000" },
+        },
+      ]),
+    );
+    const tag = tagOf(draw(data), "b");
+    expect(tag).toContain("--m-background-color-d:#111111");
+    expect(tag).toContain("--m-background-color-p:var(--midito-phone) #ff0000");
+  });
+
+  it("tells the function of a host that the page is responsive and that it draws for a desktop", () => {
+    const data = page(flow("root", "Page", [flow("h", "Heart")]));
+    const markup = renderToStaticMarkup(
+      <Render data={data} responsive={{}} renderers={{ Heart: Seen }} />,
+    );
+    expect(markup).toContain('data-d="desktop"');
+    expect(markup).toContain('data-r="true"');
+    const plain = renderToStaticMarkup(
+      <Render data={data} device="phone" renderers={{ Heart: Seen }} />,
+    );
+    expect(plain).toContain('data-d="phone"');
+    expect(plain).toContain('data-r="false"');
+  });
+
+  it("is the same page as the desktop one wherever nothing is set for the phone", () => {
+    const data = page(flow("root", "Page", [flow("box", "Container", [flow("in", "Container")])]));
+    const strip = (markup: string) => markup.replace(/<style>.*?<\/style>/, "");
+    const responsive = strip(draw(data));
+    expect(responsive).toContain('data-midito-id="in"');
+    expect(strip(html(data))).not.toContain("--m-");
+  });
+});
