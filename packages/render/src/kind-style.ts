@@ -2,6 +2,7 @@ import {
   type Device,
   isFontStack,
   isImageUrl,
+  isLinkUrl,
   type JsonValue,
   PHONE_RATIO,
   resolveColor,
@@ -37,6 +38,12 @@ export const pageFont = (theme?: Theme) => themeFont(theme, "body") ?? DEFAULT_F
 /** The text a `Text` block shows: its `text` prop, or nothing when that is not a string. */
 export const textOf = (props: Props) => (typeof props.text === "string" ? props.text : "");
 
+/** The size on this screen: on a phone it follows the page, but is not below 12 px nor above the desktop's. */
+const sizeOnScreen = (desktop: number, device: Device) =>
+  device === "phone"
+    ? Math.round(Math.max(desktop * PHONE_RATIO, Math.min(desktop, PHONE_MIN_SIZE)) * 100) / 100
+    : desktop;
+
 /**
  * The typography of a `Text` block, also where it sits across its box. Every key is written, so an
  * edit changes a value and removes no key. On a phone the size follows the page, as the rest of the
@@ -48,10 +55,7 @@ export function textStyle(props: Props, device: Device = "desktop", theme?: Them
     typeof size === "number" && Number.isFinite(size)
       ? Math.round(Math.min(400, Math.max(1, size)) * 100) / 100
       : DEFAULT_SIZE;
-  const px =
-    device === "phone"
-      ? Math.round(Math.max(desktop * PHONE_RATIO, Math.min(desktop, PHONE_MIN_SIZE)) * 100) / 100
-      : desktop;
+  const px = sizeOnScreen(desktop, device);
   const alignment = ALIGNS.find((a) => a === align) ?? "center";
   return {
     fontSize: `${px}px`,
@@ -115,4 +119,59 @@ export const imagePlaceholderStyle: CSSProperties = {
   width: "100%",
   height: "100%",
   backgroundColor: PLACEHOLDER,
+};
+
+const SHAPES = { rounded: "8px", pill: "9999px", square: "0" } as const;
+const BUTTON_SIZE = 16;
+const BUTTON_FILL = "#111111";
+const BUTTON_TEXT = "#ffffff";
+
+/** What a `Button` block shows: its label, and where it goes when that is a safe address. */
+export function buttonOf(props: Props): { label: string; href: string | undefined } {
+  const { label, href } = props;
+  return {
+    label: typeof label === "string" ? label : "",
+    href: isLinkUrl(href) ? href : undefined,
+  };
+}
+
+/**
+ * The look of a `Button` block: its fill and text colours (a theme colour is resolved), its text
+ * size (on a phone as a `Text` does), its font and the roundness of its `shape`. Every key is
+ * written, so an edit changes a value and removes no key.
+ */
+export function buttonStyle(
+  props: Props,
+  device: Device = "desktop",
+  theme?: Theme,
+): CSSProperties {
+  const { fill, textColor, shape, size } = props;
+  const desktop =
+    typeof size === "number" && Number.isFinite(size)
+      ? Math.round(Math.min(72, Math.max(8, size)) * 100) / 100
+      : BUTTON_SIZE;
+  return {
+    backgroundColor: resolveColor(fill, theme) ?? BUTTON_FILL,
+    color: resolveColor(textColor, theme) ?? BUTTON_TEXT,
+    fontSize: `${sizeOnScreen(desktop, device)}px`,
+    fontFamily: pageFont(theme),
+    fontWeight: 600,
+    borderRadius: SHAPES[shape as keyof typeof SHAPES] ?? SHAPES.rounded,
+  };
+}
+
+/** The label of a button, set on one line and cut with an ellipsis when it does not fit. */
+export const buttonLabelStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  inlineSize: "100%",
+  blockSize: "100%",
+  boxSizing: "border-box",
+  paddingInline: "12px",
+  color: "inherit",
+  textDecoration: "none",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
 };

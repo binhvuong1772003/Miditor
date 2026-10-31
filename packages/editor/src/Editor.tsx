@@ -1099,6 +1099,7 @@ export function Editor({
         <Render
           data={shown}
           device={frame}
+          links="inert"
           renderers={config?.renderers}
           className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
         />

@@ -531,3 +531,108 @@ describe("<Render> theme", () => {
     expect(bare).toContain('data-c="none"');
   });
 });
+
+describe("<Render> Button", () => {
+  const button = (props: Record<string, JsonValue>, phoneProps?: Record<string, JsonValue>) =>
+    page(
+      flow("root", "Page", [
+        { ...flow("b", "Button"), props, ...(phoneProps ? { phoneProps } : {}) },
+      ]),
+    );
+  const live = (data: PageData, device?: Device) =>
+    renderToStaticMarkup(<Render data={data} {...(device ? { device } : {})} />);
+  const inert = (data: PageData) => renderToStaticMarkup(<Render data={data} links="inert" />);
+  const anchor = (markup: string) => /<a[^>]*>/.exec(markup)?.[0] ?? "";
+
+  it("draws its label in a link when the address is a safe one", () => {
+    const markup = live(button({ label: "Go", href: "https://e.co/x" }));
+    expect(anchor(markup)).toContain('href="https://e.co/x"');
+    expect(anchor(markup)).toContain('rel="noopener noreferrer"');
+    expect(markup).toContain(">Go</a>");
+  });
+
+  it("accepts a mail, a phone and a page anchor", () => {
+    for (const href of ["mailto:a@b.co", "tel:+84901234567", "#top", "/contact"]) {
+      expect(anchor(live(button({ label: "x", href }))), href).toContain(`href="${href}"`);
+    }
+  });
+
+  it("draws the label with no link when there is no address or it is not safe", () => {
+    for (const href of ["", "javascript:alert(1)", "//evil.com", "data:text/html,x", 5, null]) {
+      const markup = live(button({ label: "Go", href }));
+      expect(markup, String(href)).not.toContain("<a ");
+      expect(markup, String(href)).toContain(">Go</span>");
+    }
+    expect(live(button({ label: "Go" }))).not.toContain("<a ");
+  });
+
+  it("draws no link at all when the links are inert, so pressing it goes nowhere", () => {
+    const markup = inert(button({ label: "Go", href: "https://e.co/x" }));
+    expect(markup).not.toContain("<a ");
+    expect(markup).not.toContain("href=");
+    expect(markup).toContain(">Go</span>");
+  });
+
+  it("is not a text: nothing inside it is drawn but the label", () => {
+    const data = page(
+      flow("root", "Page", [
+        { ...flow("b", "Button", [free("in")]), props: { label: "Go", href: "" } },
+      ]),
+    );
+    expect(live(data)).not.toContain('data-midito-id="in"');
+  });
+
+  it("draws the label as nothing when it is not a string", () => {
+    expect(live(button({ label: 5 }))).toContain("></span>");
+  });
+
+  it("is dark with white text and rounded by default", () => {
+    const tag = tagOf(live(button({ label: "Go" })), "b");
+    expect(tag).toContain("background-color:#111111");
+    expect(tag).toContain("color:#ffffff");
+    expect(tag).toContain("border-radius:8px");
+    expect(tag).toContain("font-size:16px");
+    expect(tag).toContain("font-weight:600");
+  });
+
+  it("takes its colours from the props, and from the theme when they name a colour of it", () => {
+    const data: PageData = {
+      ...button({ label: "Go", fill: "@brand", textColor: "#ff0000" }),
+      theme: { colors: { brand: "#112233" } },
+    };
+    const tag = tagOf(live(data), "b");
+    expect(tag).toContain("background-color:#112233");
+    expect(tag).toContain("color:#ff0000");
+    const missing = tagOf(live(button({ label: "Go", fill: "@nope" })), "b");
+    expect(missing).toContain("background-color:#111111");
+  });
+
+  it("is rounded by its shape, and a radius of its own wins", () => {
+    expect(tagOf(live(button({ shape: "pill" })), "b")).toContain("border-radius:9999px");
+    expect(tagOf(live(button({ shape: "square" })), "b")).toContain("border-radius:0");
+    expect(tagOf(live(button({ shape: "other" })), "b")).toContain("border-radius:8px");
+    const styled = page(
+      flow("root", "Page", [
+        { ...flow("b", "Button"), props: { shape: "pill" }, styles: { borderRadius: 3 } },
+      ]),
+    );
+    expect(tagOf(live(styled), "b")).toContain("border-radius:3px");
+  });
+
+  it("sets the text size between 8 and 72, shrinks it on a phone and keeps one set for the phone", () => {
+    expect(tagOf(live(button({ size: 2 })), "b")).toContain("font-size:8px");
+    expect(tagOf(live(button({ size: 500 })), "b")).toContain("font-size:72px");
+    expect(tagOf(live(button({ size: "big" })), "b")).toContain("font-size:16px");
+    expect(tagOf(live(button({ size: 40 }), "phone"), "b")).toContain("font-size:15.63px");
+    expect(tagOf(live(button({ size: 40 }, { size: 20 }), "phone"), "b")).toContain(
+      "font-size:20px",
+    );
+  });
+
+  it("keeps its label on one line inside the box", () => {
+    const markup = live(button({ label: "A very long label that cannot fit" }));
+    expect(markup).toContain("white-space:nowrap");
+    expect(markup).toContain("text-overflow:ellipsis");
+    expect(tagOf(markup, "b")).toContain("overflow:hidden");
+  });
+});

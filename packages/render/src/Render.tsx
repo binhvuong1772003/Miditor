@@ -6,8 +6,11 @@ import {
   type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
+  buttonLabelStyle,
+  buttonOf,
+  buttonStyle,
   imageOf,
   imagePlaceholderStyle,
   imageStyle,
@@ -49,6 +52,11 @@ export interface RenderProps {
    * type with no entry here stays an empty box.
    */
   renderers?: Readonly<Record<string, Renderer>> | undefined;
+  /**
+   * What a link does: `"live"` (the default) draws a button's link as a real one, `"inert"` draws the
+   * same button with no address, so pressing it in an editor goes nowhere.
+   */
+  links?: "live" | "inert" | undefined;
 }
 
 interface NodeProps {
@@ -57,9 +65,10 @@ interface NodeProps {
   device: Device;
   renderers: Readonly<Record<string, Renderer>> | undefined;
   theme: Theme | undefined;
+  inert: boolean;
 }
 
-function RenderNode({ node, isRoot, device, renderers, theme }: NodeProps) {
+function RenderNode({ node, isRoot, device, renderers, theme, inert }: NodeProps) {
   // What the node has on this screen: on a phone the values set by hand for it come over the others.
   const props = propsFor(node, device);
   // A text size that a person set for the phone is the size, with no shrinking by the page ratio.
@@ -67,13 +76,16 @@ function RenderNode({ node, isRoot, device, renderers, theme }: NodeProps) {
     device === "phone" && node.phoneProps && Object.hasOwn(node.phoneProps, "size")
       ? "desktop"
       : device;
+  const base = nodeStyle(node, isRoot, device, theme);
   const common = {
     "data-midito-id": node.id,
     "data-midito-type": node.type,
     style:
       node.type === "Text"
-        ? { ...nodeStyle(node, isRoot, device, theme), ...textStyle(props, sizeDevice, theme) }
-        : nodeStyle(node, isRoot, device, theme),
+        ? { ...base, ...textStyle(props, sizeDevice, theme) }
+        : node.type === "Button"
+          ? buttonLabelLook(base, buttonStyle(props, sizeDevice, theme))
+          : base,
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
   if (!isBuiltIn(node.type)) {
@@ -82,12 +94,27 @@ function RenderNode({ node, isRoot, device, renderers, theme }: NodeProps) {
     if (!draw) return <div {...common} data-midito-unknown="" />;
     return (
       <div {...common}>
-        {draw({ props, device, theme, children: kids(node, device, renderers, theme) })}
+        {draw({ props, device, theme, children: kids(node, device, renderers, theme, inert) })}
       </div>
     );
   }
   // A text is its words: it has no blocks inside, so any in the data are not drawn.
   if (node.type === "Text") return <div {...common}>{textOf(props)}</div>;
+  // A button is its label, a link when it has a safe address and the screen is not an editor's.
+  if (node.type === "Button") {
+    const { label, href } = buttonOf(props);
+    return (
+      <div {...common}>
+        {href && !inert ? (
+          <a href={href} rel="noopener noreferrer" style={buttonLabelStyle}>
+            {label}
+          </a>
+        ) : (
+          <span style={buttonLabelStyle}>{label}</span>
+        )}
+      </div>
+    );
+  }
   // A picture is its picture: like a text it has no blocks inside. A missing or unsafe address is a grey box.
   if (node.type === "Image") {
     const picture = imageOf(props);
@@ -104,7 +131,7 @@ function RenderNode({ node, isRoot, device, renderers, theme }: NodeProps) {
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props, theme)} />}
-      {kids(node, device, renderers, theme)}
+      {kids(node, device, renderers, theme, inert)}
     </div>
   );
 }
@@ -114,6 +141,7 @@ const kids = (
   device: Device,
   renderers: NodeProps["renderers"],
   theme: Theme | undefined,
+  inert: boolean,
 ) =>
   node.children.map((child) => (
     <RenderNode
@@ -123,6 +151,7 @@ const kids = (
       device={device}
       renderers={renderers}
       theme={theme}
+      inert={inert}
     />
   ));
 
@@ -130,7 +159,7 @@ const kids = (
  * Draws a page from its data. Read-only and safe to render on the server: it touches neither
  * `window` nor `document`. The wrapper is a column so the page fills it.
  */
-export function Render({ data, className, device, renderers }: RenderProps) {
+export function Render({ data, className, device, renderers, links }: RenderProps) {
   const screen = device === "phone" ? "phone" : "desktop";
   return (
     <div
@@ -144,7 +173,18 @@ export function Render({ data, className, device, renderers }: RenderProps) {
         device={screen}
         renderers={renderers}
         theme={data.theme}
+        inert={links === "inert"}
       />
     </div>
   );
+}
+
+/**
+ * The look of a button over the look of every block. The roundness of its shape is for a button with
+ * no radius of its own: a radius set in the styles stays.
+ */
+function buttonLabelLook(base: CSSProperties, look: CSSProperties): CSSProperties {
+  return base.borderRadius === "0"
+    ? { ...base, ...look }
+    : { ...base, ...look, borderRadius: base.borderRadius };
 }
