@@ -104,6 +104,21 @@ select.input {
   color: var(--_danger);
 }
 
+/* A control with the controls beside it, and a field with what is under it (an error, a hint). */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-inline-size: 0;
+}
+
 /* The picture behind a block, small. Its address went through `isImageUrl` before it got here. */
 .thumb {
   flex: none;
