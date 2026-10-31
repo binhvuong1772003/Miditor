@@ -1,5 +1,19 @@
 import type { CSSProperties } from "react";
 
+/** The width, in px, below which the page is laid out for a phone unless the host says otherwise. */
+export const DEFAULT_BREAKPOINT = 640;
+
+/** Which width the switch follows: the box that holds the page, or the window. */
+export type ResponsiveQuery = "container" | "viewport";
+
+/** What `responsiveCss` needs. */
+export interface ResponsiveOptions {
+  /** The width in px at and below which the phone layout is used. Defaults to `DEFAULT_BREAKPOINT`. */
+  breakpoint?: number | undefined;
+  /** `"container"` (the default) follows the box that holds the page, `"viewport"` the window. */
+  query?: ResponsiveQuery | undefined;
+}
+
 /**
  * The custom property that says "this is a phone". It is not set on a desktop, where it counts as
  * having no value, and it is set to an empty value on a phone (see `responsiveCss`). A declaration
@@ -41,4 +55,28 @@ export function splitStyles(desktop: CSSProperties, phone: CSSProperties): CSSPr
     extra[`${name}-p`] = `var(${PHONE_VAR}) ${p === undefined ? ABSENT : String(p)}`;
   }
   return { ...out, ...extra } as CSSProperties;
+}
+
+/** A width a query can use: a whole number of px from 1 to 10000, or else the default. */
+const widthOf = (breakpoint: number | undefined) =>
+  typeof breakpoint === "number" &&
+  Number.isInteger(breakpoint) &&
+  breakpoint >= 1 &&
+  breakpoint <= 10000
+    ? breakpoint
+    : DEFAULT_BREAKPOINT;
+
+/**
+ * The one style sheet that every responsive page needs, with no part that depends on the page. Where
+ * the page is narrow it gives the first node inside the page box `--midito-phone` with an empty
+ * value, which every block under it inherits, so each `var(--m-x-p, var(--m-x-d))` of `splitStyles`
+ * takes its phone value. A `container` query looks at the width of the page box, which has to be a
+ * container (`container-type: inline-size`); a `viewport` query looks at the window.
+ */
+export function responsiveCss(options: ResponsiveOptions = {}): string {
+  const width = widthOf(options.breakpoint);
+  const rule = `:where([data-midito-render]) > * { ${PHONE_VAR}: ; }`;
+  return options.query === "viewport"
+    ? `@media (max-width: ${width}px) { ${rule} }`
+    : `@container (max-width: ${width}px) { ${rule} }`;
 }

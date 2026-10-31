@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { PHONE_VAR, splitStyles } from "./responsive";
+import { DEFAULT_BREAKPOINT, PHONE_VAR, responsiveCss, splitStyles } from "./responsive";
 
 describe("splitStyles", () => {
   it("writes a property that is the same on both screens as it is", () => {
@@ -129,6 +129,50 @@ describe("splitStyles", () => {
         expect(resolve(split, false)).toEqual(want(desktop, phone));
         expect(resolve(split, true)).toEqual(want(phone, desktop));
       }),
+    );
+  });
+});
+
+describe("responsiveCss", () => {
+  const rule = `:where([data-midito-render]) > * { ${PHONE_VAR}: ; }`;
+
+  it("switches by the width of the box that holds the page, at 640 px by default", () => {
+    expect(DEFAULT_BREAKPOINT).toBe(640);
+    expect(responsiveCss()).toBe(`@container (max-width: 640px) { ${rule} }`);
+    expect(responsiveCss({})).toBe(responsiveCss());
+    expect(responsiveCss({ query: "container" })).toBe(responsiveCss());
+  });
+
+  it("can follow the window instead", () => {
+    expect(responsiveCss({ query: "viewport" })).toBe(`@media (max-width: 640px) { ${rule} }`);
+  });
+
+  it("uses the breakpoint it is given", () => {
+    expect(responsiveCss({ breakpoint: 480 })).toContain("(max-width: 480px)");
+    expect(responsiveCss({ breakpoint: 1, query: "viewport" })).toContain("(max-width: 1px)");
+    expect(responsiveCss({ breakpoint: 10000 })).toContain("(max-width: 10000px)");
+  });
+
+  it("uses the default for a breakpoint that is not a whole number of px from 1 to 10000", () => {
+    for (const breakpoint of [
+      0,
+      -5,
+      10001,
+      480.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      "480" as unknown as number,
+    ]) {
+      expect(responsiveCss({ breakpoint }), String(breakpoint)).toBe(responsiveCss());
+    }
+  });
+
+  it("cannot be made to carry anything but a number, or one of the two queries", () => {
+    const attack = "480px) { } body { display: none } @media (max-width: 1" as unknown as number;
+    expect(responsiveCss({ breakpoint: attack })).toBe(responsiveCss());
+    expect(responsiveCss({ query: "x" as "viewport" })).toBe(responsiveCss());
+    expect(responsiveCss({ breakpoint: 480, query: "viewport" })).toBe(
+      `@media (max-width: 480px) { ${rule} }`,
     );
   });
 });
