@@ -80,6 +80,7 @@ import { AssetsPanel } from "./AssetsPanel";
 import type { ActionDef } from "./actions";
 import { BlockLabel } from "./BlockLabel";
 import { BlocksPanel } from "./BlocksPanel";
+import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
 import { createDebounce } from "./debounce";
 import styles from "./Editor.module.css";
@@ -393,6 +394,8 @@ export function Editor({
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // The menu of a right press on a block: where it opens. The blocks it acts on are the selected ones.
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
   const [dropId, setDropId] = useState<string | null>(null);
   // The box a person is dragging out on the empty page to select the blocks it touches, in screen px.
@@ -588,6 +591,49 @@ export function Editor({
     }
     setHoverId((now) => (now === next ? now : next));
   };
+
+  /** A right press on a block selects it, when it is not selected yet, and opens the menu of what can be done to it. */
+  const openMenu = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as Element;
+    const own = isMoveableLayer(target) ? selectedId : undefined;
+    const id = own ?? target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+    const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+    // Off a block the browser's own menu stays.
+    if (!hit || hit.id === data.root.id) return;
+    event.preventDefault();
+    if (draft) commitPatch(draft.id, draft);
+    setHoverId(null);
+    if (hit.id !== selectedId && !picked.includes(hit.id)) {
+      setPicked([]);
+      setSelectedId(hit.id);
+      setScopeId(hit.scopeId);
+    }
+    setMenuAt({ x: event.clientX, y: event.clientY });
+  };
+
+  /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
+  const menuItems = (): ContextMenuItem[] => [
+    { label: "Duplicate", hint: "Ctrl+D", disabled: onPhone, onSelect: duplicateSelected },
+    { label: "Delete", hint: "Del", disabled: onPhone, danger: true, onSelect: deleteBlock },
+    "separator",
+    { label: "Bring forward", disabled: onPhone, onSelect: () => reorderSelected("forward") },
+    { label: "Send backward", disabled: onPhone, onSelect: () => reorderSelected("backward") },
+    { label: "Bring to front", disabled: onPhone, onSelect: () => reorderSelected("front") },
+    { label: "Send to back", disabled: onPhone, onSelect: () => reorderSelected("back") },
+    "separator",
+    {
+      label: "Group",
+      hint: "Ctrl+G",
+      disabled: onPhone || picked.length === 0,
+      onSelect: groupSelected,
+    },
+    {
+      label: "Ungroup",
+      hint: "Ctrl+Shift+G",
+      disabled: onPhone || selectedNode?.type !== "Group",
+      onSelect: ungroupSelected,
+    },
+  ];
 
   /** A press on a node selects it; a press on the page or the grey around it clears the selection. */
   const press = (event: PointerEvent<HTMLElement>) => {
@@ -1459,6 +1505,7 @@ export function Editor({
         tabIndex={0}
         onPointerDown={press}
         onPointerMove={hover}
+        onContextMenu={openMenu}
         onPointerLeave={() => setHoverId(null)}
         onDoubleClick={enter}
       >
@@ -1530,6 +1577,18 @@ export function Editor({
               }
             }}
             onCancel={() => setEditing(null)}
+          />
+        )}
+        {menuAt && (
+          <ContextMenu
+            x={menuAt.x}
+            y={menuAt.y}
+            items={menuItems()}
+            onClose={() => {
+              setMenuAt(null);
+              // The keys of the editor work again where the pointer was.
+              editorRoot.current?.focus({ preventScroll: true });
+            }}
           />
         )}
         {workspace && !editing && hoverId && hoverElement && hoverNode && (
