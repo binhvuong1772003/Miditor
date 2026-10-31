@@ -13,4 +13,5 @@ export {
 } from "@midito-kitchen/core";
 export type { Renderer, RendererContext } from "@midito-kitchen/render";
 export { Editor, type EditorProps } from "./Editor";
+export type { SaveStatus } from "./save-status";
 export type { UploadImage } from "./upload-image";

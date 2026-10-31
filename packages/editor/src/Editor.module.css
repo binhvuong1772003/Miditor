@@ -82,6 +82,11 @@
   white-space: nowrap;
 }
 
+.status[data-state="error"] {
+  color: var(--_danger);
+  font-weight: 500;
+}
+
 .toolbarEnd {
   display: flex;
   justify-content: flex-end;

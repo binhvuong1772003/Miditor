@@ -73,6 +73,7 @@ import {
 import { AssetsPanel } from "./AssetsPanel";
 import { BlocksPanel } from "./BlocksPanel";
 import { isMoveableLayer, type ResizeResult, SelectionBox } from "./canvas/SelectionBox";
+import { createDebounce } from "./debounce";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import { canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
@@ -82,6 +83,7 @@ import { boxBetween, type Edges, touched } from "./marquee";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
+import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
 import { ThemePanel } from "./ThemePanel";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 
@@ -101,6 +103,20 @@ export interface EditorProps {
    * editor mounts, and once per change. The argument is the whole page, ready to be stored.
    */
   onChange?: (data: PageData) => void;
+  /**
+   * How long to wait, in ms, after the last change before `onChange` is called, so a run of changes
+   * is one call with the latest page. Without it, or with 0, `onChange` is called at once for each
+   * change. A change that is still waiting is called when the editor unmounts, so none is lost. Give
+   * an object to also set `maxWait`: the longest a change may wait while more keep coming.
+   */
+  onChangeDebounce?: number | { wait: number; maxWait?: number };
+  /**
+   * How the host is storing the page, for the header to say so: "saved", "unsaved", "saving" or
+   * "error". Without it the header follows the Save button (and shows nothing when there is none).
+   * A change that is still waiting for its delayed `onChange` shows as unsaved, whatever this says,
+   * and the Save button is off while the status is "saving".
+   */
+  status?: SaveStatus;
   /**
    * Called when the person presses Save, with the page as it is stored (a field that is being typed
    * in is applied first). Sending it to a back end is the host's job. The Save button only shows
@@ -261,6 +277,8 @@ export function Editor({
   className,
   data: initialData,
   onChange,
+  onChangeDebounce,
+  status,
   onSave,
   headerActions,
   historyLimit,
@@ -286,11 +304,36 @@ export function Editor({
   const notified = useRef(data);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const wait =
+    typeof onChangeDebounce === "number" ? onChangeDebounce : (onChangeDebounce?.wait ?? 0);
+  const maxWait = typeof onChangeDebounce === "object" ? onChangeDebounce.maxWait : undefined;
+  // Whether a change waits for its delayed `onChange`, so the header does not call it saved.
+  const [waiting, setWaiting] = useState(false);
+  const debounced = useMemo(
+    () =>
+      createDebounce<PageData>(
+        (page) => {
+          setWaiting(false);
+          onChangeRef.current?.(page);
+        },
+        wait,
+        maxWait,
+      ),
+    [wait, maxWait],
+  );
+  // A change that waits is not lost when the editor goes away or the delay changes.
+  useEffect(() => () => debounced.flush(), [debounced]);
   useEffect(() => {
     if (data === notified.current) return;
     notified.current = data;
-    onChangeRef.current?.(data);
-  }, [data]);
+    debounced.push(data);
+    setWaiting(debounced.pending());
+  }, [data, debounced]);
+  const headerStatus = resolveStatus(status, {
+    hasSave: onSave !== undefined,
+    clean: data === savedPage,
+    waiting,
+  });
   // The width the page is shown at. A view setting only: it is not in the page data and not in the history.
   const [frame, setFrame] = useState<Device>("desktop");
   // Adding, deleting and grouping change the blocks every screen shares, so they are done on the desktop.
@@ -1061,9 +1104,9 @@ export function Editor({
           >
             <Icon name="redo" size={18} />
           </button>
-          {onSave && (
-            <span className={styles.status} role="status">
-              {data === savedPage ? "Saved" : "Unsaved changes"}
+          {headerStatus && (
+            <span className={styles.status} role="status" data-state={headerStatus}>
+              {STATUS_TEXT[headerStatus]}
             </span>
           )}
         </div>
@@ -1094,6 +1137,7 @@ export function Editor({
             <button
               type="button"
               className={`${styles.button} ${styles.primary}`}
+              disabled={status === "saving"}
               onClick={() => {
                 // A change that is still pending is stored first, and it is part of what is saved.
                 const pending = draft;
