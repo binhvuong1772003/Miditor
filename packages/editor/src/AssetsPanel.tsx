@@ -1,8 +1,9 @@
-import type { Theme, TreeNode } from "@midito-kitchen/core";
+import type { PageMeta, Theme, TreeNode } from "@midito-kitchen/core";
 import styles from "./AssetsPanel.module.css";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import { Icon } from "./icons";
+import { PageInfoFields, type PageInfoFieldsProps } from "./PageInfoFields";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
 import type { UploadImage } from "./upload-image";
@@ -18,6 +19,10 @@ export interface AssetsPanelProps {
   upload?: { busy: boolean; error: string | null; onChoose: () => void } | undefined;
   /** The host's way to upload a picture, for the background picture of the block. */
   uploadImage?: UploadImage | undefined;
+  /** The title, description and share picture of the page. */
+  meta?: PageMeta | undefined;
+  /** One of them changed. */
+  onMeta: PageInfoFieldsProps["onChange"];
   /** A colour of the background is being picked: show it, but do not store it yet. */
   onPreview: (patch: { key: "background"; value: string | undefined }) => void;
   /** The background of the page changed: its colour or its picture. */
@@ -34,6 +39,8 @@ export function AssetsPanel({
   disabled,
   upload,
   uploadImage,
+  meta,
+  onMeta,
   onPreview,
   onCommit,
 }: AssetsPanelProps) {
@@ -58,6 +65,12 @@ export function AssetsPanel({
           )}
         </Section>
       )}
+      <Section
+        title="Page info"
+        help="What the page says about itself in a tab, a search result or a share."
+      >
+        <PageInfoFields meta={meta} onChange={onMeta} />
+      </Section>
       <Section title="Page background" help="The background of the whole page.">
         <div className={fieldStyles.row}>
           <ColourPopover

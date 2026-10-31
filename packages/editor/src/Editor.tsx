@@ -29,6 +29,7 @@ import {
   nextId,
   normalizeAngle,
   type PageData,
+  type PageMeta,
   parentOf,
   parseClipboard,
   pasteNodes,
@@ -45,6 +46,7 @@ import {
   setAnchor,
   type Theme,
   type TreeNode,
+  tidyMeta,
   turnOf,
   ungroupNode,
   updateNode,
@@ -575,6 +577,19 @@ export function Editor({
     setSelectedId(hit.id);
     setScopeId(hit.scopeId);
   };
+
+  /** One field of the page info changed: stored as one step of history. An emptied field is removed. */
+  const changeMeta = (patch: Partial<Record<keyof PageMeta, string | undefined>>) =>
+    setData((prev) => {
+      const merged: PageMeta = { ...prev.meta };
+      for (const [key, value] of Object.entries(patch) as [keyof PageMeta, string | undefined][]) {
+        if (value === undefined) delete merged[key];
+        else merged[key] = value;
+      }
+      const { meta: _old, ...rest } = prev;
+      const next = tidyMeta(merged);
+      return next ? { ...rest, meta: next } : rest;
+    });
 
   /** Store one change on a node, once. The draft is over. */
   const commitPatch = (id: string, patch: PanelPatch) => {
@@ -1237,6 +1252,8 @@ export function Editor({
                   : undefined
               }
               uploadImage={config?.uploadImage}
+              meta={data.meta}
+              onMeta={changeMeta}
               onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
               onCommit={(patch) => commitPatch(data.root.id, patch)}
             />
