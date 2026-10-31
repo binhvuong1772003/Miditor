@@ -17,10 +17,19 @@ import {
   type Theme,
   type TreeNode,
 } from "@midito-kitchen/core";
-import { type ChangeEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  Fragment,
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
+import { Section } from "./Section";
 import { ThemePicker } from "./ThemePicker";
 import type { UploadImage } from "./upload-image";
 
@@ -135,26 +144,28 @@ export function PropertiesPanel({
           {def ? `${def.category ?? "Custom"} block` : "Unknown kind of block"}
         </p>
       </div>
-      <div role="tablist" aria-label="Properties" className={styles.tabs}>
-        {(
-          [
-            ["design", "Design"],
-            ["advanced", "Advanced"],
-          ] as const
-        ).map(([id, name]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`${tabsId}-${id}`}
-            aria-selected={tab === id}
-            aria-controls={`${tabsId}-panel`}
-            className={styles.tab}
-            onClick={() => setTab(id)}
-          >
-            {name}
-          </button>
-        ))}
+      <div className={styles.tabsBar}>
+        <div role="tablist" aria-label="Properties" className={styles.tabs}>
+          {(
+            [
+              ["design", "Design"],
+              ["advanced", "Advanced"],
+            ] as const
+          ).map(([id, name]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              id={`${tabsId}-${id}`}
+              aria-selected={tab === id}
+              aria-controls={`${tabsId}-panel`}
+              className={styles.tab}
+              onClick={() => setTab(id)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
       </div>
       <div
         role="tabpanel"
@@ -163,7 +174,8 @@ export function PropertiesPanel({
         className={styles.tabpanel}
       >
         {tab === "design" ? (
-          <>
+          // A key per tab, so a section of one tab never takes over the open or shut state of another's.
+          <Fragment key="design">
             {hasFields && def && (
               <PropFields
                 def={def}
@@ -172,147 +184,157 @@ export function PropertiesPanel({
                 onChange={(name, value) => onCommit({ key: "prop", name, value })}
               />
             )}
-            <h3 className={styles.section}>Background</h3>
-            {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-            <div role="group" aria-label="Kind of background" className={styles.tabs}>
-              {(
-                [
-                  ["color", "Color"],
-                  ["image", "Image"],
-                ] as const
-              ).map(([id, name]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={styles.tab}
-                  aria-pressed={backgroundKind === id}
-                  onClick={() => setFill(id)}
+            <Section
+              title="Background"
+              actions={
+                // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+                <div
+                  role="group"
+                  aria-label="Kind of background"
+                  className={`${styles.tabs} ${styles.mini}`}
                 >
-                  {name}
-                </button>
-              ))}
-            </div>
-            {backgroundKind === "color" ? (
-              <ColourField
-                label="Fill"
-                pickerLabel="Fill colour picker"
-                hint="Hex colour, like #d5dae3. Leave it empty for no fill."
-                {...colour("background")}
-              />
-            ) : (
-              <BackgroundFields
-                styles={node.styles}
-                uploadImage={uploadImage}
-                onChange={(patch) => onCommit(patch)}
-              />
-            )}
-            <h3 className={styles.section}>Border</h3>
-            <div className={styles.grid2}>
-              <LengthField
-                label="Width"
-                hint="In pixels, like 2. Leave it empty or 0 for no border."
-                {...length("borderWidth")}
-              />
-              <LengthField
-                label="Radius"
-                hint="In pixels, like 4. Leave it empty or 0 for square corners."
-                {...length("borderRadius")}
-              />
-              <div className={styles.span2}>
+                  {(
+                    [
+                      ["color", "Color"],
+                      ["image", "Image"],
+                    ] as const
+                  ).map(([id, name]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={styles.tab}
+                      aria-pressed={backgroundKind === id}
+                      onClick={() => setFill(id)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              {backgroundKind === "color" ? (
                 <ColourField
-                  label="Colour"
-                  pickerLabel="Border colour picker"
-                  hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
-                  {...colour("borderColor")}
+                  label="Fill"
+                  pickerLabel="Fill colour picker"
+                  hint="Hex colour, like #d5dae3. Leave it empty for no fill."
+                  {...colour("background")}
                 />
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {isFreeNode(node) && box && (
-              <>
-                <h3 className={styles.section}>Position and size</h3>
-                <div className={styles.pair}>
-                  {coordinate("X", "X position", "x")}
-                  {coordinate("Y", "Y position", "y")}
-                  {coordinate("W", "Width", "w")}
-                  {coordinate("H", "Height", "h")}
-                  <AngleField
-                    label="R"
-                    name="Rotation"
-                    hint=""
-                    stored={box.rotation}
-                    onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
-                    onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
-                    onDiscard={onDiscard}
+              ) : (
+                <BackgroundFields
+                  styles={node.styles}
+                  uploadImage={uploadImage}
+                  onChange={(patch) => onCommit(patch)}
+                />
+              )}
+            </Section>
+            <Section title="Border">
+              <div className={styles.grid2}>
+                <LengthField
+                  label="Width"
+                  hint="In pixels, like 2. Leave it empty or 0 for no border."
+                  {...length("borderWidth")}
+                />
+                <LengthField
+                  label="Radius"
+                  hint="In pixels, like 4. Leave it empty or 0 for square corners."
+                  {...length("borderRadius")}
+                />
+                <div className={styles.span2}>
+                  <ColourField
+                    label="Colour"
+                    pickerLabel="Border colour picker"
+                    hint="Hex colour, like #b3bccb. Empty draws the border in the text colour."
+                    {...colour("borderColor")}
                   />
                 </div>
-                <h3
-                  className={styles.section}
-                  title="What the block sticks to when the page changes size, for example on a phone."
-                >
-                  Anchors
-                </h3>
-                <AnchorSelect
-                  label="Horizontal"
-                  axis="x"
-                  value={box.x.anchor}
-                  onChange={(a) => onAnchor("x", a)}
-                />
-                <AnchorSelect
-                  label="Vertical"
-                  axis="y"
-                  value={box.y.anchor}
-                  onChange={(a) => onAnchor("y", a)}
-                />
-                <button
-                  type="button"
-                  className={styles.chip}
-                  aria-pressed={keepsRatio(node, def)}
-                  title="Resizing keeps the width to height ratio"
-                  onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
-                >
-                  Keep proportions
-                </button>
-                <h3 className={styles.section}>Phone</h3>
-                {device === "phone" ? (
-                  <div className={styles.row}>
-                    <span className={styles.label}>
-                      Layout: {byHand ? "set by hand" : "automatic"}
-                    </span>
-                    {byHand ? (
-                      <button type="button" className={styles.reset} onClick={onResetPhone}>
-                        Reset to automatic
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.reset}
-                        onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
-                      >
-                        Edit separately
-                      </button>
-                    )}
+              </div>
+            </Section>
+          </Fragment>
+        ) : (
+          <Fragment key="advanced">
+            {isFreeNode(node) && box && (
+              <>
+                <Section title="Position and size">
+                  <div className={styles.pair}>
+                    {coordinate("X", "X position", "x")}
+                    {coordinate("Y", "Y position", "y")}
+                    {coordinate("W", "Width", "w")}
+                    {coordinate("H", "Height", "h")}
+                    <AngleField
+                      label="R"
+                      name="Rotation"
+                      hint=""
+                      stored={box.rotation}
+                      onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
+                      onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
+                      onDiscard={onDiscard}
+                    />
                   </div>
-                ) : (
-                  <p className={styles.hint}>
-                    Layout: {byHand ? "set by hand for the phone" : "automatic"}. Switch to Phone to
-                    place this block separately.
-                  </p>
-                )}
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    aria-pressed={keepsRatio(node, def)}
+                    title="Resizing keeps the width to height ratio"
+                    onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
+                  >
+                    Keep proportions
+                  </button>
+                </Section>
+                <Section
+                  title="Anchors"
+                  help="What the block sticks to when the page changes size, for example on a phone."
+                >
+                  <AnchorSelect
+                    label="Horizontal"
+                    axis="x"
+                    value={box.x.anchor}
+                    onChange={(a) => onAnchor("x", a)}
+                  />
+                  <AnchorSelect
+                    label="Vertical"
+                    axis="y"
+                    value={box.y.anchor}
+                    onChange={(a) => onAnchor("y", a)}
+                  />
+                </Section>
+                <Section title="Phone">
+                  {device === "phone" ? (
+                    <div className={styles.row}>
+                      <span className={styles.status}>
+                        Layout: {byHand ? "set by hand" : "automatic"}
+                      </span>
+                      {byHand ? (
+                        <button type="button" className={styles.reset} onClick={onResetPhone}>
+                          Reset to automatic
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.reset}
+                          onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
+                        >
+                          Edit separately
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className={styles.hint}>
+                      Layout: {byHand ? "set by hand for the phone" : "automatic"}. Switch to Phone
+                      to place this block separately.
+                    </p>
+                  )}
+                </Section>
               </>
             )}
-            <details className={styles.developer}>
-              <summary>Developer info</summary>
+            <Section title="Developer info" closed>
               <dl className={styles.facts}>
                 <dt>type</dt>
                 <dd>{node.type}</dd>
                 <dt>id</dt>
                 <dd>{node.id}</dd>
               </dl>
-            </details>
-          </>
+            </Section>
+          </Fragment>
         )}
       </div>
     </div>

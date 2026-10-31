@@ -2,8 +2,6 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
 }
 
 /* Outline buttons, the same shape as the toolbar's. */
@@ -60,80 +58,6 @@
 .delete:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
-}
-
-/* A heading for a group of fields: a hairline above it and room around it. */
-.section {
-  margin: 0.5rem 0 -0.25rem;
-  padding-block-start: 1rem;
-  border-block-start: 1px solid var(--_border);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.meta {
-  margin: -0.5rem 0 0.25rem;
-  color: var(--_muted);
-  font-size: 0.75rem;
-  overflow-wrap: anywhere;
-}
-
-.empty {
-  margin: 0;
-  padding: 1rem;
-  color: var(--_muted);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.label {
-  color: var(--_muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.swatch {
-  flex: none;
-  inline-size: var(--_control);
-  block-size: var(--_control);
-  padding: 2px;
-  border: 1px solid var(--_input);
-  border-radius: var(--_radius);
-  background: var(--_canvas);
-  box-shadow: var(--_lift);
-  cursor: pointer;
-}
-
-.input {
-  flex: 1;
-  min-inline-size: 0;
-  block-size: var(--_control);
-  padding: 0 0.75rem;
-  border: 1px solid var(--_input);
-  border-radius: var(--_radius);
-  background: var(--_canvas);
-  box-shadow: var(--_lift);
-  color: var(--_text);
-  font: inherit;
-  font-variant-numeric: tabular-nums;
 }
 
 /* A select is a little rounder, like the kit's. */
@@ -204,6 +128,7 @@ select.input {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding: 1rem 1rem 0.75rem;
 }
 
 .heading .meta {
@@ -253,22 +178,132 @@ select.input {
 .tabpanel {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
-/* The fields of one section, under its heading. */
-.part {
+/* The tabs sit in a band of their own, with a rule under it like every section. */
+.tabsBar {
+  padding: 0 1rem 0.75rem;
+  border-block-end: 1px solid var(--_border);
+}
+
+/* The same choice made small, to sit at the end of a section's title. */
+.mini {
+  padding: 2px;
+}
+
+.mini .tab {
+  flex: none;
+  block-size: 1.5rem;
+  padding-inline: 0.625rem;
+  font-size: 0.75rem;
+}
+
+/*
+ * One section of the panel. They run edge to edge and a rule closes each one, so the panel reads as
+ * a stack of clear parts: a title that opens and shuts it, and the fields under it.
+ */
+.card {
+  border-block-end: 1px solid var(--_border);
+}
+
+.card:last-child {
+  border-block-end: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: 1rem;
+}
+
+.name {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.fold {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--_text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fold svg {
+  flex: none;
+  color: var(--_muted);
+}
+
+.fold:hover svg {
+  color: var(--_text);
+}
+
+.fold:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  padding: 0 1rem 1rem;
 }
 
-/* The first heading of a tab has no hairline above it: the tabs are already there. */
-.tabpanel > .section:first-child,
-.tabpanel > .part:first-child > .section:first-child {
-  margin-block-start: 0;
-  padding-block-start: 0;
-  border-block-start: 0;
+/* What the phone layout is now, in a few words. */
+.status {
+  color: var(--_muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* A small button with an icon only, at the end of a title. */
+.iconButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--_radius);
+  background: transparent;
+  color: var(--_text);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--_soft);
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
 }
 
 /* X and Y, then W and H, then R: the short labels of the kit. */
@@ -472,26 +507,4 @@ select.input {
 .chip:focus-visible {
   outline: 2px solid var(--_focus);
   outline-offset: 2px;
-}
-
-/* The facts a developer asks for, shut until someone wants them. */
-.developer {
-  margin-block-start: 0.25rem;
-  padding-block-start: 0.75rem;
-  border-block-start: 1px solid var(--_border);
-}
-
-.developer summary {
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.developer summary:focus-visible {
-  outline: 2px solid var(--_focus);
-  outline-offset: 2px;
-}
-
-.developer .facts {
-  margin-block-start: 0.5rem;
 }

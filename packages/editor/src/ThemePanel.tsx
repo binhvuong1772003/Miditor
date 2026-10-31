@@ -1,6 +1,8 @@
 import { isFontStack, isTokenName, resolveColor, type Theme } from "@midito-kitchen/core";
 import { type KeyboardEvent, useId, useState } from "react";
+import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
+import { Section } from "./Section";
 
 export interface ThemePanelProps {
   theme: Theme | undefined;
@@ -29,35 +31,42 @@ export function ThemePanel({
         <h2 className={styles.title}>Page theme</h2>
         <p className={styles.meta}>Whole page</p>
       </div>
-      <h3 className={styles.section}>Colours</h3>
-      {colors.map(([name, color]) => (
-        <ColorRow
-          key={name}
-          name={name}
-          color={resolveColor(color) ?? "#000000"}
-          taken={Object.keys(theme?.colors ?? {})}
-          onSetColor={onSetColor}
-          onRename={onRenameColor}
-          onDelete={onDeleteColor}
-        />
-      ))}
-      <AddColor
-        taken={colors.map(([name]) => name)}
-        onAdd={(name) => onSetColor(name, "#3b82f6")}
-      />
-      <h3 className={styles.section}>Fonts</h3>
-      {(["body", "heading"] as const).map((which) => (
-        <FontField
-          key={`${which}:${theme?.fonts?.[which] ?? ""}`}
-          label={which === "body" ? "Body font" : "Heading font"}
-          stored={theme?.fonts?.[which]}
-          onChange={(stack) => onSetFont(which, stack)}
-        />
-      ))}
-      <p className={styles.hint}>
-        A font has to be loaded by the page that holds the editor (Google Fonts, @font-face): this
-        only names it. Changes here apply to the whole page.
-      </p>
+      <Section
+        title="Colours"
+        actions={
+          <AddColor
+            taken={colors.map(([name]) => name)}
+            onAdd={(name) => onSetColor(name, "#3b82f6")}
+          />
+        }
+      >
+        {colors.map(([name, color]) => (
+          <ColorRow
+            key={name}
+            name={name}
+            color={resolveColor(color) ?? "#000000"}
+            taken={Object.keys(theme?.colors ?? {})}
+            onSetColor={onSetColor}
+            onRename={onRenameColor}
+            onDelete={onDeleteColor}
+          />
+        ))}
+        {colors.length === 0 && <p className={styles.hint}>No colours yet. Add one with +.</p>}
+      </Section>
+      <Section title="Fonts">
+        {(["body", "heading"] as const).map((which) => (
+          <FontField
+            key={`${which}:${theme?.fonts?.[which] ?? ""}`}
+            label={which === "body" ? "Body" : "Heading"}
+            stored={theme?.fonts?.[which]}
+            onChange={(stack) => onSetFont(which, stack)}
+          />
+        ))}
+        <p className={styles.hint}>
+          A font has to be loaded by the page that holds the editor (Google Fonts, @font-face): this
+          only names it. Changes here apply to the whole page.
+        </p>
+      </Section>
     </div>
   );
 }
@@ -72,7 +81,6 @@ interface ColorRowProps {
 }
 
 function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorRowProps) {
-  const id = useId();
   const [text, setText] = useState(name);
   const rename = () => {
     const next = text.trim();
@@ -86,22 +94,18 @@ function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorR
     if (event.key === "Escape") setText(name);
   };
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={id}>
-        {name}
-      </label>
-      <div className={styles.row}>
+    <div className={styles.row}>
+      <input
+        type="color"
+        className={styles.swatch}
+        aria-label={`${name} colour`}
+        value={color}
+        onChange={(event) => onSetColor(name, event.target.value)}
+      />
+      <label className={styles.box}>
         <input
-          type="color"
-          className={styles.swatch}
-          aria-label={`${name} colour`}
-          value={color}
-          onChange={(event) => onSetColor(name, event.target.value)}
-        />
-        <input
-          id={id}
           type="text"
-          className={styles.input}
+          aria-label={`Name of ${name}`}
           value={text}
           spellCheck={false}
           autoComplete="off"
@@ -109,10 +113,16 @@ function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorR
           onBlur={rename}
           onKeyDown={keys}
         />
-        <button type="button" className={styles.reset} onClick={() => onDelete(name)}>
-          Delete
-        </button>
-      </div>
+      </label>
+      <button
+        type="button"
+        className={styles.iconButton}
+        aria-label={`Delete ${name}`}
+        title="Delete this colour: blocks that used it keep the colour they show"
+        onClick={() => onDelete(name)}
+      >
+        <Icon name="trash" />
+      </button>
     </div>
   );
 }
@@ -127,11 +137,13 @@ function AddColor({ taken, onAdd }: { taken: readonly string[]; onAdd: (name: st
   return (
     <button
       type="button"
-      className={styles.reset}
+      className={styles.iconButton}
+      aria-label="Add a colour"
+      title="Add a colour"
       disabled={taken.length >= 32}
       onClick={() => onAdd(free())}
     >
-      Add a colour
+      <Icon name="plus" />
     </button>
   );
 }
@@ -145,7 +157,6 @@ function FontField({
   stored: string | undefined;
   onChange: (stack: string | undefined) => void;
 }) {
-  const id = useId();
   const errorId = useId();
   const [text, setText] = useState(stored ?? "");
   const [invalid, setInvalid] = useState(false);
@@ -173,24 +184,23 @@ function FontField({
     }
   };
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={id}>
-        {label}
+    <div className={styles.stack}>
+      <label className={styles.box} aria-invalid={invalid}>
+        <span className={styles.tag}>{label}</span>
+        <input
+          type="text"
+          className={styles.mono}
+          value={text}
+          placeholder="Inter, sans-serif"
+          spellCheck={false}
+          autoComplete="off"
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
+          onChange={(event) => setText(event.target.value)}
+          onBlur={apply}
+          onKeyDown={keys}
+        />
       </label>
-      <input
-        id={id}
-        type="text"
-        className={`${styles.input} ${styles.mono}`}
-        value={text}
-        placeholder="Inter, sans-serif"
-        spellCheck={false}
-        autoComplete="off"
-        aria-invalid={invalid}
-        aria-describedby={invalid ? errorId : undefined}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={apply}
-        onKeyDown={keys}
-      />
       {invalid && (
         <p id={errorId} className={styles.error} role="alert">
           Letters, digits, spaces, commas, ' and - only.

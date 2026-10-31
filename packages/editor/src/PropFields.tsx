@@ -11,6 +11,7 @@ import {
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
+import { Section } from "./Section";
 import { ThemePicker } from "./ThemePicker";
 
 export interface PropFieldsProps {
@@ -66,8 +67,7 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
     ([a], [b]) => Number(b === DEFAULT_SECTION) - Number(a === DEFAULT_SECTION),
   );
   return ordered.map(([section, fields]) => (
-    <section key={section} className={styles.part} aria-label={section}>
-      <h3 className={styles.section}>{section}</h3>
+    <Section key={section} title={section}>
       <div className={styles.grid2}>
         {fields.map(({ name, field }) => {
           const stored = Object.hasOwn(props, name) ? props[name] : def.defaultProps[name];
@@ -89,7 +89,7 @@ export function PropFields({ def, props, onChange, theme }: PropFieldsProps) {
           );
         })}
       </div>
-    </section>
+    </Section>
   ));
 }
 
