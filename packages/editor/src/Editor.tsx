@@ -261,6 +261,16 @@ export function Editor({
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const [history, setHistory] = useState(() => createHistory(openPage(initialData, config?.theme)));
   const data = history.present;
+  // The page as it was when it was last saved (or opened), to say whether there is more than that.
+  const [savedPage, setSavedPage] = useState(data);
+  // A save that stored a pending change first: the page it saved is the one that change makes.
+  const marking = useRef(false);
+  useEffect(() => {
+    if (marking.current) {
+      marking.current = false;
+      setSavedPage(data);
+    }
+  }, [data]);
   /** Store a change as one step. */
   const setData = (change: (prev: PageData) => PageData) =>
     setHistory((h) => commit(h, change(h.present), historyLimit));
@@ -1043,6 +1053,11 @@ export function Editor({
           >
             <Icon name="redo" size={18} />
           </button>
+          {onSave && (
+            <span className={styles.status} role="status">
+              {data === savedPage ? "Saved" : "Unsaved changes"}
+            </span>
+          )}
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
         <div className={styles.segmented} role="group" aria-label="Frame">
@@ -1073,7 +1088,12 @@ export function Editor({
               onClick={() => {
                 // A change that is still pending is stored first, and it is part of what is saved.
                 const pending = draft;
-                if (pending) commitPatch(pending.id, pending);
+                if (pending) {
+                  marking.current = true;
+                  commitPatch(pending.id, pending);
+                } else {
+                  setSavedPage(data);
+                }
                 onSave(pending ? withDraft(data, pending, frame, registry) : data);
               }}
             >

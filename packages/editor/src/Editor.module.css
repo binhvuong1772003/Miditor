@@ -74,6 +74,14 @@
   gap: 0.25rem;
 }
 
+/* Whether what is on the screen is what was saved. */
+.status {
+  margin-inline-start: 0.5rem;
+  color: var(--_muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 .toolbarEnd {
   display: flex;
   justify-content: flex-end;
@@ -149,11 +157,6 @@
 
 .start {
   border-inline-end: 1px solid var(--_border);
-}
-
-/* The delete button is red on its icon, and the button keeps the ghost look. */
-.danger {
-  color: var(--_danger);
 }
 
 .end {
