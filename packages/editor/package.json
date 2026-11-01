@@ -20,6 +20,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./locales/vi": {
+      "import": {
+        "types": "./dist/locales/vi.d.mts",
+        "default": "./dist/locales/vi.mjs"
+      },
+      "require": {
+        "types": "./dist/locales/vi.d.cts",
+        "default": "./dist/locales/vi.cjs"
+      }
+    },
     "./style.css": "./dist/style.css"
   },
   "files": [

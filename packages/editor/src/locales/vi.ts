@@ -1,0 +1,32 @@
+import type { Messages } from "../i18n/en";
+
+/** Vietnamese. Typed as the whole set of keys, so a missing or an extra key does not compile. */
+export const vi: Messages = {
+  "header.undo": "Hoàn tác",
+  "header.undoTitle": "Hoàn tác (Ctrl+Z)",
+  "header.redo": "Làm lại",
+  "header.redoTitle": "Làm lại (Shift+Ctrl+Z)",
+  "header.frame": "Khung hiển thị",
+  "header.desktop": "Máy tính",
+  "header.phone": "Điện thoại",
+  "header.zoom": "Thu phóng",
+  "header.zoomOut": "Thu nhỏ",
+  "header.zoomOutTitle": "Thu nhỏ (Ctrl hoặc Cmd và -)",
+  "header.zoomIn": "Phóng to",
+  "header.zoomInTitle": "Phóng to (Ctrl hoặc Cmd và +)",
+  "header.zoomResetTitle": "Về 100% (Ctrl hoặc Cmd và 0)",
+  "header.fit": "Vừa khung",
+  "header.fitTitle": "Thu phóng để cả trang vừa khung làm việc",
+  "header.save": "Lưu",
+  "status.saved": "Đã lưu",
+  "status.unsaved": "Có thay đổi chưa lưu",
+  "status.saving": "Đang lưu…",
+  "status.error": "Không lưu được",
+  "rail.label": "Công cụ",
+  "rail.blocks": "Khối",
+  "rail.images": "Hình ảnh",
+  "rail.themes": "Chủ đề",
+  "rail.hide": "Ẩn {name}",
+  "panel.canvas": "Khung làm việc",
+  "panel.properties": "Thuộc tính",
+};
