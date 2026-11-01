@@ -2,6 +2,7 @@ import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitc
 import { useState } from "react";
 import { actions } from "./actions";
 import { fonts } from "./fonts";
+import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { Preview } from "./Preview";
@@ -31,10 +32,17 @@ const embed = embedImage();
 export function App() {
   // `?preview` shows the stored page the way a visitor would get it, for any width.
   if (new URLSearchParams(window.location.search).has("preview")) return <Preview />;
+  if (new URLSearchParams(window.location.search).has("host")) {
+    return (
+      <HostDemo>
+        <Playground embedded />
+      </HostDemo>
+    );
+  }
   return <Playground />;
 }
 
-function Playground() {
+function Playground({ embedded = false }: { embedded?: boolean }) {
   const [page] = useState(openPage);
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
   const [uploaded, setUploaded] = useState(() => loadUploaded(window.localStorage));
@@ -83,6 +91,8 @@ function Playground() {
           window.setTimeout(() => setStatus("saved"), 300);
         }}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
+        // Inside a host that has its own navbar the editor shows no mark of its own.
+        {...(embedded ? { logo: null } : {})}
         headerActions={
           <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
             Responsive preview
