@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import styles from "./ContextMenu.module.css";
+import { useT } from "./i18n/context";
 
 /** One line of the menu, or a rule between two groups. */
 export type ContextMenuItem =
@@ -36,6 +37,7 @@ const choosable = (menu: HTMLElement | null) => [
  * anywhere else, a scroll or a resize. The first item that can be chosen has the focus when it opens.
  */
 export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+  const t = useT();
   const root = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState({ left: x, top: y });
 
@@ -94,7 +96,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     <div
       ref={root}
       role="menu"
-      aria-label="Block actions"
+      aria-label={t("menu.label")}
       className={styles.menu}
       style={place}
       onKeyDown={keys}

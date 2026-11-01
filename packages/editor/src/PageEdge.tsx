@@ -1,5 +1,6 @@
 import { clampPageHeight } from "@midito-kitchen/core";
 import { type PointerEvent, useLayoutEffect, useRef, useState } from "react";
+import { useT } from "./i18n/context";
 import styles from "./PageEdge.module.css";
 
 export interface PageEdgeProps {
@@ -34,6 +35,7 @@ export function PageEdge({
   onCommit,
   onCancel,
 }: PageEdgeProps) {
+  const t = useT();
   const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
   const [live, setLive] = useState<number | null>(null);
   const start = useRef<{ y: number; height: number } | null>(null);
@@ -58,7 +60,7 @@ export function PageEdge({
     <div
       role="separator"
       aria-orientation="horizontal"
-      aria-label="Page height: drag to change"
+      aria-label={t("pageEdge.label")}
       className={styles.edge}
       style={{ left: place.left, top: place.top }}
       onPointerDown={(event) => {

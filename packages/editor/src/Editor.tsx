@@ -665,13 +665,17 @@ export function Editor({
     const at = level ? level.children.findIndex((child) => child.id === selectedId) : -1;
     const what =
       picked.length > 0
-        ? `${1 + picked.length} blocks selected`
+        ? t("props.manySelected", { n: 1 + picked.length })
         : selectedNode
-          ? `${selectedDef?.label ?? selectedNode.type} selected${
-              level && at >= 0 ? `, ${at + 1} of ${level.children.length}` : ""
-            }`
-          : "Nothing selected";
-    announce(note.current ? `${note.current}. ${what}` : what);
+          ? level && at >= 0
+            ? t("a11y.selectedAt", {
+                name: selectedDef?.label ?? selectedNode.type,
+                at: at + 1,
+                total: level.children.length,
+              })
+            : t("a11y.selected", { name: selectedDef?.label ?? selectedNode.type })
+          : t("props.emptyTitle");
+    announce(note.current ? t("a11y.joined", { note: note.current, what }) : what);
     note.current = "";
   }, [selectedId, picked.length]);
 
@@ -838,22 +842,28 @@ export function Editor({
 
   /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
   const menuItems = (): ContextMenuItem[] => [
-    { label: "Duplicate", hint: "Ctrl+D", disabled: onPhone, onSelect: duplicateSelected },
-    { label: "Delete", hint: "Del", disabled: onPhone, danger: true, onSelect: deleteBlock },
+    { label: t("quick.duplicate"), hint: "Ctrl+D", disabled: onPhone, onSelect: duplicateSelected },
+    {
+      label: t("quick.delete"),
+      hint: "Del",
+      disabled: onPhone,
+      danger: true,
+      onSelect: deleteBlock,
+    },
     "separator",
-    { label: "Bring forward", disabled: onPhone, onSelect: () => reorderSelected("forward") },
-    { label: "Send backward", disabled: onPhone, onSelect: () => reorderSelected("backward") },
-    { label: "Bring to front", disabled: onPhone, onSelect: () => reorderSelected("front") },
-    { label: "Send to back", disabled: onPhone, onSelect: () => reorderSelected("back") },
+    { label: t("menu.forward"), disabled: onPhone, onSelect: () => reorderSelected("forward") },
+    { label: t("menu.backward"), disabled: onPhone, onSelect: () => reorderSelected("backward") },
+    { label: t("quick.front"), disabled: onPhone, onSelect: () => reorderSelected("front") },
+    { label: t("quick.back"), disabled: onPhone, onSelect: () => reorderSelected("back") },
     "separator",
     {
-      label: "Group",
+      label: t("quick.group"),
       hint: "Ctrl+G",
       disabled: onPhone || picked.length === 0,
       onSelect: groupSelected,
     },
     {
-      label: "Ungroup",
+      label: t("quick.ungroup"),
       hint: "Ctrl+Shift+G",
       disabled: onPhone || selectedNode?.type !== "Group",
       onSelect: ungroupSelected,
@@ -1336,7 +1346,7 @@ export function Editor({
    */
   const addBlockOf = (kind: string, overrides?: NewNodeOverrides) => {
     if (onPhone) return;
-    note.current = "Block added";
+    note.current = t("a11y.added");
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
     const sizeOf = (element: HTMLElement | null) => ({
@@ -1555,7 +1565,7 @@ export function Editor({
 
   /** A copy of each selected block, a little down and to the right, selected in place of them. */
   const duplicateSelected = () => {
-    note.current = "Block duplicated";
+    note.current = t("a11y.duplicated");
     const container = parentSize();
     if (onPhone || !selectedId || selectedId === data.root.id || !container) return;
     if (draft) commitPatch(draft.id, draft);
@@ -1609,7 +1619,7 @@ export function Editor({
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (onPhone) return;
-    note.current = "Block deleted";
+    note.current = t("a11y.deleted");
     if (!selectedId || selectedId === data.root.id) return;
     const gone = [selectedId, ...picked];
     setDraft(null);

@@ -1,4 +1,5 @@
 import styles from "./EmptyPage.module.css";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 
 export interface EmptyPageProps {
@@ -16,22 +17,19 @@ export interface EmptyPageProps {
  * pointer: the page under it still takes a press.
  */
 export function EmptyPage({ disabled, onAdd, onOpenBlocks }: EmptyPageProps) {
+  const t = useT();
   return (
     <div className={styles.wrap}>
       <div className={styles.card}>
         <Icon name="grid" size={28} />
-        <h2 className={styles.title}>This page is empty</h2>
-        <p className={styles.text}>
-          {disabled
-            ? "Switch to Desktop to add blocks."
-            : "Add a block to start, or pick one from the library on the left."}
-        </p>
+        <h2 className={styles.title}>{t("empty.title")}</h2>
+        <p className={styles.text}>{disabled ? t("empty.desktopOnly") : t("empty.text")}</p>
         <div className={styles.actions}>
           <button type="button" className={styles.primary} disabled={disabled} onClick={onAdd}>
-            Add a box
+            {t("empty.add")}
           </button>
           <button type="button" className={styles.secondary} onClick={onOpenBlocks}>
-            Open blocks
+            {t("empty.open")}
           </button>
         </div>
       </div>

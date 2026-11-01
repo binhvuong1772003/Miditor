@@ -1,17 +1,19 @@
 import type { AlignTo } from "@midito-kitchen/core";
+import { useT } from "./i18n/context";
+import type { MessageKey } from "./i18n/en";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
 
-const ALIGN_ACROSS: [AlignTo, IconName, string][] = [
-  ["left", "edgeLeft", "Align left"],
-  ["center", "edgeCenter", "Align centre"],
-  ["right", "edgeRight", "Align right"],
+const ALIGN_ACROSS: [AlignTo, IconName, MessageKey][] = [
+  ["left", "edgeLeft", "align.left"],
+  ["center", "edgeCenter", "align.center"],
+  ["right", "edgeRight", "align.right"],
 ];
-const ALIGN_DOWN: [AlignTo, IconName, string][] = [
-  ["top", "edgeTop", "Align top"],
-  ["middle", "edgeMiddle", "Align middle"],
-  ["bottom", "edgeBottom", "Align bottom"],
+const ALIGN_DOWN: [AlignTo, IconName, MessageKey][] = [
+  ["top", "edgeTop", "align.top"],
+  ["middle", "edgeMiddle", "align.middle"],
+  ["bottom", "edgeBottom", "align.bottom"],
 ];
 
 export interface AlignSectionProps {
@@ -24,25 +26,23 @@ export interface AlignSectionProps {
 
 /** Lines the selected blocks up, and spreads three or more of them with equal gaps. */
 export function AlignSection({ selectedCount, onAlign, onDistribute }: AlignSectionProps) {
+  const t = useT();
   return (
     <Section
-      title="Align"
-      help={
-        selectedCount > 1
-          ? "Line the selected blocks up with each other."
-          : "Line the block up with the page."
-      }
+      id="align"
+      title={t("align.title")}
+      help={selectedCount > 1 ? t("align.helpMany") : t("align.helpOne")}
     >
       <div className={styles.grid2}>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div role="group" aria-label="Align across" className={styles.seg}>
-          {ALIGN_ACROSS.map(([to, icon, label]) => (
+        <div role="group" aria-label={t("align.across")} className={styles.seg}>
+          {ALIGN_ACROSS.map(([to, icon, key]) => (
             <button
               key={to}
               type="button"
               className={styles.segButton}
-              aria-label={label}
-              title={label}
+              aria-label={t(key)}
+              title={t(key)}
               onClick={() => onAlign(to)}
             >
               <Icon name={icon} />
@@ -50,14 +50,14 @@ export function AlignSection({ selectedCount, onAlign, onDistribute }: AlignSect
           ))}
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div role="group" aria-label="Align down" className={styles.seg}>
-          {ALIGN_DOWN.map(([to, icon, label]) => (
+        <div role="group" aria-label={t("align.down")} className={styles.seg}>
+          {ALIGN_DOWN.map(([to, icon, key]) => (
             <button
               key={to}
               type="button"
               className={styles.segButton}
-              aria-label={label}
-              title={label}
+              aria-label={t(key)}
+              title={t(key)}
               onClick={() => onAlign(to)}
             >
               <Icon name={icon} />
@@ -72,13 +72,13 @@ export function AlignSection({ selectedCount, onAlign, onDistribute }: AlignSect
             disabled={selectedCount < 3}
             title={
               selectedCount < 3
-                ? "Select three or more blocks to spread them"
-                : `Equal gaps ${axis === "x" ? "across" : "down"}`
+                ? t("align.spreadNeed")
+                : t(axis === "x" ? "align.spreadAcross" : "align.spreadDown")
             }
             onClick={() => onDistribute(axis)}
           >
             <Icon name={axis === "x" ? "spreadX" : "spreadY"} />
-            {axis === "x" ? "Across" : "Down"}
+            {axis === "x" ? t("align.acrossShort") : t("align.downShort")}
           </button>
         ))}
       </div>

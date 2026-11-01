@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./QuickActions.module.css";
 
@@ -33,6 +34,7 @@ const GAP = 14;
  * the block is being dragged.
  */
 export function QuickActions(props: QuickActionsProps) {
+  const t = useT();
   const { target, workspace, disabled } = props;
   const [place, setPlace] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -91,13 +93,13 @@ export function QuickActions(props: QuickActionsProps) {
     setOpen(false);
     action();
   };
-  const off = disabled ? "Switch to Desktop to change the blocks" : undefined;
+  const off = disabled ? t("quick.disabled") : undefined;
 
   return (
     <div
       ref={bar}
       role="toolbar"
-      aria-label="Quick actions"
+      aria-label={t("quick.label")}
       className={styles.bar}
       style={{ left: place.x, top: place.y }}
       onPointerDown={(event) => event.stopPropagation()}
@@ -112,8 +114,8 @@ export function QuickActions(props: QuickActionsProps) {
       <button
         type="button"
         className={styles.button}
-        aria-label="Move block up"
-        title={off ?? "Move up in the stack"}
+        aria-label={t("quick.up")}
+        title={off ?? t("quick.upTitle")}
         disabled={disabled}
         onClick={props.onForward}
       >
@@ -122,8 +124,8 @@ export function QuickActions(props: QuickActionsProps) {
       <button
         type="button"
         className={styles.button}
-        aria-label="Move block down"
-        title={off ?? "Move down in the stack"}
+        aria-label={t("quick.down")}
+        title={off ?? t("quick.downTitle")}
         disabled={disabled}
         onClick={props.onBackward}
       >
@@ -132,8 +134,8 @@ export function QuickActions(props: QuickActionsProps) {
       <button
         type="button"
         className={styles.button}
-        aria-label="Duplicate"
-        title={off ?? "Duplicate (Ctrl+D)"}
+        aria-label={t("quick.duplicate")}
+        title={off ?? t("quick.duplicateTitle")}
         disabled={disabled}
         onClick={props.onDuplicate}
       >
@@ -142,8 +144,8 @@ export function QuickActions(props: QuickActionsProps) {
       <button
         type="button"
         className={`${styles.button} ${styles.danger}`}
-        aria-label="Delete"
-        title={off ?? "Delete (Del)"}
+        aria-label={t("quick.delete")}
+        title={off ?? t("quick.deleteTitle")}
         disabled={disabled}
         onClick={props.onDelete}
       >
@@ -152,7 +154,7 @@ export function QuickActions(props: QuickActionsProps) {
       <button
         type="button"
         className={styles.button}
-        aria-label="More"
+        aria-label={t("quick.more")}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -162,20 +164,16 @@ export function QuickActions(props: QuickActionsProps) {
         <Icon name="more" />
       </button>
       {open && (
-        <div id={menuId} role="menu" aria-label="More actions" className={styles.menu}>
+        <div id={menuId} role="menu" aria-label={t("quick.moreActions")} className={styles.menu}>
           <button
             type="button"
             role="menuitem"
             className={styles.item}
             disabled={!props.canGroup}
-            title={
-              props.canGroup
-                ? "Group the selected blocks (Ctrl+G)"
-                : "Select more blocks with Shift"
-            }
+            title={props.canGroup ? t("quick.groupTitle") : t("quick.groupNeedMore")}
             onClick={choose(props.onGroup)}
           >
-            Group
+            {t("quick.group")}
           </button>
           <button
             type="button"
@@ -184,7 +182,7 @@ export function QuickActions(props: QuickActionsProps) {
             disabled={!props.canUngroup}
             onClick={choose(props.onUngroup)}
           >
-            Ungroup
+            {t("quick.ungroup")}
           </button>
           <button
             type="button"
@@ -192,7 +190,7 @@ export function QuickActions(props: QuickActionsProps) {
             className={styles.item}
             onClick={choose(props.onFront)}
           >
-            Bring to front
+            {t("quick.front")}
           </button>
           <button
             type="button"
@@ -200,7 +198,7 @@ export function QuickActions(props: QuickActionsProps) {
             className={styles.item}
             onClick={choose(props.onBack)}
           >
-            Send to back
+            {t("quick.back")}
           </button>
         </div>
       )}

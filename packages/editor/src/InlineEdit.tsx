@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { cleanEditedText } from "./edited-text";
+import { useT } from "./i18n/context";
 
 export interface InlineEditProps {
   /** The block that is being edited, as `<Render>` drew it: the box and the look of the words come from it. */
@@ -48,6 +49,7 @@ export function InlineEdit({
   onDone,
   onCancel,
 }: InlineEditProps) {
+  const t = useT();
   const field = useRef<HTMLDivElement>(null);
   const finished = useRef(false);
   const look = getComputedStyle(element);
@@ -83,7 +85,7 @@ export function InlineEdit({
     <div
       ref={field}
       role="textbox"
-      aria-label="Edit the text of the block"
+      aria-label={t("inline.label")}
       aria-multiline={multiline}
       tabIndex={0}
       contentEditable={plainOnly ? ("plaintext-only" as unknown as boolean) : true}
