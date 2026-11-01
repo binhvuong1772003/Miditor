@@ -1,6 +1,20 @@
+import { builtInRegistry, emptyPage } from "@midito-kitchen/core";
+import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { createEditorStore, StoreProvider, useStore, useStoreApi, useStoreShallow } from "./index";
+import {
+  createEditorStore,
+  type EditorState,
+  initialDocumentState,
+  initialSelectionState,
+  initialViewState,
+  type Run,
+  StoreProvider,
+  useRun,
+  useStore,
+  useStoreApi,
+  useStoreShallow,
+} from "./index";
 
 type State = { zoom: number; tool: string };
 const initial: State = { zoom: 1.25, tool: "layers" };
@@ -75,5 +89,38 @@ describe("the store in React", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => renderToString(<Zoom />)).toThrow("outside of an editor");
     spy.mockRestore();
+  });
+});
+
+const doors = new Map<string, Run>();
+const quiet = { parentSize: () => null, note: () => {} };
+function Door({ name }: { name: string }) {
+  doors.set(name, useRun(100, builtInRegistry, quiet));
+  return null;
+}
+
+describe("useRun", () => {
+  it("gives a door that works on the store of its own editor, also in StrictMode", () => {
+    const state = (): EditorState => ({
+      ...initialViewState({ narrow: false }),
+      ...initialSelectionState("root"),
+      ...initialDocumentState(emptyPage()),
+    });
+    const a = createEditorStore<EditorState>(state());
+    const b = createEditorStore<EditorState>(state());
+    doors.clear();
+    renderToString(
+      <StrictMode>
+        <StoreProvider store={a}>
+          <Door name="a" />
+        </StoreProvider>
+        <StoreProvider store={b}>
+          <Door name="b" />
+        </StoreProvider>
+      </StrictMode>,
+    );
+    (doors.get("a") as Run)("view.zoom", "in");
+    expect(a.getState().zoom).toBe(1.25);
+    expect(b.getState().zoom).toBe(1);
   });
 });

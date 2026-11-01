@@ -2,6 +2,7 @@ import type { Registry } from "@midito-kitchen/core";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { type CommandContext, type CommandHooks, createRun, type Run } from "./commands";
 import { type ContentCommands, contentCommands } from "./content";
 import type { EditorStore } from "./create-editor-store";
 import { type DocumentCommands, documentCommands } from "./document";
@@ -82,6 +83,35 @@ export function useDocumentCommands(
       ...geometryCommands(store, env.current),
       ...contentCommands(store, env.current),
     }),
+    [store],
+  );
+}
+
+/**
+ * The door for the commands by name. It stays the same for the life of the editor and takes what the
+ * host and the screen give at the time a command runs: `context` and `hooks` are the ones of the last
+ * render, so a measure never goes stale.
+ */
+export function useRun(
+  limit: unknown,
+  registry: Registry,
+  context: CommandContext,
+  hooks?: CommandHooks,
+): Run {
+  const store = useStoreApi<EditorState>();
+  const live = useRef({ env: { limit, registry }, context, hooks });
+  live.current.env.limit = limit;
+  live.current.env.registry = registry;
+  live.current.context = context;
+  live.current.hooks = hooks;
+  return useMemo(
+    () =>
+      createRun(
+        store,
+        live.current.env,
+        () => live.current.context,
+        () => live.current.hooks ?? {},
+      ),
     [store],
   );
 }

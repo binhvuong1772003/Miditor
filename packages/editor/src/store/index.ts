@@ -1,11 +1,21 @@
 // The only door to the store library: nothing outside this folder imports it directly.
 
 export { applyPatch, withBoxFor, withDraft } from "./apply-patch";
+export {
+  type ArgsOf,
+  type CanState,
+  type CommandContext,
+  type CommandHooks,
+  type CommandName,
+  canRun,
+  type Run,
+} from "./commands";
 export { type ContentCommands, tidyTheme, withTheme } from "./content";
 export {
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useRun,
   useSelectionCommands,
   useStore,
   useStoreApi,
