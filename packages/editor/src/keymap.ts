@@ -55,9 +55,9 @@ export function matchKey(event: KeyLike, selectedId: string | null): KeyCommand 
 }
 
 /** The words next to a menu line or a button for the keys that give the command. */
-export const KEY_HINTS: Partial<Record<CommandName, string>> = {
+export const KEY_HINTS = {
   "block.duplicate": "Ctrl+D",
   "block.delete": "Del",
   "block.group": "Ctrl+G",
   "block.ungroup": "Ctrl+Shift+G",
-};
+} as const satisfies Partial<Record<CommandName, string>>;

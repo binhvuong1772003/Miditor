@@ -71,7 +71,6 @@ import { type FontDef, usableFonts } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
 import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
-import { canRedo, canUndo, redo, undo } from "./history";
 import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { TContext } from "./i18n/context";
@@ -79,7 +78,7 @@ import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
 import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
-import { matchKey } from "./keymap";
+import { KEY_HINTS, matchKey } from "./keymap";
 import { LayersPanel } from "./LayersPanel";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
@@ -93,6 +92,7 @@ import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
   type CommandName,
+  canRun,
   createEditorStore,
   createNotifier,
   type EditorState,
@@ -119,7 +119,7 @@ import {
   uploadMessage,
   uploadPicture,
 } from "./upload-image";
-import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
+import { fitZoom, stageWidth, zoomBy, zoomText } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -386,7 +386,6 @@ function EditorBody({
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const panelOpen = useEditorState((state) => state.panelOpen);
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
-  const pickTool = viewing.pickTool;
   // The words of a block being typed on the block itself, which block and which of its props.
   const editing = useEditorState((state) => state.editing);
   // The block whose children a press selects: the page at the start, a group once it is entered.
@@ -738,31 +737,44 @@ function EditorBody({
 
   /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
   const menuItems = (): ContextMenuItem[] => [
-    { label: t("quick.duplicate"), hint: "Ctrl+D", disabled: onPhone, onSelect: duplicateSelected },
+    {
+      label: t("quick.duplicate"),
+      hint: KEY_HINTS["block.duplicate"],
+      disabled: !canRun(canState, "block.duplicate"),
+      onSelect: () => run("block.duplicate"),
+    },
     {
       label: t("quick.delete"),
-      hint: "Del",
-      disabled: onPhone,
+      hint: KEY_HINTS["block.delete"],
+      disabled: !canRun(canState, "block.delete"),
       danger: true,
-      onSelect: deleteBlock,
+      onSelect: () => run("block.delete"),
     },
     "separator",
-    { label: t("menu.forward"), disabled: onPhone, onSelect: () => reorderSelected("forward") },
-    { label: t("menu.backward"), disabled: onPhone, onSelect: () => reorderSelected("backward") },
-    { label: t("quick.front"), disabled: onPhone, onSelect: () => reorderSelected("front") },
-    { label: t("quick.back"), disabled: onPhone, onSelect: () => reorderSelected("back") },
+    ...(
+      [
+        ["menu.forward", "forward"],
+        ["menu.backward", "backward"],
+        ["quick.front", "front"],
+        ["quick.back", "back"],
+      ] as const
+    ).map(([label, to]) => ({
+      label: t(label),
+      disabled: !canRun(canState, "block.reorder", to),
+      onSelect: () => run("block.reorder", to),
+    })),
     "separator",
     {
       label: t("quick.group"),
-      hint: "Ctrl+G",
-      disabled: onPhone || picked.length === 0,
-      onSelect: groupSelected,
+      hint: KEY_HINTS["block.group"],
+      disabled: !canRun(canState, "block.group"),
+      onSelect: () => run("block.group"),
     },
     {
       label: t("quick.ungroup"),
-      hint: "Ctrl+Shift+G",
-      disabled: onPhone || selectedNode?.type !== "Group",
-      onSelect: ungroupSelected,
+      hint: KEY_HINTS["block.ungroup"],
+      disabled: !canRun(canState, "block.ungroup"),
+      onSelect: () => run("block.ungroup"),
     },
   ];
 
@@ -1316,38 +1328,18 @@ function EditorBody({
   const distributeSelected = (axis: "x" | "y") =>
     documents.distributeSelected(parentSize() ?? null, axis);
 
-  /** The selected block one place or all the way up or down among its siblings. Only the main one. */
-  const reorderSelected = documents.reorderSelected;
-
-  /** A copy of each selected block, a little down and to the right, selected in place of them. */
-  const duplicateSelected = () => {
-    note.current = t("a11y.duplicated");
-    documents.duplicateSelected(parentSize() ?? null);
-  };
-
-  /** The selected blocks become one group, selected, where they were. */
-  const groupSelected = () => documents.groupSelected(parentSize() ?? null);
-
-  /** The selected group is gone and its blocks are selected, each where it was on the page. */
-  const ungroupSelected = () => documents.ungroupSelected(parentSize() ?? null);
-
   /**
    * The commands by name, which a key (and, as they move over, a menu line and a button) gives. The
    * measure and the note are the ones of this render.
    */
+  /** What a button or a menu line looks at to be on, from the state this part already draws from. */
+  const canState = { frame, selectedId, picked, history, zoom };
   const run = useRun(historyLimit, registry, {
     parentSize: () => parentSize() ?? null,
     note: (done) => {
       note.current = t(done === "duplicated" ? "a11y.duplicated" : "a11y.deleted");
     },
   });
-
-  /** The selected block and everything in it is gone. The root cannot be deleted. */
-  const deleteBlock = () => {
-    if (onPhone) return;
-    note.current = t("a11y.deleted");
-    documents.deleteSelected();
-  };
 
   /**
    * The selected blocks go on the clipboard, as text that only this editor reads. It is the browser's
@@ -1368,7 +1360,7 @@ function EditorBody({
   const cutSelected = (event: ClipboardEvent) => {
     if (onPhone || isEditableTarget(event.target) || !selectedId) return;
     copySelected(event);
-    if (event.defaultPrevented) deleteBlock();
+    if (event.defaultPrevented) run("block.delete");
   };
 
   /**
@@ -1416,7 +1408,6 @@ function EditorBody({
     documents.setRect({ field, value, container: parentSize() ?? null });
 
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
-  const step = documents.step;
 
   // The block whose words are being typed, the element that draws it, and the limit of the field.
   const editingNode = editing ? findNode(data.root, editing.id) : undefined;
@@ -1671,9 +1662,9 @@ function EditorBody({
                 type="button"
                 className={`${styles.button} ${styles.ghost} ${styles.icon}`}
                 aria-label={t("header.undo")}
-                disabled={!canUndo(history)}
+                disabled={!canRun(canState, "history.undo")}
                 title={t("header.undoTitle")}
-                onClick={() => step(undo)}
+                onClick={() => run("history.undo")}
               >
                 <Icon name="undo" size={18} />
               </button>
@@ -1681,9 +1672,9 @@ function EditorBody({
                 type="button"
                 className={`${styles.button} ${styles.ghost} ${styles.icon}`}
                 aria-label={t("header.redo")}
-                disabled={!canRedo(history)}
+                disabled={!canRun(canState, "history.redo")}
                 title={t("header.redoTitle")}
-                onClick={() => step(redo)}
+                onClick={() => run("history.redo")}
               >
                 <Icon name="redo" size={18} />
               </button>
@@ -1699,7 +1690,7 @@ function EditorBody({
                 type="button"
                 className={styles.segment}
                 aria-pressed={frame === "desktop"}
-                onClick={() => viewing.setFrame("desktop")}
+                onClick={() => run("view.frame", "desktop")}
               >
                 <Icon name="desk" />
                 {t("header.desktop")}
@@ -1708,7 +1699,7 @@ function EditorBody({
                 type="button"
                 className={styles.segment}
                 aria-pressed={frame === "phone"}
-                onClick={() => viewing.setFrame("phone")}
+                onClick={() => run("view.frame", "phone")}
               >
                 <Icon name="phone" />
                 {t("header.phone")}
@@ -1722,8 +1713,8 @@ function EditorBody({
                   className={`${styles.button} ${styles.ghost} ${styles.icon}`}
                   aria-label={t("header.zoomOut")}
                   title={t("header.zoomOutTitle")}
-                  disabled={zoom <= MIN_ZOOM}
-                  onClick={() => viewing.setZoom((z) => stepZoom(z, -1))}
+                  disabled={!canRun(canState, "view.zoom", "out")}
+                  onClick={() => run("view.zoom", "out")}
                 >
                   −
                 </button>
@@ -1731,7 +1722,7 @@ function EditorBody({
                   type="button"
                   className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
                   title={t("header.zoomResetTitle")}
-                  onClick={() => viewing.setZoom(1)}
+                  onClick={() => run("view.zoom", "reset")}
                 >
                   {zoomText(zoom)}
                 </button>
@@ -1740,8 +1731,8 @@ function EditorBody({
                   className={`${styles.button} ${styles.ghost} ${styles.icon}`}
                   aria-label={t("header.zoomIn")}
                   title={t("header.zoomInTitle")}
-                  disabled={zoom >= MAX_ZOOM}
-                  onClick={() => viewing.setZoom((z) => stepZoom(z, 1))}
+                  disabled={!canRun(canState, "view.zoom", "in")}
+                  onClick={() => run("view.zoom", "in")}
                 >
                   +
                 </button>
@@ -1797,7 +1788,7 @@ function EditorBody({
                 className={styles.railButton}
                 aria-current={tool === id && panelOpen ? "true" : undefined}
                 title={tool === id && panelOpen ? t("rail.hide", { name }) : name}
-                onClick={() => pickTool(id)}
+                onClick={() => run("tool.pick", id)}
               >
                 <Icon name={icon} size={18} />
                 {name}
@@ -2011,14 +2002,14 @@ function EditorBody({
                   disabled={onPhone}
                   canGroup={picked.length > 0}
                   canUngroup={selectedNode?.type === "Group"}
-                  onForward={() => reorderSelected("forward")}
-                  onBackward={() => reorderSelected("backward")}
-                  onDuplicate={duplicateSelected}
-                  onDelete={deleteBlock}
-                  onGroup={groupSelected}
-                  onUngroup={ungroupSelected}
-                  onFront={() => reorderSelected("front")}
-                  onBack={() => reorderSelected("back")}
+                  onForward={() => run("block.reorder", "forward")}
+                  onBackward={() => run("block.reorder", "backward")}
+                  onDuplicate={() => run("block.duplicate")}
+                  onDelete={() => run("block.delete")}
+                  onGroup={() => run("block.group")}
+                  onUngroup={() => run("block.ungroup")}
+                  onFront={() => run("block.reorder", "front")}
+                  onBack={() => run("block.reorder", "back")}
                 />
               )}
             {pageElement && workspace && !editing && (
