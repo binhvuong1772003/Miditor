@@ -271,6 +271,21 @@ The editor keeps no list: after an upload, add the new picture to your list in `
 pass the list again. A row with an address that cannot be drawn, or one used twice, is left out and
 named in the console; other fields of a database row are ignored.
 
+## Layers
+
+The Layers tool on the left lists the blocks of the page as a tree, the topmost first (the last
+block of a container is drawn over the others). It keeps to the look of the other panels and needs
+no configuration.
+
+- Press a line to select the block; Shift, Ctrl or Cmd adds blocks of the same level, which are the
+  ones that can be grouped. A block that holds others opens and shuts with its arrow.
+- Pointing at a line lights the block on the page, and pointing at a block on the page lights its line.
+- Selecting a block on the page opens the tree down to it and scrolls its line into view.
+- Up and Down move through the list, Right and Left open and shut a block (Left on a closed block goes to the one it is in), Enter selects.
+- A line shows the name of the kind in the language of the editor and, for a kind with words in it, the first of them.
+
+Renaming, hiding, locking and reordering by dragging a line are not there yet.
+
 ## On the canvas
 
 - Pointing at a block outlines it and names its kind; the selected block carries a solid tag.
