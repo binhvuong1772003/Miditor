@@ -31,7 +31,6 @@ import {
   resizeRotated,
   resolveRect,
   type SavedTheme,
-  savedFrom,
   type Theme,
   turnOf,
   validatePage,
@@ -39,7 +38,6 @@ import {
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
 import {
-  type ChangeEvent,
   type ClipboardEvent,
   type CSSProperties,
   type MouseEvent,
@@ -55,7 +53,6 @@ import {
 import type { ActionDef } from "./actions";
 import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { BlockLabel } from "./BlockLabel";
-import { BlocksPanel } from "./BlocksPanel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import {
   isMoveableLayer,
@@ -71,15 +68,13 @@ import { type FontDef, usableFonts } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
 import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
-import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { TContext } from "./i18n/context";
 import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
-import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
+import { type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
 import { KEY_HINTS, matchKey } from "./keymap";
-import { LayersPanel } from "./LayersPanel";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey } from "./nudge";
@@ -89,6 +84,8 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
+import { Rail } from "./Rail";
+import { StartPanel } from "./StartPanel";
 import { resolveStatus, type SaveStatus } from "./save-status";
 import {
   type CommandName,
@@ -109,17 +106,11 @@ import {
   withDraft,
   withTheme,
 } from "./store";
-import { type HostTheme, ThemesPanel } from "./ThemesPanel";
+import type { HostTheme } from "./ThemesPanel";
 import { Toolbar } from "./Toolbar";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
-import {
-  fitPicture,
-  pictureSize,
-  type UploadImage,
-  uploadMessage,
-  uploadPicture,
-} from "./upload-image";
+import type { UploadImage } from "./upload-image";
 import { fitZoom, stageWidth, zoomBy } from "./zoom";
 
 export interface EditorProps {
@@ -383,7 +374,7 @@ function EditorBody({
   const selectedId = useEditorState((state) => state.selectedId);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const tool = useEditorState((state) => state.tool);
+  const _tool = useEditorState((state) => state.tool);
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const panelOpen = useEditorState((state) => state.panelOpen);
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
@@ -1252,63 +1243,6 @@ function EditorBody({
     documents.dropBlock({ kind, parentId, container, at });
   };
 
-  // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
-  const latestAdd = useRef(addBlockOf);
-  latestAdd.current = addBlockOf;
-  const chooser = useRef<HTMLInputElement>(null);
-  const [adding, setAdding] = useState<{ busy: boolean; error: string | null }>({
-    busy: false,
-    error: null,
-  });
-  /** Upload the chosen picture, then add an `Image` block that already shows it, in its own proportions. */
-  const addPicture = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    const upload = config?.uploadImage;
-    if (!file || !upload) return;
-    setAdding({ busy: true, error: null });
-    const result = await uploadPicture(file, upload);
-    if (!result.ok) {
-      setAdding({ busy: false, error: uploadMessage(t, result) });
-      return;
-    }
-    const natural = await pictureSize(result.url);
-    const size = natural && fitPicture(natural);
-    latestAdd.current("Image", { props: { src: result.url }, ...(size ? { size } : {}) });
-    setAdding({ busy: false, error: null });
-  };
-
-  /**
-   * A line of the layers list was pressed: select that block, or with Shift, Ctrl or Cmd add it to the
-   * ones selected when it is in the same block as the selected one (the blocks that can be grouped).
-   */
-  const pickFromLayers = (id: string, parentId: string, add: boolean) => {
-    selecting.setHover(null);
-    if (
-      add &&
-      selectedId &&
-      id !== selectedId &&
-      parentOf(data.root, selectedId)?.id === parentId
-    ) {
-      selecting.togglePick(id);
-      return;
-    }
-    selecting.selectOnly(id, parentId);
-  };
-
-  /** Add a picture of the host's library as an `Image` block, in its own proportions. */
-  const addLibraryImage = async (image: LibraryImage) => {
-    const natural =
-      image.width && image.height
-        ? { w: image.width, h: image.height }
-        : await pictureSize(image.url);
-    const size = natural && fitPicture(natural);
-    latestAdd.current("Image", {
-      props: { src: image.url, ...(image.name ? { alt: image.name } : {}) },
-      ...(size ? { size } : {}),
-    });
-  };
-
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
   const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) =>
     documents.changeAnchor({ axis, anchor, container: parentSize() ?? null });
@@ -1518,11 +1452,11 @@ function EditorBody({
   })();
 
   // The host's themes that can be used, from rows that may come straight from a database.
-  const hostThemes = usableThemes(config?.themes);
-  const libraryImages = usableImages(config?.images);
-  const keepTheme = config?.onThemeSave;
-  const renameTheme = config?.onThemeRename;
-  const deleteTheme = config?.onThemeDelete;
+  const _hostThemes = usableThemes(config?.themes);
+  const _libraryImages = usableImages(config?.images);
+  const _keepTheme = config?.onThemeSave;
+  const _renameTheme = config?.onThemeRename;
+  const _deleteTheme = config?.onThemeDelete;
 
   // The fonts people can choose: the host's, or the ones every browser has.
   const fonts = usableFonts(config?.fonts);
@@ -1674,96 +1608,15 @@ function EditorBody({
             onFit={fit}
             run={run}
           />
-          <nav className={styles.rail} aria-label={t("rail.label")}>
-            {(
-              [
-                ["blocks", t("rail.blocks"), "grid"],
-                ["layers", t("rail.layers"), "layers"],
-                ["images", t("rail.images"), "img"],
-                ["themes", t("rail.themes"), "palette"],
-              ] as const
-            ).map(([id, name, icon]) => (
-              <button
-                key={id}
-                type="button"
-                className={styles.railButton}
-                aria-current={tool === id && panelOpen ? "true" : undefined}
-                title={tool === id && panelOpen ? t("rail.hide", { name }) : name}
-                onClick={() => run("tool.pick", id)}
-              >
-                <Icon name={icon} size={18} />
-                {name}
-              </button>
-            ))}
-          </nav>
-          <aside
-            className={`${styles.panel} ${styles.start}`}
-            aria-label={t(
-              tool === "images"
-                ? "rail.images"
-                : tool === "themes"
-                  ? "rail.themes"
-                  : tool === "layers"
-                    ? "rail.layers"
-                    : "rail.blocks",
-            )}
-          >
-            {tool === "layers" && (
-              <LayersPanel
-                root={data.root}
-                registry={shownRegistry}
-                selectedId={selectedId}
-                picked={picked}
-                hoverId={hoverId}
-                onSelect={pickFromLayers}
-                onHover={selecting.setHover}
-              />
-            )}
-            {tool === "images" && (
-              <>
-                <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-                <ImagesPanel
-                  disabled={onPhone}
-                  images={libraryImages}
-                  onAdd={addLibraryImage}
-                  upload={
-                    config?.uploadImage
-                      ? {
-                          busy: adding.busy,
-                          error: adding.error,
-                          onChoose: () => chooser.current?.click(),
-                        }
-                      : undefined
-                  }
-                />
-              </>
-            )}
-            {tool === "themes" && (
-              <ThemesPanel
-                current={data.theme}
-                themes={hostThemes}
-                onApply={documents.putTheme}
-                onSave={
-                  keepTheme &&
-                  ((name) => {
-                    const { id: _id, ...theme } = savedFrom(data.theme, "", name);
-                    return keepTheme(theme);
-                  })
-                }
-                onRename={renameTheme}
-                onDelete={deleteTheme}
-              />
-            )}
-            {tool === "blocks" && (
-              <BlocksPanel
-                registry={shownRegistry}
-                disabled={onPhone}
-                onAdd={(type) => addBlockOf(type)}
-                onDragMove={dragFromLibrary}
-                onDrop={dropFromLibrary}
-              />
-            )}
-          </aside>
+          <Rail run={run} />
+          <StartPanel
+            registry={shownRegistry}
+            config={config}
+            onAddBlock={addBlockOf}
+            onDragMove={dragFromLibrary}
+            onDrop={dropFromLibrary}
+            onApplyTheme={documents.putTheme}
+          />
           <section
             ref={setWorkspace}
             className={styles.workspace}
