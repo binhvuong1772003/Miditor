@@ -162,6 +162,16 @@ export interface EditorProps {
    */
   headerActions?: ReactNode;
   /**
+   * The mark at the left end of the header. Without it the editor draws its own "M"; give `null` for
+   * none, or your own element (a logo, a back link) to put your product there.
+   */
+  logo?: ReactNode;
+  /**
+   * Extra content of the host at the left end of the header, after the mark and before Undo: a
+   * "Back to pages" link, the name of the page. The editor draws it as given and styles nothing of it.
+   */
+  headerStart?: ReactNode;
+  /**
    * How many steps undo can go back, 100 when not given. A whole number from 1 up, or `Infinity` for
    * no limit; anything else uses 100. It is read at each change, so a new value trims the oldest
    * steps on the next change. The steps live in memory only: a reload starts without any.
@@ -359,6 +369,8 @@ export function Editor({
   status,
   onSave,
   headerActions,
+  logo,
+  headerStart,
   historyLimit,
   config,
 }: EditorProps) {
@@ -1985,9 +1997,14 @@ export function Editor({
       </div>
       <header className={styles.toolbar}>
         <div className={styles.toolbarStart}>
-          <span className={styles.logo} aria-hidden="true">
-            M
-          </span>
+          {logo === undefined ? (
+            <span className={styles.logo} aria-hidden="true">
+              M
+            </span>
+          ) : (
+            logo
+          )}
+          {headerStart}
           <button
             type="button"
             className={`${styles.button} ${styles.ghost} ${styles.icon}`}
