@@ -4,6 +4,7 @@ export { applyPatch, withBoxFor, withDraft } from "./apply-patch";
 export {
   type ArgsOf,
   type CanState,
+  type CommandArgs,
   type CommandContext,
   type CommandHooks,
   type CommandName,

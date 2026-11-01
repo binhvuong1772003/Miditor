@@ -79,6 +79,7 @@ import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
 import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
+import { matchKey } from "./keymap";
 import { LayersPanel } from "./LayersPanel";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
@@ -91,6 +92,7 @@ import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
+  type CommandName,
   createEditorStore,
   createNotifier,
   type EditorState,
@@ -100,6 +102,7 @@ import {
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useRun,
   useSelectionCommands,
   useStoreApi,
   useViewCommands,
@@ -1328,6 +1331,17 @@ function EditorBody({
   /** The selected group is gone and its blocks are selected, each where it was on the page. */
   const ungroupSelected = () => documents.ungroupSelected(parentSize() ?? null);
 
+  /**
+   * The commands by name, which a key (and, as they move over, a menu line and a button) gives. The
+   * measure and the note are the ones of this render.
+   */
+  const run = useRun(historyLimit, registry, {
+    parentSize: () => parentSize() ?? null,
+    note: (done) => {
+      note.current = t(done === "duplicated" ? "a11y.duplicated" : "a11y.deleted");
+    },
+  });
+
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (onPhone) return;
@@ -1631,42 +1645,12 @@ function EditorBody({
               });
               return;
             }
-            if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
-              // The browser's own page zoom would scale the whole editor; here it is the canvas.
+            // The browser's own page zoom would scale the whole editor, and the keys of the editor are
+            // not the browser's: a key that is ours is stopped even when the command has nothing to do.
+            const given = matchKey(event, selectedId);
+            if (given) {
               event.preventDefault();
-              viewing.setZoom((z) =>
-                event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1),
-              );
-              return;
-            }
-            if (
-              (event.key === "Delete" || event.key === "Backspace") &&
-              !event.ctrlKey &&
-              !event.metaKey &&
-              !event.altKey &&
-              selectedId
-            ) {
-              // Backspace is "back" in some browsers.
-              event.preventDefault();
-              deleteBlock();
-              return;
-            }
-            const key = event.key.toLowerCase();
-            if (key === "d" && (event.ctrlKey || event.metaKey)) {
-              event.preventDefault();
-              duplicateSelected();
-              return;
-            }
-            if (key === "g" && (event.ctrlKey || event.metaKey)) {
-              event.preventDefault();
-              if (event.shiftKey) ungroupSelected();
-              else groupSelected();
-              return;
-            }
-            const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
-            if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
-              event.preventDefault();
-              step(redoing ? redo : undo);
+              (run as (name: CommandName, args?: unknown) => boolean)(given.name, given.args);
             }
           }}
         >

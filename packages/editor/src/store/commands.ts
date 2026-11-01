@@ -46,8 +46,8 @@ export type ArgsOf<N extends CommandName> = CommandArgs[N] extends undefined
 export type CommandContext = {
   /** The size of the parent of the selected block, as it is drawn, or null when there is none. */
   parentSize(): Size | null;
-  /** Words (an i18n key) for the screen reader, joined to the next announcement. */
-  note(key: string): void;
+  /** What was done, for the screen reader to say with the next announcement. */
+  note(done: "duplicated" | "deleted"): void;
 };
 
 /** What a button or a menu line looks at to be on or off: the part of the state a part already draws from. */
@@ -80,7 +80,7 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
   },
   "block.duplicate": {
     run: (state, _, env, context) => {
-      context.note("a11y.duplicated");
+      context.note("duplicated");
       return duplicateSelected(state, { container: context.parentSize() }, env);
     },
     can: hasBlock,
@@ -88,7 +88,7 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
   "block.delete": {
     run: (state, _, env, context) => {
       if (!onPage(state)) return state;
-      context.note("a11y.deleted");
+      context.note("deleted");
       return deleteSelected(state, env);
     },
     can: hasBlock,

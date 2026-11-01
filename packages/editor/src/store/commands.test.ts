@@ -61,7 +61,7 @@ describe("run", () => {
     const { store, run, context } = setup(pick(withTexts(), "t1"));
     expect(run("block.duplicate")).toBe(true);
     expect(idsOf(store.getState())).toHaveLength(4);
-    expect(context.note).toHaveBeenCalledWith("a11y.duplicated");
+    expect(context.note).toHaveBeenCalledWith("duplicated");
   });
 
   it("deletes, and does not touch the note on the phone", () => {
@@ -73,7 +73,7 @@ describe("run", () => {
     store.setState({ frame: "desktop" });
     run("block.delete");
     expect(idsOf(store.getState())).toEqual(["t2", "t3"]);
-    expect(context.note).toHaveBeenCalledWith("a11y.deleted");
+    expect(context.note).toHaveBeenCalledWith("deleted");
   });
 
   it("does not run a command that `before` refuses, and says so", () => {
