@@ -25,6 +25,7 @@ canvas.
 | Before the store                 | 253.86 kB | 66.15 kB |
 | Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |
 | Phase 2, view state in the store | 258.75 kB | 67.73 kB |
+| Phase 3, selection in the store | 263.07 kB | 68.86 kB |
 
 ## Lines of `Editor.tsx`
 

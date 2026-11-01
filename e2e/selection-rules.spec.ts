@@ -113,3 +113,29 @@ test("pressing a block of a group and then the empty page selects nothing", asyn
   await page.locator("section[aria-label='Canvas']").click({ position: { x: 4, y: 4 } });
   await expect(properties(page)).toContainText("Page info");
 });
+
+const outlined = (page: import("@playwright/test").Page, id: string) =>
+  page
+    .locator(`[data-midito-id="${id}"]`)
+    .evaluate((element) => element.style.outline.includes("solid"));
+
+test("a block under the pointer is outlined, and the outline goes when the pointer leaves", async ({
+  page,
+}) => {
+  const box = await boxOf(page, "sample");
+  await page.mouse.move(box.x + 5, box.y + 5);
+  await page.mouse.move(box.x + 20, box.y + 20, { steps: 5 });
+  await expect.poll(() => outlined(page, "sample")).toBe(true);
+  await page.mouse.move(5, 400, { steps: 5 });
+  await expect.poll(() => outlined(page, "sample")).toBe(false);
+});
+
+test("a row of the Layers tool outlines its block while the pointer is over it", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  await page.locator('[data-layer="sample-2"]').hover();
+  await expect.poll(() => outlined(page, "sample-2")).toBe(true);
+  await page.mouse.move(5, 400, { steps: 5 });
+  await expect.poll(() => outlined(page, "sample-2")).toBe(false);
+});

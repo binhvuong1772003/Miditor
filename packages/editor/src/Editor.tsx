@@ -525,15 +525,13 @@ function EditorBody({
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
   const pickTool = viewing.pickTool;
   // The words of a block being typed on the block itself, which block and which of its props.
-  const [editing, setEditing] = useState<{ id: string; prop: string; multiline: boolean } | null>(
-    null,
-  );
+  const editing = useEditorState((state) => state.editing);
   // The block whose children a press selects: the page at the start, a group once it is entered.
   const scopeId = useEditorState((state) => state.scopeId);
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const picked = useEditorState((state) => state.picked);
-  const [hoverId, setHoverId] = useState<string | null>(null);
+  const hoverId = useEditorState((state) => state.hoverId);
   // What a screen reader is told, in a region that is not drawn: what is selected, added or removed.
   const announcement = useEditorState((state) => state.announcement);
   const announce = viewing.announce;
@@ -854,7 +852,7 @@ function EditorBody({
         next = hit.id;
       }
     }
-    setHoverId((now) => (now === next ? now : next));
+    selecting.setHover(next);
   };
 
   /** A right press on a block selects it, when it is not selected yet, and opens the menu of what can be done to it. */
@@ -867,7 +865,7 @@ function EditorBody({
     if (!hit || hit.id === data.root.id) return;
     event.preventDefault();
     if (draft) commitPatch(draft.id, draft);
-    setHoverId(null);
+    selecting.setHover(null);
     if (hit.id !== selectedId && !picked.includes(hit.id)) {
       selecting.selectOnly(hit.id, hit.scopeId);
     }
@@ -917,7 +915,7 @@ function EditorBody({
     if (draft) commitPatch(draft.id, draft);
     if (isMoveableLayer(target)) return;
     // What is pressed gets its own frame and tag; the ones for hovering go until the pointer moves.
-    setHoverId(null);
+    selecting.setHover(null);
     // Alt goes down through the blocks that lie over each other where it was pressed.
     if (event.altKey && !event.shiftKey) {
       const stack: BlockPick[] = [];
@@ -1016,7 +1014,11 @@ function EditorBody({
         event.clientY <= rect.bottom;
       if (over) {
         if (draft) commitPatch(draft.id, draft);
-        setEditing({ id: selectedId, prop: edit.prop, multiline: edit.multiline === true });
+        selecting.setEditing({
+          id: selectedId,
+          prop: edit.prop,
+          multiline: edit.multiline === true,
+        });
         return;
       }
     }
@@ -1475,7 +1477,7 @@ function EditorBody({
    * ones selected when it is in the same block as the selected one (the blocks that can be grouped).
    */
   const pickFromLayers = (id: string, parentId: string, add: boolean) => {
-    setHoverId(null);
+    selecting.setHover(null);
     if (
       add &&
       selectedId &&
@@ -1803,8 +1805,8 @@ function EditorBody({
   const editingLimit = editingField?.type === "text" ? editingField.maxLength : undefined;
   // A block that is gone (undone, say) ends the edit.
   useEffect(() => {
-    if (editing && !editingNode) setEditing(null);
-  }, [editing, editingNode]);
+    if (editing && !editingNode) selecting.setEditing(null);
+  }, [editing, editingNode, selecting]);
   // The words of the block are hidden while they are typed over it, so they are not seen twice.
   useLayoutEffect(() => {
     if (!editingElement) return;
@@ -1981,7 +1983,7 @@ function EditorBody({
               // Enter on a block that has words goes into them, like a double press on the block does.
               event.preventDefault();
               if (draft) commitPatch(draft.id, draft);
-              setEditing({
+              selecting.setEditing({
                 id: selectedId,
                 prop: selectedDef.inlineText.prop,
                 multiline: selectedDef.inlineText.multiline === true,
@@ -2234,7 +2236,7 @@ function EditorBody({
                 picked={picked}
                 hoverId={hoverId}
                 onSelect={pickFromLayers}
-                onHover={setHoverId}
+                onHover={selecting.setHover}
               />
             )}
             {tool === "images" && (
@@ -2291,7 +2293,7 @@ function EditorBody({
             onPointerDown={press}
             onPointerMove={hover}
             onContextMenu={openMenu}
-            onPointerLeave={() => setHoverId(null)}
+            onPointerLeave={() => selecting.setHover(null)}
             onDoubleClick={enter}
           >
             <div
@@ -2367,12 +2369,12 @@ function EditorBody({
                 rotation={turnOf(data.root, editing.id, frame)}
                 zoom={zoom}
                 onDone={(value) => {
-                  setEditing(null);
+                  selecting.setEditing(null);
                   if (editingNode.props[editing.prop] !== value) {
                     commitPatch(editing.id, { key: "prop", name: editing.prop, value });
                   }
                 }}
-                onCancel={() => setEditing(null)}
+                onCancel={() => selecting.setEditing(null)}
               />
             )}
             {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
