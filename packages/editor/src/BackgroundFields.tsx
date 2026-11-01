@@ -10,6 +10,8 @@ import {
   type NodeStyles,
 } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useId, useRef, useState } from "react";
+import { useT } from "./i18n/context";
+import type { MessageKey } from "./i18n/en";
 import styles from "./PropertiesPanel.module.css";
 import { type UploadImage, uploadPicture } from "./upload-image";
 
@@ -27,16 +29,15 @@ export interface BackgroundFieldsProps {
   onChange: (patch: BackgroundPatch) => void;
 }
 
-const SIZES: readonly [BackgroundSize, string][] = [
-  ["cover", "Cover"],
-  ["contain", "Contain"],
-  ["auto", "Actual size"],
-];
-
-const label = (position: string) => position[0]?.toUpperCase() + position.slice(1);
+const SIZES = [
+  ["cover", "bg.cover"],
+  ["contain", "bg.contain"],
+  ["auto", "bg.actual"],
+] as const satisfies readonly [BackgroundSize, MessageKey][];
 
 /** The picture behind a block, and how it sits: size, position and whether it is tiled. */
 export function BackgroundFields({ styles: look, uploadImage, onChange }: BackgroundFieldsProps) {
+  const t = useT();
   const chooser = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<{ busy: boolean; error: string | null }>({
     busy: false,
@@ -73,7 +74,11 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
                 disabled={state.busy}
                 onClick={() => chooser.current?.click()}
               >
-                {state.busy ? "Uploading…" : address ? "Change image" : "Upload background"}
+                {state.busy
+                  ? t("images.uploading")
+                  : address
+                    ? t("common.changeImage")
+                    : t("bg.upload")}
               </button>
             </>
           ) : (
@@ -88,7 +93,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
               className={styles.reset}
               onClick={() => onChange({ key: "backgroundImage", value: undefined })}
             >
-              Remove
+              {t("common.remove")}
             </button>
           )}
         </div>
@@ -102,7 +107,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
         <>
           <div className={styles.grid2}>
             <label className={styles.box}>
-              <span className={styles.tag}>Size</span>
+              <span className={styles.tag}>{t("common.size")}</span>
               <select
                 value={isBackgroundSize(look.backgroundSize) ? look.backgroundSize : "cover"}
                 onChange={(event) => {
@@ -111,15 +116,15 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
                   }
                 }}
               >
-                {SIZES.map(([value, name]) => (
+                {SIZES.map(([value, key]) => (
                   <option key={value} value={value}>
-                    {name}
+                    {t(key)}
                   </option>
                 ))}
               </select>
             </label>
             <label className={styles.box}>
-              <span className={styles.tag}>Position</span>
+              <span className={styles.tag}>{t("bg.position")}</span>
               <select
                 value={
                   isBackgroundPosition(look.backgroundPosition) ? look.backgroundPosition : "center"
@@ -132,7 +137,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
               >
                 {BACKGROUND_POSITIONS.map((value) => (
                   <option key={value} value={value}>
-                    {label(value)}
+                    {t(`position.${value}`)}
                   </option>
                 ))}
               </select>
@@ -151,7 +156,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
                 })
               }
             />
-            Tile the picture
+            {t("bg.tile")}
           </label>
         </>
       )}
@@ -167,6 +172,7 @@ function AddressInput({
   address: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
+  const t = useT();
   const id = useId();
   const errorId = useId();
   const [text, setText] = useState(address ?? "");
@@ -200,7 +206,7 @@ function AddressInput({
         id={id}
         type="text"
         className={`${styles.input} ${styles.mono}`}
-        aria-label="Picture address"
+        aria-label={t("bg.address")}
         value={text}
         placeholder="https://…"
         spellCheck={false}
@@ -213,7 +219,7 @@ function AddressInput({
       />
       {invalid && (
         <p id={errorId} className={styles.error} role="alert">
-          Use a web address that starts with https://, or a path that starts with /.
+          {t("bg.addressError")}
         </p>
       )}
     </>

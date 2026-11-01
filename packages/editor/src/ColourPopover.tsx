@@ -16,6 +16,7 @@ import {
 import styles from "./ColourPopover.module.css";
 import { parseColourText } from "./colour-text";
 import { type Hsv, hexToHsv, hsvToHex } from "./hsv";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { rememberColour, useRecentColours } from "./recent-colours";
@@ -57,13 +58,16 @@ export function ColourPopover({
   const [place, setPlace] = useState<{ top: number; left: number } | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const t = useT();
   const pop = useRef<HTMLDivElement>(null);
   const recent = useRecentColours();
   const current = resolveColor(stored, theme);
   const currentRef = nameOfColorRef(stored);
   const names = Object.keys(theme?.colors ?? {});
   // "Colour" and "Text colour" already say what they are; "Fill" and "Border" need the word.
-  const title = /colou?r/i.test(label) ? label : `${label} colour`;
+  const title = label.toLowerCase().includes(t("colour.word").toLowerCase())
+    ? label
+    : t("colour.titleOf", { label });
 
   // The popover goes under the box, with its right edge on the box's; above it when there is no room.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the free picker changes the height.
@@ -136,7 +140,7 @@ export function ColourPopover({
         <button
           type="button"
           className={fieldStyles.clear}
-          aria-label={`Clear ${label.toLowerCase()}`}
+          aria-label={t("colour.clear", { label })}
           title={noneLabel}
           onClick={() => onCommit(undefined)}
         >
@@ -158,7 +162,7 @@ export function ColourPopover({
             <button
               type="button"
               className={styles.close}
-              aria-label="Close"
+              aria-label={t("colour.close")}
               onClick={() => {
                 setOpen(false);
                 trigger.current?.focus();
@@ -188,7 +192,7 @@ export function ColourPopover({
           )}
           {recent.length > 0 && (
             <div>
-              <p className={styles.section}>Recent</p>
+              <p className={styles.section}>{t("colour.recent")}</p>
               <div className={styles.dots}>
                 {recent.map((hex) => (
                   <button
@@ -220,7 +224,7 @@ export function ColourPopover({
               onClick={() => setCustom((value) => !value)}
             >
               <span className={styles.wheel} />
-              Custom colour
+              {t("colour.custom")}
             </button>
             {noneLabel !== undefined && (
               <button type="button" className={styles.action} onClick={() => onCommit(undefined)}>
@@ -254,6 +258,7 @@ function CodeInput({
   onValue: (hex: string) => void;
   onDone: () => void;
 }) {
+  const t = useT();
   const [text, setText] = useState(value);
   const [invalid, setInvalid] = useState(false);
   const changed = useRef(false);
@@ -275,7 +280,7 @@ function CodeInput({
     <label className={styles.channel} data-invalid={invalid}>
       <span aria-hidden="true">#</span>
       <input
-        aria-label="Colour code"
+        aria-label={t("colour.code")}
         aria-invalid={invalid}
         spellCheck={false}
         autoComplete="off"
@@ -375,6 +380,7 @@ function FreePicker({
   onPreview: (hex: string) => void;
   onCommit: (hex: string) => void;
 }) {
+  const t = useT();
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(start));
   const latest = useRef(hsv);
   const area = useRef<HTMLDivElement>(null);
@@ -431,11 +437,14 @@ function FreePicker({
         ref={area}
         role="slider"
         tabIndex={0}
-        aria-label="Saturation and brightness"
+        aria-label={t("colour.saturation")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(hsv.s * 100)}
-        aria-valuetext={`Saturation ${Math.round(hsv.s * 100)}%, brightness ${Math.round(hsv.v * 100)}%`}
+        aria-valuetext={t("colour.saturationValue", {
+          s: Math.round(hsv.s * 100),
+          v: Math.round(hsv.v * 100),
+        })}
         className={styles.area}
         style={{ backgroundColor: hsvToHex({ h: hsv.h, s: 1, v: 1 }) }}
         onPointerDown={(event) => {
@@ -460,7 +469,7 @@ function FreePicker({
         <input
           type="range"
           className={styles.hue}
-          aria-label="Hue"
+          aria-label={t("colour.hue")}
           min={0}
           max={359}
           value={Math.round(hsv.h)}
@@ -472,8 +481,8 @@ function FreePicker({
           <button
             type="button"
             className={styles.eyedropper}
-            aria-label="Pick a colour from the screen"
-            title="Pick a colour from the screen"
+            aria-label={t("colour.pick")}
+            title={t("colour.pick")}
             onClick={() => {
               new Eyedropper()
                 .open()
@@ -496,9 +505,9 @@ function FreePicker({
       <div className={styles.channels}>
         {(
           [
-            ["R", "Red"],
-            ["G", "Green"],
-            ["B", "Blue"],
+            ["R", t("colour.red")],
+            ["G", t("colour.green")],
+            ["B", t("colour.blue")],
           ] as const
         ).map(([letter, name], at) => (
           <Channel

@@ -1,5 +1,6 @@
 import { isImageUrl, MAX_DESCRIPTION, MAX_TITLE, type PageMeta } from "@midito-kitchen/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
 import { type UploadImage, uploadPicture } from "./upload-image";
 
@@ -17,18 +18,19 @@ export interface PageInfoFieldsProps {
  * pressed, and an address that is not a safe picture goes back to what is stored.
  */
 export function PageInfoFields({ meta, onChange, uploadImage }: PageInfoFieldsProps) {
+  const t = useT();
   return (
     <div className={styles.stack}>
       <TextField
-        label="Title"
-        hint="The title of the browser tab and of a search result."
+        label={t("pageInfo.title.field")}
+        hint={t("pageInfo.title.hint")}
         stored={meta?.title}
         max={MAX_TITLE}
         onCommit={(title) => onChange({ title })}
       />
       <TextField
-        label="Description"
-        hint="The line under the title in a search result."
+        label={t("pageInfo.description")}
+        hint={t("pageInfo.description.hint")}
         stored={meta?.description}
         max={MAX_DESCRIPTION}
         multiline
@@ -42,8 +44,8 @@ export function PageInfoFields({ meta, onChange, uploadImage }: PageInfoFieldsPr
         />
       ) : (
         <TextField
-          label="Share picture"
-          hint="The address of the picture shown when the page is shared. Use a full https:// address."
+          label={t("pageInfo.image")}
+          hint={t("pageInfo.image.hint")}
           stored={meta?.image}
           accept={isImageUrl}
           placeholder="https://…"
@@ -64,6 +66,7 @@ function SharePicture({
   uploadImage: UploadImage;
   onCommit: (value: string | undefined) => void;
 }) {
+  const t = useT();
   const chooser = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<{ busy: boolean; error: string | null }>({
     busy: false,
@@ -80,7 +83,7 @@ function SharePicture({
     if (result.ok) onCommit(result.url);
   };
   return (
-    <div className={styles.field} title="The picture shown when the page is shared.">
+    <div className={styles.field} title={t("pageInfo.image.hint")}>
       <div className={styles.row}>
         <span
           className={styles.thumb}
@@ -94,11 +97,15 @@ function SharePicture({
           disabled={state.busy}
           onClick={() => chooser.current?.click()}
         >
-          {state.busy ? "Uploading…" : address ? "Change image" : "Upload picture"}
+          {state.busy
+            ? t("images.uploading")
+            : address
+              ? t("common.changeImage")
+              : t("pageInfo.image.upload")}
         </button>
         {address && (
           <button type="button" className={styles.reset} onClick={() => onCommit(undefined)}>
-            Remove
+            {t("common.remove")}
           </button>
         )}
       </div>

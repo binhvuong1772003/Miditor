@@ -1,4 +1,5 @@
 import { type FontDef, fontName } from "./fonts";
+import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
 
 export interface FontSelectProps {
@@ -19,12 +20,16 @@ export interface FontSelectProps {
  * and is no longer in the list stays in it, so what is on the page is never hidden by a change of list.
  */
 export function FontSelect({ label, value, fonts, emptyLabel, onChange }: FontSelectProps) {
+  const t = useT();
   const listed = value === "" || fonts.some((font) => font.stack === value);
   const groups = [...new Set(fonts.map((font) => font.group ?? ""))];
   return (
     <label
       className={styles.box}
-      title={`${label}: ${value === "" ? emptyLabel : fontName(value, fonts)}`}
+      title={t("font.selectTitle", {
+        label,
+        value: value === "" ? emptyLabel : fontName(value, fonts),
+      })}
     >
       <span className={styles.tag}>{label}</span>
       <select

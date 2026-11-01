@@ -3,6 +3,7 @@ import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import { FontSelect } from "./FontSelect";
 import type { FontDef } from "./fonts";
+import { useT } from "./i18n/context";
 import { PageHeightField } from "./PageHeightField";
 import { PageInfoFields, type PageInfoFieldsProps } from "./PageInfoFields";
 import fieldStyles from "./PropertiesPanel.module.css";
@@ -51,22 +52,17 @@ export function PageInspector({
   fonts,
   onPageFont,
 }: PageInspectorProps) {
+  const t = useT();
   return (
     <div className={fieldStyles.content}>
       <div className={fieldStyles.heading}>
-        <h2 className={fieldStyles.title}>Page</h2>
-        <p className={fieldStyles.meta}>Select a block to edit it.</p>
+        <h2 className={fieldStyles.title}>{t("page.title")}</h2>
+        <p className={fieldStyles.meta}>{t("page.selectHint")}</p>
       </div>
-      <Section
-        title="Page info"
-        help="What the page says about itself in a tab, a search result or a share."
-      >
+      <Section id="page.info" title={t("pageInfo.title")} help={t("pageInfo.help")}>
         <PageInfoFields meta={meta} onChange={onMeta} uploadImage={uploadImage} />
       </Section>
-      <Section
-        title="Size"
-        help="How tall the page is. Drag the bottom edge of the page to change it as well."
-      >
+      <Section id="page.size" title={t("common.size")} help={t("size.help")}>
         <PageHeightField
           stored={page.styles.minHeight}
           drawn={pageHeight.drawn}
@@ -74,29 +70,26 @@ export function PageInspector({
           onChange={onPageHeight}
         />
       </Section>
-      <Section title="Background" help="The background of the whole page.">
+      <Section id="page.background" title={t("background.title")} help={t("background.help")}>
         <div className={fieldStyles.row}>
           <ColourPopover
-            label="Colour"
-            hint="The colour behind the whole page. Clear it for none."
+            label={t("common.colour")}
+            hint={t("background.colour.hint")}
             theme={theme}
             stored={page.styles.background}
-            noneLabel="No colour"
+            noneLabel={t("common.noColour")}
             onPreview={(value) => onPreview({ key: "background", value })}
             onCommit={(value) => onCommit({ key: "background", value })}
           />
         </div>
         <BackgroundFields styles={page.styles} uploadImage={uploadImage} onChange={onCommit} />
       </Section>
-      <Section
-        title="Font"
-        help="The font of all the text on the page. A text can be set in another font of its own."
-      >
+      <Section id="page.font" title={t("font.title")} help={t("font.help")}>
         <FontSelect
-          label="Font"
+          label={t("font.title")}
           value={theme?.fonts?.body ?? ""}
           fonts={fonts}
-          emptyLabel="Default"
+          emptyLabel={t("font.default")}
           onChange={(stack) => onPageFont(stack === "" ? undefined : stack)}
         />
       </Section>

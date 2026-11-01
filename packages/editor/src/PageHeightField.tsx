@@ -1,5 +1,6 @@
 import { clampPageHeight, MAX_PAGE_HEIGHT, MIN_PAGE_HEIGHT } from "@midito-kitchen/core";
 import { type KeyboardEvent, useEffect, useState } from "react";
+import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
 
 export interface PageHeightFieldProps {
@@ -18,6 +19,7 @@ export interface PageHeightFieldProps {
  * the page is when nobody has set one.
  */
 export function PageHeightField({ stored, drawn, floor, onChange }: PageHeightFieldProps) {
+  const t = useT();
   const shown = String(stored ?? Math.round(drawn));
   const [text, setText] = useState(shown);
   // Undo and a drag of the edge change the height from outside: the typed text starts again from it.
@@ -36,9 +38,9 @@ export function PageHeightField({ stored, drawn, floor, onChange }: PageHeightFi
     <div className={styles.grid2}>
       <label
         className={`${styles.box} ${styles.span2}`}
-        title={`From ${MIN_PAGE_HEIGHT} to ${MAX_PAGE_HEIGHT} px, and not under the lowest block.`}
+        title={t("height.hint", { min: MIN_PAGE_HEIGHT, max: MAX_PAGE_HEIGHT })}
       >
-        <span className={styles.tag}>Height</span>
+        <span className={styles.tag}>{t("height.label")}</span>
         <input
           type="number"
           inputMode="numeric"
@@ -57,10 +59,10 @@ export function PageHeightField({ stored, drawn, floor, onChange }: PageHeightFi
         type="button"
         className={styles.chip}
         disabled={stored === undefined}
-        title="Take back the height the page has without one"
+        title={t("height.autoTitle")}
         onClick={() => onChange(undefined)}
       >
-        Auto
+        {t("height.auto")}
       </button>
     </div>
   );

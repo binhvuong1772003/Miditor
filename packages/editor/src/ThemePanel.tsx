@@ -1,5 +1,6 @@
 import { isTokenName, resolveColor, type Theme } from "@midito-kitchen/core";
 import { type KeyboardEvent, useState } from "react";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -24,17 +25,19 @@ export function ThemePanel({
   onDeleteColor,
   bare = false,
 }: ThemePanelProps) {
+  const t = useT();
   const colors = Object.entries(theme?.colors ?? {});
   return (
     <div className={styles.content}>
       {!bare && (
         <div className={styles.heading}>
-          <h2 className={styles.title}>Page theme</h2>
-          <p className={styles.meta}>Whole page</p>
+          <h2 className={styles.title}>{t("pageTheme.title")}</h2>
+          <p className={styles.meta}>{t("pageTheme.whole")}</p>
         </div>
       )}
       <Section
-        title="Colours"
+        id="theme.colours"
+        title={t("colours.title")}
         actions={
           <AddColor
             taken={colors.map(([name]) => name)}
@@ -69,6 +72,7 @@ interface ColorRowProps {
 }
 
 function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorRowProps) {
+  const t = useT();
   const [text, setText] = useState(name);
   const rename = () => {
     const next = text.trim();
@@ -86,14 +90,14 @@ function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorR
       <input
         type="color"
         className={styles.swatch}
-        aria-label={`${name} colour`}
+        aria-label={t("colours.swatch", { name })}
         value={color}
         onChange={(event) => onSetColor(name, event.target.value)}
       />
       <label className={styles.box}>
         <input
           type="text"
-          aria-label={`Name of ${name}`}
+          aria-label={t("colours.name", { name })}
           value={text}
           spellCheck={false}
           autoComplete="off"
@@ -105,8 +109,8 @@ function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorR
       <button
         type="button"
         className={styles.iconButton}
-        aria-label={`Delete ${name}`}
-        title="Delete this colour: blocks that used it keep the colour they show"
+        aria-label={t("colours.delete", { name })}
+        title={t("colours.deleteTitle")}
         onClick={() => onDelete(name)}
       >
         <Icon name="trash" />
@@ -116,6 +120,7 @@ function ColorRow({ name, color, taken, onSetColor, onRename, onDelete }: ColorR
 }
 
 function AddColor({ taken, onAdd }: { taken: readonly string[]; onAdd: (name: string) => void }) {
+  const t = useT();
   // The first name `color-1`, `color-2`... that the theme does not have.
   const free = () => {
     let n = 1;
@@ -126,8 +131,8 @@ function AddColor({ taken, onAdd }: { taken: readonly string[]; onAdd: (name: st
     <button
       type="button"
       className={styles.iconButton}
-      aria-label="Add a colour"
-      title="Add a colour"
+      aria-label={t("colours.add")}
+      title={t("colours.add")}
       disabled={taken.length >= 32}
       onClick={() => onAdd(free())}
     >
