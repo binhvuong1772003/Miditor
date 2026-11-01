@@ -67,26 +67,50 @@ and three props make it sit in your product:
 />;
 ```
 
-The look is set by variables, on an ancestor of the editor or on its root class `className`. Set only
-the ones you want to change:
+### Looks
 
-| Variable                | Default               | What it is                       |
-| ----------------------- | --------------------- | -------------------------------- |
-| `--midito-chrome`       | `#ffffff`             | The header, rail and side panels |
-| `--midito-workspace`    | `#e4e4e7`             | The ground around the page       |
-| `--midito-canvas`       | `#ffffff`             | Fields and cards                 |
-| `--midito-soft`         | `#ececef`             | Hover and quiet fills            |
-| `--midito-border`       | `#a9a9b2`             | Dividers                         |
-| `--midito-border-input` | `#71717a`             | The edge of a field              |
-| `--midito-text`         | `#09090b`             | Text                             |
-| `--midito-muted`        | `#3f3f46`             | Quiet text                       |
-| `--midito-focus`        | `#1d4ed8`             | Focus rings and selection        |
-| `--midito-danger`       | `#b91c1c`             | Errors                           |
-| `--midito-scrollbar`    | `#71717a`             | Scrollbars                       |
-| `--midito-radius`       | `6px`                 | Fields and buttons               |
-| `--midito-radius-card`  | `8px`                 | Cards                            |
-| `--midito-control`      | `2.25rem`             | The height of a field or button  |
-| `--midito-font`         | Inter, system-ui, ... | The font of the editor           |
+The `appearance` prop sets the look in code, with types:
+
+```tsx
+<Editor
+  appearance={{
+    scheme: "dark", // "light" (default) or "dark": the set of colours to start from
+    colors: { accent: "#7c3aed", onAccent: "#ffffff", focus: "#a78bfa" },
+    radius: "10px",
+    font: "'DM Sans', system-ui, sans-serif",
+  }}
+/>;
+```
+
+`colors` takes `chrome`, `workspace`, `canvas`, `soft`, `border`, `borderInput`, `text`, `muted`,
+`focus`, `danger`, `scrollbar`, `paper` and `accent` / `onAccent` (the Save button and the text on
+it). Other fields: `radius`, `radiusCard`, `control` and `font`. A value that is empty or could not
+be one CSS value is ignored. The page itself keeps its own colour (`paper`, white by default), so a
+dark editor still shows the page as a visitor will see it.
+
+The same can be done in CSS, on an ancestor of the editor or on its root class `className`, with the
+variables below. Set only the ones you want to change:
+
+| Variable                | Default               | What it is                                       |
+| ----------------------- | --------------------- | ------------------------------------------------ |
+| `--midito-chrome`       | `#ffffff`             | The header, rail and side panels                 |
+| `--midito-workspace`    | `#e4e4e7`             | The ground around the page                       |
+| `--midito-canvas`       | `#ffffff`             | Fields and cards                                 |
+| `--midito-soft`         | `#ececef`             | Hover and quiet fills                            |
+| `--midito-border`       | `#a9a9b2`             | Dividers                                         |
+| `--midito-border-input` | `#71717a`             | The edge of a field                              |
+| `--midito-text`         | `#09090b`             | Text                                             |
+| `--midito-muted`        | `#3f3f46`             | Quiet text                                       |
+| `--midito-focus`        | `#1d4ed8`             | Focus rings and selection                        |
+| `--midito-danger`       | `#b91c1c`             | Errors                                           |
+| `--midito-scrollbar`    | `#71717a`             | Scrollbars                                       |
+| `--midito-radius`       | `6px`                 | Fields and buttons                               |
+| `--midito-radius-card`  | `8px`                 | Cards                                            |
+| `--midito-control`      | `2.25rem`             | The height of a field or button                  |
+| `--midito-font`         | Inter, system-ui, ... | The font of the editor                           |
+| `--midito-paper`        | `#ffffff`             | The page itself (not changed by the dark scheme) |
+| `--midito-accent`       | the text colour       | The main button (Save)                           |
+| `--midito-on-accent`    | the canvas colour     | The text on the main button                      |
 
 The playground shows it: open `?host` to see the editor in a stand-in product with its own sidebar
 and navbar.
