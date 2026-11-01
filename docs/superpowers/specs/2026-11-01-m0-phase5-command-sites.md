@@ -31,8 +31,8 @@ events, not keys), add block (three measured sizes and the `a11y.added` note), s
 - `note.current` (the screen reader text joined to the next selection announcement) lives in the
   component. A command needs a `ctx.note(text)` callback to keep it.
 - `parentSize()` comes from the DOM. The context gets it as `ctx.parentSize()`.
-- Old quirk: the note is set even when the command then does nothing (Ctrl+D with nothing selected).
-  With `enabled` checked first the note is no longer set in that case. This is the one intentional
-  difference; it only changes what a screen reader says on the next selection.
+- Old quirk, kept: the note is set even when the command then does nothing (Ctrl+D with nothing
+  selected). `run` does not ask `can` first, so nothing changes. `can` is only for buttons and menu lines.
+- Old quirk, kept and now tested in `keymap.test.ts`: Shift+Z alone redoes, and Cmd+Y does not.
 - Keyboard order matters: the Ctrl+Shift+Z / Ctrl+Y redo test comes before plain Ctrl+Z, and the zoom
   keys come before the lower-cased `d`, `g`, `z` tests.
