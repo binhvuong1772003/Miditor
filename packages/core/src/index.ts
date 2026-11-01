@@ -71,6 +71,17 @@ export {
 } from "./styles/page-meta";
 export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixel-length";
 export {
+  isSameTheme,
+  isSavedTheme,
+  isSavedThemes,
+  isThemeName,
+  MAX_SAVED_THEMES,
+  MAX_THEME_NAME,
+  type SavedTheme,
+  savedFrom,
+  themeOf,
+} from "./styles/saved-theme";
+export {
   colorRef,
   isColorValue,
   isFontStack,
@@ -81,6 +92,7 @@ export {
   resolveColor,
   type Theme,
 } from "./styles/theme";
+export { applyTheme } from "./tree/apply-theme";
 export {
   clipboardText,
   copyNodes,
