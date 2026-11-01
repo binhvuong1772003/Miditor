@@ -151,6 +151,37 @@ An address is accepted only if it is `https://` or `http://`, a path that starts
 short `data:` PNG, JPEG, GIF, WebP or AVIF. SVG, `javascript:` and addresses with spaces or quotes
 are refused, whatever the host returns. If the function throws, its message is shown to the person.
 
+### The library
+
+Pictures the host already has (earlier uploads, a Cloudinary or S3 folder) can be shown in the
+Images panel, so a person adds one with a click. Pass them in `config.images`:
+
+```tsx
+<Editor
+  config={{
+    uploadImage,
+    images: [
+      {
+        url: "https://cdn.example.com/logo.png", // the only required field
+        name: "Logo", // searched, and put in the block's description
+        thumb: "https://cdn.example.com/logo_s.png", // a smaller copy for the list
+        width: 800, // natural size: the list lays out at once
+        height: 500,
+        folder: "Brand", // pictures with the same folder are grouped under Folders
+        tags: ["logo", "dark"],
+      },
+    ],
+  }}
+/>;
+```
+
+The panel has a search box, an Images tab and a Folders tab (only when some picture has a `folder`).
+Pictures keep their own shapes in the list. Search looks in the name, folder and tags and ignores
+accents (`hoa` finds `Hòa`). A picture without `width` and `height` settles into place as it loads.
+The editor keeps no list: after an upload, add the new picture to your list in `uploadImage` and
+pass the list again. A row with an address that cannot be drawn, or one used twice, is left out and
+named in the console; other fields of a database row are ignored.
+
 ## On the canvas
 
 - Pointing at a block outlines it and names its kind; the selected block carries a solid tag.
