@@ -2,6 +2,7 @@ import type { Registry } from "@midito-kitchen/core";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { type ContentCommands, contentCommands } from "./content";
 import type { EditorStore } from "./create-editor-store";
 import { type DocumentCommands, documentCommands } from "./document";
 import { type GeometryCommands, geometryCommands } from "./geometry";
@@ -69,7 +70,7 @@ export function useSelectionCommands(): SelectionCommands {
 export function useDocumentCommands(
   limit: unknown,
   registry: Registry,
-): DocumentCommands & StructureCommands & GeometryCommands {
+): DocumentCommands & StructureCommands & GeometryCommands & ContentCommands {
   const store = useStoreApi<EditorState>();
   const env = useRef({ limit, registry });
   env.current.limit = limit;
@@ -79,6 +80,7 @@ export function useDocumentCommands(
       ...documentCommands(store, env.current),
       ...structureCommands(store, env.current),
       ...geometryCommands(store, env.current),
+      ...contentCommands(store, env.current),
     }),
     [store],
   );

@@ -14,10 +14,9 @@ import {
   reorderNode,
   type TreeNode,
   ungroupNode,
-  updateNode,
 } from "@midito-kitchen/core";
 import { placeAt } from "../drop-place";
-import { applyPatch } from "./apply-patch";
+import { patchChange } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";
 import { type Env, edit, editAndEndDraft, setDraft } from "./document";
 import { clearSelection, reconcile, selectMany, selectManyLast, selectOnly } from "./selection";
@@ -41,12 +40,7 @@ export function settle<S extends State>(state: S, env: Env): S {
   if (!pending) return state;
   return editAndEndDraft(
     state,
-    (page) => {
-      const root = updateNode(page.root, pending.id, (n) =>
-        applyPatch(n, pending, state.frame, env.registry),
-      );
-      return root === page.root ? page : { ...page, root };
-    },
+    patchChange(pending.id, pending, state.frame, env.registry),
     env.limit,
   );
 }

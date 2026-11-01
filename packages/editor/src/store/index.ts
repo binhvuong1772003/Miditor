@@ -1,6 +1,7 @@
 // The only door to the store library: nothing outside this folder imports it directly.
 
 export { applyPatch, withBoxFor, withDraft } from "./apply-patch";
+export { type ContentCommands, tidyTheme, withTheme } from "./content";
 export {
   StoreProvider,
   useDocumentCommands,

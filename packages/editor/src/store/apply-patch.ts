@@ -93,3 +93,11 @@ export const withDraft = (
   ...data,
   root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device, registry)),
 });
+
+/** The change of a page that stores a patch on one node. The very same page comes back when it changes nothing. */
+export const patchChange =
+  (id: string, patch: PanelPatch, device: Device, registry: Registry) =>
+  (page: PageData): PageData => {
+    const root = updateNode(page.root, id, (n) => applyPatch(n, patch, device, registry));
+    return root === page.root ? page : { ...page, root };
+  };

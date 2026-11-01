@@ -1,7 +1,6 @@
 import {
   type AlignTo,
   type AxisAnchor,
-  applyTheme,
   type Pick as BlockPick,
   boxFor,
   builtInRegistry,
@@ -9,7 +8,6 @@ import {
   canInsert,
   canMove,
   clipboardText,
-  colorRef,
   copyNodes,
   emptyPage,
   type Frame,
@@ -25,21 +23,17 @@ import {
   type NewNodeOverrides,
   newNode,
   type PageData,
-  type PageMeta,
   parentOf,
   parseClipboard,
   pickBlock,
   type Rect,
   type Registry,
-  replaceColor,
   resizeRotated,
   resolveRect,
   type SavedTheme,
   savedFrom,
   type Theme,
-  tidyMeta,
   turnOf,
-  updateNode,
   validatePage,
   validateRegistry,
 } from "@midito-kitchen/core";
@@ -91,13 +85,12 @@ import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey } from "./nudge";
 import { PageEdge } from "./PageEdge";
 import { PageInspector } from "./PageInspector";
-import { type PanelPatch, PropertiesPanel } from "./PropertiesPanel";
+import { PropertiesPanel } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
-  applyPatch,
   createEditorStore,
   createNotifier,
   type EditorState,
@@ -111,6 +104,7 @@ import {
   useStoreApi,
   useViewCommands,
   withDraft,
+  withTheme,
 } from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
@@ -259,22 +253,6 @@ export interface EditorProps {
   };
 }
 
-/** The theme without what is empty in it, or `undefined` when nothing is left. */
-function tidyTheme(theme: Theme): Theme | undefined {
-  const colors = theme.colors && Object.keys(theme.colors).length > 0 ? theme.colors : undefined;
-  const fonts = theme.fonts && Object.keys(theme.fonts).length > 0 ? theme.fonts : undefined;
-  return colors || fonts
-    ? { ...(colors ? { colors } : {}), ...(fonts ? { fonts } : {}) }
-    : undefined;
-}
-
-/** The page with this theme, or without one when it is empty. */
-function withTheme(data: PageData, theme: Theme): PageData {
-  const { theme: _old, ...rest } = data;
-  const next = tidyTheme(theme);
-  return next ? { ...rest, theme: next } : rest;
-}
-
 /**
  * The page the editor starts from: the host's, once it is checked, or an empty one, which has the
  * theme the host gave when that is a good one.
@@ -356,7 +334,6 @@ function EditorBody({
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
   const savedPage = useEditorState((state) => state.savedPage);
   /** Store a change as one step. */
-  const setData = documents.edit;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const wait =
@@ -748,7 +725,7 @@ function EditorBody({
     // Off a block the browser's own menu stays.
     if (!hit || hit.id === data.root.id) return;
     event.preventDefault();
-    if (draft) commitPatch(draft.id, draft);
+    documents.settleDraft();
     selecting.setHover(null);
     if (hit.id !== selectedId && !picked.includes(hit.id)) {
       selecting.selectOnly(hit.id, hit.scopeId);
@@ -796,7 +773,7 @@ function EditorBody({
     // that changes the selection (the panel is gone by then), so the draft is stored here.
     const active = document.activeElement;
     if (active instanceof HTMLElement && isEditableTarget(active)) active.blur();
-    if (draft) commitPatch(draft.id, draft);
+    documents.settleDraft();
     if (isMoveableLayer(target)) return;
     // What is pressed gets its own frame and tag; the ones for hovering go until the pointer moves.
     selecting.setHover(null);
@@ -897,7 +874,7 @@ function EditorBody({
         event.clientY >= rect.top &&
         event.clientY <= rect.bottom;
       if (over) {
-        if (draft) commitPatch(draft.id, draft);
+        documents.settleDraft();
         selecting.setEditing({
           id: selectedId,
           prop: edit.prop,
@@ -916,25 +893,10 @@ function EditorBody({
   };
 
   /** One field of the page info changed: stored as one step of history. An emptied field is removed. */
-  const changeMeta = (patch: Partial<Record<keyof PageMeta, string | undefined>>) =>
-    setData((prev) => {
-      const merged: PageMeta = { ...prev.meta };
-      for (const [key, value] of Object.entries(patch) as [keyof PageMeta, string | undefined][]) {
-        if (value === undefined) delete merged[key];
-        else merged[key] = value;
-      }
-      const { meta: _old, ...rest } = prev;
-      const next = tidyMeta(merged);
-      return next ? { ...rest, meta: next } : rest;
-    });
+  const changeMeta = documents.changeMeta;
 
   /** Store one change on a node, once. The draft is over. */
-  const patchOf = (id: string, patch: PanelPatch) => (prev: PageData) => {
-    const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame, registry));
-    return root === prev.root ? prev : { ...prev, root };
-  };
-  const commitPatch = (id: string, patch: PanelPatch) =>
-    documents.editAndEndDraft(patchOf(id, patch));
+  const commitPatch = documents.commitPatch;
 
   /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
   const startGesture = () => {
@@ -1426,40 +1388,10 @@ function EditorBody({
 
   // The theme, one step of history for each change. A colour that goes is baked into the blocks that
   // used it, and one that is renamed is followed by them.
-  const setThemeColor = (name: string, color: string) =>
-    setData((prev) =>
-      withTheme(prev, {
-        ...prev.theme,
-        colors: { ...prev.theme?.colors, [name]: color },
-      }),
-    );
-  const renameThemeColor = (from: string, to: string) =>
-    setData((prev) => {
-      const colors = Object.fromEntries(
-        Object.entries(prev.theme?.colors ?? {}).map(([key, value]) => [
-          key === from ? to : key,
-          value,
-        ]),
-      );
-      const renamed = withTheme(prev, { ...prev.theme, colors });
-      return { ...renamed, root: replaceColor(renamed.root, registry, from, colorRef(to)) };
-    });
-  const deleteThemeColor = (name: string) =>
-    setData((prev) => {
-      const { [name]: gone, ...colors } = prev.theme?.colors ?? {};
-      const kept = withTheme(prev, { ...prev.theme, colors });
-      return gone === undefined
-        ? kept
-        : { ...kept, root: replaceColor(kept.root, registry, name, gone) };
-    });
-  const setThemeFont = (which: "body" | "heading", stack: string | undefined) =>
-    setData((prev) => {
-      const { [which]: _old, ...others } = prev.theme?.fonts ?? {};
-      return withTheme(prev, {
-        ...prev.theme,
-        fonts: stack === undefined ? others : { ...others, [which]: stack },
-      });
-    });
+  const setThemeColor = documents.setThemeColor;
+  const renameThemeColor = documents.renameThemeColor;
+  const deleteThemeColor = documents.deleteThemeColor;
+  const setThemeFont = documents.setThemeFont;
 
   /**
    * A number of the rect of the selected block was typed: x, y, width or height. `withRect` works out
@@ -1660,7 +1592,7 @@ function EditorBody({
             ) {
               // Enter on a block that has words goes into them, like a double press on the block does.
               event.preventDefault();
-              if (draft) commitPatch(draft.id, draft);
+              documents.settleDraft();
               selecting.setEditing({
                 id: selectedId,
                 prop: selectedDef.inlineText.prop,
@@ -1860,7 +1792,7 @@ function EditorBody({
                   onClick={() => {
                     // A change that is still pending is stored first, and it is part of what is saved.
                     const pending = draft;
-                    documents.saveWith(pending ? patchOf(pending.id, pending) : null);
+                    documents.save();
                     onSave(pending ? withDraft(data, pending, frame, registry) : data);
                   }}
                 >
@@ -1937,7 +1869,7 @@ function EditorBody({
               <ThemesPanel
                 current={data.theme}
                 themes={hostThemes}
-                onApply={(theme) => setData((prev) => applyTheme(prev, registry, theme))}
+                onApply={documents.putTheme}
                 onSave={
                   keepTheme &&
                   ((name) => {
