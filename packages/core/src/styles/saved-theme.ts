@@ -1,17 +1,15 @@
 import { isHexColor } from "./hex-color";
 import { isFontStack, isTokenName, MAX_THEME_COLORS, type Theme } from "./theme";
 
-/** How many themes a page may keep, and the longest name one may have. */
-export const MAX_SAVED_THEMES = 12;
+/** The longest name a theme may have. */
 export const MAX_THEME_NAME = 40;
 
 /**
- * A theme a person made and kept, so it can be put back on the page later: a name, the named
- * colours, and the font of the page. It is a copy; changing the theme of the page afterwards does
- * not change it.
+ * A theme kept by the host, so it can be put back on a page later: a name, the named colours, and
+ * the font of the page. It is a copy; changing the theme of the page afterwards does not change it.
  */
 export interface SavedTheme {
-  /** Unique among the page's themes: lowercase letters, digits and `-`. */
+  /** Unique among the host's themes: lowercase letters, digits and `-`. */
   id: string;
   /** What the person sees, such as `Hoa Sen`. */
   name: string;
@@ -52,13 +50,6 @@ export function isSavedTheme(value: unknown): value is SavedTheme {
     entries.every(([name, colour]) => isTokenName(name) && isHexColor(colour))
   );
 }
-
-/** True only for a list of at most `MAX_SAVED_THEMES` good themes with different ids. */
-export const isSavedThemes = (value: unknown): value is SavedTheme[] =>
-  Array.isArray(value) &&
-  value.length <= MAX_SAVED_THEMES &&
-  value.every(isSavedTheme) &&
-  new Set(value.map((theme) => theme.id)).size === value.length;
 
 /** The theme of a page that a saved theme stands for. */
 export function themeOf(saved: Pick<SavedTheme, "colors" | "font">): Theme {

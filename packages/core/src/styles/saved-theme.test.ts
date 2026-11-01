@@ -1,11 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { emptyPage, isPageData } from "../tree/page";
 import {
   isSameTheme,
   isSavedTheme,
-  isSavedThemes,
-  MAX_SAVED_THEMES,
   MAX_THEME_NAME,
   type SavedTheme,
   savedFrom,
@@ -46,16 +43,6 @@ describe("isSavedTheme", () => {
   });
 });
 
-describe("isSavedThemes", () => {
-  it("accepts a short list with different ids and refuses repeats and long lists", () => {
-    expect(isSavedThemes([])).toBe(true);
-    expect(isSavedThemes([sea, { ...sea, id: "sea2" }])).toBe(true);
-    expect(isSavedThemes([sea, sea])).toBe(false);
-    const many = Array.from({ length: MAX_SAVED_THEMES + 1 }, (_, i) => ({ ...sea, id: `t${i}` }));
-    expect(isSavedThemes(many)).toBe(false);
-  });
-});
-
 describe("themeOf, savedFrom and isSameTheme", () => {
   it("make a theme of the page and back", () => {
     const theme = themeOf(sea);
@@ -81,14 +68,5 @@ describe("themeOf, savedFrom and isSameTheme", () => {
         (colors) => isSavedTheme(savedFrom({ colors }, "id1", "Name")),
       ),
     );
-  });
-});
-
-describe("a page with themes", () => {
-  it("is valid with good themes, and not with bad ones", () => {
-    const page = emptyPage();
-    expect(isPageData({ ...page, themes: [sea] })).toBe(true);
-    expect(isPageData({ ...page, themes: [{ ...sea, id: "" }] })).toBe(false);
-    expect(isPageData({ ...page, themes: "sea" })).toBe(false);
   });
 });

@@ -73,9 +73,7 @@ export { isPixelLength, MAX_PIXEL_LENGTH, parsePixelLength } from "./styles/pixe
 export {
   isSameTheme,
   isSavedTheme,
-  isSavedThemes,
   isThemeName,
-  MAX_SAVED_THEMES,
   MAX_THEME_NAME,
   type SavedTheme,
   savedFrom,
