@@ -28,10 +28,10 @@ canvas.
 
 ## Lines of `Editor.tsx`
 
-| Moment | Lines |
-| --- | --- |
-| Before M0 | 2554 |
-| Phase 2 | 2576 |
+| Moment    | Lines |
+| --------- | ----- |
+| Before M0 | 2554  |
+| Phase 2   | 2576  |
 
 Phase 2 moves state, it does not remove code: the lines go down from phase 4 on, when the commands
 leave the component. The goal of 2300 lines at the end of phase 2 in the first plan was too early.

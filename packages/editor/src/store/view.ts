@@ -1,17 +1,10 @@
 import type { Device } from "@midito-kitchen/core";
+import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
-import type { EditorState, Tool, ViewState } from "./state";
+import type { Tool, ViewState } from "./state";
 
-/**
- * The commands on the view are plain functions of the state: they give back the state they were
- * handed when there is nothing to change, so nobody is told about a change that did not happen.
- */
-function change<S extends object>(state: S, changes: Partial<S>): S {
-  const keys = Object.keys(changes) as (keyof S)[];
-  return keys.every((key) => Object.is(state[key], changes[key]))
-    ? state
-    : { ...state, ...changes };
-}
+// The commands on the view are plain functions of the state: they give back the state they were
+// handed when there is nothing to change.
 
 /** A narrow screen starts without the panel, to leave room for the page. */
 export function initialViewState({ narrow }: { narrow: boolean }): ViewState {
@@ -46,8 +39,8 @@ export const announce = <S extends ViewState>(state: S, text: string): S =>
   } as Partial<S>);
 
 /** The commands tied to a store: each one is a call, so a part holds them without being drawn again. */
-export function viewCommands(store: EditorStore<EditorState>) {
-  const run = (command: (state: EditorState) => EditorState) => store.setState(command);
+export function viewCommands<S extends ViewState>(store: EditorStore<S>) {
+  const run = (command: (state: S) => S) => store.setState(command);
   return {
     setFrame: (frame: Device) => run((state) => setFrame(state, frame)),
     setZoom: (zoom: number | ((now: number) => number)) => run((state) => setZoom(state, zoom)),
@@ -57,4 +50,4 @@ export function viewCommands(store: EditorStore<EditorState>) {
   };
 }
 
-export type ViewCommands = ReturnType<typeof viewCommands>;
+export type ViewCommands = ReturnType<typeof viewCommands<ViewState>>;

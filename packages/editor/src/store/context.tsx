@@ -2,6 +2,7 @@ import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import type { EditorStore } from "./create-editor-store";
+import { type SelectionCommands, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
 import { type ViewCommands, viewCommands } from "./view";
 
@@ -49,4 +50,10 @@ export const useEditorState = <R,>(select: (state: EditorState) => R): R =>
 export function useViewCommands(): ViewCommands {
   const store = useStoreApi<EditorState>();
   return useMemo(() => viewCommands(store), [store]);
+}
+
+/** The commands on the selection. They stay the same for the life of the editor. */
+export function useSelectionCommands(): SelectionCommands {
+  const store = useStoreApi<EditorState>();
+  return useMemo(() => selectionCommands(store), [store]);
 }

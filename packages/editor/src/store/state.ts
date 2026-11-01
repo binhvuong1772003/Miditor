@@ -16,5 +16,23 @@ export type ViewState = {
   announcement: string;
 };
 
+/** The words of a block being typed on the block itself: which block and which of its props. */
+export type Editing = { id: string; prop: string; multiline: boolean };
+
+/**
+ * What is selected, and where the editor is working. It belongs to the editor, not to the page data:
+ * Save does not include it.
+ */
+export type SelectionState = {
+  /** The block the panel and the handles are for. */
+  selectedId: string | null;
+  /** More blocks selected with Shift or a box, besides `selectedId`: children of the same parent. */
+  picked: string[];
+  /** The block whose children a press selects: the page at the start, a group once it is entered. */
+  scopeId: string;
+  hoverId: string | null;
+  editing: Editing | null;
+};
+
 /** What the editor keeps in its store; the pieces of state move here a few at a time. */
-export type EditorState = ViewState;
+export type EditorState = ViewState & SelectionState;

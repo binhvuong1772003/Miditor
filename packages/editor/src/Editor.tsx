@@ -124,9 +124,11 @@ import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
   createEditorStore,
   type EditorState,
+  initialSelectionState,
   initialViewState,
   StoreProvider,
   useEditorState,
+  useSelectionCommands,
   useStoreApi,
   useViewCommands,
 } from "./store";
@@ -404,24 +406,27 @@ const elementOf = (scope: HTMLElement, id: string) =>
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
 export function Editor(props: EditorProps) {
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
+  // The page it opens with is made here, once, because the selection starts on its root.
+  const [firstPage] = useState(() => openPage(props.data, props.config?.theme));
   const [store] = useState(() =>
-    createEditorStore<EditorState>(
-      initialViewState({
+    createEditorStore<EditorState>({
+      ...initialViewState({
         narrow:
           typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1100px)").matches,
       }),
-    ),
+      ...initialSelectionState(firstPage.root.id),
+    }),
   );
   return (
     <StoreProvider store={store}>
-      <EditorBody {...props} />
+      <EditorBody {...props} firstPage={firstPage} />
     </StoreProvider>
   );
 }
 
 function EditorBody({
+  firstPage,
   className,
-  data: initialData,
   onChange,
   onChangeDebounce,
   status,
@@ -433,13 +438,14 @@ function EditorBody({
   i18n,
   historyLimit,
   config,
-}: EditorProps) {
+}: EditorProps & { firstPage: PageData }) {
   useRenders("editor");
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const viewing = useViewCommands();
-  const [history, setHistory] = useState(() => createHistory(openPage(initialData, config?.theme)));
+  const selecting = useSelectionCommands();
+  const [history, setHistory] = useState(() => createHistory(firstPage));
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
   const [savedPage, setSavedPage] = useState(data);
@@ -510,7 +516,7 @@ function EditorBody({
     }
   }, [registry]);
   // The selection belongs to the editor, not to the page data: Save does not include it.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = useEditorState((state) => state.selectedId);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
   const tool = useEditorState((state) => state.tool);
@@ -523,10 +529,10 @@ function EditorBody({
     null,
   );
   // The block whose children a press selects: the page at the start, a group once it is entered.
-  const [scopeId, setScopeId] = useState(data.root.id);
+  const scopeId = useEditorState((state) => state.scopeId);
   // More blocks selected with Shift, besides `selectedId`. They are children of the same parent.
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
-  const [picked, setPicked] = useState<string[]>([]);
+  const picked = useEditorState((state) => state.picked);
   const [hoverId, setHoverId] = useState<string | null>(null);
   // What a screen reader is told, in a region that is not drawn: what is selected, added or removed.
   const announcement = useEditorState((state) => state.announcement);
@@ -826,10 +832,9 @@ function EditorBody({
       const ids = touched(b, items);
       if (add && selectedId) {
         const more = ids.filter((id) => id !== selectedId && !picked.includes(id));
-        setPicked((list) => [...list, ...more.filter((id) => !list.includes(id))]);
+        selecting.addPicks(more);
       } else if (ids.length > 0) {
-        setSelectedId(ids[0] as string);
-        setPicked(ids.slice(1));
+        selecting.selectMany(ids);
       }
     };
     window.addEventListener("pointermove", move);
@@ -864,9 +869,7 @@ function EditorBody({
     if (draft) commitPatch(draft.id, draft);
     setHoverId(null);
     if (hit.id !== selectedId && !picked.includes(hit.id)) {
-      setPicked([]);
-      setSelectedId(hit.id);
-      setScopeId(hit.scopeId);
+      selecting.selectOnly(hit.id, hit.scopeId);
     }
     setMenuAt({ x: event.clientX, y: event.clientY });
   };
@@ -931,9 +934,7 @@ function EditorBody({
       );
       const chosen = stack.find((item) => item.id === next);
       if (chosen) {
-        setPicked([]);
-        setSelectedId(chosen.id);
-        setScopeId(chosen.scopeId);
+        selecting.selectOnly(chosen.id, chosen.scopeId);
         editorRoot.current?.focus({ preventScroll: true });
         return;
       }
@@ -957,9 +958,7 @@ function EditorBody({
         () =>
           setTimeout(() => {
             if (groupMoved.current) return;
-            setPicked([]);
-            setSelectedId(hit.id);
-            setScopeId(hit.scopeId);
+            selecting.selectOnly(hit.id, hit.scopeId);
           }, 0),
         { once: true },
       );
@@ -976,9 +975,7 @@ function EditorBody({
     if (event.shiftKey && selectedId && hit) {
       const sameParent = parentOf(data.root, hit.id)?.id === parentOf(data.root, selectedId)?.id;
       if (sameParent && hit.id !== selectedId) {
-        setPicked((list) =>
-          list.includes(hit.id) ? list.filter((other) => other !== hit.id) : [...list, hit.id],
-        );
+        selecting.togglePick(hit.id);
       }
       return;
     }
@@ -995,9 +992,7 @@ function EditorBody({
         { once: true },
       );
     }
-    setPicked([]);
-    setSelectedId(hit?.id ?? null);
-    setScopeId(hit?.scopeId ?? data.root.id);
+    selecting.selectOnly(hit?.id ?? null, hit?.scopeId ?? data.root.id);
     // A press on a node keeps the keyboard inside the editor, so that Esc reaches it. The editor's
     // own element takes the focus: it has no ring, unlike the scrolling canvas.
     if (hit) editorRoot.current?.focus({ preventScroll: true });
@@ -1031,8 +1026,7 @@ function EditorBody({
     const id = under?.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
     const hit = id === undefined ? undefined : pickBlock(data.root, selectedId, id);
     if (!hit) return;
-    setSelectedId(hit.id);
-    setScopeId(hit.scopeId);
+    selecting.selectInside(hit.id, hit.scopeId);
   };
 
   /** One field of the page info changed: stored as one step of history. An emptied field is removed. */
@@ -1393,9 +1387,7 @@ function EditorBody({
     const node = intoSelected ? inside : newNode(registry, kind, id, sizeOf(page), overrides);
     if (!node) return;
     setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
-    setSelectedId(id);
-    setPicked([]);
-    setScopeId(parentId);
+    selecting.selectOnly(id, parentId);
   };
 
   /**
@@ -1449,9 +1441,7 @@ function EditorBody({
           )
         : made;
     setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
-    setSelectedId(id);
-    setPicked([]);
-    setScopeId(parentId);
+    selecting.selectOnly(id, parentId);
   };
 
   // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
@@ -1492,14 +1482,10 @@ function EditorBody({
       id !== selectedId &&
       parentOf(data.root, selectedId)?.id === parentId
     ) {
-      setPicked((list) =>
-        list.includes(id) ? list.filter((other) => other !== id) : [...list, id],
-      );
+      selecting.togglePick(id);
       return;
     }
-    setPicked([]);
-    setSelectedId(id);
-    setScopeId(parentId);
+    selecting.selectOnly(id, parentId);
   };
 
   /** Add a picture of the host's library as an `Image` block, in its own proportions. */
@@ -1638,8 +1624,7 @@ function EditorBody({
       ...prev,
       root: originals.reduce((tree, id) => duplicateNode(tree, id, options), prev.root),
     }));
-    setSelectedId(copies.at(-1) ?? null);
-    setPicked(copies.slice(0, -1));
+    selecting.selectManyLast(copies);
   };
 
   /** The selected blocks become one group, selected, where they were. */
@@ -1652,8 +1637,7 @@ function EditorBody({
     const id = nextId(data.root);
     if (groupNodes(data.root, ids, id, container) === data.root) return;
     setData((prev) => ({ ...prev, root: groupNodes(prev.root, ids, id, container) }));
-    setSelectedId(id);
-    setPicked([]);
+    selecting.selectMany([id]);
   };
 
   /** The selected group is gone and its blocks are selected, each where it was on the page. */
@@ -1665,8 +1649,7 @@ function EditorBody({
     const members = selectedNode.children.map((child) => child.id);
     const id = selectedNode.id;
     setData((prev) => ({ ...prev, root: ungroupNode(prev.root, id, container) }));
-    setSelectedId(members.at(-1) ?? null);
-    setPicked(members.slice(0, -1));
+    selecting.selectManyLast(members);
   };
 
   /** The selected block and everything in it is gone. The root cannot be deleted. */
@@ -1680,8 +1663,7 @@ function EditorBody({
       ...prev,
       root: gone.reduce((root, id) => removeNode(root, id), prev.root),
     }));
-    setSelectedId(null);
-    setPicked([]);
+    selecting.clearSelection();
   };
 
   /**
@@ -1737,9 +1719,7 @@ function EditorBody({
       ...prev,
       root: pasteNodes(prev.root, parent.id, nodes, { shift, container }).root,
     }));
-    setSelectedId(done.ids[0] ?? null);
-    setPicked(done.ids.slice(1));
-    setScopeId(parent.id);
+    selecting.selectMany(done.ids, parent.id);
   };
 
   // The theme, one step of history for each change. A colour that goes is baked into the blocks that
@@ -1808,9 +1788,7 @@ function EditorBody({
   const step = (move: typeof undo) => {
     const next = move(history).present;
     setDraft(null);
-    setSelectedId((id) => (id !== null && findNode(next.root, id) ? id : null));
-    setPicked([]);
-    setScopeId((id) => (findNode(next.root, id) ? id : next.root.id));
+    selecting.afterStep(next.root);
     setHistory(move);
   };
 
@@ -1975,9 +1953,7 @@ function EditorBody({
               );
               if (next) {
                 event.preventDefault();
-                setPicked([]);
-                setSelectedId(next);
-                setScopeId(level.id);
+                selecting.selectOnly(next, level.id);
                 return;
               }
             }
@@ -1985,12 +1961,10 @@ function EditorBody({
               setDraft(null);
               // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
               const scope = scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
-              setPicked([]);
               if (selectedId && scope) {
-                setSelectedId(scope.id);
-                setScopeId(parentOf(data.root, scope.id)?.id ?? data.root.id);
+                selecting.selectOnly(scope.id, parentOf(data.root, scope.id)?.id ?? data.root.id);
               } else {
-                setSelectedId(null);
+                selecting.clearSelection();
               }
               return;
             }
@@ -2024,9 +1998,7 @@ function EditorBody({
             ) {
               // Enter on a group goes into it, as Esc goes back up.
               event.preventDefault();
-              setScopeId(selectedNode.id);
-              setPicked([]);
-              setSelectedId(selectedNode.children[0].id);
+              selecting.selectOnly(selectedNode.children[0].id, selectedNode.id);
               return;
             }
             if (
@@ -2543,9 +2515,7 @@ function EditorBody({
             {selectedNode && (
               <PropertiesPanel
                 onBackToPage={() => {
-                  setPicked([]);
-                  setSelectedId(null);
-                  setScopeId(data.root.id);
+                  selecting.selectPage(data.root.id);
                 }}
                 // A new panel for each node, so text typed for one is never applied to another.
                 key={selectedNode?.id ?? "none"}
