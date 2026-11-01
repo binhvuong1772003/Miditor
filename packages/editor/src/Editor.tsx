@@ -121,7 +121,14 @@ import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
-import { createEditorStore, type EditorState, initialViewState, StoreProvider } from "./store";
+import {
+  createEditorStore,
+  type EditorState,
+  initialViewState,
+  StoreProvider,
+  useEditorState,
+  useViewCommands,
+} from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
@@ -430,6 +437,7 @@ function EditorBody({
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
+  const viewing = useViewCommands();
   const [history, setHistory] = useState(() => createHistory(openPage(initialData, config?.theme)));
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
@@ -505,20 +513,11 @@ function EditorBody({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const [tool, setTool] = useState<"blocks" | "layers" | "images" | "themes">("blocks");
+  const tool = useEditorState((state) => state.tool);
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
-  const [panelOpen, setPanelOpen] = useState(
-    () => typeof window === "undefined" || !window.matchMedia?.("(max-width: 1100px)").matches,
-  );
+  const panelOpen = useEditorState((state) => state.panelOpen);
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
-  const pickTool = (id: "blocks" | "layers" | "images" | "themes") => {
-    if (id === tool && panelOpen) {
-      setPanelOpen(false);
-      return;
-    }
-    setTool(id);
-    setPanelOpen(true);
-  };
+  const pickTool = viewing.pickTool;
   // The words of a block being typed on the block itself, which block and which of its props.
   const [editing, setEditing] = useState<{ id: string; prop: string; multiline: boolean } | null>(
     null,
@@ -530,10 +529,8 @@ function EditorBody({
   const [picked, setPicked] = useState<string[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
   // What a screen reader is told, in a region that is not drawn: what is selected, added or removed.
-  const [announcement, setAnnouncement] = useState("");
-  const announce = (text: string) =>
-    // The same words twice in a row would not be read again; a space at the end makes them new.
-    setAnnouncement((now) => (now === text ? `${text}\u00a0` : text));
+  const announcement = useEditorState((state) => state.announcement);
+  const announce = viewing.announce;
   // What was just done (added, removed), to be said together with the selection that follows it.
   const note = useRef("");
   const heard = useRef(false);
@@ -2365,8 +2362,7 @@ function EditorBody({
                   disabled={onPhone}
                   onAdd={() => addBlockOf("Container")}
                   onOpenBlocks={() => {
-                    setTool("blocks");
-                    setPanelOpen(true);
+                    viewing.showTool("blocks");
                   }}
                 />
               )}
