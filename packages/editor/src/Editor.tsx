@@ -127,6 +127,7 @@ import {
   initialViewState,
   StoreProvider,
   useEditorState,
+  useStoreApi,
   useViewCommands,
 } from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
@@ -475,13 +476,12 @@ function EditorBody({
     [wait, maxWait],
   );
   // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
-  const [zoom, setZoom] = useState(1);
+  const zoom = useEditorState((state) => state.zoom);
+  const store = useStoreApi<EditorState>();
   const [stageBox, setStageBox] = useState({ room: 0, page: 0, height: 0 });
   const stage = useRef<HTMLDivElement>(null);
-  // The newest zoom for the wheel listener, and the point of the page under the pointer when a wheel
-  // zoom began, so the page can be scrolled to keep that point where the pointer is.
-  const zoomNow = useRef(zoom);
-  zoomNow.current = zoom;
+  // The point of the page under the pointer when a wheel zoom began, so the page can be scrolled to
+  // keep that point where the pointer is.
   const anchor = useRef<{ x: number; y: number; lx: number; ly: number } | null>(null);
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => () => debounced.flush(), [debounced]);
@@ -582,7 +582,7 @@ function EditorBody({
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
       const box = stage.current?.getBoundingClientRect();
-      const was = zoomNow.current;
+      const was = store.getState().zoom;
       const next = zoomBy(was, event.deltaY);
       if (next === was) return;
       anchor.current = box
@@ -593,12 +593,11 @@ function EditorBody({
             ly: (event.clientY - box.top) / was,
           }
         : null;
-      zoomNow.current = next;
-      setZoom(next);
+      viewing.setZoom(next);
     };
     workspace.addEventListener("wheel", onWheel, { passive: false });
     return () => workspace.removeEventListener("wheel", onWheel);
-  }, [workspace]);
+  }, [workspace, store, viewing]);
 
   // After a wheel zoom the page is scrolled so the point that was under the pointer still is.
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new zoom is the trigger, not a value read
@@ -2052,7 +2051,9 @@ function EditorBody({
             if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
               // The browser's own page zoom would scale the whole editor; here it is the canvas.
               event.preventDefault();
-              setZoom((z) => (event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1)));
+              viewing.setZoom((z) =>
+                event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1),
+              );
               return;
             }
             if (
@@ -2155,7 +2156,7 @@ function EditorBody({
                   aria-label={t("header.zoomOut")}
                   title={t("header.zoomOutTitle")}
                   disabled={zoom <= MIN_ZOOM}
-                  onClick={() => setZoom((z) => stepZoom(z, -1))}
+                  onClick={() => viewing.setZoom((z) => stepZoom(z, -1))}
                 >
                   −
                 </button>
@@ -2163,7 +2164,7 @@ function EditorBody({
                   type="button"
                   className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
                   title={t("header.zoomResetTitle")}
-                  onClick={() => setZoom(1)}
+                  onClick={() => viewing.setZoom(1)}
                 >
                   {zoomText(zoom)}
                 </button>
@@ -2173,7 +2174,7 @@ function EditorBody({
                   aria-label={t("header.zoomIn")}
                   title={t("header.zoomInTitle")}
                   disabled={zoom >= MAX_ZOOM}
-                  onClick={() => setZoom((z) => stepZoom(z, 1))}
+                  onClick={() => viewing.setZoom((z) => stepZoom(z, 1))}
                 >
                   +
                 </button>
@@ -2188,7 +2189,9 @@ function EditorBody({
                         Number.parseFloat(look?.paddingTop ?? "0") -
                         Number.parseFloat(look?.paddingBottom ?? "0")
                       : 0;
-                    setZoom(fitZoom(stageBox.room, stageBox.page, roomHeight, stageBox.height));
+                    viewing.setZoom(
+                      fitZoom(stageBox.room, stageBox.page, roomHeight, stageBox.height),
+                    );
                   }}
                 >
                   {t("header.fit")}

@@ -30,6 +30,34 @@ test.describe("zoom", () => {
     expect(await pageWidth(page)).toBeCloseTo(full, 0);
   });
 
+  test("Ctrl with + - and 0 zooms the canvas, not the browser", async ({ page }) => {
+    await page.locator("[data-midito-editor]").focus();
+    await page.keyboard.press("ControlOrMeta+=");
+    await expect(percent(page)).toHaveText("125%");
+    await page.keyboard.press("ControlOrMeta+-");
+    await page.keyboard.press("ControlOrMeta+-");
+    await expect(percent(page)).toHaveText("75%");
+    await page.keyboard.press("ControlOrMeta+0");
+    await expect(percent(page)).toHaveText("100%");
+  });
+
+  test("Ctrl with the wheel zooms the canvas, and several turns add up", async ({ page }) => {
+    const canvas = page.locator("section[aria-label='Canvas']");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("no canvas");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.keyboard.down("Control");
+    await page.mouse.wheel(0, -120);
+    await expect(percent(page)).not.toHaveText("100%");
+    const once = await percent(page).innerText();
+    await page.mouse.wheel(0, -120);
+    await page.mouse.wheel(0, -120);
+    await page.keyboard.up("Control");
+    await expect
+      .poll(async () => Number.parseInt(await percent(page).innerText(), 10))
+      .toBeGreaterThan(Number.parseInt(once, 10));
+  });
+
   test("Fit sizes the page to the room", async ({ page }) => {
     await page.getByRole("button", { name: "Zoom in" }).click();
     await page.getByRole("button", { name: "Fit" }).click();
