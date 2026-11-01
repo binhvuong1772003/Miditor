@@ -48,6 +48,7 @@ export function App() {
 
 function Playground({ embedded = false }: { embedded?: boolean }) {
   const [page] = useState(openPage);
+  const plain = new URLSearchParams(window.location.search).has("plain");
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
   const [uploaded, setUploaded] = useState(() => loadUploaded(window.localStorage));
   // Like a real host, the upload also puts the picture in the library the editor shows.
@@ -88,8 +89,8 @@ function Playground({ embedded = false }: { embedded?: boolean }) {
           onThemeDelete: (id) => changeThemes(saved.filter((theme) => theme.id !== id)),
         }}
         // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
-        onChangeDebounce={{ wait: 800, maxWait: 4000 }}
-        status={status}
+        // `?plain` is a host that sets neither: onChange at once, and the header follows the Save button.
+        {...(plain ? {} : { onChangeDebounce: { wait: 800, maxWait: 4000 }, status })}
         onChange={(data) => {
           setStatus("saving");
           storePage(window.localStorage, data);
