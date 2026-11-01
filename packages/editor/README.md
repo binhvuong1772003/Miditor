@@ -383,8 +383,18 @@ import { vi } from "@midito-kitchen/editor/locales/vi";
 
 The order is `translate`, then `messages`, then English. A sentence has places written `{name}`; the
 editor fills them in for `messages` and for the fallback, and leaves what `translate` returns as it
-is. Sentences of the editor are still being moved into this: today the header, the tool rail and
-the save status are translated, and the panels follow.
+is.
+
+**Your own kinds of block** need nothing: a kind or a field you register keeps the text it was
+registered with. To translate one, give a key in `messages` (or answer it in `translate`):
+`kind.Hero.label` for the name, `category.Marketing` for its group, `field.Hero.title` and
+`field.Hero.title.help` for a field, `group.Style` for a section and `option.pill` for a choice. The
+kinds the editor ships have keys in the same shape, so a translation of them is in the packs.
+
+**What is not translated yet:** the words used to find a block (`keywords`) stay English, so in
+another language a block is found by its translated name and by its English keywords. The text of
+your own `actions`, fonts and themes is yours. Messages for the developer in the console stay
+English. Right-to-left is not supported: the editor sets `lang` but not `dir`.
 
 ## Page info
 
