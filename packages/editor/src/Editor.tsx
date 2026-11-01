@@ -1,7 +1,6 @@
 import {
   type AlignTo,
   type AxisAnchor,
-  alignRects,
   applyTheme,
   type Pick as BlockPick,
   boxFor,
@@ -12,12 +11,10 @@ import {
   clipboardText,
   colorRef,
   copyNodes,
-  distributeRects,
   emptyPage,
   type Frame,
   type FreeNode,
   findNode,
-  inferBox,
   isFreeNode,
   isTheme,
   keepsRatio,
@@ -27,7 +24,6 @@ import {
   moveRect,
   type NewNodeOverrides,
   newNode,
-  normalizeAngle,
   type PageData,
   type PageMeta,
   parentOf,
@@ -35,22 +31,17 @@ import {
   pickBlock,
   type Rect,
   type Registry,
-  reparentNode,
   replaceColor,
   resizeRotated,
   resolveRect,
   type SavedTheme,
   savedFrom,
-  setAnchor,
   type Theme,
   tidyMeta,
   turnOf,
   updateNode,
   validatePage,
   validateRegistry,
-  withPhoneBox,
-  withPhoneProp,
-  withRect,
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
 import {
@@ -97,7 +88,7 @@ import { type LibraryImage, usableImages } from "./images";
 import { LayersPanel } from "./LayersPanel";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
-import { isNudgeKey, nudgeRect } from "./nudge";
+import { isNudgeKey } from "./nudge";
 import { PageEdge } from "./PageEdge";
 import { PageInspector } from "./PageInspector";
 import { type PanelPatch, PropertiesPanel } from "./PropertiesPanel";
@@ -119,7 +110,6 @@ import {
   useSelectionCommands,
   useStoreApi,
   useViewCommands,
-  withBoxFor,
   withDraft,
 } from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
@@ -1000,13 +990,7 @@ function EditorBody({
     const g = gesture.current;
     if (!g) return;
     gesture.current = null;
-    const moved = inferBox(boxFor(g.before, frame), next(g), g.container);
-    setData((prev) => ({
-      ...prev,
-      root: updateNode(prev.root, g.before.id, (n) =>
-        isFreeNode(n) ? withBoxFor(n, frame, moved) : n,
-      ),
-    }));
+    documents.placeBoxes({ items: [{ before: g.before, rect: next(g) }], container: g.container });
   };
 
   /**
@@ -1154,20 +1138,13 @@ function EditorBody({
     if (!gg) return;
     groupGesture.current = null;
     gg.changed = true;
-    setData((prev) => ({
-      ...prev,
-      root: gg.members.reduce((root, member) => {
+    documents.placeBoxes({
+      items: gg.members.map((member) => {
         const next = place(member);
-        return updateNode(root, member.node.id, (n) =>
-          isFreeNode(n)
-            ? withBoxFor(n, frame, {
-                ...inferBox(boxFor(member.node, frame), next.rect, gg.container),
-                rotation: normalizeAngle(next.rotation),
-              })
-            : n,
-        );
-      }, prev.root),
-    }));
+        return { before: member.node, rect: next.rect, rotation: next.rotation };
+      }),
+      container: gg.container,
+    });
   };
 
   const endDrag = (dist: { x: number; y: number }) => {
@@ -1188,22 +1165,10 @@ function EditorBody({
       gesture.current = null;
       const turn = boxFor(g.before, frame).rotation;
       const all = [{ before: g.before, start: g.start }, ...g.others];
-      setData((prev) => ({
-        ...prev,
-        root: all.reduce(
-          (root, { before, start }) =>
-            updateNode(root, before.id, (n) =>
-              isFreeNode(n)
-                ? withBoxFor(
-                    n,
-                    frame,
-                    inferBox(boxFor(before, frame), moveRect(start, dist, turn), g.container),
-                  )
-                : n,
-            ),
-          prev.root,
-        ),
-      }));
+      documents.placeBoxes({
+        items: all.map(({ before, start }) => ({ before, rect: moveRect(start, dist, turn) })),
+        container: g.container,
+      });
       return;
     }
     const target = g ? dropTarget(g, dist) : undefined;
@@ -1212,17 +1177,12 @@ function EditorBody({
       return;
     }
     gesture.current = null;
-    const moved = inferBox(
-      boxFor(g.before, frame),
-      moveRect(g.start, dist, boxFor(g.before, frame).rotation),
-      g.container,
-    );
-    // Moved in its old parent first, then carried into the new one where it stands.
-    setData((prev) => {
-      const placed = updateNode(prev.root, g.before.id, (n) =>
-        isFreeNode(n) ? withBoxFor(n, frame, moved) : n,
-      );
-      return { ...prev, root: reparentNode(placed, g.before.id, target.id, target.options) };
+    documents.moveToParent({
+      before: g.before,
+      rect: moveRect(g.start, dist, boxFor(g.before, frame).rotation),
+      container: g.container,
+      targetId: target.id,
+      options: target.options,
     });
   };
 
@@ -1248,15 +1208,7 @@ function EditorBody({
     const g = gesture.current;
     if (!g) return;
     gesture.current = null;
-    const rotation = normalizeAngle(boxFor(g.before, frame).rotation + dist);
-    setData((prev) => ({
-      ...prev,
-      root: updateNode(prev.root, g.before.id, (n) => {
-        if (!isFreeNode(n)) return n;
-        const box = boxFor(n, frame);
-        return box.rotation === rotation ? n : withBoxFor(n, frame, { ...box, rotation });
-      }),
-    }));
+    documents.turnBlock({ id: g.before.id, rotation: boxFor(g.before, frame).rotation + dist });
   };
 
   /**
@@ -1380,38 +1332,11 @@ function EditorBody({
   };
 
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
-  const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) => {
-    const parent = block?.parentElement;
-    if (!selectedNode || !isFreeNode(selectedNode) || !parent) return;
-    if (draft) commitPatch(draft.id, draft);
-    const container = { w: parent.clientWidth, h: parent.clientHeight };
-    setData((prev) => ({
-      ...prev,
-      root: updateNode(prev.root, selectedNode.id, (n) => {
-        if (!isFreeNode(n)) return n;
-        const before = boxFor(n, frame);
-        const after = setAnchor(before, axis, anchor, container);
-        return after === before ? n : withBoxFor(n, frame, after);
-      }),
-    }));
-  };
+  const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) =>
+    documents.changeAnchor({ axis, anchor, container: parentSize() ?? null });
 
   /** The selected block gets its automatic phone placement again; the desktop one is not touched. */
-  const resetPhone = () => {
-    if (!selectedNode) return;
-    const placed = isFreeNode(selectedNode) && selectedNode.phone !== undefined;
-    if (!placed && !selectedNode.phoneProps) return;
-    const id = selectedNode.id;
-    setData((prev) => ({
-      ...prev,
-      root: updateNode(prev.root, id, (n) =>
-        Object.keys(n.phoneProps ?? {}).reduce(
-          (node, name) => withPhoneProp(node, name, undefined),
-          isFreeNode(n) ? withPhoneBox(n, undefined) : n,
-        ),
-      ),
-    }));
-  };
+  const resetPhone = documents.resetPhone;
 
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
   const parentSize = () => {
@@ -1419,59 +1344,12 @@ function EditorBody({
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
 
-  /**
-   * The selected blocks moved by `make`, which is given where they are in their parent and answers
-   * where they should be. One history step. Only free blocks have a place to change.
-   */
-  const arrange = (
-    make: (rects: Rect[], container: { w: number; h: number }) => Rect[],
-    merge = false,
-  ) => {
-    const container = parentSize();
-    if (!selectedId || selectedId === data.root.id || !container) return;
-    if (draft) commitPatch(draft.id, draft);
-    const ids = [selectedId, ...picked];
-    const change = (prev: PageData): PageData => {
-      const nodes = ids.flatMap((id) => {
-        const node = findNode(prev.root, id);
-        return node && isFreeNode(node) ? [node] : [];
-      });
-      if (nodes.length === 0) return prev;
-      const next = make(
-        nodes.map((node) => resolveRect(boxFor(node, frame), container)),
-        container,
-      );
-      const root = nodes.reduce(
-        (tree, node, i) =>
-          updateNode(tree, node.id, (current) =>
-            isFreeNode(current) && next[i]
-              ? withBoxFor(current, frame, inferBox(boxFor(current, frame), next[i], container))
-              : current,
-          ),
-        prev.root,
-      );
-      return root === prev.root ? prev : { ...prev, root };
-    };
-    // A run of small moves, such as a held arrow key, is one step to undo.
-    if (merge) documents.editInLastStep(change);
-    else setData(change);
-  };
-
   /** Line the selected blocks up with each other, or one block with its parent. */
-  const alignSelected = (to: AlignTo) =>
-    arrange((rects, container) =>
-      alignRects(
-        rects,
-        to,
-        picked.length === 0 ? { x: 0, y: 0, w: container.w, h: container.h } : undefined,
-      ),
-    );
+  const alignSelected = (to: AlignTo) => documents.alignSelected(parentSize() ?? null, to);
 
   /** Equal gaps between three or more selected blocks. */
-  const distributeSelected = (axis: "x" | "y") => {
-    if (picked.length < 2) return;
-    arrange((rects) => distributeRects(rects, axis));
-  };
+  const distributeSelected = (axis: "x" | "y") =>
+    documents.distributeSelected(parentSize() ?? null, axis);
 
   /** The selected block one place or all the way up or down among its siblings. Only the main one. */
   const reorderSelected = documents.reorderSelected;
@@ -1588,25 +1466,8 @@ function EditorBody({
    * the placement for this screen, with the proportions kept when the block keeps them, and one that
    * changes nothing stores nothing.
    */
-  const setRect = (field: "x" | "y" | "w" | "h", value: number) => {
-    const container = parentSize();
-    if (!selectedNode || !isFreeNode(selectedNode) || !container) return;
-    if (draft) commitPatch(draft.id, draft);
-    const id = selectedNode.id;
-    const options = {
-      minSize: minSize(selectedNode.styles),
-      lockRatio: keepsRatio(selectedNode, selectedDef),
-    };
-    setData((prev) => {
-      const root = updateNode(prev.root, id, (n) => {
-        if (!isFreeNode(n)) return n;
-        const before = boxFor(n, frame);
-        const after = withRect(before, { [field]: value }, container, options);
-        return after === before ? n : withBoxFor(n, frame, after);
-      });
-      return root === prev.root ? prev : { ...prev, root };
-    });
-  };
+  const setRect = (field: "x" | "y" | "w" | "h", value: number) =>
+    documents.setRect({ field, value, container: parentSize() ?? null });
 
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
   const step = documents.step;
@@ -1833,10 +1694,12 @@ function EditorBody({
               const same = lastNudge.current.key === selectionKey;
               const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
               lastNudge.current = { key: selectionKey, at: event.timeStamp };
-              arrange(
-                (rects) => rects.map((rect) => nudgeRect(rect, event.key, event.shiftKey)),
+              documents.nudgeSelected({
+                container: parentSize() ?? null,
+                key: event.key,
+                shift: event.shiftKey,
                 merge,
-              );
+              });
               return;
             }
             if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {

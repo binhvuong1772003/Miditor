@@ -28,7 +28,7 @@ import type { DocumentState, SelectionState, ViewState } from "./state";
 // when there was nothing to do. The measures that only the screen knows (the size of a block, of its
 // parent) are handed in by the part that took them.
 
-type State = DocumentState & SelectionState & ViewState;
+export type State = DocumentState & SelectionState & ViewState;
 
 /** A width and a height in px, as the screen measured them. */
 export type Size = { w: number; h: number };
@@ -36,7 +36,7 @@ export type Size = { w: number; h: number };
 export type Point = { x: number; y: number };
 
 /** A change that is pending in a panel is stored first, as before anything else that changes the page. */
-function settle<S extends State>(state: S, env: Env): S {
+export function settle<S extends State>(state: S, env: Env): S {
   const pending = state.draft;
   if (!pending) return state;
   return editAndEndDraft(

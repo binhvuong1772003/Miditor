@@ -4,6 +4,7 @@ import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import type { EditorStore } from "./create-editor-store";
 import { type DocumentCommands, documentCommands } from "./document";
+import { type GeometryCommands, geometryCommands } from "./geometry";
 import { type SelectionCommands, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
 import { type StructureCommands, structureCommands } from "./structure";
@@ -68,13 +69,17 @@ export function useSelectionCommands(): SelectionCommands {
 export function useDocumentCommands(
   limit: unknown,
   registry: Registry,
-): DocumentCommands & StructureCommands {
+): DocumentCommands & StructureCommands & GeometryCommands {
   const store = useStoreApi<EditorState>();
   const env = useRef({ limit, registry });
   env.current.limit = limit;
   env.current.registry = registry;
   return useMemo(
-    () => ({ ...documentCommands(store, env.current), ...structureCommands(store, env.current) }),
+    () => ({
+      ...documentCommands(store, env.current),
+      ...structureCommands(store, env.current),
+      ...geometryCommands(store, env.current),
+    }),
     [store],
   );
 }
