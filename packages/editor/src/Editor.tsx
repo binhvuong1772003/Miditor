@@ -109,6 +109,7 @@ import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
 import { ThemePanel } from "./ThemePanel";
+import { stepSelection } from "./tab-order";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
 
@@ -418,6 +419,14 @@ export function Editor({
   // The panel and the handles are for `selectedId` only; the others are drawn with an outline.
   const [picked, setPicked] = useState<string[]>([]);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  // What a screen reader is told, in a region that is not drawn: what is selected, added or removed.
+  const [announcement, setAnnouncement] = useState("");
+  const announce = (text: string) =>
+    // The same words twice in a row would not be read again; a space at the end makes them new.
+    setAnnouncement((now) => (now === text ? `${text}\u00a0` : text));
+  // What was just done (added, removed), to be said together with the selection that follows it.
+  const note = useRef("");
+  const heard = useRef(false);
   // The selection and the time of the last arrow-key move, so a run of them is one step of history.
   const lastNudge = useRef({ key: "", at: Number.NEGATIVE_INFINITY });
   const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
@@ -564,6 +573,27 @@ export function Editor({
     selectedNode && Object.hasOwn(registry, selectedNode.type)
       ? registry[selectedNode.type]
       : undefined;
+
+  // Say what is selected whenever the selection changes, and what was done to get there.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the selection is the trigger
+  useEffect(() => {
+    if (!heard.current) {
+      heard.current = true;
+      return;
+    }
+    const level = selectedId ? parentOf(data.root, selectedId) : undefined;
+    const at = level ? level.children.findIndex((child) => child.id === selectedId) : -1;
+    const what =
+      picked.length > 0
+        ? `${1 + picked.length} blocks selected`
+        : selectedNode
+          ? `${selectedDef?.label ?? selectedNode.type} selected${
+              level && at >= 0 ? `, ${at + 1} of ${level.children.length}` : ""
+            }`
+          : "Nothing selected";
+    announce(note.current ? `${note.current}. ${what}` : what);
+    note.current = "";
+  }, [selectedId, picked.length]);
 
   // `<Render>` owns the elements, so look up the one for the selected node after every render.
   useLayoutEffect(() => {
@@ -1226,6 +1256,7 @@ export function Editor({
    */
   const addBlockOf = (kind: string, overrides?: NewNodeOverrides) => {
     if (onPhone) return;
+    note.current = "Block added";
     if (draft) commitPatch(draft.id, draft);
     const id = nextId(data.root);
     const sizeOf = (element: HTMLElement | null) => ({
@@ -1431,6 +1462,7 @@ export function Editor({
 
   /** A copy of each selected block, a little down and to the right, selected in place of them. */
   const duplicateSelected = () => {
+    note.current = "Block duplicated";
     const container = parentSize();
     if (onPhone || !selectedId || selectedId === data.root.id || !container) return;
     if (draft) commitPatch(draft.id, draft);
@@ -1484,6 +1516,7 @@ export function Editor({
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (onPhone) return;
+    note.current = "Block deleted";
     if (!selectedId || selectedId === data.root.id) return;
     const gone = [selectedId, ...picked];
     setDraft(null);
@@ -1752,6 +1785,32 @@ export function Editor({
       onKeyDown={(event) => {
         // A field keeps its own Esc and its own undo.
         if (isEditableTarget(event.target)) return;
+        // Tab on the canvas goes from block to block of the level the person is working in; at the end
+        // of the level it goes on to the next control, so the keyboard is never stuck on the page.
+        if (
+          event.key === "Tab" &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey &&
+          (event.target === event.currentTarget || event.target === workspace)
+        ) {
+          const level =
+            (selectedId ? parentOf(data.root, selectedId) : undefined) ??
+            findNode(data.root, scopeId) ??
+            data.root;
+          const next = stepSelection(
+            level.children.map((child) => child.id),
+            selectedId,
+            event.shiftKey,
+          );
+          if (next) {
+            event.preventDefault();
+            setPicked([]);
+            setSelectedId(next);
+            setScopeId(level.id);
+            return;
+          }
+        }
         if (event.key === "Escape") {
           setDraft(null);
           // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
@@ -1783,6 +1842,21 @@ export function Editor({
             prop: selectedDef.inlineText.prop,
             multiline: selectedDef.inlineText.multiline === true,
           });
+          return;
+        }
+        if (
+          event.key === "Enter" &&
+          selectedNode?.type === "Group" &&
+          selectedNode.children[0] &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey
+        ) {
+          // Enter on a group goes into it, as Esc goes back up.
+          event.preventDefault();
+          setScopeId(selectedNode.id);
+          setPicked([]);
+          setSelectedId(selectedNode.children[0].id);
           return;
         }
         if (
@@ -1841,6 +1915,9 @@ export function Editor({
         }
       }}
     >
+      <div role="status" aria-live="polite" className={styles.visuallyHidden}>
+        {announcement}
+      </div>
       <header className={styles.toolbar}>
         <div className={styles.toolbarStart}>
           <span className={styles.logo} aria-hidden="true">

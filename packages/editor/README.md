@@ -159,6 +159,9 @@ are refused, whatever the host returns. If the function throws, its message is s
   them to move the group, and turn the handle above the frame to turn the group around its middle.
   Nothing is added to the page: let go of the selection and the frame is gone. A click on one block
   of the frame picks that block alone. Resizing the group is not there yet.
+- Tab on the canvas selects the blocks one after the other (Shift+Tab goes back), at the end of the
+  level it goes on to the next control. Enter on a group goes into it, Esc comes back out. A screen
+  reader is told what is selected, added or removed.
 - Right-click a block for its menu: duplicate, delete, order in the stack, group and ungroup.
 - Drag a card from the Blocks panel onto the page to add it where you let go, into the block under
   the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels
