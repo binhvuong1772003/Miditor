@@ -86,6 +86,7 @@ const ICONS = {
   ),
   chevronDown: <path d="m4 6 4 4 4-4" />,
   chevronRight: <path d="m6 4 4 4-4 4" />,
+  layers: <path d="m8 2.5 5.5 3L8 8.5l-5.5-3L8 2.5zM2.5 8.5 8 11.5l5.5-3M2.5 11.5 8 14.5l5.5-3" />,
   search: (
     <>
       <circle cx="7" cy="7" r="4.5" />

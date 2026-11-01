@@ -295,4 +295,10 @@ export const vi: Messages = {
   "font.pageFont": "Phông của trang",
   "action.none": "Không",
   "colour.theme": "Chủ đề",
+  "rail.layers": "Lớp",
+  "layers.label": "Lớp",
+  "layers.empty": "Chưa có khối nào trên trang.",
+  "layers.hint": "Bấm một khối để chọn. Giữ Shift để thêm các khối cùng cấp.",
+  "layers.open": "Mở {name}",
+  "layers.shut": "Thu gọn {name}",
 };

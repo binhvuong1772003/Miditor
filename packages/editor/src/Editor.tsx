@@ -109,6 +109,7 @@ import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
 import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
+import { LayersPanel } from "./LayersPanel";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
@@ -483,13 +484,13 @@ export function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const [tool, setTool] = useState<"blocks" | "images" | "themes">("blocks");
+  const [tool, setTool] = useState<"blocks" | "layers" | "images" | "themes">("blocks");
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const [panelOpen, setPanelOpen] = useState(
     () => typeof window === "undefined" || !window.matchMedia?.("(max-width: 1100px)").matches,
   );
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
-  const pickTool = (id: "blocks" | "images" | "themes") => {
+  const pickTool = (id: "blocks" | "layers" | "images" | "themes") => {
     if (id === tool && panelOpen) {
       setPanelOpen(false);
       return;
@@ -1462,6 +1463,28 @@ export function Editor({
     setAdding({ busy: false, error: null });
   };
 
+  /**
+   * A line of the layers list was pressed: select that block, or with Shift, Ctrl or Cmd add it to the
+   * ones selected when it is in the same block as the selected one (the blocks that can be grouped).
+   */
+  const pickFromLayers = (id: string, parentId: string, add: boolean) => {
+    setHoverId(null);
+    if (
+      add &&
+      selectedId &&
+      id !== selectedId &&
+      parentOf(data.root, selectedId)?.id === parentId
+    ) {
+      setPicked((list) =>
+        list.includes(id) ? list.filter((other) => other !== id) : [...list, id],
+      );
+      return;
+    }
+    setPicked([]);
+    setSelectedId(id);
+    setScopeId(parentId);
+  };
+
   /** Add a picture of the host's library as an `Image` block, in its own proportions. */
   const addLibraryImage = async (image: LibraryImage) => {
     const natural =
@@ -2180,6 +2203,7 @@ export function Editor({
             {(
               [
                 ["blocks", t("rail.blocks"), "grid"],
+                ["layers", t("rail.layers"), "layers"],
                 ["images", t("rail.images"), "img"],
                 ["themes", t("rail.themes"), "palette"],
               ] as const
@@ -2200,9 +2224,26 @@ export function Editor({
           <aside
             className={`${styles.panel} ${styles.start}`}
             aria-label={t(
-              tool === "images" ? "rail.images" : tool === "themes" ? "rail.themes" : "rail.blocks",
+              tool === "images"
+                ? "rail.images"
+                : tool === "themes"
+                  ? "rail.themes"
+                  : tool === "layers"
+                    ? "rail.layers"
+                    : "rail.blocks",
             )}
           >
+            {tool === "layers" && (
+              <LayersPanel
+                root={data.root}
+                registry={shownRegistry}
+                selectedId={selectedId}
+                picked={picked}
+                hoverId={hoverId}
+                onSelect={pickFromLayers}
+                onHover={setHoverId}
+              />
+            )}
             {tool === "images" && (
               <>
                 <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
@@ -2357,7 +2398,7 @@ export function Editor({
               <BlockLabel
                 target={hoverElement}
                 workspace={workspace}
-                text={registry[hoverNode.type]?.label ?? hoverNode.type}
+                text={shownRegistry[hoverNode.type]?.label ?? hoverNode.type}
                 tone="hover"
               />
             )}

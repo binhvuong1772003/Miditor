@@ -300,6 +300,12 @@ export const en = {
   "font.pageFont": "Page font",
   "action.none": "None",
   "colour.theme": "Theme",
+  "rail.layers": "Layers",
+  "layers.label": "Layers",
+  "layers.empty": "No blocks on the page yet.",
+  "layers.hint": "Press a block to select it. Shift adds blocks from the same level.",
+  "layers.open": "Open {name}",
+  "layers.shut": "Close {name}",
 } as const;
 
 /** The name of one thing the editor says. */
