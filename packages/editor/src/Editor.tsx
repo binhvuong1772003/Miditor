@@ -63,6 +63,7 @@ import {
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
+import { EndPanel } from "./EndPanel";
 import { isEditableTarget } from "./editable";
 import { type FontDef, usableFonts } from "./fonts";
 import { GapLabels } from "./GapLabels";
@@ -79,8 +80,6 @@ import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey } from "./nudge";
 import { PageEdge } from "./PageEdge";
-import { PageInspector } from "./PageInspector";
-import { PropertiesPanel } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
@@ -900,7 +899,7 @@ function EditorBody({
   };
 
   /** One field of the page info changed: stored as one step of history. An emptied field is removed. */
-  const changeMeta = documents.changeMeta;
+  const _changeMeta = documents.changeMeta;
 
   /** Store one change on a node, once. The draft is over. */
   const commitPatch = documents.commitPatch;
@@ -1244,11 +1243,11 @@ function EditorBody({
   };
 
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
-  const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) =>
+  const _changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) =>
     documents.changeAnchor({ axis, anchor, container: parentSize() ?? null });
 
   /** The selected block gets its automatic phone placement again; the desktop one is not touched. */
-  const resetPhone = documents.resetPhone;
+  const _resetPhone = documents.resetPhone;
 
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
   const parentSize = () => {
@@ -1257,10 +1256,10 @@ function EditorBody({
   };
 
   /** Line the selected blocks up with each other, or one block with its parent. */
-  const alignSelected = (to: AlignTo) => documents.alignSelected(parentSize() ?? null, to);
+  const _alignSelected = (to: AlignTo) => documents.alignSelected(parentSize() ?? null, to);
 
   /** Equal gaps between three or more selected blocks. */
-  const distributeSelected = (axis: "x" | "y") =>
+  const _distributeSelected = (axis: "x" | "y") =>
     documents.distributeSelected(parentSize() ?? null, axis);
 
   /**
@@ -1344,17 +1343,17 @@ function EditorBody({
 
   // The theme, one step of history for each change. A colour that goes is baked into the blocks that
   // used it, and one that is renamed is followed by them.
-  const setThemeColor = documents.setThemeColor;
-  const renameThemeColor = documents.renameThemeColor;
-  const deleteThemeColor = documents.deleteThemeColor;
-  const setThemeFont = documents.setThemeFont;
+  const _setThemeColor = documents.setThemeColor;
+  const _renameThemeColor = documents.renameThemeColor;
+  const _deleteThemeColor = documents.deleteThemeColor;
+  const _setThemeFont = documents.setThemeFont;
 
   /**
    * A number of the rect of the selected block was typed: x, y, width or height. `withRect` works out
    * the placement for this screen, with the proportions kept when the block keeps them, and one that
    * changes nothing stores nothing.
    */
-  const setRect = (field: "x" | "y" | "w" | "h", value: number) =>
+  const _setRect = (field: "x" | "y" | "w" | "h", value: number) =>
     documents.setRect({ field, value, container: parentSize() ?? null });
 
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
@@ -1459,7 +1458,7 @@ function EditorBody({
   const _deleteTheme = config?.onThemeDelete;
 
   // The fonts people can choose: the host's, or the ones every browser has.
-  const fonts = usableFonts(config?.fonts);
+  const _fonts = usableFonts(config?.fonts);
 
   // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
   const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
@@ -1824,56 +1823,15 @@ function EditorBody({
               onRotateEnd={endRotate}
             />
           </section>
-          <aside className={`${styles.panel} ${styles.end}`} aria-label={t("panel.properties")}>
-            {!selectedNode && (
-              <PageInspector
-                page={data.root}
-                theme={data.theme}
-                meta={data.meta}
-                onMeta={changeMeta}
-                pageHeight={pageHeight}
-                onPageHeight={(height) =>
-                  commitPatch(data.root.id, { key: "minHeight", value: height })
-                }
-                uploadImage={config?.uploadImage}
-                onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
-                onCommit={(patch) => commitPatch(data.root.id, patch)}
-                fonts={fonts}
-                onPageFont={(stack) => setThemeFont("body", stack)}
-                themeActions={{
-                  onSetColor: setThemeColor,
-                  onRenameColor: renameThemeColor,
-                  onDeleteColor: deleteThemeColor,
-                }}
-              />
-            )}
-            {selectedNode && (
-              <PropertiesPanel
-                onBackToPage={() => {
-                  selecting.selectPage(data.root.id);
-                }}
-                // A new panel for each node, so text typed for one is never applied to another.
-                key={selectedNode?.id ?? "none"}
-                node={selectedNode}
-                device={frame}
-                onResetPhone={resetPhone}
-                selectedCount={1 + picked.length}
-                onAlign={alignSelected}
-                onDistribute={distributeSelected}
-                actions={config?.actions}
-                fonts={fonts}
-                def={shownDef}
-                onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-                onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
-                onDiscard={() => setDraft(null)}
-                onAnchor={changeAnchor}
-                rect={selectedRect}
-                onRect={setRect}
-                theme={data.theme}
-                uploadImage={config?.uploadImage}
-              />
-            )}
-          </aside>
+          <EndPanel
+            config={config}
+            documents={documents}
+            selecting={selecting}
+            parentSize={parentSize}
+            pageHeight={pageHeight}
+            selectedRect={selectedRect}
+            shownDef={shownDef}
+          />
         </div>
       </IconsContext.Provider>
     </TContext.Provider>
