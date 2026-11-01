@@ -1,3 +1,4 @@
+import type { Registry } from "@midito-kitchen/core";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
@@ -5,6 +6,7 @@ import type { EditorStore } from "./create-editor-store";
 import { type DocumentCommands, documentCommands } from "./document";
 import { type SelectionCommands, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
+import { type StructureCommands, structureCommands } from "./structure";
 import { type ViewCommands, viewCommands } from "./view";
 
 const StoreContext = createContext<EditorStore<never> | null>(null);
@@ -63,9 +65,16 @@ export function useSelectionCommands(): SelectionCommands {
  * The commands on the page being edited. `limit` is how many steps of history are kept; it can change
  * while the editor is open, so the commands read it when they run.
  */
-export function useDocumentCommands(limit: unknown): DocumentCommands {
+export function useDocumentCommands(
+  limit: unknown,
+  registry: Registry,
+): DocumentCommands & StructureCommands {
   const store = useStoreApi<EditorState>();
-  const env = useRef({ limit });
+  const env = useRef({ limit, registry });
   env.current.limit = limit;
-  return useMemo(() => documentCommands(store, env.current), [store]);
+  env.current.registry = registry;
+  return useMemo(
+    () => ({ ...documentCommands(store, env.current), ...structureCommands(store, env.current) }),
+    [store],
+  );
 }

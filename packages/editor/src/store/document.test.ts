@@ -1,4 +1,4 @@
-import { emptyPage, type PageData } from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage, type PageData } from "@midito-kitchen/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { redo, undo } from "../history";
@@ -125,7 +125,7 @@ describe("step", () => {
 
   it("changes the history and the selection in one change", () => {
     const store = createEditorStore(start());
-    const commands = documentCommands(store, { limit: LIMIT });
+    const commands = documentCommands(store, { limit: LIMIT, registry: builtInRegistry });
     commands.edit(titled("a"));
     const listener = vi.fn();
     store.subscribe(listener);
@@ -188,7 +188,7 @@ describe("the history, whatever is done", () => {
 
 describe("documentCommands", () => {
   it("run the commands on the store and read the limit when they run", () => {
-    const env = { limit: 1 };
+    const env = { limit: 1 as unknown, registry: builtInRegistry };
     const store = createEditorStore(start());
     const commands = documentCommands(store, env);
     commands.edit(titled("a"));
@@ -203,7 +203,7 @@ describe("documentCommands", () => {
     const store = createEditorStore(start());
     const listener = vi.fn();
     store.subscribe(listener);
-    const commands = documentCommands(store, { limit: LIMIT });
+    const commands = documentCommands(store, { limit: LIMIT, registry: builtInRegistry });
     commands.edit((p) => p);
     commands.setDraft(null);
     commands.setWaiting(false);

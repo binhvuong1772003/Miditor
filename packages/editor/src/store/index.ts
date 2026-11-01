@@ -1,5 +1,6 @@
 // The only door to the store library: nothing outside this folder imports it directly.
 
+export { applyPatch, withBoxFor, withDraft } from "./apply-patch";
 export {
   StoreProvider,
   useDocumentCommands,
@@ -23,4 +24,5 @@ export type {
   Tool,
   ViewState,
 } from "./state";
+export type { StructureCommands } from "./structure";
 export { initialViewState, type ViewCommands, viewCommands } from "./view";

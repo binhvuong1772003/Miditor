@@ -12,17 +12,12 @@ import {
   clipboardText,
   colorRef,
   copyNodes,
-  type Device,
   distributeRects,
-  duplicateNode,
   emptyPage,
   type Frame,
-  type FreeBox,
   type FreeNode,
   findNode,
-  groupNodes,
   inferBox,
-  insertNode,
   isFreeNode,
   isTheme,
   keepsRatio,
@@ -32,19 +27,14 @@ import {
   moveRect,
   type NewNodeOverrides,
   newNode,
-  nextId,
   normalizeAngle,
   type PageData,
   type PageMeta,
   parentOf,
   parseClipboard,
-  pasteNodes,
   pickBlock,
   type Rect,
   type Registry,
-  type Reorder,
-  removeNode,
-  reorderNode,
   reparentNode,
   replaceColor,
   resizeRotated,
@@ -53,19 +43,14 @@ import {
   savedFrom,
   setAnchor,
   type Theme,
-  type TreeNode,
   tidyMeta,
   turnOf,
-  ungroupNode,
   updateNode,
   validatePage,
   validateRegistry,
-  withFreeBox,
-  withLockRatio,
   withPhoneBox,
   withPhoneProp,
   withRect,
-  withStyle,
 } from "@midito-kitchen/core";
 import { Render, type Renderer } from "@midito-kitchen/render";
 import {
@@ -93,7 +78,7 @@ import {
   SelectionBox,
   type SelectionControls,
 } from "./canvas/SelectionBox";
-import { localPoint, placeAt } from "./drop-place";
+import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
@@ -115,12 +100,13 @@ import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
 import { PageEdge } from "./PageEdge";
 import { PageInspector } from "./PageInspector";
-import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
+import { type PanelPatch, PropertiesPanel } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
+  applyPatch,
   createEditorStore,
   createNotifier,
   type EditorState,
@@ -133,6 +119,8 @@ import {
   useSelectionCommands,
   useStoreApi,
   useViewCommands,
+  withBoxFor,
+  withDraft,
 } from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
@@ -281,83 +269,6 @@ export interface EditorProps {
   };
 }
 
-/**
- * The node with one style set. A switch, not one call: each case hands `withStyle` a key and a value
- * that TypeScript can tell go together.
- */
-const withStylePatch = (node: TreeNode, patch: StylePatch): TreeNode => {
-  switch (patch.key) {
-    case "background":
-    case "borderColor":
-      return withStyle(node, patch.key, patch.value);
-    case "borderWidth":
-    case "borderRadius":
-    case "minHeight":
-      return withStyle(node, patch.key, patch.value);
-    case "backgroundImage":
-      return withStyle(node, "backgroundImage", patch.value);
-    case "backgroundSize":
-      return withStyle(node, "backgroundSize", patch.value);
-    case "backgroundPosition":
-      return withStyle(node, "backgroundPosition", patch.value);
-    case "backgroundRepeat":
-      return withStyle(node, "backgroundRepeat", patch.value);
-  }
-};
-
-/**
- * The free node with the placement `box` for this screen: its own placement on the desktop, the one
- * set by hand for the phone on a phone, so a change made on a phone leaves the desktop as it was.
- */
-const withBoxFor = (node: FreeNode, device: Device, box: FreeBox): FreeNode =>
-  device === "phone" ? withPhoneBox(node, box) : withFreeBox(node, box);
-
-/** The node with the change of a patch applied. A rotation only changes a free node, on this screen. */
-const applyPatch = (
-  node: TreeNode,
-  patch: PanelPatch,
-  device: Device,
-  registry: Registry,
-): TreeNode => {
-  if (patch.key === "prop") {
-    // A prop marked perDevice is kept apart for the phone, so the desktop keeps its own value.
-    const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
-    const field = def && Object.hasOwn(def.fields, patch.name) ? def.fields[patch.name] : undefined;
-    if (device === "phone" && field?.perDevice === true) {
-      return withPhoneProp(node, patch.name, patch.value);
-    }
-    return node.props[patch.name] === patch.value
-      ? node
-      : { ...node, props: { ...node.props, [patch.name]: patch.value } };
-  }
-  if (patch.key === "rotation") {
-    if (!isFreeNode(node)) return node;
-    const box = boxFor(node, device);
-    return box.rotation === patch.value
-      ? node
-      : withBoxFor(node, device, { ...box, rotation: patch.value });
-  }
-  if (patch.key === "lockRatio") {
-    return isFreeNode(node) ? withLockRatio(node, patch.value) : node;
-  }
-  if (patch.key === "phoneLayout") {
-    // The phone starts from the placement it has now, which is made from the desktop one.
-    return isFreeNode(node) && !node.phone ? withPhoneBox(node, boxFor(node, "phone")) : node;
-  }
-  return withStylePatch(node, patch);
-};
-
-/** The page with a pending change applied, for drawing it or for storing it. */
-const withDraft = (
-  data: PageData,
-  draft: PanelPatch & { id: string },
-  device: Device,
-  registry: Registry,
-): PageData => ({
-  ...data,
-  root: updateNode(data.root, draft.id, (n) => applyPatch(n, draft, device, registry)),
-});
-
 /** The theme without what is empty in it, or `undefined` when nothing is left. */
 function tidyTheme(theme: Theme): Theme | undefined {
   const colors = theme.colors && Object.keys(theme.colors).length > 0 ? theme.colors : undefined;
@@ -447,7 +358,9 @@ function EditorBody({
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const viewing = useViewCommands();
   const selecting = useSelectionCommands();
-  const documents = useDocumentCommands(historyLimit);
+  const components = config?.components;
+  const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
+  const documents = useDocumentCommands(historyLimit, registry);
   const history = useEditorState((state) => state.history);
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
@@ -488,8 +401,6 @@ function EditorBody({
   const frame = useEditorState((state) => state.frame);
   // Adding, deleting and grouping change the blocks every screen shares, so they are done on the desktop.
   const onPhone = frame === "phone";
-  const components = config?.components;
-  const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   const shownRegistry = useMemo(() => localiseRegistry(t, registry), [t, registry]);
   // A mistake in the host's kinds is told once per registry, and the editor goes on with it.
   useEffect(() => {
@@ -1356,22 +1267,13 @@ function EditorBody({
   const addBlockOf = (kind: string, overrides?: NewNodeOverrides) => {
     if (onPhone) return;
     note.current = t("a11y.added");
-    if (draft) commitPatch(draft.id, draft);
-    const id = nextId(data.root);
     const sizeOf = (element: HTMLElement | null) => ({
       w: element?.clientWidth ?? 0,
       h: element?.clientHeight ?? 0,
     });
-    const inside = selectedNode ? newNode(registry, kind, id, sizeOf(block), overrides) : undefined;
-    const intoSelected =
-      inside && selectedNode && canInsert(registry, data.root, selectedNode.id, inside);
-    const parentId = intoSelected && selectedNode ? selectedNode.id : data.root.id;
     // The page as it is drawn now, to find its middle down the page.
     const page = workspace ? elementOf(workspace, data.root.id) : null;
-    const node = intoSelected ? inside : newNode(registry, kind, id, sizeOf(page), overrides);
-    if (!node) return;
-    setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
-    selecting.selectOnly(id, parentId);
+    documents.addBlock({ kind, overrides, inside: sizeOf(block), page: sizeOf(page) });
   };
 
   /**
@@ -1399,33 +1301,25 @@ function EditorBody({
   const dropFromLibrary = (kind: string, point: { x: number; y: number }) => {
     const landing = landingFor(kind, point);
     if (!landing) return;
-    if (draft) commitPatch(draft.id, draft);
     const { id: parentId, element } = landing;
-    const id = nextId(data.root);
     const container = { w: element.clientWidth, h: element.clientHeight };
-    const made = newNode(registry, kind, id, container);
-    if (!made) return;
+    const rect = element.getBoundingClientRect();
     // A parent that is turned has no simple map from the screen: the block goes in its middle.
-    const node =
+    const at =
       turnOf(data.root, parentId, frame) === 0
-        ? placeAt(
-            made,
-            container,
-            localPoint(
-              point,
-              // Not a spread: the numbers of a DOMRect are not its own properties.
-              {
-                left: element.getBoundingClientRect().left,
-                top: element.getBoundingClientRect().top,
-                clientLeft: element.clientLeft,
-                clientTop: element.clientTop,
-              },
-              zoom,
-            ),
+        ? localPoint(
+            point,
+            // Not a spread: the numbers of a DOMRect are not its own properties.
+            {
+              left: rect.left,
+              top: rect.top,
+              clientLeft: element.clientLeft,
+              clientTop: element.clientTop,
+            },
+            zoom,
           )
-        : made;
-    setData((prev) => ({ ...prev, root: insertNode(prev.root, parentId, node) }));
-    selecting.selectOnly(id, parentId);
+        : null;
+    documents.dropBlock({ kind, parentId, container, at });
   };
 
   // After an upload the editor may have moved on, so the block is added by the newest `addBlockOf`.
@@ -1580,74 +1474,25 @@ function EditorBody({
   };
 
   /** The selected block one place or all the way up or down among its siblings. Only the main one. */
-  const reorderSelected = (to: Reorder) => {
-    if (onPhone || !selectedId || selectedId === data.root.id) return;
-    if (draft) commitPatch(draft.id, draft);
-    setData((prev) => ({ ...prev, root: reorderNode(prev.root, selectedId, to) }));
-  };
+  const reorderSelected = documents.reorderSelected;
 
   /** A copy of each selected block, a little down and to the right, selected in place of them. */
   const duplicateSelected = () => {
     note.current = t("a11y.duplicated");
-    const container = parentSize();
-    if (onPhone || !selectedId || selectedId === data.root.id || !container) return;
-    if (draft) commitPatch(draft.id, draft);
-    const options = { shift: { x: 16, y: 16 }, container };
-    const originals = [selectedId, ...picked];
-    // Each copy is made on the tree the one before left, so the ids the copies get are known now.
-    const copies: string[] = [];
-    let root = data.root;
-    for (const id of originals) {
-      const copy = nextId(root);
-      const next = duplicateNode(root, id, options);
-      if (next !== root) copies.push(copy);
-      root = next;
-    }
-    if (copies.length === 0) return;
-    setData((prev) => ({
-      ...prev,
-      root: originals.reduce((tree, id) => duplicateNode(tree, id, options), prev.root),
-    }));
-    selecting.selectManyLast(copies);
+    documents.duplicateSelected(parentSize() ?? null);
   };
 
   /** The selected blocks become one group, selected, where they were. */
-  const groupSelected = () => {
-    if (onPhone) return;
-    const container = parentSize();
-    if (!selectedId || picked.length === 0 || !container) return;
-    if (draft) commitPatch(draft.id, draft);
-    const ids = [selectedId, ...picked];
-    const id = nextId(data.root);
-    if (groupNodes(data.root, ids, id, container) === data.root) return;
-    setData((prev) => ({ ...prev, root: groupNodes(prev.root, ids, id, container) }));
-    selecting.selectMany([id]);
-  };
+  const groupSelected = () => documents.groupSelected(parentSize() ?? null);
 
   /** The selected group is gone and its blocks are selected, each where it was on the page. */
-  const ungroupSelected = () => {
-    if (onPhone) return;
-    const container = parentSize();
-    if (selectedNode?.type !== "Group" || !container) return;
-    if (ungroupNode(data.root, selectedNode.id, container) === data.root) return;
-    const members = selectedNode.children.map((child) => child.id);
-    const id = selectedNode.id;
-    setData((prev) => ({ ...prev, root: ungroupNode(prev.root, id, container) }));
-    selecting.selectManyLast(members);
-  };
+  const ungroupSelected = () => documents.ungroupSelected(parentSize() ?? null);
 
   /** The selected block and everything in it is gone. The root cannot be deleted. */
   const deleteBlock = () => {
     if (onPhone) return;
     note.current = t("a11y.deleted");
-    if (!selectedId || selectedId === data.root.id) return;
-    const gone = [selectedId, ...picked];
-    setDraft(null);
-    setData((prev) => ({
-      ...prev,
-      root: gone.reduce((root, id) => removeNode(root, id), prev.root),
-    }));
-    selecting.clearSelection();
+    documents.deleteSelected();
   };
 
   /**
@@ -1688,7 +1533,7 @@ function EditorBody({
     };
     if (validatePage(registry, holder).length > 0) return;
     event.preventDefault();
-    if (draft) commitPatch(draft.id, draft);
+    documents.settleDraft();
     const parent = (selectedId ? parentOf(data.root, selectedId) : undefined) ?? data.root;
     const element = elementOf(workspace, parent.id);
     if (!element) return;
@@ -1696,14 +1541,9 @@ function EditorBody({
     // The same text pasted again goes another step further down and to the right.
     const times = pasted.current.text === text ? pasted.current.times + 1 : 1;
     const shift = { x: 16 * times, y: 16 * times };
-    const done = pasteNodes(data.root, parent.id, nodes, { shift, container });
-    if (done.ids.length === 0) return;
-    pasted.current = { text, times };
-    setData((prev) => ({
-      ...prev,
-      root: pasteNodes(prev.root, parent.id, nodes, { shift, container }).root,
-    }));
-    selecting.selectMany(done.ids, parent.id);
+    if (documents.pasteBlocks({ nodes, parentId: parent.id, container, shift })) {
+      pasted.current = { text, times };
+    }
   };
 
   // The theme, one step of history for each change. A colour that goes is baked into the blocks that

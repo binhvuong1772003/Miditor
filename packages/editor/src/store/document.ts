@@ -1,9 +1,15 @@
-import type { PageData } from "@midito-kitchen/core";
+import type { PageData, Registry } from "@midito-kitchen/core";
 import { amend, commit, createHistory, type History } from "../history";
 import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import { afterStep } from "./selection";
 import type { DocumentState, Draft, SelectionState } from "./state";
+
+/**
+ * What a command needs besides the state, and that the host can change while the editor is open:
+ * how many steps of history are kept, and the kinds of block there are. It is read when a command runs.
+ */
+export type Env = { limit: unknown; registry: Registry };
 
 // The commands on the page being edited. Like the others they are plain functions of the state, and
 // they give back the very state when nothing changes: a page that comes out of a change as the same
@@ -83,7 +89,7 @@ export function saveWith<S extends DocumentState>(
 /** The commands tied to a store. `env.limit` is read each time, because the host can change it. */
 export function documentCommands<S extends DocumentState & SelectionState>(
   store: EditorStore<S>,
-  env: { limit: unknown },
+  env: Env,
 ) {
   const run = (command: (state: S) => S) => store.setState(command);
   return {
