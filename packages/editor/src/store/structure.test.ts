@@ -91,6 +91,52 @@ describe("addBlock", () => {
   });
 });
 
+describe("addBlock with what the caller sets on the new block", () => {
+  const picture = {
+    props: { src: "https://example.com/a.png", alt: "A" },
+    size: { w: 300, h: 200 },
+  };
+
+  it("starts the block on the page with those props and that size", () => {
+    const next = addBlock(
+      START,
+      { kind: "Image", overrides: picture, inside: SIZE, page: SIZE },
+      env,
+    );
+    const image = findNode(rootOf(next), next.selectedId as string) as TreeNode & {
+      size?: { w: { v: number }; h: { v: number } };
+    };
+    expect(image.type).toBe("Image");
+    expect(image.props).toMatchObject(picture.props);
+    expect(image.size?.w.v).toBe(300);
+    expect(image.size?.h.v).toBe(200);
+    expect(parentOf(rootOf(next), image.id)?.id).toBe("root");
+  });
+
+  it("starts the block inside the selected one with those props, when that one takes blocks", () => {
+    const box = addBlock(START, { kind: "Container", inside: SIZE, page: SIZE }, env);
+    const into = addBlock(
+      box,
+      { kind: "Image", overrides: picture, inside: SIZE, page: SIZE },
+      env,
+    );
+    const image = findNode(rootOf(into), into.selectedId as string) as TreeNode;
+    expect(parentOf(rootOf(into), image.id)?.id).toBe(box.selectedId);
+    expect(image.props).toMatchObject(picture.props);
+  });
+
+  it("puts a picture beside the selected picture, not inside it", () => {
+    const one = addBlock(
+      START,
+      { kind: "Image", overrides: picture, inside: SIZE, page: SIZE },
+      env,
+    );
+    const two = addBlock(one, { kind: "Image", overrides: picture, inside: SIZE, page: SIZE }, env);
+    expect(parentOf(rootOf(two), two.selectedId as string)?.id).toBe("root");
+    expect(idsOf(two)).toHaveLength(2);
+  });
+});
+
 describe("dropBlock", () => {
   it("adds a block where the pointer was let go, inside the page", () => {
     const next = dropBlock(
