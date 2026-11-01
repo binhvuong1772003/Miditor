@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 /** A fresh playground: `?reset` drops the stored page so every test starts from the same one. */
 export async function openEditor(page: Page, query = ""): Promise<void> {
   await page.goto(`/?reset${query}`);
-  await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
 }
 
 /** The blocks drawn on the page, the page itself included. */
@@ -69,4 +69,14 @@ export async function addTwoTexts(page: Page): Promise<void> {
   await addFromBlocks(page, "Text");
   await dragBy(page, "n1", -250, -150);
   await addFromBlocks(page, "Text");
+}
+
+/** The words of a block, as the page draws them (not the box being typed in). */
+export const wordsOf = (page: Page, id: string) => page.locator(`[data-midito-id="${id}"]`).first();
+
+/** Double-clicks in the middle of a block, which opens its words for typing. */
+export async function openWords(page: Page, id: string): Promise<void> {
+  const box = await boxOf(page, id);
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByRole("textbox", { name: "Edit the text of the block" })).toBeFocused();
 }
