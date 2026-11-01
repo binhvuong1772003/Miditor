@@ -28,7 +28,6 @@ import {
   isTheme,
   keepsRatio,
   lowestPageHeight,
-  MAX_SAVED_THEMES,
   migratePage,
   minSize,
   moveRect,
@@ -115,7 +114,7 @@ import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesP
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
-import { ThemesPanel } from "./ThemesPanel";
+import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
@@ -194,13 +193,25 @@ export interface EditorProps {
      */
     fonts?: readonly FontDef[];
     /**
-     * Themes to suggest, for a person to start from: a name, named colours and a font each, for
-     * example `{ name: "Sea", colors: { primary: "#0e7490", paper: "#ecfeff" }, font: "Lora, serif" }`.
-     * They are shown under Suggested in the Themes panel and put on the page when pressed. Give every
-     * theme the same colour names (`primary`, `accent`...), so the blocks that use a colour by name
-     * change with the theme. A person keeps their own themes in the page itself.
+     * The themes of the host, kept by the host: an id, a name, named colours and a font each, for
+     * example `{ id: "sea", name: "Sea", colors: { primary: "#0e7490", paper: "#ecfeff" }, font: "Lora, serif" }`.
+     * One with `readonly: true` is a suggestion, shown under Suggested; the others are the ones a
+     * person kept, shown under Your themes. Pressing one puts it on the page. Give every theme the
+     * same colour names (`primary`, `accent`...), so the blocks that use a colour by name change with
+     * the theme. The page keeps no list of themes: the host stores them and passes the list again
+     * after it changed.
      */
-    themes?: readonly Omit<SavedTheme, "id">[];
+    themes?: readonly HostTheme[];
+    /**
+     * Called when a person keeps the theme of the page under a name. The host stores it, gives it an
+     * id and passes the new list in `themes`. Without it there is no Save button. If it throws or
+     * rejects, the panel says so and keeps nothing.
+     */
+    onThemeSave?: (theme: Omit<SavedTheme, "id">) => void | Promise<void>;
+    /** Called when a person renames one of their themes. Without it, themes cannot be renamed. */
+    onThemeRename?: (id: string, name: string) => void | Promise<void>;
+    /** Called when a person deletes one of their themes. Without it, themes cannot be deleted. */
+    onThemeDelete?: (id: string) => void | Promise<void>;
     /** The theme of a new page, for a host that has its own colours and fonts. */
     theme?: Theme;
   };
@@ -1636,26 +1647,6 @@ export function Editor({
         ? kept
         : { ...kept, root: replaceColor(kept.root, registry, name, gone) };
     });
-  /** Keep the theme the page has now, under a name. A page keeps up to `MAX_SAVED_THEMES`. */
-  const saveTheme = (name: string) =>
-    setData((prev) => {
-      const kept = prev.themes ?? [];
-      if (kept.length >= MAX_SAVED_THEMES) return prev;
-      let id = `t${Date.now().toString(36)}`;
-      while (kept.some((theme) => theme.id === id)) id += "x";
-      return { ...prev, themes: [...kept, savedFrom(prev.theme, id, name)] };
-    });
-  const renameSavedTheme = (id: string, name: string) =>
-    setData((prev) => ({
-      ...prev,
-      themes: (prev.themes ?? []).map((theme) => (theme.id === id ? { ...theme, name } : theme)),
-    }));
-  const deleteSavedTheme = (id: string) =>
-    setData((prev) => {
-      const { themes: _old, ...rest } = prev;
-      const left = (prev.themes ?? []).filter((theme) => theme.id !== id);
-      return left.length > 0 ? { ...rest, themes: left } : rest;
-    });
   const setThemeFont = (which: "body" | "heading", stack: string | undefined) =>
     setData((prev) => {
       const { [which]: _old, ...others } = prev.theme?.fonts ?? {};
@@ -1795,11 +1786,19 @@ export function Editor({
     };
   })();
 
-  // The themes the host suggests that can be stored: a list with a good name, colours and font each.
-  const suggestedThemes = (config?.themes ?? []).flatMap((theme, i) => {
-    const candidate = { id: `suggested-${i}`, ...theme };
-    return isSavedTheme(candidate) ? [candidate as SavedTheme] : [];
-  });
+  // The host's themes that can be used: a good id, name, colours and font each, and no id twice.
+  const hostThemes = (() => {
+    const seen = new Set<string>();
+    return (config?.themes ?? []).flatMap((theme) => {
+      const { readonly, ...plain } = theme;
+      if (!isSavedTheme(plain) || seen.has(plain.id)) return [];
+      seen.add(plain.id);
+      return [theme];
+    });
+  })();
+  const keepTheme = config?.onThemeSave;
+  const renameTheme = config?.onThemeRename;
+  const deleteTheme = config?.onThemeDelete;
 
   // The fonts people can choose: the host's, or the ones every browser has.
   const fonts = usableFonts(config?.fonts);
@@ -2137,12 +2136,17 @@ export function Editor({
         {tool === "themes" && (
           <ThemesPanel
             current={data.theme}
-            saved={data.themes ?? []}
-            suggested={suggestedThemes}
+            themes={hostThemes}
             onApply={(theme) => setData((prev) => applyTheme(prev, registry, theme))}
-            onSave={saveTheme}
-            onRename={renameSavedTheme}
-            onDelete={deleteSavedTheme}
+            onSave={
+              keepTheme &&
+              ((name) => {
+                const { id: _id, ...theme } = savedFrom(data.theme, "", name);
+                return keepTheme(theme);
+              })
+            }
+            onRename={renameTheme}
+            onDelete={deleteTheme}
           />
         )}
         {tool === "blocks" && (

@@ -19,4 +19,5 @@ export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
+export type { HostTheme } from "./ThemesPanel";
 export type { UploadImage } from "./upload-image";
