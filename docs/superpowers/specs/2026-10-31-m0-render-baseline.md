@@ -48,6 +48,6 @@ left in it is the measuring of the screen, the gestures and the JSX, which phase
 The estimate of 1500 lines at the end of phase 4 in the first plan was too low for the same reason.
 
 Phase 5 put ten commands under names (`store/commands.ts`), one door `run(name, args)`, and the keys as
-data (`keymap.ts`). Render counts did not change (type 5 chars 2, drag 15; add and select in the e2e
-perf spec). The only code that is smaller is the wrappers in `Editor.tsx`; the gain is a single place
+data (`keymap.ts`). Render counts did not change in the two moments `pnpm perf` measures (type 5 chars 2, drag 15); add
+and select were not measured again, the e2e perf spec only checks that the parts draw. The only code that is smaller is the wrappers in `Editor.tsx`; the gain is a single place
 for a rule or a message to the host, which M1 and M3 use.

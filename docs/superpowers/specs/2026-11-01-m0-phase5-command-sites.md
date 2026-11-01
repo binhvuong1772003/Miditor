@@ -4,24 +4,23 @@ Read before the command table. `Editor.tsx` line numbers are from `2b5bc7b`.
 
 ## Commands that go into the table
 
-| Command | Keyboard | Menu | QuickActions | Toolbar / rail | Guard today | Side effect in the component |
-|---|---|---|---|---|---|---|
-| `history.undo` / `history.redo` | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y | | | Undo/Redo buttons (`disabled` from `canUndo/canRedo`) | none | none |
-| `block.duplicate` | Ctrl/Cmd+D | yes | yes | | store: no-op on phone, without a selection | `note.current = a11y.duplicated`, `parentSize()` measured from the DOM |
-| `block.delete` | Delete, Backspace (needs `selectedId`) | yes | yes | | `onPhone` returns first; store no-op for the root | `note.current = a11y.deleted` (set only when not on phone) |
-| `block.group` / `block.ungroup` | Ctrl/Cmd+G, Ctrl/Cmd+Shift+G | yes | yes | | store: no-op on phone | `parentSize()` |
-| `block.reorder` (forward, backward, front, back) | | yes | yes | | store: no-op on phone, root | none |
-| `view.zoom` (in, out, reset) | Ctrl/Cmd + `=` `+` `-` `0` | | | zoom buttons (`disabled` at MIN/MAX_ZOOM) | none | none |
-| `view.fit` | | | | Fit button | none | needs a workspace measure (`fitZoom(...)`) |
-| `view.frame` | | | | desktop/phone buttons | none | none |
-| `tool.pick` | | | | rail buttons | none | none |
+| Command                                          | Keyboard                               | Menu | QuickActions | Toolbar / rail                                        | Guard today                                       | Side effect in the component                                           |
+| ------------------------------------------------ | -------------------------------------- | ---- | ------------ | ----------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `history.undo` / `history.redo`                  | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y   |      |              | Undo/Redo buttons (`disabled` from `canUndo/canRedo`) | none                                              | none                                                                   |
+| `block.duplicate`                                | Ctrl/Cmd+D                             | yes  | yes          |                                                       | store: no-op on phone, without a selection        | `note.current = a11y.duplicated`, `parentSize()` measured from the DOM |
+| `block.delete`                                   | Delete, Backspace (needs `selectedId`) | yes  | yes          |                                                       | `onPhone` returns first; store no-op for the root | `note.current = a11y.deleted` (set only when not on phone)             |
+| `block.group` / `block.ungroup`                  | Ctrl/Cmd+G, Ctrl/Cmd+Shift+G           | yes  | yes          |                                                       | store: no-op on phone                             | `parentSize()`                                                         |
+| `block.reorder` (forward, backward, front, back) |                                        | yes  | yes          |                                                       | store: no-op on phone, root                       | none                                                                   |
+| `view.zoom` (in, out, reset)                     | Ctrl/Cmd + `=` `+` `-` `0`             |      |              | zoom buttons (`disabled` at MIN/MAX_ZOOM)             | none                                              | none                                                                   |
+| `view.frame`                                     |                                        |      |              | desktop/phone buttons                                 | none                                              | none                                                                   |
+| `tool.pick`                                      |                                        |      |              | rail buttons                                          | none                                              | none                                                                   |
 
 `block.nudge` (arrows) reads `lastNudge` (a ref that merges presses) and `event.timeStamp`. It stays in the
 component for now; only its call to `documents.nudgeSelected` is already a command.
 
 ## Not in the table (DOM or focus bound, phase 6)
 
-Tab, Escape, Enter (into text / into a group), gestures, marquee, copy / cut / paste events (clipboard
+The Fit button (`view.fit`, it measures the workspace), Tab, Escape, Enter (into text / into a group), gestures, marquee, copy / cut / paste events (clipboard
 events, not keys), add block (three measured sizes and the `a11y.added` note), save.
 
 ## Facts the design depends on
