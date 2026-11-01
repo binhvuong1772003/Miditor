@@ -1,5 +1,6 @@
 import { type CSSProperties, useState } from "react";
 import styles from "./ImagesPanel.module.css";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import { foldersOf, type LibraryImage, searchImages } from "./images";
 import fieldStyles from "./PropertiesPanel.module.css";
@@ -22,6 +23,7 @@ export interface ImagesPanelProps {
  * whenever no block is selected.
  */
 export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"images" | "folders">("images");
   const [folder, setFolder] = useState<string | null>(null);
@@ -30,11 +32,7 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
   const folders = foldersOf(images);
 
   if (!upload && images.length === 0) {
-    return (
-      <p className={fieldStyles.hint}>
-        Pictures can be added once the host gives the editor a way to upload them.
-      </p>
-    );
+    return <p className={fieldStyles.hint}>{t("images.none")}</p>;
   }
 
   const searching = query.trim() !== "";
@@ -54,8 +52,8 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
           <Icon name="search" size={16} />
           <input
             type="search"
-            aria-label="Search pictures"
-            placeholder="Search pictures"
+            aria-label={t("images.search")}
+            placeholder={t("images.search")}
             value={query}
             spellCheck={false}
             onChange={(event) => setQuery(event.target.value)}
@@ -68,11 +66,11 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
             type="button"
             className={styles.upload}
             disabled={disabled || upload.busy}
-            title={disabled ? "Switch to Desktop to add pictures" : undefined}
+            title={disabled ? t("images.disabled") : undefined}
             onClick={upload.onChoose}
           >
             <Icon name="img" size={16} />
-            {upload.busy ? "Uploading…" : "Upload image"}
+            {upload.busy ? t("images.uploading") : t("images.upload")}
           </button>
           {upload.error && (
             <p className={fieldStyles.error} role="alert">
@@ -82,7 +80,7 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
         </>
       )}
       {images.length > 0 && folders.length > 0 && !searching && (
-        <div className={styles.tabs} role="tablist" aria-label="Show pictures by">
+        <div className={styles.tabs} role="tablist" aria-label={t("images.tabs")}>
           {(["images", "folders"] as const).map((name) => (
             <button
               key={name}
@@ -95,7 +93,7 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
                 setFolder(null);
               }}
             >
-              {name === "images" ? "Images" : "Folders"}
+              {name === "images" ? t("rail.images") : t("images.tabFolders")}
             </button>
           ))}
         </div>
@@ -113,7 +111,11 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
           ))}
         </ul>
       ) : (
-        <Section title={folder ?? (searching ? "Results" : "Pictures")} actions={undefined}>
+        <Section
+          id="images.list"
+          title={folder ?? (searching ? t("images.results") : t("images.pictures"))}
+          actions={undefined}
+        >
           {folder !== null && !searching && (
             <button
               type="button"
@@ -123,12 +125,12 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
                 setTab("folders");
               }}
             >
-              ← Folders
+              {t("images.back")}
             </button>
           )}
           {shown.length === 0 ? (
             <p className={fieldStyles.hint}>
-              {searching ? "No picture matches." : "No pictures yet."}
+              {searching ? t("images.noMatch") : t("images.empty")}
             </p>
           ) : (
             <ul className={styles.grid}>
@@ -151,11 +153,13 @@ export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProp
                       className={styles.picture}
                       disabled={disabled}
                       title={
-                        disabled
-                          ? "Switch to Desktop to add pictures"
-                          : (image.name ?? "Add to the page")
+                        disabled ? t("images.disabled") : (image.name ?? t("images.addToPage"))
                       }
-                      aria-label={image.name ? `Add ${image.name}` : "Add this picture"}
+                      aria-label={
+                        image.name
+                          ? t("images.addNamed", { name: image.name })
+                          : t("images.addThis")
+                      }
                       onClick={() => onAdd(image)}
                     >
                       <img

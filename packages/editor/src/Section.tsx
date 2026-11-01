@@ -5,6 +5,8 @@ import styles from "./PropertiesPanel.module.css";
 export interface SectionProps {
   /** The name of the section, which is also what remembers whether it is open. */
   title: string;
+  /** What remembers whether it is open, when the title can change (a translation): stays the same in every language. Without it, the title. */
+  id?: string;
   /** One sentence about the section, shown when its title is pointed at. */
   help?: string | undefined;
   /** Small controls at the right end of the title: a choice, a button to add something. */
@@ -22,11 +24,12 @@ const remembered = new Map<string, boolean>();
  * controls beside the title, and the fields under it. It is how the panel is divided, the way a
  * design tool divides its own.
  */
-export function Section({ title, help, actions, closed = false, children }: SectionProps) {
-  const [open, setOpen] = useState(() => remembered.get(title) ?? !closed);
+export function Section({ title, id, help, actions, closed = false, children }: SectionProps) {
+  const memory = id ?? title;
+  const [open, setOpen] = useState(() => remembered.get(memory) ?? !closed);
   const bodyId = useId();
   const toggle = () => {
-    remembered.set(title, !open);
+    remembered.set(memory, !open);
     setOpen(!open);
   };
   return (

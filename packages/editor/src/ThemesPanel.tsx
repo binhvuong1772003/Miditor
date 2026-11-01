@@ -6,6 +6,7 @@ import {
   type Theme,
 } from "@midito-kitchen/core";
 import { type KeyboardEvent, useState } from "react";
+import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -42,6 +43,7 @@ export function ThemesPanel({
   onRename,
   onDelete,
 }: ThemesPanelProps) {
+  const t = useT();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,7 +65,7 @@ export function ThemesPanel({
     }
   };
   const begin = () => {
-    setName(`Theme ${saved.length + 1}`);
+    setName(t("themes.defaultName", { n: saved.length + 1 }));
     setNaming(true);
   };
   const save = async () => {
@@ -77,15 +79,12 @@ export function ThemesPanel({
   return (
     <div>
       {(onSave || saved.length > 0) && (
-        <Section
-          title="Your themes"
-          help="The colours and the font of the page, kept so you can put them back."
-        >
+        <Section id="themes.yours" title={t("themes.yours")} help={t("themes.yoursHelp")}>
           {onSave && naming ? (
             <div className={fieldStyles.row}>
               <input
                 className={styles.nameInput}
-                aria-label="Name of the theme"
+                aria-label={t("themes.nameLabel")}
                 value={name}
                 maxLength={MAX_THEME_NAME}
                 // biome-ignore lint/a11y/noAutofocus: the field opens because the person asked to name a theme
@@ -100,25 +99,23 @@ export function ThemesPanel({
                 disabled={busy || !isThemeName(name.trim())}
                 onClick={save}
               >
-                Save
+                {t("themes.save")}
               </button>
             </div>
           ) : (
             onSave && (
               <button type="button" className={styles.action} onClick={begin}>
-                Save current theme
+                {t("themes.saveCurrent")}
               </button>
             )
           )}
           {failed && (
             <p className={fieldStyles.hint} role="alert">
-              Could not do that. Try again.
+              {t("themes.failed")}
             </p>
           )}
           {onSave && saved.length === 0 && !naming && (
-            <p className={fieldStyles.hint}>
-              Change the colours and the font in the page's settings, then keep them here.
-            </p>
+            <p className={fieldStyles.hint}>{t("themes.hint")}</p>
           )}
           <ul className={styles.list}>
             {saved.map((theme) => (
@@ -137,8 +134,9 @@ export function ThemesPanel({
       )}
       {suggested.length > 0 && (
         <Section
-          title="Suggested"
-          help="Themes to start from. Put one on the page, change it, keep it."
+          id="themes.suggested"
+          title={t("themes.suggested")}
+          help={t("themes.suggestedHelp")}
         >
           <ul className={styles.list}>
             {suggested.map((theme) => (
@@ -173,6 +171,7 @@ function ThemeRow({
   onRename?: ((name: string) => Promise<boolean>) | undefined;
   onDelete?: (() => Promise<boolean>) | undefined;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(theme.name);
   const swatches = Object.values(theme.colors).slice(0, 4);
@@ -187,7 +186,7 @@ function ThemeRow({
       {editing ? (
         <input
           className={styles.nameInput}
-          aria-label={`Name of ${theme.name}`}
+          aria-label={t("themes.nameOf", { name: theme.name })}
           value={text}
           maxLength={MAX_THEME_NAME}
           // biome-ignore lint/a11y/noAutofocus: the field opens because the person asked to rename
@@ -208,7 +207,7 @@ function ThemeRow({
           type="button"
           className={styles.apply}
           aria-pressed={active}
-          title={active ? "The theme of the page" : `Put ${theme.name} on the page`}
+          title={active ? t("themes.current") : t("themes.put", { name: theme.name })}
           onClick={onApply}
         >
           <span className={styles.preview} aria-hidden="true">
@@ -227,8 +226,8 @@ function ThemeRow({
         <button
           type="button"
           className={styles.icon}
-          aria-label={`Rename ${theme.name}`}
-          title="Rename"
+          aria-label={t("themes.renameNamed", { name: theme.name })}
+          title={t("themes.rename")}
           disabled={busy}
           onClick={() => setEditing(true)}
         >
@@ -239,8 +238,8 @@ function ThemeRow({
         <button
           type="button"
           className={styles.icon}
-          aria-label={`Delete ${theme.name}`}
-          title="Delete"
+          aria-label={t("themes.deleteNamed", { name: theme.name })}
+          title={t("themes.delete")}
           disabled={busy}
           onClick={onDelete}
         >

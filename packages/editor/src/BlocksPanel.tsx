@@ -1,6 +1,7 @@
 import { libraryOf, type Registry } from "@midito-kitchen/core";
 import { type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./BlocksPanel.module.css";
+import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
 
 export interface BlocksPanelProps {
@@ -35,11 +36,12 @@ const iconFor = (name: string | undefined): IconName => (name && isIconName(name
  * a block when it is pressed. Which kinds there are, their groups and icons come from the registry.
  */
 export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: BlocksPanelProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const searchId = useId();
   const groups = libraryOf(registry, query);
   const nothing = groups.length === 0;
-  const why = disabled ? "Switch to Desktop to add blocks" : undefined;
+  const why = disabled ? t("blocks.disabled") : undefined;
   const [ghost, setGhost] = useState<Ghost | null>(null);
   // A drag ends with a click event on the card; that click must not add a second block.
   const dragged = useRef(false);
@@ -102,8 +104,8 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
         <input
           id={searchId}
           type="search"
-          placeholder="Search blocks"
-          aria-label="Search blocks"
+          placeholder={t("blocks.search")}
+          aria-label={t("blocks.search")}
           autoComplete="off"
           spellCheck={false}
           value={query}
@@ -120,7 +122,7 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
                 type="button"
                 className={styles.card}
                 disabled={disabled}
-                title={why ?? def.description ?? `Add ${def.label}`}
+                title={why ?? def.description ?? t("blocks.add", { name: def.label })}
                 onPointerDown={(event) => press(event, type, def)}
                 onClick={() => {
                   if (dragged.current) {

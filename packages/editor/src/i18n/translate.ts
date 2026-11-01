@@ -20,7 +20,14 @@ export interface I18n {
 }
 
 /** What a part of the editor calls to say something. */
-export type T = (key: MessageKey, params?: Params) => string;
+export interface T {
+  (key: MessageKey, params?: Params): string;
+  /**
+   * The sentence for a key that may not exist, such as the name of a kind of block (`kind.Hero.label`):
+   * the host's `translate`, then its `messages`, then the editor's own, then `fallback`.
+   */
+  or(key: string, fallback: string): string;
+}
 
 /** A sentence with its `{name}` places filled in; a place with no value is left as it is. */
 export function format(sentence: string, params?: Params): string {
@@ -35,15 +42,19 @@ export function format(sentence: string, params?: Params): string {
  * `messages`, then English.
  */
 export function createT(i18n: I18n | undefined): T {
-  const messages = i18n?.messages;
+  const messages = i18n?.messages as Readonly<Record<string, unknown>> | undefined;
   const translate = i18n?.translate;
-  return (key, params) => {
+  const say = (key: string, params: Params | undefined, base: string): string => {
     const own = messages && Object.hasOwn(messages, key) ? messages[key] : undefined;
-    const fallback = format(typeof own === "string" ? own : en[key], params);
+    const fallback = format(typeof own === "string" ? own : base, params);
     if (!translate) return fallback;
-    const said = translate(key, params, fallback);
+    const said = translate(key as MessageKey, params, fallback);
     return typeof said === "string" && said !== "" ? said : fallback;
   };
+  const t = ((key: MessageKey, params?: Params) => say(key, params, en[key])) as T;
+  t.or = (key, fallback) =>
+    say(key, undefined, Object.hasOwn(en, key) ? en[key as MessageKey] : fallback);
+  return t;
 }
 
 /** The places (`{name}`) of a sentence, in order, for a test that compares two languages. */
