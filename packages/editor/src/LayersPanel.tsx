@@ -5,6 +5,7 @@ import { Icon, type IconName, isIconName } from "./icons";
 import styles from "./LayersPanel.module.css";
 import { ancestorIds, layerRows } from "./layer-tree";
 import fieldStyles from "./PropertiesPanel.module.css";
+import { useRenders } from "./perf";
 
 export interface LayersPanelProps {
   root: TreeNode;
@@ -50,6 +51,7 @@ export function LayersPanel({
   onSelect,
   onHover,
 }: LayersPanelProps) {
+  useRenders("layers");
   const t = useT();
   const [shut, setShut] = useState<ReadonlySet<string>>(new Set());
   const list = useRef<HTMLUListElement>(null);

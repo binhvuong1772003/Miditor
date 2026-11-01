@@ -12,6 +12,7 @@ import Moveable, {
   type OnRotateEnd,
   type OnRotateStart,
 } from "react-moveable";
+import { useRenders } from "../perf";
 
 // The only file that knows react-moveable, so the library can be swapped for hand-written handles.
 // It follows the rules measured in TN4: moveable draws the preview, the data changes once on release.
@@ -159,6 +160,7 @@ export function SelectionBox({
   onResizeEnd,
   onRotateEnd,
 }: SelectionBoxProps) {
+  useRenders("selection");
   const moveable = useRef<Moveable>(null);
   const busy = useRef(false);
   const lastDist = useRef({ x: 0, y: 0 });

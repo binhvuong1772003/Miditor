@@ -26,6 +26,7 @@ import type { MessageKey } from "./i18n/en";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
+import { useRenders } from "./perf";
 import { Section } from "./Section";
 import type { UploadImage } from "./upload-image";
 
@@ -117,6 +118,7 @@ export function PropertiesPanel({
   onAlign,
   onDistribute,
 }: PropertiesPanelProps) {
+  useRenders("properties");
   const t = useT();
   const [tab, setTab] = useState<Tab>("design");
   // Whether the background is a colour or a picture; it starts as what the block has.

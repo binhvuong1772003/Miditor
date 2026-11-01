@@ -74,6 +74,7 @@ import {
   type CSSProperties,
   type MouseEvent,
   type PointerEvent,
+  Profiler,
   type ReactNode,
   useEffect,
   useLayoutEffect,
@@ -117,6 +118,7 @@ import { PageEdge } from "./PageEdge";
 import { PageInspector } from "./PageInspector";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
+import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
@@ -406,6 +408,7 @@ export function Editor({
   historyLimit,
   config,
 }: EditorProps) {
+  useRenders("editor");
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
@@ -2329,13 +2332,15 @@ export function Editor({
                       } as CSSProperties)
                 }
               >
-                <Render
-                  data={shown}
-                  device={frame}
-                  links="inert"
-                  renderers={config?.renderers}
-                  className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
-                />
+                <Profiler id="canvas" onRender={() => countCommit("canvas")}>
+                  <Render
+                    data={shown}
+                    device={frame}
+                    links="inert"
+                    renderers={config?.renderers}
+                    className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
+                  />
+                </Profiler>
               </div>
               {data.root.children.length === 0 && !editing && (
                 <EmptyPage

@@ -3,6 +3,7 @@ import { type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./BlocksPanel.module.css";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
+import { useRenders } from "./perf";
 
 export interface BlocksPanelProps {
   registry: Registry;
@@ -36,6 +37,7 @@ const iconFor = (name: string | undefined): IconName => (name && isIconName(name
  * a block when it is pressed. Which kinds there are, their groups and icons come from the registry.
  */
 export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: BlocksPanelProps) {
+  useRenders("blocks");
   const t = useT();
   const [query, setQuery] = useState("");
   const searchId = useId();

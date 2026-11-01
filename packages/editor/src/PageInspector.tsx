@@ -7,6 +7,7 @@ import { useT } from "./i18n/context";
 import { PageHeightField } from "./PageHeightField";
 import { PageInfoFields, type PageInfoFieldsProps } from "./PageInfoFields";
 import fieldStyles from "./PropertiesPanel.module.css";
+import { useRenders } from "./perf";
 import { Section } from "./Section";
 import { ThemePanel, type ThemePanelProps } from "./ThemePanel";
 import type { UploadImage } from "./upload-image";
@@ -52,6 +53,7 @@ export function PageInspector({
   fonts,
   onPageFont,
 }: PageInspectorProps) {
+  useRenders("page");
   const t = useT();
   return (
     <div className={fieldStyles.content}>

@@ -13,6 +13,7 @@
     "format": "biome check --write .",
     "test": "vitest run",
     "e2e": "playwright test",
+    "perf": "node e2e/measure-renders.mjs",
     "dev": "pnpm --filter playground dev"
   },
   "devDependencies": {

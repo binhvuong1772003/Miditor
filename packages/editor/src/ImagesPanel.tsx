@@ -4,6 +4,7 @@ import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import { foldersOf, type LibraryImage, searchImages } from "./images";
 import fieldStyles from "./PropertiesPanel.module.css";
+import { useRenders } from "./perf";
 import { Section } from "./Section";
 
 export interface ImagesPanelProps {
@@ -23,6 +24,7 @@ export interface ImagesPanelProps {
  * whenever no block is selected.
  */
 export function ImagesPanel({ disabled, upload, images, onAdd }: ImagesPanelProps) {
+  useRenders("images");
   const t = useT();
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"images" | "folders">("images");

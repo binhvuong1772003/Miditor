@@ -9,6 +9,7 @@ import { type KeyboardEvent, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import fieldStyles from "./PropertiesPanel.module.css";
+import { useRenders } from "./perf";
 import { Section } from "./Section";
 import styles from "./ThemesPanel.module.css";
 
@@ -43,6 +44,7 @@ export function ThemesPanel({
   onRename,
   onDelete,
 }: ThemesPanelProps) {
+  useRenders("themes");
   const t = useT();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
