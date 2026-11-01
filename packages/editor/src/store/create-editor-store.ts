@@ -10,7 +10,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
  *
  * Each editor makes its own, so two editors on a page never share a state.
  */
-export type EditorStore<S> = Pick<StoreApi<S>, "getState" | "setState" | "subscribe">;
+export type EditorStore<S> = StoreApi<S>;
 
 export function createEditorStore<S extends object>(initial: S): EditorStore<S> {
   return createStore<S>()(() => initial);
