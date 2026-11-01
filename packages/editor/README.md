@@ -355,6 +355,37 @@ Handle it where you draw the published page:
 button has an action and `onAction` is given, the action wins over the link; without `onAction`
 the button falls back to its link. Inside the editor a button does nothing.
 
+## Languages
+
+The editor speaks English. Another language is a set of sentences passed in `i18n`:
+
+```tsx
+import { vi } from "@midito-kitchen/editor/locales/vi";
+
+<Editor i18n={{ locale: "vi", messages: vi }} />;
+```
+
+- `locale` is put on the editor as `lang`, so a screen reader speaks it in the right voice.
+- `messages` is a whole translation or part of one. A sentence left out is said in English. `en` is
+  exported to show every key; `Messages` is the type of a whole translation, so a translation of
+  your own that misses a key does not compile.
+- `translate` is for a system that already has an i18n library. It is asked first for every
+  sentence, with the key, the values and the `fallback` the editor would say without it:
+
+```tsx
+// i18next: a missing string shows the fallback, not the key
+<Editor
+  i18n={{
+    translate: (key, params, fallback) => t(`editor.${key}`, { ...params, defaultValue: fallback }),
+  }}
+/>;
+```
+
+The order is `translate`, then `messages`, then English. A sentence has places written `{name}`; the
+editor fills them in for `messages` and for the fallback, and leaves what `translate` returns as it
+is. Sentences of the editor are still being moved into this: today the header, the tool rail and
+the save status are translated, and the panels follow.
+
 ## Page info
 
 The Page settings on the right, shown when no block is selected, have a Page info section: a title, a description and a share picture. With
