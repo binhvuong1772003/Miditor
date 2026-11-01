@@ -13,6 +13,7 @@ import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
 import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
+import { useT } from "./i18n/context";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -66,6 +67,7 @@ const wide = (name: string, field: Field) =>
  * A picture has no field here: it is added and changed on the canvas.
  */
 export function PropFields({ def, props, onChange, theme, actions, fonts }: PropFieldsProps) {
+  const t = useT();
   const sections = new Map<string, { name: string; field: Field }[]>();
   for (const [name, field] of Object.entries(def.fields)) {
     if (field.type === "image") continue;
@@ -78,7 +80,7 @@ export function PropFields({ def, props, onChange, theme, actions, fonts }: Prop
     ([a], [b]) => Number(b === DEFAULT_SECTION) - Number(a === DEFAULT_SECTION),
   );
   return ordered.map(([section, fields]) => (
-    <Section key={section} title={section}>
+    <Section key={section} id={`fields.${section}`} title={t.or(`group.${section}`, section)}>
       <div className={styles.grid2}>
         {cellsOf(fields).map((cell) => {
           if (cell.kind === "switches") {
@@ -220,6 +222,7 @@ function PropField({
   fonts,
   action,
 }: PropFieldProps) {
+  const t = useT();
   const shown = stored === undefined ? "" : String(stored);
   const [text, setText] = useState(shown);
   /** Stores `value` when the kind accepts it; otherwise the field goes back to what is stored. */
@@ -264,7 +267,7 @@ function PropField({
         label={field.label}
         value={listedFont(stored)}
         fonts={fonts ?? []}
-        emptyLabel="Page font"
+        emptyLabel={t("font.pageFont")}
         onChange={(stack) => apply(stack)}
       />
     );
@@ -283,7 +286,7 @@ function PropField({
             if (isPayload(def.defaultProps.payload)) onChange("payload", {});
           }}
         >
-          <option value="">None</option>
+          <option value="">{t("action.none")}</option>
           {actions?.map((item) => (
             <option key={item.name} value={item.name}>
               {item.label}
@@ -328,11 +331,15 @@ function PropField({
                 type="button"
                 className={styles.segButton}
                 aria-pressed={current === option}
-                aria-label={icon ? `${field.label}: ${option}` : undefined}
-                title={icon ? `${field.label}: ${option}` : undefined}
+                aria-label={
+                  icon ? `${field.label}: ${t.or(`option.${option}`, nice(option))}` : undefined
+                }
+                title={
+                  icon ? `${field.label}: ${t.or(`option.${option}`, nice(option))}` : undefined
+                }
                 onClick={() => apply(option)}
               >
-                {icon ? <Icon name={icon} /> : nice(option)}
+                {icon ? <Icon name={icon} /> : t.or(`option.${option}`, nice(option))}
               </button>
             );
           })}
@@ -345,7 +352,7 @@ function PropField({
         <select value={current} onChange={(event) => apply(event.target.value)}>
           {field.options.map((option) => (
             <option key={option} value={option}>
-              {nice(option)}
+              {t.or(`option.${option}`, nice(option))}
             </option>
           ))}
         </select>

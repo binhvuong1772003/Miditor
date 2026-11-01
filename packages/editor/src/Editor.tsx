@@ -105,6 +105,7 @@ import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./hi
 import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { TContext } from "./i18n/context";
+import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
 import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
@@ -471,6 +472,7 @@ export function Editor({
   const onPhone = frame === "phone";
   const components = config?.components;
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
+  const shownRegistry = useMemo(() => localiseRegistry(t, registry), [t, registry]);
   // A mistake in the host's kinds is told once per registry, and the editor goes on with it.
   useEffect(() => {
     for (const { type, key, code } of validateRegistry(registry)) {
@@ -659,6 +661,11 @@ export function Editor({
     selectedNode && Object.hasOwn(registry, selectedNode.type)
       ? registry[selectedNode.type]
       : undefined;
+  // The same kind with its name and labels in the language of the editor, for what is drawn.
+  const shownDef =
+    selectedNode && Object.hasOwn(shownRegistry, selectedNode.type)
+      ? shownRegistry[selectedNode.type]
+      : undefined;
 
   // Say what is selected whenever the selection changes, and what was done to get there.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the selection is the trigger
@@ -675,11 +682,11 @@ export function Editor({
         : selectedNode
           ? level && at >= 0
             ? t("a11y.selectedAt", {
-                name: selectedDef?.label ?? selectedNode.type,
+                name: shownDef?.label ?? selectedNode.type,
                 at: at + 1,
                 total: level.children.length,
               })
-            : t("a11y.selected", { name: selectedDef?.label ?? selectedNode.type })
+            : t("a11y.selected", { name: shownDef?.label ?? selectedNode.type })
           : t("props.emptyTitle");
     announce(note.current ? t("a11y.joined", { note: note.current, what }) : what);
     note.current = "";
@@ -2233,7 +2240,7 @@ export function Editor({
             )}
             {tool === "blocks" && (
               <BlocksPanel
-                registry={registry}
+                registry={shownRegistry}
                 disabled={onPhone}
                 onAdd={(type) => addBlockOf(type)}
                 onDragMove={dragFromLibrary}
@@ -2363,7 +2370,7 @@ export function Editor({
                 <BlockLabel
                   target={block}
                   workspace={workspace}
-                  text={selectedDef?.label ?? selectedNode.type}
+                  text={shownDef?.label ?? selectedNode.type}
                   tone="selected"
                 />
               )}
@@ -2487,7 +2494,7 @@ export function Editor({
                 onDistribute={distributeSelected}
                 actions={config?.actions}
                 fonts={fonts}
-                def={selectedDef}
+                def={shownDef}
                 onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
                 onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
                 onDiscard={() => setDraft(null)}

@@ -173,7 +173,7 @@ export function ColourPopover({
           </div>
           {names.length > 0 && (
             <div>
-              <p className={styles.section}>Theme</p>
+              <p className={styles.section}>{t("colour.theme")}</p>
               <div className={styles.dots}>
                 {names.map((name) => (
                   <button

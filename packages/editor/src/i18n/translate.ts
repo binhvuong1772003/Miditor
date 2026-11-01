@@ -24,7 +24,8 @@ export interface T {
   (key: MessageKey, params?: Params): string;
   /**
    * The sentence for a key that may not exist, such as the name of a kind of block (`kind.Hero.label`):
-   * the host's `translate`, then its `messages`, then the editor's own, then `fallback`.
+   * the host's `translate`, then its `messages`, then `fallback`, which is the text the kind was
+   * registered with (the editor's own English for the kinds it ships).
    */
   or(key: string, fallback: string): string;
 }
@@ -52,8 +53,7 @@ export function createT(i18n: I18n | undefined): T {
     return typeof said === "string" && said !== "" ? said : fallback;
   };
   const t = ((key: MessageKey, params?: Params) => say(key, params, en[key])) as T;
-  t.or = (key, fallback) =>
-    say(key, undefined, Object.hasOwn(en, key) ? en[key as MessageKey] : fallback);
+  t.or = (key, fallback) => say(key, undefined, fallback);
   return t;
 }
 
