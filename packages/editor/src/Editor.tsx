@@ -1,6 +1,4 @@
 import {
-  type AlignTo,
-  type AxisAnchor,
   type Pick as BlockPick,
   boxFor,
   builtInRegistry,
@@ -58,7 +56,7 @@ import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { EndPanel } from "./EndPanel";
 import { isEditableTarget } from "./editable";
-import { type FontDef, usableFonts } from "./fonts";
+import type { FontDef } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { boundsOf, centreOf } from "./group-math";
 import { InlineEdit } from "./InlineEdit";
@@ -66,7 +64,7 @@ import { TContext } from "./i18n/context";
 import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
 import { type IconComponent, IconsContext, usableIcons } from "./icons";
-import { type LibraryImage, usableImages } from "./images";
+import type { LibraryImage } from "./images";
 import { KEY_HINTS, matchKey } from "./keymap";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
@@ -92,7 +90,6 @@ import {
   useEditorState,
   useRun,
   useSelectionCommands,
-  useStoreApi,
   useViewCommands,
   withDraft,
   withTheme,
@@ -100,7 +97,6 @@ import {
 import type { HostTheme } from "./ThemesPanel";
 import { Toolbar } from "./Toolbar";
 import { stepSelection } from "./tab-order";
-import { usableThemes } from "./themes";
 import type { UploadImage } from "./upload-image";
 import { fitZoom, stageWidth } from "./zoom";
 
@@ -327,7 +323,6 @@ function EditorBody({
   );
   // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
   const zoom = useEditorState((state) => state.zoom);
-  const _store = useStoreApi<EditorState>();
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => {
     notifier.configure({ wait, maxWait });
@@ -352,9 +347,6 @@ function EditorBody({
   }, [registry]);
   // The selection belongs to the editor, not to the page data: Save does not include it.
   const selectedId = useEditorState((state) => state.selectedId);
-  // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
-  // right keeps the properties of the selected block, so both can be used together.
-  const _tool = useEditorState((state) => state.tool);
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const panelOpen = useEditorState((state) => state.panelOpen);
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
@@ -778,9 +770,6 @@ function EditorBody({
     selecting.selectInside(hit.id, hit.scopeId);
   };
 
-  /** One field of the page info changed: stored as one step of history. An emptied field is removed. */
-  const _changeMeta = documents.changeMeta;
-
   /** Store one change on a node, once. The draft is over. */
   const commitPatch = documents.commitPatch;
 
@@ -847,25 +836,11 @@ function EditorBody({
     documents.dropBlock({ kind, parentId, container, at });
   };
 
-  /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
-  const _changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) =>
-    documents.changeAnchor({ axis, anchor, container: parentSize() ?? null });
-
-  /** The selected block gets its automatic phone placement again; the desktop one is not touched. */
-  const _resetPhone = documents.resetPhone;
-
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
   const parentSize = () => {
     const parent = block?.parentElement;
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
-
-  /** Line the selected blocks up with each other, or one block with its parent. */
-  const _alignSelected = (to: AlignTo) => documents.alignSelected(parentSize() ?? null, to);
-
-  /** Equal gaps between three or more selected blocks. */
-  const _distributeSelected = (axis: "x" | "y") =>
-    documents.distributeSelected(parentSize() ?? null, axis);
 
   /**
    * The commands by name, which a key (and, as they move over, a menu line and a button) gives. The
@@ -946,21 +921,6 @@ function EditorBody({
     }
   };
 
-  // The theme, one step of history for each change. A colour that goes is baked into the blocks that
-  // used it, and one that is renamed is followed by them.
-  const _setThemeColor = documents.setThemeColor;
-  const _renameThemeColor = documents.renameThemeColor;
-  const _deleteThemeColor = documents.deleteThemeColor;
-  const _setThemeFont = documents.setThemeFont;
-
-  /**
-   * A number of the rect of the selected block was typed: x, y, width or height. `withRect` works out
-   * the placement for this screen, with the proportions kept when the block keeps them, and one that
-   * changes nothing stores nothing.
-   */
-  const _setRect = (field: "x" | "y" | "w" | "h", value: number) =>
-    documents.setRect({ field, value, container: parentSize() ?? null });
-
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
 
   // The block whose words are being typed, the element that draws it, and the limit of the field.
@@ -999,16 +959,6 @@ function EditorBody({
     () => setLayoutTick((n) => n + 1),
     [frame, zoom, stageBox, data.root.styles.minHeight],
   );
-
-  // The host's themes that can be used, from rows that may come straight from a database.
-  const _hostThemes = usableThemes(config?.themes);
-  const _libraryImages = usableImages(config?.images);
-  const _keepTheme = config?.onThemeSave;
-  const _renameTheme = config?.onThemeRename;
-  const _deleteTheme = config?.onThemeDelete;
-
-  // The fonts people can choose: the host's, or the ones every browser has.
-  const _fonts = usableFonts(config?.fonts);
 
   // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
   const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
