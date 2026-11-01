@@ -1,6 +1,7 @@
 import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitchen/editor";
 import { useState } from "react";
 import { actions } from "./actions";
+import { demoIcons } from "./demo-icons";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
@@ -75,6 +76,8 @@ function Playground({ embedded = false }: { embedded?: boolean }) {
           actions,
           fonts,
           images: [...uploaded, ...seedImages],
+          // `?icons` swaps a few icons for the host's own, to show `config.icons`.
+          ...(new URLSearchParams(window.location.search).has("icons") ? { icons: demoIcons } : {}),
           themes: [...saved, ...suggestedThemes],
           onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
           onThemeRename: (id, name) =>
