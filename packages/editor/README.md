@@ -287,26 +287,41 @@ The Themes tool on the left puts a theme on the whole page: its colours and its 
 (and one undo). It has two lists:
 
 - **Your themes:** a person makes one by changing the colours and the font in the page's settings,
-  then pressing "Save current theme". They can rename and delete them. A page keeps up to 12, in its
-  own data (`data.themes`), so they travel with the page and need nothing from the host.
-- **Suggested:** the ones you give in `config.themes`, to start from:
+  then pressing "Save current theme". They can rename and delete them.
+- **Suggested:** the ones marked `readonly: true`, to start from.
+
+The page keeps no list of themes. The host keeps them (in a database, say), passes the whole list in
+`config.themes` and is told when a person saves, renames or deletes one. Each theme has an `id` the
+host gives it. Without `onThemeSave` there is no Save button; without `onThemeRename` or
+`onThemeDelete` there is no way to rename or delete. If one of them throws or rejects, the panel says
+so and keeps nothing. Putting a theme on the page copies its colours and font into the page, so a
+page does not change when a theme is later deleted.
 
 ```tsx
+const [mine, setMine] = useState(loadFromDatabase);
+
 <Editor
   data={page}
   config={{
     themes: [
+      ...mine,
       {
+        id: "sea",
         name: "Sea",
+        readonly: true,
         colors: { primary: "#0e7490", accent: "#f97316", paper: "#ecfeff" },
         font: "Lora, Georgia, serif",
       },
-      {
-        name: "Night",
-        colors: { primary: "#38bdf8", accent: "#f472b6", paper: "#0f172a" },
-        font: "Inter, system-ui, sans-serif",
-      },
     ],
+    onThemeSave: async (theme) => setMine([...mine, await api.createTheme(theme)]),
+    onThemeRename: async (id, name) => {
+      await api.renameTheme(id, name);
+      setMine(mine.map((t) => (t.id === id ? { ...t, name } : t)));
+    },
+    onThemeDelete: async (id) => {
+      await api.deleteTheme(id);
+      setMine(mine.filter((t) => t.id !== id));
+    },
   }}
 />;
 ```
