@@ -281,6 +281,40 @@ A page can carry a theme: named colours and a font for the whole page. A colour 
 colour is stored as `@name`, so changing the theme colour changes every place that uses it. The
 theme is edited in the page settings on the right (nothing selected).
 
+## Themes
+
+The Themes tool on the left puts a theme on the whole page: its colours and its font, in one step
+(and one undo). It has two lists:
+
+- **Your themes:** a person makes one by changing the colours and the font in the page's settings,
+  then pressing "Save current theme". They can rename and delete them. A page keeps up to 12, in its
+  own data (`data.themes`), so they travel with the page and need nothing from the host.
+- **Suggested:** the ones you give in `config.themes`, to start from:
+
+```tsx
+<Editor
+  data={page}
+  config={{
+    themes: [
+      {
+        name: "Sea",
+        colors: { primary: "#0e7490", accent: "#f97316", paper: "#ecfeff" },
+        font: "Lora, Georgia, serif",
+      },
+      {
+        name: "Night",
+        colors: { primary: "#38bdf8", accent: "#f472b6", paper: "#0f172a" },
+        font: "Inter, system-ui, sans-serif",
+      },
+    ],
+  }}
+/>;
+```
+
+Give every theme the same colour names. A block that uses a colour by name (`@primary`) changes with
+the theme; a block with a colour or a font of its own is left as it is; and a block that uses a
+name the new theme does not have keeps the colour it showed, so none loses its colour.
+
 ## Fonts
 
 You decide which fonts people can use. Give the editor a list:

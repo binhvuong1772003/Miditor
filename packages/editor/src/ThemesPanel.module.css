@@ -1,0 +1,147 @@
+/* The themes to put on the page: a list of rows, each a look at the colours and the font, and a name. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-inline-size: 0;
+}
+
+.apply {
+  appearance: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-inline-size: 0;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--_border);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  color: var(--_text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.apply:hover {
+  background: var(--_soft);
+}
+
+.apply[aria-pressed="true"] {
+  border-color: var(--_focus);
+  box-shadow: inset 0 0 0 1px var(--_focus);
+}
+
+.apply:focus-visible,
+.icon:focus-visible,
+.action:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.preview {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.aa {
+  inline-size: 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.swatch {
+  inline-size: 0.875rem;
+  block-size: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--_text) 25%, transparent);
+  border-radius: 3px;
+}
+
+.name {
+  min-inline-size: 0;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon {
+  appearance: none;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--_radius);
+  background: transparent;
+  color: var(--_muted);
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--_soft);
+  color: var(--_text);
+}
+
+.action {
+  appearance: none;
+  inline-size: 100%;
+  block-size: var(--_control);
+  padding-inline: 0.75rem;
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  box-shadow: var(--_lift);
+  color: var(--_text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.row .action {
+  inline-size: auto;
+  flex: none;
+}
+
+.action:hover:not(:disabled) {
+  background: var(--_soft);
+}
+
+.action:disabled {
+  color: var(--_muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nameInput {
+  flex: 1;
+  min-inline-size: 0;
+  block-size: var(--_control);
+  padding-inline: 0.75rem;
+  border: 1px solid var(--_input);
+  border-radius: var(--_radius);
+  background: var(--_canvas);
+  color: var(--_text);
+  font: inherit;
+}
+
+.nameInput:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}

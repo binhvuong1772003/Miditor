@@ -8,6 +8,7 @@ export {
   type PageData,
   type Registry,
   resolveColor,
+  type SavedTheme,
   SCHEMA_VERSION,
   type Theme,
 } from "@midito-kitchen/core";

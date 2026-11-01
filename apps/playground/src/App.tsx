@@ -6,6 +6,7 @@ import { components, renderers } from "./kinds";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
+import { themes } from "./themes";
 
 /** `?reset` in the address drops the stored page; it is taken out of the address so a reload keeps the page. */
 function openPage(): PageData {
@@ -42,7 +43,7 @@ function Playground() {
     <>
       <Editor
         data={page}
-        config={{ components, renderers, uploadImage, actions, fonts }}
+        config={{ components, renderers, uploadImage, actions, fonts, themes }}
         // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
         onChangeDebounce={{ wait: 800, maxWait: 4000 }}
         status={status}

@@ -2,6 +2,7 @@ import {
   type AlignTo,
   type AxisAnchor,
   alignRects,
+  applyTheme,
   type Pick as BlockPick,
   boxFor,
   builtInRegistry,
@@ -23,9 +24,11 @@ import {
   inferBox,
   insertNode,
   isFreeNode,
+  isSavedTheme,
   isTheme,
   keepsRatio,
   lowestPageHeight,
+  MAX_SAVED_THEMES,
   migratePage,
   minSize,
   moveRect,
@@ -48,6 +51,8 @@ import {
   replaceColor,
   resizeRotated,
   resolveRect,
+  type SavedTheme,
+  savedFrom,
   setAnchor,
   type Theme,
   type TreeNode,
@@ -110,6 +115,7 @@ import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesP
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
+import { ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
@@ -187,6 +193,14 @@ export interface EditorProps {
      * fonts every browser has are offered.
      */
     fonts?: readonly FontDef[];
+    /**
+     * Themes to suggest, for a person to start from: a name, named colours and a font each, for
+     * example `{ name: "Sea", colors: { primary: "#0e7490", paper: "#ecfeff" }, font: "Lora, serif" }`.
+     * They are shown under Suggested in the Themes panel and put on the page when pressed. Give every
+     * theme the same colour names (`primary`, `accent`...), so the blocks that use a colour by name
+     * change with the theme. A person keeps their own themes in the page itself.
+     */
+    themes?: readonly Omit<SavedTheme, "id">[];
     /** The theme of a new page, for a host that has its own colours and fonts. */
     theme?: Theme;
   };
@@ -403,13 +417,13 @@ export function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const [tool, setTool] = useState<"blocks" | "images">("blocks");
+  const [tool, setTool] = useState<"blocks" | "images" | "themes">("blocks");
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const [panelOpen, setPanelOpen] = useState(
     () => typeof window === "undefined" || !window.matchMedia?.("(max-width: 1100px)").matches,
   );
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
-  const pickTool = (id: "blocks" | "images") => {
+  const pickTool = (id: "blocks" | "images" | "themes") => {
     if (id === tool && panelOpen) {
       setPanelOpen(false);
       return;
@@ -1622,6 +1636,26 @@ export function Editor({
         ? kept
         : { ...kept, root: replaceColor(kept.root, registry, name, gone) };
     });
+  /** Keep the theme the page has now, under a name. A page keeps up to `MAX_SAVED_THEMES`. */
+  const saveTheme = (name: string) =>
+    setData((prev) => {
+      const kept = prev.themes ?? [];
+      if (kept.length >= MAX_SAVED_THEMES) return prev;
+      let id = `t${Date.now().toString(36)}`;
+      while (kept.some((theme) => theme.id === id)) id += "x";
+      return { ...prev, themes: [...kept, savedFrom(prev.theme, id, name)] };
+    });
+  const renameSavedTheme = (id: string, name: string) =>
+    setData((prev) => ({
+      ...prev,
+      themes: (prev.themes ?? []).map((theme) => (theme.id === id ? { ...theme, name } : theme)),
+    }));
+  const deleteSavedTheme = (id: string) =>
+    setData((prev) => {
+      const { themes: _old, ...rest } = prev;
+      const left = (prev.themes ?? []).filter((theme) => theme.id !== id);
+      return left.length > 0 ? { ...rest, themes: left } : rest;
+    });
   const setThemeFont = (which: "body" | "heading", stack: string | undefined) =>
     setData((prev) => {
       const { [which]: _old, ...others } = prev.theme?.fonts ?? {};
@@ -1760,6 +1794,12 @@ export function Editor({
       },
     };
   })();
+
+  // The themes the host suggests that can be stored: a list with a good name, colours and font each.
+  const suggestedThemes = (config?.themes ?? []).flatMap((theme, i) => {
+    const candidate = { id: `suggested-${i}`, ...theme };
+    return isSavedTheme(candidate) ? [candidate as SavedTheme] : [];
+  });
 
   // The fonts people can choose: the host's, or the ones every browser has.
   const fonts = usableFonts(config?.fonts);
@@ -2057,6 +2097,7 @@ export function Editor({
           [
             ["blocks", "Blocks", "grid"],
             ["images", "Images", "img"],
+            ["themes", "Themes", "palette"],
           ] as const
         ).map(([id, name, icon]) => (
           <button
@@ -2074,7 +2115,7 @@ export function Editor({
       </nav>
       <aside
         className={`${styles.panel} ${styles.start}`}
-        aria-label={tool === "images" ? "Images" : "Blocks"}
+        aria-label={tool === "images" ? "Images" : tool === "themes" ? "Themes" : "Blocks"}
       >
         {tool === "images" && (
           <>
@@ -2092,6 +2133,17 @@ export function Editor({
               }
             />
           </>
+        )}
+        {tool === "themes" && (
+          <ThemesPanel
+            current={data.theme}
+            saved={data.themes ?? []}
+            suggested={suggestedThemes}
+            onApply={(theme) => setData((prev) => applyTheme(prev, registry, theme))}
+            onSave={saveTheme}
+            onRename={renameSavedTheme}
+            onDelete={deleteSavedTheme}
+          />
         )}
         {tool === "blocks" && (
           <BlocksPanel
