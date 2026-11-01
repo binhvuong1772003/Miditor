@@ -54,6 +54,18 @@ export interface SelectionBoxProps {
    */
   companions?: readonly HTMLElement[] | undefined;
   /**
+   * The box is around several blocks, not one: `target` is a frame laid over them, with nothing of
+   * its own to store. It can be moved and turned but not resized, and snaps to nothing.
+   */
+  group?: boolean | undefined;
+  /** How many screen px one px of the page is, for the distance companions are moved by. Default 1. */
+  scale?: number | undefined;
+  /**
+   * While the box is turned, with the turn so far in degrees (the blocks it holds are shown turned
+   * with it), and once more with `null` when it is over.
+   */
+  onRotatePreview?: ((turn: number | null) => void) | undefined;
+  /**
    * Filled in with a way to start a drag from outside the box: for a press that selected the block,
    * so the same press can go on to drag it without a second one. Give it the press that is still down.
    */
@@ -137,6 +149,9 @@ export function SelectionBox({
   minSize,
   angle,
   companions,
+  group = false,
+  scale = 1,
+  onRotatePreview,
   controls,
   onGestureStart,
   onDragEnd,
@@ -231,8 +246,8 @@ export function SelectionBox({
   /** Show the companions moved by `dist`, which is in the target's own (turned) axes. */
   const moveCompanions = (dist: { x: number; y: number }) => {
     const turn = (angle * Math.PI) / 180;
-    const x = dist.x * Math.cos(turn) - dist.y * Math.sin(turn);
-    const y = dist.x * Math.sin(turn) + dist.y * Math.cos(turn);
+    const x = (dist.x * Math.cos(turn) - dist.y * Math.sin(turn)) / scale;
+    const y = (dist.x * Math.sin(turn) + dist.y * Math.cos(turn)) / scale;
     for (const { el, transform } of moving.current) {
       el.style.transform = `translate(${x}px, ${y}px) ${transform === "none" ? "" : transform}`;
     }
@@ -265,15 +280,16 @@ export function SelectionBox({
     setTurnAt((now) => (now === next ? now : next));
   }, [room]);
 
-  const guides = target?.parentElement
-    ? [
-        target.parentElement,
-        ...[...target.parentElement.children].filter(
-          (el): el is HTMLElement =>
-            el !== target && el instanceof HTMLElement && el.dataset.miditoId !== undefined,
-        ),
-      ]
-    : [];
+  const guides =
+    target?.parentElement && !group
+      ? [
+          target.parentElement,
+          ...[...target.parentElement.children].filter(
+            (el): el is HTMLElement =>
+              el !== target && el instanceof HTMLElement && el.dataset.miditoId !== undefined,
+          ),
+        ]
+      : [];
 
   return (
     <Moveable
@@ -282,12 +298,12 @@ export function SelectionBox({
       container={container}
       {...(className ? { className } : {})}
       draggable
-      resizable
+      resizable={!group}
       rotatable
       rotationPosition={turnAt}
       keepRatio={lockRatio || keepRatio}
       origin={false}
-      snappable
+      snappable={!group}
       snapThreshold={SNAP_PX}
       elementGuidelines={guides}
       snapDirections={SNAP_EDGES}
@@ -342,10 +358,12 @@ export function SelectionBox({
         // stacked on the node's `rotate` property.
         (e.target as HTMLElement).style.transform = `rotate(${turn}deg)`;
         lastTurn.current = turn;
+        onRotatePreview?.(turn);
       })}
       onRotateEnd={guarded((e: OnRotateEnd) => {
         const el = e.target as HTMLElement;
         end(el);
+        onRotatePreview?.(null);
         if (!e.isDrag) {
           restore(el, saved.current);
           return;

@@ -155,6 +155,10 @@ are refused, whatever the host returns. If the function throws, its message is s
 
 - Pointing at a block outlines it and names its kind; the selected block carries a solid tag.
 - Press a block that is not selected and drag: it is selected and moved in the same press.
+- Select several blocks (draw a box over them, or Shift+click) and they get one frame: drag any of
+  them to move the group, and turn the handle above the frame to turn the group around its middle.
+  Nothing is added to the page: let go of the selection and the frame is gone. A click on one block
+  of the frame picks that block alone. Resizing the group is not there yet.
 - Right-click a block for its menu: duplicate, delete, order in the stack, group and ungroup.
 - Drag a card from the Blocks panel onto the page to add it where you let go, into the block under
   the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels

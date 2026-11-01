@@ -95,6 +95,7 @@ import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
 import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
+import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
 import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
@@ -421,6 +422,8 @@ export function Editor({
   const [dragging, setDragging] = useState(false);
   // A press that just selected a block, still down: it goes on to drag the block once the box has it.
   const dragControls = useRef<SelectionControls | null>(null);
+  // Whether the last press on the frame really moved or turned the blocks, or was only a click.
+  const groupMoved = useRef(false);
   const pendingDrag = useRef<{ press: globalThis.PointerEvent; up: boolean } | null>(null);
   // Whether Alt is held: the distances to neighbours are shown only then, as in Figma.
   const [altHeld, setAltHeld] = useState(false);
@@ -518,6 +521,21 @@ export function Editor({
     return () => observer.disconnect();
   }, [workspace]);
   const [block, setBlock] = useState<HTMLElement | null>(null);
+  // The frame laid over several selected blocks, and what a gesture on it starts from.
+  const [frameEl, setFrameEl] = useState<HTMLElement | null>(null);
+  const groupGesture = useRef<{
+    members: {
+      node: FreeNode;
+      rect: Rect;
+      rotation: number;
+      el: HTMLElement | null;
+      transform: string;
+    }[];
+    container: Container;
+    pivot: { x: number; y: number };
+    /** Whether the gesture really moved or turned the blocks, for a plain press to tell from a drag. */
+    changed: boolean;
+  } | null>(null);
   const gesture = useRef<{
     before: FreeNode;
     start: Rect;
@@ -770,6 +788,29 @@ export function Editor({
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
+    // A press on a block of the frame keeps the group and goes on to move it. Let go without moving,
+    // it is only a click, and picks that one block.
+    if (
+      hit &&
+      groupInfo &&
+      !event.shiftKey &&
+      groupInfo.placed.some((item) => item.node.id === hit.id)
+    ) {
+      groupMoved.current = false;
+      dragControls.current?.dragStart(event.nativeEvent);
+      window.addEventListener(
+        "pointerup",
+        () =>
+          setTimeout(() => {
+            if (groupMoved.current) return;
+            setPicked([]);
+            setSelectedId(hit.id);
+            setScopeId(hit.scopeId);
+          }, 0),
+        { once: true },
+      );
+      return;
+    }
     // A press on the empty page may turn into a box drag; a plain click still just clears (below).
     if (!hit) {
       startMarquee(event);
@@ -864,6 +905,17 @@ export function Editor({
 
   /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
   const startGesture = () => {
+    if (groupInfo && workspace) {
+      groupGesture.current = {
+        members: groupInfo.placed.map((item) => {
+          const el = elementOf(workspace, item.node.id);
+          return { ...item, el, transform: el?.style.transform ?? "" };
+        }),
+        container: groupInfo.container,
+        pivot: groupInfo.pivot,
+        changed: false,
+      };
+    }
     setDragging(true);
     const over = () => {
       setDragging(false);
@@ -872,12 +924,15 @@ export function Editor({
       // comes first, so only what it left behind is cleared.
       setTimeout(() => {
         gesture.current = null;
+        groupGesture.current = null;
       }, 0);
       window.removeEventListener("pointerup", over);
       window.removeEventListener("pointercancel", over);
     };
     window.addEventListener("pointerup", over);
     window.addEventListener("pointercancel", over);
+    // A group has its own gesture, above; nothing of a single block's is made for it.
+    if (groupGesture.current) return;
     const node = selectedId ? findNode(data.root, selectedId) : undefined;
     const parent = block?.parentElement;
     if (!node || !isFreeNode(node) || !parent) return;
@@ -1015,7 +1070,75 @@ export function Editor({
     setDropId(g && dist ? (dropTarget(g, dist)?.id ?? null) : null);
   };
 
+  /** The blocks of the frame shown turned with it, around its middle; `null` puts them back. */
+  const previewGroupTurn = (turn: number | null) => {
+    const gg = groupGesture.current;
+    if (!gg) return;
+    const turned =
+      turn === null
+        ? null
+        : turnGroup(
+            gg.members.map((member) => ({ rect: member.rect, rotation: member.rotation })),
+            gg.pivot,
+            turn,
+          );
+    gg.members.forEach((member, i) => {
+      if (!member.el) return;
+      const t = turned?.[i];
+      if (!t || turn === null) {
+        member.el.style.removeProperty("translate");
+        member.el.style.transform = member.transform;
+        return;
+      }
+      const middle = centreOf(member.rect);
+      // `translate` is applied before the block's own `rotate`, so the shift is not turned with it.
+      member.el.style.translate = `${t.centre.x - middle.x}px ${t.centre.y - middle.y}px`;
+      member.el.style.transform = `rotate(${turn}deg)`;
+    });
+  };
+
+  /**
+   * The blocks of the frame, each one's box worked out from where its middle and turn are now, and
+   * stored in one step. The previews the frame put on the blocks are taken off first.
+   */
+  const endGroup = (
+    place: (member: NonNullable<typeof groupGesture.current>["members"][number]) => {
+      rect: Rect;
+      rotation: number;
+    },
+  ) => {
+    const gg = groupGesture.current;
+    if (!gg) return;
+    groupGesture.current = null;
+    gg.changed = true;
+    setData((prev) => ({
+      ...prev,
+      root: gg.members.reduce((root, member) => {
+        const next = place(member);
+        return updateNode(root, member.node.id, (n) =>
+          isFreeNode(n)
+            ? withBoxFor(n, frame, {
+                ...inferBox(boxFor(member.node, frame), next.rect, gg.container),
+                rotation: normalizeAngle(next.rotation),
+              })
+            : n,
+        );
+      }, prev.root),
+    }));
+  };
+
   const endDrag = (dist: { x: number; y: number }) => {
+    if (groupGesture.current) {
+      // The frame is not scaled by the zoom, the page is: a distance on the screen is `zoom` times less in the page.
+      const dx = dist.x / zoom;
+      const dy = dist.y / zoom;
+      groupMoved.current = true;
+      endGroup((member) => ({
+        rect: { ...member.rect, x: member.rect.x + dx, y: member.rect.y + dy },
+        rotation: member.rotation,
+      }));
+      return;
+    }
     const g = gesture.current;
     if (g && g.others.length > 0) {
       // Several blocks: all move by the same distance on the screen, and stay in their parent.
@@ -1062,6 +1185,23 @@ export function Editor({
 
   // Position maths ignore the rotation, so a turn only changes the angle: no `inferBox`.
   const endRotate = (dist: number) => {
+    const gg = groupGesture.current;
+    if (gg) {
+      groupMoved.current = true;
+      const turned = turnGroup(
+        gg.members.map((member) => ({ rect: member.rect, rotation: member.rotation })),
+        gg.pivot,
+        dist,
+      );
+      endGroup((member) => {
+        const at = gg.members.indexOf(member);
+        const t = turned[at];
+        return t
+          ? { rect: rectAt(member.rect, t.centre), rotation: t.rotation }
+          : { rect: member.rect, rotation: member.rotation };
+      });
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
     gesture.current = null;
@@ -1515,6 +1655,58 @@ export function Editor({
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, boxFor(g.before, frame).rotation, handle, w, h));
 
+  /**
+   * With several free blocks of one parent selected, the frame that holds them all, in the page's own
+   * px and on the screen, so they can be moved and turned as one. Nothing for a parent that is turned
+   * (its px are not upright on the screen), for one block, or when the blocks have different parents.
+   */
+  const groupInfo = (() => {
+    if (picked.length === 0 || !selectedId || !block || !workspace) return null;
+    const parentElement = block.parentElement;
+    const parentNode = parentOf(data.root, selectedId);
+    if (!parentElement || !parentNode || turnOf(data.root, parentNode.id, frame) !== 0) return null;
+    const container = { w: parentElement.clientWidth, h: parentElement.clientHeight };
+    const nodes = [selectedId, ...picked].flatMap((id) => {
+      const node = findNode(data.root, id);
+      return node && isFreeNode(node) && parentOf(data.root, id)?.id === parentNode.id
+        ? [node]
+        : [];
+    });
+    if (nodes.length < 2) return null;
+    const placed = nodes.map((node) => ({
+      node,
+      rect: resolveRect(boxFor(node, frame), container),
+      rotation: boxFor(node, frame).rotation,
+    }));
+    const bounds = boundsOf(placed);
+    if (!bounds) return null;
+    const parentBox = parentElement.getBoundingClientRect();
+    const view = workspace.getBoundingClientRect();
+    return {
+      placed,
+      container,
+      bounds,
+      pivot: centreOf(bounds),
+      // In the scrolling canvas's own coordinates, so the frame scrolls with the page.
+      box: {
+        left:
+          parentBox.left +
+          (parentElement.clientLeft + bounds.x) * zoom -
+          view.left +
+          workspace.scrollLeft -
+          workspace.clientLeft,
+        top:
+          parentBox.top +
+          (parentElement.clientTop + bounds.y) * zoom -
+          view.top +
+          workspace.scrollTop -
+          workspace.clientTop,
+        width: bounds.w * zoom,
+        height: bounds.h * zoom,
+      },
+    };
+  })();
+
   // The distances to show, only with Alt held: those of a drag that is on, or else those to the block pointed at.
   const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
 
@@ -1926,14 +2118,19 @@ export function Editor({
             tone="hover"
           />
         )}
-        {block && workspace && !editing && selectedNode && selectedId !== data.root.id && (
-          <BlockLabel
-            target={block}
-            workspace={workspace}
-            text={selectedDef?.label ?? selectedNode.type}
-            tone="selected"
-          />
-        )}
+        {block &&
+          workspace &&
+          !editing &&
+          !groupInfo &&
+          selectedNode &&
+          selectedId !== data.root.id && (
+            <BlockLabel
+              target={block}
+              workspace={workspace}
+              text={selectedDef?.label ?? selectedNode.type}
+              tone="selected"
+            />
+          )}
         {block && workspace && !editing && !menuAt && selectedId && selectedId !== data.root.id && (
           <QuickActions
             target={block}
@@ -1951,16 +2148,41 @@ export function Editor({
             onBack={() => reorderSelected("back")}
           />
         )}
+        {groupInfo && !editing && (
+          <div
+            ref={setFrameEl}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: groupInfo.box.left,
+              top: groupInfo.box.top,
+              width: groupInfo.box.width,
+              height: groupInfo.box.height,
+              pointerEvents: "none",
+            }}
+          />
+        )}
         <SelectionBox
-          target={editing ? null : block}
+          target={editing ? null : groupInfo ? frameEl : block}
           container={workspace}
           className={styles.selection}
           controls={dragControls}
-          companions={picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))}
+          group={groupInfo !== null}
+          scale={groupInfo ? zoom : 1}
+          onRotatePreview={previewGroupTurn}
+          companions={
+            groupInfo
+              ? groupInfo.placed.flatMap((item) =>
+                  workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
+                )
+              : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
+          }
           lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
           minSize={minSize(selectedNode?.styles)}
           angle={
-            selectedNode && isFreeNode(selectedNode) ? boxFor(selectedNode, frame).rotation : 0
+            !groupInfo && selectedNode && isFreeNode(selectedNode)
+              ? boxFor(selectedNode, frame).rotation
+              : 0
           }
           onGestureStart={startGesture}
           onDragEnd={endDrag}
