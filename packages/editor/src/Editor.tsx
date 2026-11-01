@@ -104,6 +104,8 @@ import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
 import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
 import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
+import { TContext } from "./i18n/context";
+import { createT, type I18n } from "./i18n/translate";
 import { Icon, type IconComponent, IconsContext, usableIcons } from "./icons";
 import { type LibraryImage, usableImages } from "./images";
 import { nextLayer } from "./layers";
@@ -114,7 +116,7 @@ import { PageInspector } from "./PageInspector";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
-import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
+import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
@@ -178,6 +180,12 @@ export interface EditorProps {
    * The same can be done with the `--midito-*` variables in CSS; this is the typed way.
    */
   appearance?: Appearance;
+  /**
+   * The language of the editor: a `locale`, a translation in `messages` (English is built in; the
+   * other languages are in `@midito-kitchen/editor/locales/*`) and, for a system that has its own
+   * translator, a `translate` function that is asked first. See `I18n`.
+   */
+  i18n?: I18n;
   /**
    * How many steps undo can go back, 100 when not given. A whole number from 1 up, or `Infinity` for
    * no limit; anything else uses 100. It is read at each change, so a new value trims the oldest
@@ -386,9 +394,11 @@ export function Editor({
   logo,
   headerStart,
   appearance,
+  i18n,
   historyLimit,
   config,
 }: EditorProps) {
+  const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const [history, setHistory] = useState(() => createHistory(openPage(initialData, config?.theme)));
@@ -1864,610 +1874,617 @@ export function Editor({
   const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
 
   return (
-    <IconsContext.Provider value={icons}>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
-      <div
-        ref={editorRoot}
-        className={rootClass}
-        style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
-        data-scheme={schemeOf(appearance)}
-        data-midito-editor=""
-        data-panel={panelOpen ? "open" : "closed"}
-        tabIndex={-1}
-        onCopy={copySelected}
-        onCut={cutSelected}
-        onPaste={pasteBlocks}
-        onKeyDown={(event) => {
-          // A field keeps its own Esc and its own undo.
-          if (isEditableTarget(event.target)) return;
-          // Tab on the canvas goes from block to block of the level the person is working in; at the end
-          // of the level it goes on to the next control, so the keyboard is never stuck on the page.
-          if (
-            event.key === "Tab" &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey &&
-            (event.target === event.currentTarget || event.target === workspace)
-          ) {
-            const level =
-              (selectedId ? parentOf(data.root, selectedId) : undefined) ??
-              findNode(data.root, scopeId) ??
-              data.root;
-            const next = stepSelection(
-              level.children.map((child) => child.id),
-              selectedId,
-              event.shiftKey,
-            );
-            if (next) {
-              event.preventDefault();
+    <TContext.Provider value={t}>
+      <IconsContext.Provider value={icons}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
+        <div
+          ref={editorRoot}
+          className={rootClass}
+          style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
+          data-scheme={schemeOf(appearance)}
+          lang={i18n?.locale}
+          data-midito-editor=""
+          data-panel={panelOpen ? "open" : "closed"}
+          tabIndex={-1}
+          onCopy={copySelected}
+          onCut={cutSelected}
+          onPaste={pasteBlocks}
+          onKeyDown={(event) => {
+            // A field keeps its own Esc and its own undo.
+            if (isEditableTarget(event.target)) return;
+            // Tab on the canvas goes from block to block of the level the person is working in; at the end
+            // of the level it goes on to the next control, so the keyboard is never stuck on the page.
+            if (
+              event.key === "Tab" &&
+              !event.ctrlKey &&
+              !event.metaKey &&
+              !event.altKey &&
+              (event.target === event.currentTarget || event.target === workspace)
+            ) {
+              const level =
+                (selectedId ? parentOf(data.root, selectedId) : undefined) ??
+                findNode(data.root, scopeId) ??
+                data.root;
+              const next = stepSelection(
+                level.children.map((child) => child.id),
+                selectedId,
+                event.shiftKey,
+              );
+              if (next) {
+                event.preventDefault();
+                setPicked([]);
+                setSelectedId(next);
+                setScopeId(level.id);
+                return;
+              }
+            }
+            if (event.key === "Escape") {
+              setDraft(null);
+              // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
+              const scope = scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
               setPicked([]);
-              setSelectedId(next);
-              setScopeId(level.id);
+              if (selectedId && scope) {
+                setSelectedId(scope.id);
+                setScopeId(parentOf(data.root, scope.id)?.id ?? data.root.id);
+              } else {
+                setSelectedId(null);
+              }
               return;
             }
-          }
-          if (event.key === "Escape") {
-            setDraft(null);
-            // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
-            const scope = scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
-            setPicked([]);
-            if (selectedId && scope) {
-              setSelectedId(scope.id);
-              setScopeId(parentOf(data.root, scope.id)?.id ?? data.root.id);
-            } else {
-              setSelectedId(null);
+            if (gesture.current) return;
+            if (
+              event.key === "Enter" &&
+              selectedId &&
+              selectedDef?.inlineText &&
+              !event.ctrlKey &&
+              !event.metaKey &&
+              !event.altKey &&
+              !event.shiftKey
+            ) {
+              // Enter on a block that has words goes into them, like a double press on the block does.
+              event.preventDefault();
+              if (draft) commitPatch(draft.id, draft);
+              setEditing({
+                id: selectedId,
+                prop: selectedDef.inlineText.prop,
+                multiline: selectedDef.inlineText.multiline === true,
+              });
+              return;
             }
-            return;
-          }
-          if (gesture.current) return;
-          if (
-            event.key === "Enter" &&
-            selectedId &&
-            selectedDef?.inlineText &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey &&
-            !event.shiftKey
-          ) {
-            // Enter on a block that has words goes into them, like a double press on the block does.
-            event.preventDefault();
-            if (draft) commitPatch(draft.id, draft);
-            setEditing({
-              id: selectedId,
-              prop: selectedDef.inlineText.prop,
-              multiline: selectedDef.inlineText.multiline === true,
-            });
-            return;
-          }
-          if (
-            event.key === "Enter" &&
-            selectedNode?.type === "Group" &&
-            selectedNode.children[0] &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey
-          ) {
-            // Enter on a group goes into it, as Esc goes back up.
-            event.preventDefault();
-            setScopeId(selectedNode.id);
-            setPicked([]);
-            setSelectedId(selectedNode.children[0].id);
-            return;
-          }
-          if (
-            isNudgeKey(event.key) &&
-            selectedId &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey
-          ) {
-            // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
-            // on the same blocks, are one step to undo.
-            event.preventDefault();
-            const same = lastNudge.current.key === selectionKey;
-            const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
-            lastNudge.current = { key: selectionKey, at: event.timeStamp };
-            arrange(
-              (rects) => rects.map((rect) => nudgeRect(rect, event.key, event.shiftKey)),
-              merge,
-            );
-            return;
-          }
-          if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
-            // The browser's own page zoom would scale the whole editor; here it is the canvas.
-            event.preventDefault();
-            setZoom((z) => (event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1)));
-            return;
-          }
-          if (
-            (event.key === "Delete" || event.key === "Backspace") &&
-            !event.ctrlKey &&
-            !event.metaKey &&
-            !event.altKey &&
-            selectedId
-          ) {
-            // Backspace is "back" in some browsers.
-            event.preventDefault();
-            deleteBlock();
-            return;
-          }
-          const key = event.key.toLowerCase();
-          if (key === "d" && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            duplicateSelected();
-            return;
-          }
-          if (key === "g" && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            if (event.shiftKey) ungroupSelected();
-            else groupSelected();
-            return;
-          }
-          const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
-          if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
-            event.preventDefault();
-            step(redoing ? redo : undo);
-          }
-        }}
-      >
-        <div role="status" aria-live="polite" className={styles.visuallyHidden}>
-          {announcement}
-        </div>
-        <header className={styles.toolbar}>
-          <div className={styles.toolbarStart}>
-            {logo === undefined ? (
-              <span className={styles.logo} aria-hidden="true">
-                M
-              </span>
-            ) : (
-              logo
-            )}
-            {headerStart}
-            <button
-              type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label="Undo"
-              disabled={!canUndo(history)}
-              title="Undo (Ctrl+Z)"
-              onClick={() => step(undo)}
-            >
-              <Icon name="undo" size={18} />
-            </button>
-            <button
-              type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label="Redo"
-              disabled={!canRedo(history)}
-              title="Redo (Shift+Ctrl+Z)"
-              onClick={() => step(redo)}
-            >
-              <Icon name="redo" size={18} />
-            </button>
-            {headerStatus && (
-              <span className={styles.status} role="status" data-state={headerStatus}>
-                {STATUS_TEXT[headerStatus]}
-              </span>
-            )}
+            if (
+              event.key === "Enter" &&
+              selectedNode?.type === "Group" &&
+              selectedNode.children[0] &&
+              !event.ctrlKey &&
+              !event.metaKey &&
+              !event.altKey
+            ) {
+              // Enter on a group goes into it, as Esc goes back up.
+              event.preventDefault();
+              setScopeId(selectedNode.id);
+              setPicked([]);
+              setSelectedId(selectedNode.children[0].id);
+              return;
+            }
+            if (
+              isNudgeKey(event.key) &&
+              selectedId &&
+              !event.ctrlKey &&
+              !event.metaKey &&
+              !event.altKey
+            ) {
+              // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
+              // on the same blocks, are one step to undo.
+              event.preventDefault();
+              const same = lastNudge.current.key === selectionKey;
+              const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
+              lastNudge.current = { key: selectionKey, at: event.timeStamp };
+              arrange(
+                (rects) => rects.map((rect) => nudgeRect(rect, event.key, event.shiftKey)),
+                merge,
+              );
+              return;
+            }
+            if ((event.ctrlKey || event.metaKey) && ["=", "+", "-", "0"].includes(event.key)) {
+              // The browser's own page zoom would scale the whole editor; here it is the canvas.
+              event.preventDefault();
+              setZoom((z) => (event.key === "0" ? 1 : stepZoom(z, event.key === "-" ? -1 : 1)));
+              return;
+            }
+            if (
+              (event.key === "Delete" || event.key === "Backspace") &&
+              !event.ctrlKey &&
+              !event.metaKey &&
+              !event.altKey &&
+              selectedId
+            ) {
+              // Backspace is "back" in some browsers.
+              event.preventDefault();
+              deleteBlock();
+              return;
+            }
+            const key = event.key.toLowerCase();
+            if (key === "d" && (event.ctrlKey || event.metaKey)) {
+              event.preventDefault();
+              duplicateSelected();
+              return;
+            }
+            if (key === "g" && (event.ctrlKey || event.metaKey)) {
+              event.preventDefault();
+              if (event.shiftKey) ungroupSelected();
+              else groupSelected();
+              return;
+            }
+            const redoing = (key === "z" && event.shiftKey) || (key === "y" && event.ctrlKey);
+            if ((key === "z" && (event.ctrlKey || event.metaKey)) || redoing) {
+              event.preventDefault();
+              step(redoing ? redo : undo);
+            }
+          }}
+        >
+          <div role="status" aria-live="polite" className={styles.visuallyHidden}>
+            {announcement}
           </div>
-          {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-          <div className={styles.segmented} role="group" aria-label="Frame">
-            <button
-              type="button"
-              className={styles.segment}
-              aria-pressed={frame === "desktop"}
-              onClick={() => setFrame("desktop")}
-            >
-              <Icon name="desk" />
-              Desktop
-            </button>
-            <button
-              type="button"
-              className={styles.segment}
-              aria-pressed={frame === "phone"}
-              onClick={() => setFrame("phone")}
-            >
-              <Icon name="phone" />
-              Phone
-            </button>
-          </div>
-          <div className={styles.toolbarEnd}>
+          <header className={styles.toolbar}>
+            <div className={styles.toolbarStart}>
+              {logo === undefined ? (
+                <span className={styles.logo} aria-hidden="true">
+                  M
+                </span>
+              ) : (
+                logo
+              )}
+              {headerStart}
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                aria-label={t("header.undo")}
+                disabled={!canUndo(history)}
+                title={t("header.undoTitle")}
+                onClick={() => step(undo)}
+              >
+                <Icon name="undo" size={18} />
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                aria-label={t("header.redo")}
+                disabled={!canRedo(history)}
+                title={t("header.redoTitle")}
+                onClick={() => step(redo)}
+              >
+                <Icon name="redo" size={18} />
+              </button>
+              {headerStatus && (
+                <span className={styles.status} role="status" data-state={headerStatus}>
+                  {t(STATUS_KEY[headerStatus])}
+                </span>
+              )}
+            </div>
             {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-            <div className={styles.zoomBar} role="group" aria-label="Zoom">
+            <div className={styles.segmented} role="group" aria-label={t("header.frame")}>
               <button
                 type="button"
-                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-                aria-label="Zoom out"
-                title="Zoom out (Ctrl or Cmd and -)"
-                disabled={zoom <= MIN_ZOOM}
-                onClick={() => setZoom((z) => stepZoom(z, -1))}
+                className={styles.segment}
+                aria-pressed={frame === "desktop"}
+                onClick={() => setFrame("desktop")}
               >
-                −
+                <Icon name="desk" />
+                {t("header.desktop")}
               </button>
               <button
                 type="button"
-                className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
-                title="Back to 100% (Ctrl or Cmd and 0)"
-                onClick={() => setZoom(1)}
+                className={styles.segment}
+                aria-pressed={frame === "phone"}
+                onClick={() => setFrame("phone")}
               >
-                {zoomText(zoom)}
-              </button>
-              <button
-                type="button"
-                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-                aria-label="Zoom in"
-                title="Zoom in (Ctrl or Cmd and +)"
-                disabled={zoom >= MAX_ZOOM}
-                onClick={() => setZoom((z) => stepZoom(z, 1))}
-              >
-                +
-              </button>
-              <button
-                type="button"
-                className={`${styles.button} ${styles.ghost}`}
-                title="Make the whole page fit the canvas"
-                onClick={() => {
-                  const look = workspace ? getComputedStyle(workspace) : undefined;
-                  const roomHeight = workspace
-                    ? workspace.clientHeight -
-                      Number.parseFloat(look?.paddingTop ?? "0") -
-                      Number.parseFloat(look?.paddingBottom ?? "0")
-                    : 0;
-                  setZoom(fitZoom(stageBox.room, stageBox.page, roomHeight, stageBox.height));
-                }}
-              >
-                Fit
+                <Icon name="phone" />
+                {t("header.phone")}
               </button>
             </div>
-            {headerActions}
-            {onSave && (
+            <div className={styles.toolbarEnd}>
+              {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+              <div className={styles.zoomBar} role="group" aria-label={t("header.zoom")}>
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                  aria-label={t("header.zoomOut")}
+                  title={t("header.zoomOutTitle")}
+                  disabled={zoom <= MIN_ZOOM}
+                  onClick={() => setZoom((z) => stepZoom(z, -1))}
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
+                  title={t("header.zoomResetTitle")}
+                  onClick={() => setZoom(1)}
+                >
+                  {zoomText(zoom)}
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                  aria-label={t("header.zoomIn")}
+                  title={t("header.zoomInTitle")}
+                  disabled={zoom >= MAX_ZOOM}
+                  onClick={() => setZoom((z) => stepZoom(z, 1))}
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.ghost}`}
+                  title={t("header.fitTitle")}
+                  onClick={() => {
+                    const look = workspace ? getComputedStyle(workspace) : undefined;
+                    const roomHeight = workspace
+                      ? workspace.clientHeight -
+                        Number.parseFloat(look?.paddingTop ?? "0") -
+                        Number.parseFloat(look?.paddingBottom ?? "0")
+                      : 0;
+                    setZoom(fitZoom(stageBox.room, stageBox.page, roomHeight, stageBox.height));
+                  }}
+                >
+                  {t("header.fit")}
+                </button>
+              </div>
+              {headerActions}
+              {onSave && (
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.primary}`}
+                  disabled={status === "saving"}
+                  onClick={() => {
+                    // A change that is still pending is stored first, and it is part of what is saved.
+                    const pending = draft;
+                    if (pending) {
+                      marking.current = true;
+                      commitPatch(pending.id, pending);
+                    } else {
+                      setSavedPage(data);
+                    }
+                    onSave(pending ? withDraft(data, pending, frame, registry) : data);
+                  }}
+                >
+                  {t("header.save")}
+                </button>
+              )}
+            </div>
+          </header>
+          <nav className={styles.rail} aria-label={t("rail.label")}>
+            {(
+              [
+                ["blocks", t("rail.blocks"), "grid"],
+                ["images", t("rail.images"), "img"],
+                ["themes", t("rail.themes"), "palette"],
+              ] as const
+            ).map(([id, name, icon]) => (
               <button
+                key={id}
                 type="button"
-                className={`${styles.button} ${styles.primary}`}
-                disabled={status === "saving"}
-                onClick={() => {
-                  // A change that is still pending is stored first, and it is part of what is saved.
-                  const pending = draft;
-                  if (pending) {
-                    marking.current = true;
-                    commitPatch(pending.id, pending);
-                  } else {
-                    setSavedPage(data);
-                  }
-                  onSave(pending ? withDraft(data, pending, frame, registry) : data);
-                }}
+                className={styles.railButton}
+                aria-current={tool === id && panelOpen ? "true" : undefined}
+                title={tool === id && panelOpen ? t("rail.hide", { name }) : name}
+                onClick={() => pickTool(id)}
               >
-                Save
+                <Icon name={icon} size={18} />
+                {name}
               </button>
+            ))}
+          </nav>
+          <aside
+            className={`${styles.panel} ${styles.start}`}
+            aria-label={t(
+              tool === "images" ? "rail.images" : tool === "themes" ? "rail.themes" : "rail.blocks",
             )}
-          </div>
-        </header>
-        <nav className={styles.rail} aria-label="Tools">
-          {(
-            [
-              ["blocks", "Blocks", "grid"],
-              ["images", "Images", "img"],
-              ["themes", "Themes", "palette"],
-            ] as const
-          ).map(([id, name, icon]) => (
-            <button
-              key={id}
-              type="button"
-              className={styles.railButton}
-              aria-current={tool === id && panelOpen ? "true" : undefined}
-              title={tool === id && panelOpen ? `Hide ${name}` : name}
-              onClick={() => pickTool(id)}
-            >
-              <Icon name={icon} size={18} />
-              {name}
-            </button>
-          ))}
-        </nav>
-        <aside
-          className={`${styles.panel} ${styles.start}`}
-          aria-label={tool === "images" ? "Images" : tool === "themes" ? "Themes" : "Blocks"}
-        >
-          {tool === "images" && (
-            <>
-              <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-              <ImagesPanel
-                disabled={onPhone}
-                images={libraryImages}
-                onAdd={addLibraryImage}
-                upload={
-                  config?.uploadImage
-                    ? {
-                        busy: adding.busy,
-                        error: adding.error,
-                        onChoose: () => chooser.current?.click(),
-                      }
-                    : undefined
-                }
-              />
-            </>
-          )}
-          {tool === "themes" && (
-            <ThemesPanel
-              current={data.theme}
-              themes={hostThemes}
-              onApply={(theme) => setData((prev) => applyTheme(prev, registry, theme))}
-              onSave={
-                keepTheme &&
-                ((name) => {
-                  const { id: _id, ...theme } = savedFrom(data.theme, "", name);
-                  return keepTheme(theme);
-                })
-              }
-              onRename={renameTheme}
-              onDelete={deleteTheme}
-            />
-          )}
-          {tool === "blocks" && (
-            <BlocksPanel
-              registry={registry}
-              disabled={onPhone}
-              onAdd={(type) => addBlockOf(type)}
-              onDragMove={dragFromLibrary}
-              onDrop={dropFromLibrary}
-            />
-          )}
-        </aside>
-        <section
-          ref={setWorkspace}
-          className={styles.workspace}
-          aria-label="Canvas"
-          // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
-          tabIndex={0}
-          onPointerDown={press}
-          onPointerMove={hover}
-          onContextMenu={openMenu}
-          onPointerLeave={() => setHoverId(null)}
-          onDoubleClick={enter}
-        >
-          <div
-            className={`${styles.zoomOuter} ${styles.stageBox}`}
-            style={
-              zoom === 1
-                ? undefined
-                : {
-                    inlineSize: stageWidth(stageBox.room, stageBox.page, zoom) * zoom,
-                    blockSize: stageBox.height * zoom,
-                    marginInline: "auto",
+          >
+            {tool === "images" && (
+              <>
+                <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
+                <ImagesPanel
+                  disabled={onPhone}
+                  images={libraryImages}
+                  onAdd={addLibraryImage}
+                  upload={
+                    config?.uploadImage
+                      ? {
+                          busy: adding.busy,
+                          error: adding.error,
+                          onChoose: () => chooser.current?.click(),
+                        }
+                      : undefined
                   }
-            }
+                />
+              </>
+            )}
+            {tool === "themes" && (
+              <ThemesPanel
+                current={data.theme}
+                themes={hostThemes}
+                onApply={(theme) => setData((prev) => applyTheme(prev, registry, theme))}
+                onSave={
+                  keepTheme &&
+                  ((name) => {
+                    const { id: _id, ...theme } = savedFrom(data.theme, "", name);
+                    return keepTheme(theme);
+                  })
+                }
+                onRename={renameTheme}
+                onDelete={deleteTheme}
+              />
+            )}
+            {tool === "blocks" && (
+              <BlocksPanel
+                registry={registry}
+                disabled={onPhone}
+                onAdd={(type) => addBlockOf(type)}
+                onDragMove={dragFromLibrary}
+                onDrop={dropFromLibrary}
+              />
+            )}
+          </aside>
+          <section
+            ref={setWorkspace}
+            className={styles.workspace}
+            aria-label={t("panel.canvas")}
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
+            tabIndex={0}
+            onPointerDown={press}
+            onPointerMove={hover}
+            onContextMenu={openMenu}
+            onPointerLeave={() => setHoverId(null)}
+            onDoubleClick={enter}
           >
             <div
-              ref={stage}
-              className={styles.zoomOuter}
+              className={`${styles.zoomOuter} ${styles.stageBox}`}
               style={
                 zoom === 1
                   ? undefined
-                  : ({
-                      inlineSize: stageWidth(stageBox.room, stageBox.page, zoom),
-                      // Its own height, not the scaled one the outer box has, or each measure would grow it.
-                      flex: "none",
-                      transform: `scale(${zoom})`,
-                      transformOrigin: "0 0",
-                      "--_zoom-page": `${stageBox.page}px`,
-                    } as CSSProperties)
+                  : {
+                      inlineSize: stageWidth(stageBox.room, stageBox.page, zoom) * zoom,
+                      blockSize: stageBox.height * zoom,
+                      marginInline: "auto",
+                    }
               }
             >
-              <Render
-                data={shown}
-                device={frame}
-                links="inert"
-                renderers={config?.renderers}
-                className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
-              />
+              <div
+                ref={stage}
+                className={styles.zoomOuter}
+                style={
+                  zoom === 1
+                    ? undefined
+                    : ({
+                        inlineSize: stageWidth(stageBox.room, stageBox.page, zoom),
+                        // Its own height, not the scaled one the outer box has, or each measure would grow it.
+                        flex: "none",
+                        transform: `scale(${zoom})`,
+                        transformOrigin: "0 0",
+                        "--_zoom-page": `${stageBox.page}px`,
+                      } as CSSProperties)
+                }
+              >
+                <Render
+                  data={shown}
+                  device={frame}
+                  links="inert"
+                  renderers={config?.renderers}
+                  className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
+                />
+              </div>
+              {data.root.children.length === 0 && !editing && (
+                <EmptyPage
+                  disabled={onPhone}
+                  onAdd={() => addBlockOf("Container")}
+                  onOpenBlocks={() => {
+                    setTool("blocks");
+                    setPanelOpen(true);
+                  }}
+                />
+              )}
             </div>
-            {data.root.children.length === 0 && !editing && (
-              <EmptyPage
-                disabled={onPhone}
-                onAdd={() => addBlockOf("Container")}
-                onOpenBlocks={() => {
-                  setTool("blocks");
-                  setPanelOpen(true);
+            {marquee && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "fixed",
+                  left: marquee.left,
+                  top: marquee.top,
+                  width: marquee.right - marquee.left,
+                  height: marquee.bottom - marquee.top,
+                  border: "1px solid var(--_focus)",
+                  background: "color-mix(in srgb, var(--_focus) 15%, transparent)",
+                  pointerEvents: "none",
+                  zIndex: 10,
                 }}
               />
             )}
-          </div>
-          {marquee && (
-            <div
-              aria-hidden="true"
-              style={{
-                position: "fixed",
-                left: marquee.left,
-                top: marquee.top,
-                width: marquee.right - marquee.left,
-                height: marquee.bottom - marquee.top,
-                border: "1px solid var(--_focus)",
-                background: "color-mix(in srgb, var(--_focus) 15%, transparent)",
-                pointerEvents: "none",
-                zIndex: 10,
-              }}
-            />
-          )}
-          {editing && editingElement && editingNode && (
-            <InlineEdit
-              element={editingElement}
-              value={String(editingNode.props[editing.prop] ?? "")}
-              multiline={editing.multiline}
-              maxLength={editingLimit}
-              rotation={turnOf(data.root, editing.id, frame)}
-              zoom={zoom}
-              onDone={(value) => {
-                setEditing(null);
-                if (editingNode.props[editing.prop] !== value) {
-                  commitPatch(editing.id, { key: "prop", name: editing.prop, value });
-                }
-              }}
-              onCancel={() => setEditing(null)}
-            />
-          )}
-          {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
-          {menuAt && (
-            <ContextMenu
-              x={menuAt.x}
-              y={menuAt.y}
-              items={menuItems()}
-              onClose={() => {
-                setMenuAt(null);
-                // The keys of the editor work again where the pointer was.
-                editorRoot.current?.focus({ preventScroll: true });
-              }}
-            />
-          )}
-          {workspace && !editing && hoverId && hoverElement && hoverNode && (
-            <BlockLabel
-              target={hoverElement}
-              workspace={workspace}
-              text={registry[hoverNode.type]?.label ?? hoverNode.type}
-              tone="hover"
-            />
-          )}
-          {block &&
-            workspace &&
-            !editing &&
-            !groupInfo &&
-            selectedNode &&
-            selectedId !== data.root.id && (
+            {editing && editingElement && editingNode && (
+              <InlineEdit
+                element={editingElement}
+                value={String(editingNode.props[editing.prop] ?? "")}
+                multiline={editing.multiline}
+                maxLength={editingLimit}
+                rotation={turnOf(data.root, editing.id, frame)}
+                zoom={zoom}
+                onDone={(value) => {
+                  setEditing(null);
+                  if (editingNode.props[editing.prop] !== value) {
+                    commitPatch(editing.id, { key: "prop", name: editing.prop, value });
+                  }
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            )}
+            {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
+            {menuAt && (
+              <ContextMenu
+                x={menuAt.x}
+                y={menuAt.y}
+                items={menuItems()}
+                onClose={() => {
+                  setMenuAt(null);
+                  // The keys of the editor work again where the pointer was.
+                  editorRoot.current?.focus({ preventScroll: true });
+                }}
+              />
+            )}
+            {workspace && !editing && hoverId && hoverElement && hoverNode && (
               <BlockLabel
-                target={block}
+                target={hoverElement}
                 workspace={workspace}
-                text={selectedDef?.label ?? selectedNode.type}
-                tone="selected"
+                text={registry[hoverNode.type]?.label ?? hoverNode.type}
+                tone="hover"
               />
             )}
-          {block &&
-            workspace &&
-            !editing &&
-            !menuAt &&
-            selectedId &&
-            selectedId !== data.root.id && (
-              <QuickActions
-                target={block}
+            {block &&
+              workspace &&
+              !editing &&
+              !groupInfo &&
+              selectedNode &&
+              selectedId !== data.root.id && (
+                <BlockLabel
+                  target={block}
+                  workspace={workspace}
+                  text={selectedDef?.label ?? selectedNode.type}
+                  tone="selected"
+                />
+              )}
+            {block &&
+              workspace &&
+              !editing &&
+              !menuAt &&
+              selectedId &&
+              selectedId !== data.root.id && (
+                <QuickActions
+                  target={block}
+                  workspace={workspace}
+                  disabled={onPhone}
+                  canGroup={picked.length > 0}
+                  canUngroup={selectedNode?.type === "Group"}
+                  onForward={() => reorderSelected("forward")}
+                  onBackward={() => reorderSelected("backward")}
+                  onDuplicate={duplicateSelected}
+                  onDelete={deleteBlock}
+                  onGroup={groupSelected}
+                  onUngroup={ungroupSelected}
+                  onFront={() => reorderSelected("front")}
+                  onBack={() => reorderSelected("back")}
+                />
+              )}
+            {pageElement && workspace && !editing && (
+              <PageEdge
+                page={pageElement}
                 workspace={workspace}
-                disabled={onPhone}
-                canGroup={picked.length > 0}
-                canUngroup={selectedNode?.type === "Group"}
-                onForward={() => reorderSelected("forward")}
-                onBackward={() => reorderSelected("backward")}
-                onDuplicate={duplicateSelected}
-                onDelete={deleteBlock}
-                onGroup={groupSelected}
-                onUngroup={ungroupSelected}
-                onFront={() => reorderSelected("front")}
-                onBack={() => reorderSelected("back")}
+                zoom={zoom}
+                floor={pageHeight.floor}
+                onPreview={(height) =>
+                  setDraft({ id: data.root.id, key: "minHeight", value: height })
+                }
+                onCommit={(height) =>
+                  commitPatch(data.root.id, { key: "minHeight", value: height })
+                }
+                onCancel={() => setDraft(null)}
               />
             )}
-          {pageElement && workspace && !editing && (
-            <PageEdge
-              page={pageElement}
-              workspace={workspace}
-              zoom={zoom}
-              floor={pageHeight.floor}
-              onPreview={(height) =>
-                setDraft({ id: data.root.id, key: "minHeight", value: height })
+            {groupInfo && !editing && (
+              <div
+                ref={setFrameEl}
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: groupInfo.box.left,
+                  top: groupInfo.box.top,
+                  width: groupInfo.box.width,
+                  height: groupInfo.box.height,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+            <SelectionBox
+              target={editing ? null : groupInfo ? frameEl : block}
+              container={workspace}
+              className={styles.selection}
+              controls={dragControls}
+              group={groupInfo !== null}
+              scale={groupInfo ? zoom : 1}
+              onRotatePreview={previewGroupTurn}
+              companions={
+                groupInfo
+                  ? groupInfo.placed.flatMap((item) =>
+                      workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
+                    )
+                  : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
               }
-              onCommit={(height) => commitPatch(data.root.id, { key: "minHeight", value: height })}
-              onCancel={() => setDraft(null)}
-            />
-          )}
-          {groupInfo && !editing && (
-            <div
-              ref={setFrameEl}
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: groupInfo.box.left,
-                top: groupInfo.box.top,
-                width: groupInfo.box.width,
-                height: groupInfo.box.height,
-                pointerEvents: "none",
-              }}
-            />
-          )}
-          <SelectionBox
-            target={editing ? null : groupInfo ? frameEl : block}
-            container={workspace}
-            className={styles.selection}
-            controls={dragControls}
-            group={groupInfo !== null}
-            scale={groupInfo ? zoom : 1}
-            onRotatePreview={previewGroupTurn}
-            companions={
-              groupInfo
-                ? groupInfo.placed.flatMap((item) =>
-                    workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
-                  )
-                : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
-            }
-            lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
-            minSize={minSize(selectedNode?.styles)}
-            angle={
-              !groupInfo && selectedNode && isFreeNode(selectedNode)
-                ? boxFor(selectedNode, frame).rotation
-                : 0
-            }
-            onGestureStart={startGesture}
-            onDragEnd={endDrag}
-            onDragMove={dragMove}
-            onResizeEnd={endResize}
-            onRotateEnd={endRotate}
-          />
-        </section>
-        <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
-          {!selectedNode && (
-            <PageInspector
-              page={data.root}
-              theme={data.theme}
-              meta={data.meta}
-              onMeta={changeMeta}
-              pageHeight={pageHeight}
-              onPageHeight={(height) =>
-                commitPatch(data.root.id, { key: "minHeight", value: height })
+              lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
+              minSize={minSize(selectedNode?.styles)}
+              angle={
+                !groupInfo && selectedNode && isFreeNode(selectedNode)
+                  ? boxFor(selectedNode, frame).rotation
+                  : 0
               }
-              uploadImage={config?.uploadImage}
-              onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
-              onCommit={(patch) => commitPatch(data.root.id, patch)}
-              fonts={fonts}
-              onPageFont={(stack) => setThemeFont("body", stack)}
-              themeActions={{
-                onSetColor: setThemeColor,
-                onRenameColor: renameThemeColor,
-                onDeleteColor: deleteThemeColor,
-              }}
+              onGestureStart={startGesture}
+              onDragEnd={endDrag}
+              onDragMove={dragMove}
+              onResizeEnd={endResize}
+              onRotateEnd={endRotate}
             />
-          )}
-          {selectedNode && (
-            <PropertiesPanel
-              onBackToPage={() => {
-                setPicked([]);
-                setSelectedId(null);
-                setScopeId(data.root.id);
-              }}
-              // A new panel for each node, so text typed for one is never applied to another.
-              key={selectedNode?.id ?? "none"}
-              node={selectedNode}
-              device={frame}
-              onResetPhone={resetPhone}
-              selectedCount={1 + picked.length}
-              onAlign={alignSelected}
-              onDistribute={distributeSelected}
-              actions={config?.actions}
-              fonts={fonts}
-              def={selectedDef}
-              onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-              onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
-              onDiscard={() => setDraft(null)}
-              onAnchor={changeAnchor}
-              rect={selectedRect}
-              onRect={setRect}
-              theme={data.theme}
-              uploadImage={config?.uploadImage}
-            />
-          )}
-        </aside>
-      </div>
-    </IconsContext.Provider>
+          </section>
+          <aside className={`${styles.panel} ${styles.end}`} aria-label={t("panel.properties")}>
+            {!selectedNode && (
+              <PageInspector
+                page={data.root}
+                theme={data.theme}
+                meta={data.meta}
+                onMeta={changeMeta}
+                pageHeight={pageHeight}
+                onPageHeight={(height) =>
+                  commitPatch(data.root.id, { key: "minHeight", value: height })
+                }
+                uploadImage={config?.uploadImage}
+                onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
+                onCommit={(patch) => commitPatch(data.root.id, patch)}
+                fonts={fonts}
+                onPageFont={(stack) => setThemeFont("body", stack)}
+                themeActions={{
+                  onSetColor: setThemeColor,
+                  onRenameColor: renameThemeColor,
+                  onDeleteColor: deleteThemeColor,
+                }}
+              />
+            )}
+            {selectedNode && (
+              <PropertiesPanel
+                onBackToPage={() => {
+                  setPicked([]);
+                  setSelectedId(null);
+                  setScopeId(data.root.id);
+                }}
+                // A new panel for each node, so text typed for one is never applied to another.
+                key={selectedNode?.id ?? "none"}
+                node={selectedNode}
+                device={frame}
+                onResetPhone={resetPhone}
+                selectedCount={1 + picked.length}
+                onAlign={alignSelected}
+                onDistribute={distributeSelected}
+                actions={config?.actions}
+                fonts={fonts}
+                def={selectedDef}
+                onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
+                onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
+                onDiscard={() => setDraft(null)}
+                onAnchor={changeAnchor}
+                rect={selectedRect}
+                onRect={setRect}
+                theme={data.theme}
+                uploadImage={config?.uploadImage}
+              />
+            )}
+          </aside>
+        </div>
+      </IconsContext.Provider>
+    </TContext.Provider>
   );
 }
