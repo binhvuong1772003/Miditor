@@ -3,6 +3,7 @@ import { useState } from "react";
 import { actions } from "./actions";
 import { fonts } from "./fonts";
 import { components, renderers } from "./kinds";
+import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -25,7 +26,7 @@ function openPage(): PageData {
  * `data:` address. `embedImage` makes a big picture smaller first, so any photo fits; a host with a
  * back end would use `postImage("/api/images")` here.
  */
-const uploadImage = embedImage();
+const embed = embedImage();
 
 export function App() {
   // `?preview` shows the stored page the way a visitor would get it, for any width.
@@ -36,6 +37,15 @@ export function App() {
 function Playground() {
   const [page] = useState(openPage);
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
+  const [uploaded, setUploaded] = useState(() => loadUploaded(window.localStorage));
+  // Like a real host, the upload also puts the picture in the library the editor shows.
+  const uploadImage = async (file: File) => {
+    const url = await embed(file);
+    const next = [{ url, name: file.name }, ...uploaded.filter((image) => image.url !== url)];
+    setUploaded(next);
+    storeUploaded(window.localStorage, next);
+    return url;
+  };
   const [sent, setSent] = useState<string | null>(null);
   // How the stand-in "server" is doing, for the header. A real host sets it from its own request.
   const [status, setStatus] = useState<SaveStatus>("saved");
@@ -56,6 +66,7 @@ function Playground() {
           uploadImage,
           actions,
           fonts,
+          images: [...uploaded, ...seedImages],
           themes: [...saved, ...suggestedThemes],
           onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
           onThemeRename: (id, name) =>
