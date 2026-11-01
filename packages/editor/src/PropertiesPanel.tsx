@@ -5,7 +5,6 @@ import {
   type ComponentDef,
   type Device,
   isFreeNode,
-  type JsonValue,
   keepsRatio,
   parseAngle,
   parseCoordinate,
@@ -18,7 +17,7 @@ import {
 import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
 import { AlignSection } from "./AlignSection";
 import type { ActionDef } from "./actions";
-import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
+import { BackgroundFields } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import type { FontDef } from "./fonts";
 import { useT } from "./i18n/context";
@@ -26,30 +25,12 @@ import type { MessageKey } from "./i18n/en";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
+import type { PanelPatch } from "./patch";
 import { useRenders } from "./perf";
 import { Section } from "./Section";
 import type { UploadImage } from "./upload-image";
 
-/** One style of one node, and the value it should have. `undefined` removes the style. */
-export type StylePatch =
-  | { key: "background" | "borderColor"; value: string | undefined }
-  | { key: "borderWidth" | "borderRadius" | "minHeight"; value: number | undefined }
-  | BackgroundPatch;
-
-/** What the panel changes besides styles: the rotation, which every free node has and never loses. */
-export type RotationPatch = { key: "rotation"; value: number };
-
-/** Whether resizing keeps the proportions of this block. `undefined` takes the choice back to its kind's. */
-export type LockRatioPatch = { key: "lockRatio"; value: boolean | undefined };
-
-/** The phone gets a placement of its own for this block, to start from the one it has now. */
-export type PhoneLayoutPatch = { key: "phoneLayout"; value: "separate" };
-
-/** One prop of the node, set by a field that its kind in the registry declares. */
-export type PropPatch = { key: "prop"; name: string; value: JsonValue };
-
-/** One change to one node, from any field of the panel. */
-export type PanelPatch = StylePatch | RotationPatch | PropPatch | LockRatioPatch | PhoneLayoutPatch;
+export type { PanelPatch, StylePatch } from "./patch";
 
 export interface PropertiesPanelProps {
   /** The selected node, or `undefined` when nothing is selected. */

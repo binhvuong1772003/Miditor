@@ -1,7 +1,5 @@
 import {
   BACKGROUND_POSITIONS,
-  type BackgroundPosition,
-  type BackgroundRepeat,
   type BackgroundSize,
   isBackgroundPosition,
   isBackgroundRepeat,
@@ -13,14 +11,10 @@ import { type ChangeEvent, type KeyboardEvent, useId, useRef, useState } from "r
 import { useT } from "./i18n/context";
 import type { MessageKey } from "./i18n/en";
 import styles from "./PropertiesPanel.module.css";
+import type { BackgroundPatch } from "./patch";
 import { type UploadImage, uploadMessage, uploadPicture } from "./upload-image";
 
-/** One change to the background picture of a block, made by a field below. `undefined` removes it. */
-export type BackgroundPatch =
-  | { key: "backgroundImage"; value: string | undefined }
-  | { key: "backgroundSize"; value: BackgroundSize }
-  | { key: "backgroundPosition"; value: BackgroundPosition }
-  | { key: "backgroundRepeat"; value: BackgroundRepeat };
+export type { BackgroundPatch } from "./patch";
 
 export interface BackgroundFieldsProps {
   styles: NodeStyles;
