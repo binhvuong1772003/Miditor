@@ -237,8 +237,11 @@ the button falls back to its link. Inside the editor a button does nothing.
 
 ## Page info
 
-The Page settings on the right, shown when no block is selected, have a Page info section: a title, a description and a share picture (a full
-`https://` address). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
+The Page settings on the right, shown when no block is selected, have a Page info section: a title, a description and a share picture. With
+`config.uploadImage` the share picture is uploaded like the background of the page; without it, a
+person types a full `https://` address. A social network only reads a full `https://` address, so
+for the share picture your upload should answer with one (a `data:` address from `embedImage` is
+fine to try things out but is not shown in a share). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
 
 ```tsx
 import { pageMeta } from "@midito-kitchen/render";
