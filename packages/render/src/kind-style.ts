@@ -35,6 +35,17 @@ const themeFont = (theme: Theme | undefined, which: "body" | "heading") => {
   return isFontStack(stack) ? stack : undefined;
 };
 
+/**
+ * The font of one block from its `font` prop: a font stack chosen from the host's list, used as it
+ * is when it is a safe one; `heading` (the role older pages used) is the theme's heading font; an
+ * empty value, `body` or anything else is the font of the page.
+ */
+export function fontOf(value: unknown, theme?: Theme): string {
+  if (value === "heading") return themeFont(theme, "heading") ?? pageFont(theme);
+  if (value === "" || value === "body") return pageFont(theme);
+  return isFontStack(value) ? value : pageFont(theme);
+}
+
 /** The font the whole page is set in: the theme's body font, or the default. */
 export const pageFont = (theme?: Theme) => themeFont(theme, "body") ?? DEFAULT_FONT;
 
@@ -63,8 +74,7 @@ export function textStyle(props: Props, device: Device = "desktop", theme?: Them
   return {
     fontSize: `${px}px`,
     color: resolveColor(color, theme) ?? DEFAULT_COLOUR,
-    fontFamily:
-      (props.font === "heading" ? themeFont(theme, "heading") : undefined) ?? pageFont(theme),
+    fontFamily: fontOf(props.font, theme),
     fontWeight: bold === true ? 700 : 400,
     fontStyle: italic === true ? "italic" : "normal",
     textDecoration: underline === true ? "underline" : "none",
@@ -166,7 +176,7 @@ export function buttonStyle(
     backgroundColor: resolveColor(fill, theme) ?? BUTTON_FILL,
     color: resolveColor(textColor, theme) ?? BUTTON_TEXT,
     fontSize: `${sizeOnScreen(desktop, device)}px`,
-    fontFamily: pageFont(theme),
+    fontFamily: fontOf(props.font, theme),
     fontWeight: 600,
     borderRadius: SHAPES[shape as keyof typeof SHAPES] ?? SHAPES.rounded,
   };

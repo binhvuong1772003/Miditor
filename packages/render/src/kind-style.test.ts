@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FONT, pageFont, shapeLayerStyle, textOf, textStyle } from "./kind-style";
+import {
+  buttonStyle,
+  DEFAULT_FONT,
+  pageFont,
+  shapeLayerStyle,
+  textOf,
+  textStyle,
+} from "./kind-style";
 
 describe("textOf", () => {
   it("is the text prop when it is a string, and empty otherwise", () => {
@@ -157,13 +164,21 @@ describe("the theme", () => {
     expect(textStyle({ color: "@primary" }).color).toBe("#111111");
   });
 
+  it("sets a text in a font stack it was given, when that is a safe one", () => {
+    expect(textStyle({ font: "Lora, serif" }, "desktop", theme).fontFamily).toBe("Lora, serif");
+    expect(textStyle({ font: "a;b" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+    expect(textStyle({ font: 5 }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+    expect(buttonStyle({ font: "Lora, serif" }, "desktop", theme).fontFamily).toBe("Lora, serif");
+    expect(buttonStyle({}, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+  });
+
   it("sets a text in the body font, or the heading font when it asks for it", () => {
     expect(textStyle({}, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
     expect(textStyle({ font: "body" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
     expect(textStyle({ font: "heading" }, "desktop", theme).fontFamily).toBe(
       "Playfair Display, serif",
     );
-    expect(textStyle({ font: "other" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
+    expect(textStyle({ font: "" }, "desktop", theme).fontFamily).toBe("Inter, sans-serif");
   });
 
   it("falls back from the heading font to the body font, and from that to the default", () => {

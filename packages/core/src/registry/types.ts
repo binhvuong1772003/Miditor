@@ -43,6 +43,12 @@ type FieldKind =
   | { type: "image"; label: string }
   /** A stored link address, see `isLinkUrl`; an empty string means no link yet. */
   | { type: "link"; label: string }
+  /**
+   * A font chosen from the list the host gives the editor: stored as its font stack (see
+   * `isFontStack`), or an empty string for the font of the page. `body` and `heading`, the roles
+   * older pages used, are still read.
+   */
+  | { type: "font"; label: string }
   /** The name of an action the host handles, see `isActionName`; an empty string means none. */
   | { type: "action"; label: string }
   /** The values handed to the action, see `isPayload`. */

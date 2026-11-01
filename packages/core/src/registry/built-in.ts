@@ -33,16 +33,11 @@ export const builtInRegistry: Registry = {
       italic: false,
       underline: false,
       align: "center",
-      font: "body",
+      font: "",
     },
     fields: {
       text: { type: "text", label: "Text", maxLength: 2000, multiline: true, group: "Text" },
-      font: {
-        type: "select",
-        label: "Font",
-        options: ["body", "heading"],
-        group: "Typography",
-      },
+      font: { type: "font", label: "Font", group: "Typography" },
       size: {
         type: "number",
         label: "Size",
@@ -116,6 +111,7 @@ export const builtInRegistry: Registry = {
       textColor: "#ffffff",
       shape: "rounded",
       size: 16,
+      font: "",
     },
     fields: {
       label: { type: "text", label: "Label", maxLength: 100, group: "Content" },
@@ -144,6 +140,7 @@ export const builtInRegistry: Registry = {
         perDevice: true,
         group: "Style",
       },
+      font: { type: "font", label: "Font", group: "Style" },
     },
   },
   /**

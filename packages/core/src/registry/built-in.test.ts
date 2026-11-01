@@ -70,13 +70,11 @@ describe("builtInRegistry", () => {
     expect(perDevice).toEqual(["Text.size", "Button.size"]);
   });
 
-  it("lets a text be set in the body or the heading font, starting in the body font", () => {
-    expect(builtInRegistry.Text?.defaultProps.font).toBe("body");
-    expect(builtInRegistry.Text?.fields.font).toMatchObject({
-      type: "select",
-      label: "Font",
-      options: ["body", "heading"],
-    });
+  it("lets a text and a button be set in a font from the host's list, starting in the page's font", () => {
+    for (const kind of ["Text", "Button"] as const) {
+      expect(builtInRegistry[kind]?.defaultProps.font).toBe("");
+      expect(builtInRegistry[kind]?.fields.font).toMatchObject({ type: "font", label: "Font" });
+    }
   });
 
   it("starts a button that goes nowhere, dark with white text, 160 by 44, holding nothing", () => {
