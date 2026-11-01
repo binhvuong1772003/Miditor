@@ -1,4 +1,5 @@
 import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitchen/editor";
+import { vi } from "@midito-kitchen/editor/locales/vi";
 import { useState } from "react";
 import { actions } from "./actions";
 import { demoIcons } from "./demo-icons";
@@ -96,6 +97,10 @@ function Playground({ embedded = false }: { embedded?: boolean }) {
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         // Inside a host that has its own navbar the editor shows no mark of its own.
         {...(embedded ? { logo: null } : {})}
+        // `?lang=vi` shows the editor in Vietnamese.
+        {...(new URLSearchParams(window.location.search).get("lang") === "vi"
+          ? { i18n: { locale: "vi", messages: vi } }
+          : {})}
         // `?dark` shows the dark scheme of the editor.
         {...(new URLSearchParams(window.location.search).has("dark")
           ? { appearance: { scheme: "dark" as const } }

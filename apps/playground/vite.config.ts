@@ -11,6 +11,8 @@ export default defineConfig({
     alias: {
       "@midito-kitchen/core": fromRoot("packages/core/src/index.ts"),
       "@midito-kitchen/render": fromRoot("packages/render/src/index.ts"),
+      // A subpath comes first: an alias is matched by prefix, so the package name would take it.
+      "@midito-kitchen/editor/locales/vi": fromRoot("packages/editor/src/locales/vi.ts"),
       "@midito-kitchen/editor": fromRoot("packages/editor/src/index.ts"),
     },
   },
