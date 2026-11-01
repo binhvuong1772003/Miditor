@@ -25,11 +25,9 @@ import {
   validatePage,
   validateRegistry,
 } from "@midito-kitchen/core";
-import { Render, type Renderer } from "@midito-kitchen/render";
+import type { Renderer } from "@midito-kitchen/render";
 import {
   type ClipboardEvent,
-  type CSSProperties,
-  Profiler,
   type ReactNode,
   useEffect,
   useLayoutEffect,
@@ -42,7 +40,9 @@ import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { BlockLabel } from "./BlockLabel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import { elementOf } from "./canvas/element-of";
+import { Marquee } from "./canvas/Marquee";
 import { SelectionBox } from "./canvas/SelectionBox";
+import { StagePage } from "./canvas/StagePage";
 import { useAltHeld } from "./canvas/useAltHeld";
 import { useBlockMarks } from "./canvas/useBlockMarks";
 import { useGestures } from "./canvas/useGestures";
@@ -50,7 +50,6 @@ import { usePointer } from "./canvas/usePointer";
 import { useStageSize } from "./canvas/useStageSize";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
-import { EmptyPage } from "./EmptyPage";
 import { EndPanel } from "./EndPanel";
 import { isEditableTarget } from "./editable";
 import type { FontDef } from "./fonts";
@@ -66,7 +65,7 @@ import { KEY_HINTS, matchKey } from "./keymap";
 import { isNudgeKey } from "./nudge";
 import { PageEdge } from "./PageEdge";
 import { pageWidthVariables } from "./page-width";
-import { countCommit, useRenders } from "./perf";
+import { useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { Rail } from "./Rail";
 import { StartPanel } from "./StartPanel";
@@ -93,7 +92,7 @@ import type { HostTheme } from "./ThemesPanel";
 import { Toolbar } from "./Toolbar";
 import { stepSelection } from "./tab-order";
 import type { UploadImage } from "./upload-image";
-import { fitZoom, stageWidth } from "./zoom";
+import { fitZoom } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -528,7 +527,7 @@ function EditorBody({
     if (!pending || !block || block.dataset.miditoId !== selectedId) return;
     pendingDrag.current = null;
     if (!pending.up) dragControls.current?.dragStart(pending.press);
-  }, [block, selectedId, pendingDrag.current, pendingDrag, dragControls.current?.dragStart]);
+  }, [block, selectedId, pendingDrag, dragControls]);
 
   /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
   const menuItems = (): ContextMenuItem[] => [
@@ -931,70 +930,15 @@ function EditorBody({
             onPointerLeave={() => selecting.setHover(null)}
             onDoubleClick={enter}
           >
-            <div
-              className={`${styles.zoomOuter} ${styles.stageBox}`}
-              style={
-                zoom === 1
-                  ? undefined
-                  : {
-                      inlineSize: stageWidth(stageBox.room, stageBox.page, zoom) * zoom,
-                      blockSize: stageBox.height * zoom,
-                      marginInline: "auto",
-                    }
-              }
-            >
-              <div
-                ref={stage}
-                className={styles.zoomOuter}
-                style={
-                  zoom === 1
-                    ? undefined
-                    : ({
-                        inlineSize: stageWidth(stageBox.room, stageBox.page, zoom),
-                        // Its own height, not the scaled one the outer box has, or each measure would grow it.
-                        flex: "none",
-                        transform: `scale(${zoom})`,
-                        transformOrigin: "0 0",
-                        "--_zoom-page": `${stageBox.page}px`,
-                      } as CSSProperties)
-                }
-              >
-                <Profiler id="canvas" onRender={() => countCommit("canvas")}>
-                  <Render
-                    data={shown}
-                    device={frame}
-                    links="inert"
-                    renderers={config?.renderers}
-                    className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
-                  />
-                </Profiler>
-              </div>
-              {data.root.children.length === 0 && !editing && (
-                <EmptyPage
-                  disabled={onPhone}
-                  onAdd={() => addBlockOf("Container")}
-                  onOpenBlocks={() => {
-                    viewing.showTool("blocks");
-                  }}
-                />
-              )}
-            </div>
-            {marquee && (
-              <div
-                aria-hidden="true"
-                style={{
-                  position: "fixed",
-                  left: marquee.left,
-                  top: marquee.top,
-                  width: marquee.right - marquee.left,
-                  height: marquee.bottom - marquee.top,
-                  border: "1px solid var(--_focus)",
-                  background: "color-mix(in srgb, var(--_focus) 15%, transparent)",
-                  pointerEvents: "none",
-                  zIndex: 10,
-                }}
-              />
-            )}
+            <StagePage
+              stage={stage}
+              stageBox={stageBox}
+              shown={shown}
+              renderers={config?.renderers}
+              empty={data.root.children.length === 0 && !editing}
+              onAddFirst={() => addBlockOf("Container")}
+            />
+            {marquee && <Marquee box={marquee} />}
             {editing && editingElement && editingNode && (
               <InlineEdit
                 element={editingElement}
