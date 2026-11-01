@@ -239,6 +239,17 @@ export const en = {
   "a11y.deleted": "Block deleted",
   "menu.forward": "Bring forward",
   "menu.backward": "Send backward",
+  "upload.notImage": "Choose a picture file.",
+  "upload.failed": "The upload failed",
+  "upload.failedWhy": "The upload failed: {why}",
+  "upload.badAddress": "The upload gave an address that cannot be used.",
+  "upload.unreadable": "could not read the file",
+  "upload.notPicture": "the file is not a picture the browser can open",
+  "upload.cannotShrink": "the browser cannot shrink pictures",
+  "upload.tooBig": "the picture is too big to keep inside the page",
+  "upload.serverStatus": "the server answered {status}",
+  "upload.notJson": "the server did not answer with JSON",
+  "upload.noAddress": 'the answer has no "{field}" address',
 } as const;
 
 /** The name of one thing the editor says. */

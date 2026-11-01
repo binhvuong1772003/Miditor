@@ -2,7 +2,7 @@ import { isImageUrl, MAX_DESCRIPTION, MAX_TITLE, type PageMeta } from "@midito-k
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
-import { type UploadImage, uploadPicture } from "./upload-image";
+import { type UploadImage, uploadMessage, uploadPicture } from "./upload-image";
 
 export interface PageInfoFieldsProps {
   meta: PageMeta | undefined;
@@ -79,7 +79,7 @@ function SharePicture({
     if (!file) return;
     setState({ busy: true, error: null });
     const result = await uploadPicture(file, uploadImage);
-    setState({ busy: false, error: result.ok ? null : result.error });
+    setState({ busy: false, error: result.ok ? null : uploadMessage(t, result) });
     if (result.ok) onCommit(result.url);
   };
   return (

@@ -1,10 +1,26 @@
 import { isImageUrl } from "@midito-kitchen/core";
+import type { MessageKey } from "./i18n/en";
+import { TranslatableError } from "./i18n/translatable-error";
+import type { Params, T } from "./i18n/translate";
 
 /** What the host's upload function does with a file: a picture address, or a promise of one. */
 export type UploadImage = (file: File) => Promise<string>;
 
-/** The address of an uploaded picture, or a message for the person to read. */
-export type UploadResult = { ok: true; url: string } | { ok: false; error: string };
+/**
+ * The address of an uploaded picture, or why there is none. `failed` carries `reason`, a sentence of
+ * the editor's own helpers (`embedImage`, `postImage`) that can be said in any language, or `detail`,
+ * the text of an error of the host's own function, which is shown as it is.
+ */
+export type UploadResult =
+  | { ok: true; url: string }
+  | { ok: false; error: "not-image" }
+  | { ok: false; error: "bad-address" }
+  | {
+      ok: false;
+      error: "failed";
+      detail?: string;
+      reason?: { key: MessageKey; params: Params | undefined };
+    };
 
 /**
  * Hand a chosen file to the host's upload function and check what comes back. Only a picture is
@@ -12,17 +28,26 @@ export type UploadResult = { ok: true; url: string } | { ok: false; error: strin
  * that answers with anything else is told apart from one that failed, but neither is stored.
  */
 export async function uploadPicture(file: File, upload: UploadImage): Promise<UploadResult> {
-  if (!file.type.startsWith("image/")) return { ok: false, error: "Choose a picture file." };
+  if (!file.type.startsWith("image/")) return { ok: false, error: "not-image" };
   let url: unknown;
   try {
     url = await upload(file);
   } catch (error) {
-    const reason = error instanceof Error && error.message ? `: ${error.message}` : "";
-    return { ok: false, error: `The upload failed${reason}` };
+    if (error instanceof TranslatableError) {
+      return { ok: false, error: "failed", reason: { key: error.key, params: error.params } };
+    }
+    const detail = error instanceof Error && error.message ? error.message : undefined;
+    return { ok: false, error: "failed", ...(detail ? { detail } : {}) };
   }
-  return isImageUrl(url)
-    ? { ok: true, url }
-    : { ok: false, error: "The upload gave an address that cannot be used." };
+  return isImageUrl(url) ? { ok: true, url } : { ok: false, error: "bad-address" };
+}
+
+/** What to say to a person about a failed upload, in the language of the editor. */
+export function uploadMessage(t: T, failure: Exclude<UploadResult, { ok: true }>): string {
+  if (failure.error === "not-image") return t("upload.notImage");
+  if (failure.error === "bad-address") return t("upload.badAddress");
+  const why = failure.reason ? t(failure.reason.key, failure.reason.params) : failure.detail;
+  return why ? t("upload.failedWhy", { why }) : t("upload.failed");
 }
 
 /** The widest a picture is placed when it is added; a smaller one keeps its own width. */

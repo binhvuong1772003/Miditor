@@ -120,7 +120,13 @@ import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
-import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
+import {
+  fitPicture,
+  pictureSize,
+  type UploadImage,
+  uploadMessage,
+  uploadPicture,
+} from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
 
 export interface EditorProps {
@@ -1440,7 +1446,7 @@ export function Editor({
     setAdding({ busy: true, error: null });
     const result = await uploadPicture(file, upload);
     if (!result.ok) {
-      setAdding({ busy: false, error: result.error });
+      setAdding({ busy: false, error: uploadMessage(t, result) });
       return;
     }
     const natural = await pictureSize(result.url);

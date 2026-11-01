@@ -13,7 +13,7 @@ import { type ChangeEvent, type KeyboardEvent, useId, useRef, useState } from "r
 import { useT } from "./i18n/context";
 import type { MessageKey } from "./i18n/en";
 import styles from "./PropertiesPanel.module.css";
-import { type UploadImage, uploadPicture } from "./upload-image";
+import { type UploadImage, uploadMessage, uploadPicture } from "./upload-image";
 
 /** One change to the background picture of a block, made by a field below. `undefined` removes it. */
 export type BackgroundPatch =
@@ -52,7 +52,7 @@ export function BackgroundFields({ styles: look, uploadImage, onChange }: Backgr
     if (!file || !uploadImage) return;
     setState({ busy: true, error: null });
     const result = await uploadPicture(file, uploadImage);
-    setState({ busy: false, error: result.ok ? null : result.error });
+    setState({ busy: false, error: result.ok ? null : uploadMessage(t, result) });
     if (result.ok) onChange({ key: "backgroundImage", value: result.url });
   };
 

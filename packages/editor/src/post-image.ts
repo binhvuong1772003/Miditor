@@ -1,3 +1,4 @@
+import { TranslatableError } from "./i18n/translatable-error";
 import type { UploadImage } from "./upload-image";
 
 export interface PostImageOptions {
@@ -41,15 +42,17 @@ export function postImage(url: string, options: PostImageOptions = {}): UploadIm
       ...(headers ? { headers } : {}),
       ...(credentials ? { credentials } : {}),
     });
-    if (!response.ok) throw new Error(`the server answered ${response.status}`);
+    if (!response.ok)
+      throw new TranslatableError("upload.serverStatus", { status: response.status });
     let json: unknown;
     try {
       json = await response.json();
     } catch {
-      throw new Error("the server did not answer with JSON");
+      throw new TranslatableError("upload.notJson");
     }
     const address = valueAt(json, answer);
-    if (typeof address !== "string") throw new Error(`the answer has no "${answer}" address`);
+    if (typeof address !== "string")
+      throw new TranslatableError("upload.noAddress", { field: answer });
     return address;
   };
 }

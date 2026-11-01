@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { fitPicture, MAX_ADDED_WIDTH, uploadPicture } from "./upload-image";
+import { TranslatableError } from "./i18n/translatable-error";
+import { createT } from "./i18n/translate";
+import { fitPicture, MAX_ADDED_WIDTH, uploadMessage, uploadPicture } from "./upload-image";
 
 const file = (type: string) => ({ type }) as File;
 
@@ -20,7 +22,7 @@ describe("uploadPicture", () => {
     for (const type of ["", "application/pdf", "text/image/png", "video/mp4"]) {
       expect(await uploadPicture(file(type), upload), type).toEqual({
         ok: false,
-        error: "Choose a picture file.",
+        error: "not-image",
       });
     }
     expect(upload).not.toHaveBeenCalled();
@@ -32,16 +34,35 @@ describe("uploadPicture", () => {
     };
     expect(await uploadPicture(file("image/png"), fail(new Error("quota")))).toEqual({
       ok: false,
-      error: "The upload failed: quota",
+      error: "failed",
+      detail: "quota",
     });
     expect(await uploadPicture(file("image/png"), fail(new Error("")))).toEqual({
       ok: false,
-      error: "The upload failed",
+      error: "failed",
     });
     expect(await uploadPicture(file("image/png"), fail("nope"))).toEqual({
       ok: false,
-      error: "The upload failed",
+      error: "failed",
     });
+  });
+
+  it("keeps the reason of the editor's own helpers, to say it in the language of the editor", async () => {
+    const result = await uploadPicture(file("image/png"), async () => {
+      throw new TranslatableError("upload.serverStatus", { status: 413 });
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: "failed",
+      reason: { key: "upload.serverStatus", params: { status: 413 } },
+    });
+    if (result.ok) throw new Error("expected a failure");
+    expect(uploadMessage(createT(undefined), result)).toBe(
+      "The upload failed: the server answered 413",
+    );
+    expect(uploadMessage(createT({ messages: { "upload.failedWhy": "Lỗi: {why}" } }), result)).toBe(
+      "Lỗi: the server answered 413",
+    );
   });
 
   it("refuses an address that render would not draw", async () => {
@@ -49,7 +70,7 @@ describe("uploadPicture", () => {
       const result = await uploadPicture(file("image/png"), async () => bad as string);
       expect(result, String(bad)).toEqual({
         ok: false,
-        error: "The upload gave an address that cannot be used.",
+        error: "bad-address",
       });
     }
   });

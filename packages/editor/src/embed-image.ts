@@ -1,3 +1,4 @@
+import { TranslatableError } from "./i18n/translatable-error";
 import type { UploadImage } from "./upload-image";
 
 export interface EmbedImageOptions {
@@ -57,7 +58,7 @@ export function encodeWithin(
 const readAsDataUrl = (file: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("could not read the file"));
+    reader.onerror = () => reject(new TranslatableError("upload.unreadable"));
     reader.onload = () => resolve(String(reader.result));
     reader.readAsDataURL(file);
   });
@@ -65,7 +66,7 @@ const readAsDataUrl = (file: Blob) =>
 const load = (address: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    image.onerror = () => reject(new Error("the file is not a picture the browser can open"));
+    image.onerror = () => reject(new TranslatableError("upload.notPicture"));
     image.onload = () => resolve(image);
     image.src = address;
   });
@@ -94,7 +95,7 @@ export function embedImage(options: EmbedImageOptions = {}): UploadImage {
     }
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("the browser cannot shrink pictures");
+    if (!context) throw new TranslatableError("upload.cannotShrink");
     const encode = (scale: number, level: number) => {
       canvas.width = Math.max(1, Math.round(size.width * scale));
       canvas.height = Math.max(1, Math.round(size.height * scale));
@@ -109,7 +110,7 @@ export function embedImage(options: EmbedImageOptions = {}): UploadImage {
       return canvas.toDataURL("image/jpeg", level);
     };
     const shrunk = encodeWithin(encode, maxLength, quality);
-    if (shrunk === undefined) throw new Error("the picture is too big to keep inside the page");
+    if (shrunk === undefined) throw new TranslatableError("upload.tooBig");
     return shrunk;
   };
 }
