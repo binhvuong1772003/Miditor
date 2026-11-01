@@ -93,6 +93,10 @@ function Playground({ embedded = false }: { embedded?: boolean }) {
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         // Inside a host that has its own navbar the editor shows no mark of its own.
         {...(embedded ? { logo: null } : {})}
+        // `?dark` shows the dark scheme of the editor.
+        {...(new URLSearchParams(window.location.search).has("dark")
+          ? { appearance: { scheme: "dark" as const } }
+          : {})}
         headerActions={
           <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
             Responsive preview
