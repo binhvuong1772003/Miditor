@@ -18,6 +18,7 @@ export type { Appearance, AppearanceColor } from "./appearance";
 export { Editor, type EditorProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
+export { ICON_NAMES, type IconComponent, type IconName } from "./icons";
 export type { LibraryImage } from "./images";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";

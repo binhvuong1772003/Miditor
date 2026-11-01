@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ComponentType, createContext, type ReactNode, useContext } from "react";
 
 /**
  * The icons of the editor, drawn on a 16 px grid with a 1.4 stroke and round caps, as in the UI kit.
@@ -99,7 +99,40 @@ export type IconName = keyof typeof ICONS;
 /** Whether the editor has an icon of this name, for a kind of the host that names one. */
 export const isIconName = (name: string): name is IconName => Object.hasOwn(ICONS, name);
 
+/** The names of the icons the editor draws, so a host knows which ones it can replace. */
+export const ICON_NAMES = Object.keys(ICONS) as readonly IconName[];
+
+/** An icon of the host, drawn in place of one of the editor's: a component that takes the size in px. */
+export type IconComponent = ComponentType<{ size: number }>;
+
+/** The icons a host replaces, by the name of the icon. The ones it leaves out stay as they are. */
+export type IconSet = Partial<Record<IconName, IconComponent>>;
+
+/**
+ * The replacements that can be used: only names the editor has, and only a component (a function or
+ * a memo/forwardRef object). Anything else is left out, so a mistake of the host shows the original
+ * icon instead of a hole.
+ */
+export function usableIcons(icons: Readonly<Record<string, unknown>> | undefined): IconSet {
+  const out: Record<string, IconComponent> = {};
+  for (const [name, icon] of Object.entries(icons ?? {})) {
+    const component = typeof icon === "function" || (typeof icon === "object" && icon !== null);
+    if (isIconName(name) && component) out[name] = icon as IconComponent;
+  }
+  return out;
+}
+
+export const IconsContext = createContext<IconSet>({});
+
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
+  const Custom = useContext(IconsContext)[name];
+  if (Custom) {
+    return (
+      <span className="midito-icon" aria-hidden="true" style={{ display: "inline-flex" }}>
+        <Custom size={size} />
+      </span>
+    );
+  }
   return (
     <svg
       width={size}
@@ -108,6 +141,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="1.4"
+      style={{ strokeWidth: "var(--midito-icon-stroke, 1.4)" }}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
