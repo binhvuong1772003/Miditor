@@ -17,6 +17,7 @@ export type { ActionDef, ActionParam } from "./actions";
 export { Editor, type EditorProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
+export type { LibraryImage } from "./images";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
 export type { HostTheme } from "./ThemesPanel";

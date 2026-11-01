@@ -104,6 +104,7 @@ import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./hi
 import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
+import { type LibraryImage, usableImages } from "./images";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
@@ -192,6 +193,14 @@ export interface EditorProps {
      * fonts every browser has are offered.
      */
     fonts?: readonly FontDef[];
+    /**
+     * The pictures of the host's library, shown in the Images panel to add to the page: an `url` each,
+     * and when known a `name`, a smaller `thumb`, the natural `width` and `height`, a `folder` and
+     * `tags`. The editor lays them out in their own shapes, can search them by name, folder and tag
+     * and groups them by folder. Passing a picture uploaded just now is the host's job: add it to the
+     * list in `uploadImage` and pass the list again.
+     */
+    images?: readonly LibraryImage[];
     /**
      * The themes of the host, kept by the host: an id, a name, named colours and a font each, for
      * example `{ id: "sea", name: "Sea", colors: { primary: "#0e7490", paper: "#ecfeff" }, font: "Lora, serif" }`.
@@ -1392,6 +1401,19 @@ export function Editor({
     setAdding({ busy: false, error: null });
   };
 
+  /** Add a picture of the host's library as an `Image` block, in its own proportions. */
+  const addLibraryImage = async (image: LibraryImage) => {
+    const natural =
+      image.width && image.height
+        ? { w: image.width, h: image.height }
+        : await pictureSize(image.url);
+    const size = natural && fitPicture(natural);
+    latestAdd.current("Image", {
+      props: { src: image.url, ...(image.name ? { alt: image.name } : {}) },
+      ...(size ? { size } : {}),
+    });
+  };
+
   /** Anchor one axis of the selected free block another way; it stays where it is on the page. */
   const changeAnchor = (axis: "x" | "y", anchor: AxisAnchor) => {
     const parent = block?.parentElement;
@@ -1788,6 +1810,7 @@ export function Editor({
 
   // The host's themes that can be used, from rows that may come straight from a database.
   const hostThemes = usableThemes(config?.themes);
+  const libraryImages = usableImages(config?.images);
   const keepTheme = config?.onThemeSave;
   const renameTheme = config?.onThemeRename;
   const deleteTheme = config?.onThemeDelete;
@@ -2113,6 +2136,8 @@ export function Editor({
             <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
             <ImagesPanel
               disabled={onPhone}
+              images={libraryImages}
+              onAdd={addLibraryImage}
               upload={
                 config?.uploadImage
                   ? {
