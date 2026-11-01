@@ -58,4 +58,14 @@ export function runMigrations(
  * told apart by `reason`. Never throws and never changes what it is given.
  */
 export const migratePage = (data: unknown): MigrateResult =>
-  runMigrations(data, MIGRATIONS, SCHEMA_VERSION);
+  runMigrations(withoutThemes(data), MIGRATIONS, SCHEMA_VERSION);
+
+/**
+ * A page saved while themes were kept in the page (`themes`) comes back without them: the host keeps
+ * themes now. Anything else is returned as it is.
+ */
+function withoutThemes(data: unknown): unknown {
+  if (!isRecord(data) || !("themes" in data)) return data;
+  const { themes: _old, ...rest } = data;
+  return rest;
+}

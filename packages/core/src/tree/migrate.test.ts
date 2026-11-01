@@ -14,6 +14,13 @@ describe("migratePage", () => {
     expect(result.ok && result.page).toBe(page);
   });
 
+  it("drops the themes an older page kept in itself, without changing what it was given", () => {
+    const old = { ...page, themes: [{ id: "sea", name: "Sea", colors: { primary: "#0e7490" } }] };
+    const result = migratePage(old);
+    expect(result).toEqual({ ok: true, page, from: SCHEMA_VERSION });
+    expect("themes" in old).toBe(true);
+  });
+
   it.each([undefined, null, 5, "page", [], true])("says %j is not a page", (value) => {
     expect(migratePage(value)).toEqual({ ok: false, reason: "not-a-page" });
   });
