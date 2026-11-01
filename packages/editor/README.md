@@ -88,6 +88,25 @@ it). Other fields: `radius`, `radiusCard`, `control` and `font`. A value that is
 be one CSS value is ignored. The page itself keeps its own colour (`paper`, white by default), so a
 dark editor still shows the page as a visitor will see it.
 
+### Icons
+
+`config.icons` replaces the editor's icons with your own, by name. Each is a component that takes the
+`size` in px, so an icon of a library goes in as it is:
+
+```tsx
+import { Undo2, Redo2, Image } from "lucide-react";
+import { ICON_NAMES, type IconName } from "@midito-kitchen/editor";
+
+<Editor config={{ icons: { undo: Undo2, redo: Redo2, img: Image } }} />;
+// ICON_NAMES lists every name that can be replaced
+```
+
+A name you leave out keeps the editor's icon, and so does a name the editor does not have or a value
+that is not a component. Icons are decoration (the editor hides them from a screen reader and the
+button keeps its own name), so yours need no label. The stroke of the editor's own icons can be set
+with `--midito-icon-stroke` (1.4 by default); your icons draw their own. The kinds of block you add
+name an icon from the same list.
+
 The same can be done in CSS, on an ancestor of the editor or on its root class `className`, with the
 variables below. Set only the ones you want to change:
 
@@ -108,6 +127,7 @@ variables below. Set only the ones you want to change:
 | `--midito-radius-card`  | `8px`                 | Cards                                            |
 | `--midito-control`      | `2.25rem`             | The height of a field or button                  |
 | `--midito-font`         | Inter, system-ui, ... | The font of the editor                           |
+| `--midito-icon-stroke`  | `1.4`                 | The line width of the editor's own icons         |
 | `--midito-paper`        | `#ffffff`             | The page itself (not changed by the dark scheme) |
 | `--midito-accent`       | the text colour       | The main button (Save)                           |
 | `--midito-on-accent`    | the canvas colour     | The text on the main button                      |
