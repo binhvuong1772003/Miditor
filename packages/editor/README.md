@@ -46,6 +46,51 @@ import { Render } from "@midito-kitchen/render";
 | `className`        | An extra class on the root element.                                                                   |
 | `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                      |
 
+
+## Inside your product
+
+The editor fills the box it is given (`block-size: 100%`), so put it in an element with a height. It
+has a header of its own (Undo and Redo, Desktop and Phone, zoom, Save), which a page editor needs,
+and three props make it sit in your product:
+
+| Prop            | What it does                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `logo`          | The mark at the left of the header. Without it, the editor's own "M". `null` for none, or your own element. |
+| `headerStart`   | Your content after the mark: a "Back to pages" link, the name of the page.                                  |
+| `headerActions` | Your content at the right end, before Save: a preview link, Publish.                                        |
+
+```tsx
+<Editor
+  logo={null}
+  headerStart={<a href="/pages">← Pages</a>}
+  headerActions={<button type="button">Publish</button>}
+/>;
+```
+
+The look is set by variables, on an ancestor of the editor or on its root class `className`. Set only
+the ones you want to change:
+
+| Variable                | Default               | What it is                       |
+| ----------------------- | --------------------- | -------------------------------- |
+| `--midito-chrome`       | `#ffffff`             | The header, rail and side panels |
+| `--midito-workspace`    | `#e4e4e7`             | The ground around the page       |
+| `--midito-canvas`       | `#ffffff`             | Fields and cards                 |
+| `--midito-soft`         | `#ececef`             | Hover and quiet fills            |
+| `--midito-border`       | `#a9a9b2`             | Dividers                         |
+| `--midito-border-input` | `#71717a`             | The edge of a field              |
+| `--midito-text`         | `#09090b`             | Text                             |
+| `--midito-muted`        | `#3f3f46`             | Quiet text                       |
+| `--midito-focus`        | `#1d4ed8`             | Focus rings and selection        |
+| `--midito-danger`       | `#b91c1c`             | Errors                           |
+| `--midito-scrollbar`    | `#71717a`             | Scrollbars                       |
+| `--midito-radius`       | `6px`                 | Fields and buttons               |
+| `--midito-radius-card`  | `8px`                 | Cards                            |
+| `--midito-control`      | `2.25rem`             | The height of a field or button  |
+| `--midito-font`         | Inter, system-ui, ... | The font of the editor           |
+
+The playground shows it: open `?host` to see the editor in a stand-in product with its own sidebar
+and navbar.
+
 ## Saving
 
 The editor never sends anything by itself. What leaves it is the **whole page as JSON**, and only
