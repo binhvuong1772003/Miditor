@@ -80,3 +80,44 @@ export async function openWords(page: Page, id: string): Promise<void> {
   await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
   await expect(page.getByRole("textbox", { name: "Edit the text of the block" })).toBeFocused();
 }
+
+type Json = { [key: string]: unknown };
+export type StoredNode = {
+  id: string;
+  props: Json;
+  position: Json & {
+    x?: { anchor: string; offset: number };
+    y?: { anchor: string; offset: number };
+  };
+  children: StoredNode[];
+  [key: string]: unknown;
+};
+export type StoredPage = { root: StoredNode; meta?: Json; theme?: Json };
+
+/** The page the playground keeps in the browser after every `onChange`, read once the delay has passed. */
+export async function storedPage(
+  page: Page,
+  until?: (stored: StoredPage) => boolean,
+): Promise<StoredPage> {
+  let found: StoredPage | undefined;
+  await expect
+    .poll(
+      async () => {
+        const text = await page.evaluate(() => localStorage.getItem("midito-playground-page"));
+        found = text ? (JSON.parse(text) as StoredPage) : undefined;
+        return found !== undefined && (until ? until(found) : true);
+      },
+      { timeout: 6000 },
+    )
+    .toBe(true);
+  return found as StoredPage;
+}
+
+export function nodeIn(node: StoredNode, id: string): StoredNode | undefined {
+  if (node.id === id) return node;
+  for (const child of node.children) {
+    const found = nodeIn(child, id);
+    if (found) return found;
+  }
+  return undefined;
+}
