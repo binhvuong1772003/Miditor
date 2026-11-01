@@ -22,6 +22,11 @@ export interface NodeStyles {
   background?: string;
   /** The border width in px, from 0 to `MAX_PIXEL_LENGTH`. Without it nothing is drawn. */
   borderWidth?: number;
+  /**
+   * How tall the page is, in px, on the root only: a whole number from `MIN_PAGE_HEIGHT` to
+   * `MAX_PAGE_HEIGHT`. Without it the page is as tall as the editor and the host make it.
+   */
+  minHeight?: number;
   /** The border colour, stored as `#rrggbb` or a theme colour. A border without one is drawn in the text colour. */
   borderColor?: string;
   /** The radius of all four corners in px, from 0 to `MAX_PIXEL_LENGTH`. */

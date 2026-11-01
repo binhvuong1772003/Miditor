@@ -7,6 +7,7 @@ import {
   isBackgroundSize,
   isFreeNode,
   isImageUrl,
+  isPageHeight,
   isPixelLength,
   type NodeStyles,
   resolveColor,
@@ -124,6 +125,10 @@ export function nodeStyle(
     ...(isBuiltIn(node.type) ? BY_TYPE[node.type] : { display: "block" }),
     ...(isRoot ? { ...pageText(theme), flexGrow: 1, minWidth: 0 } : {}),
     ...lookOf(node.styles, theme),
+    // The height of the page, when it was set: only the root has one, and it is a whole px in range.
+    ...(isRoot && isPageHeight(node.styles?.minHeight)
+      ? { minHeight: `${node.styles.minHeight}px` }
+      : {}),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it, on this screen.

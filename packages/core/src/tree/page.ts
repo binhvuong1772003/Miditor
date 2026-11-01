@@ -2,6 +2,7 @@ import { MAX_COORDINATE } from "../position/limits";
 import type { Axis, Size } from "../position/types";
 import { isBackgroundPosition, isBackgroundRepeat, isBackgroundSize } from "../styles/background";
 import { isImageUrl } from "../styles/image-url";
+import { isPageHeight } from "../styles/page-height";
 import { isPageMeta } from "../styles/page-meta";
 import { isPixelLength } from "../styles/pixel-length";
 import { isColorValue, isTheme } from "../styles/theme";
@@ -96,6 +97,7 @@ function isSize(value: unknown): value is Size {
 
 const STYLE_CHECKS: Record<string, (value: unknown) => boolean> = {
   background: isColorValue,
+  minHeight: isPageHeight,
   borderWidth: isPixelLength,
   borderColor: isColorValue,
   borderRadius: isPixelLength,

@@ -55,6 +55,13 @@ export { isImageUrl } from "./styles/image-url";
 export { isLinkUrl } from "./styles/link-url";
 export { minSize } from "./styles/min-size";
 export {
+  clampPageHeight,
+  DEFAULT_PAGE_HEIGHT,
+  isPageHeight,
+  MAX_PAGE_HEIGHT,
+  MIN_PAGE_HEIGHT,
+} from "./styles/page-height";
+export {
   isPageMeta,
   MAX_DESCRIPTION,
   MAX_TITLE,
