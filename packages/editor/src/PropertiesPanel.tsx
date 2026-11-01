@@ -20,6 +20,7 @@ import { AlignSection } from "./AlignSection";
 import type { ActionDef } from "./actions";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
+import type { FontDef } from "./fonts";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
@@ -72,6 +73,8 @@ export interface PropertiesPanelProps {
   onDistribute?: ((axis: "x" | "y") => void) | undefined;
   /** What a button can do, for its Action field. */
   actions?: readonly ActionDef[] | undefined;
+  /** The fonts the host lets people choose, for a Font field. */
+  fonts?: readonly FontDef[] | undefined;
   /** Drop the preview and show what is stored. */
   onDiscard: () => void;
   /** Give the selected block back its automatic phone placement, dropping the one set by hand. */
@@ -106,6 +109,7 @@ export function PropertiesPanel({
   theme,
   uploadImage,
   actions,
+  fonts,
   selectedCount = 1,
   onBackToPage,
   onAlign,
@@ -233,6 +237,7 @@ export function PropertiesPanel({
                 props={propsFor(node, device)}
                 theme={theme}
                 actions={actions}
+                fonts={fonts}
                 onChange={(name, value) => onCommit({ key: "prop", name, value })}
               />
             )}

@@ -15,6 +15,7 @@ export type { Renderer, RendererContext } from "@midito-kitchen/render";
 export type { ActionDef, ActionParam } from "./actions";
 export { Editor, type EditorProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
+export type { FontDef } from "./fonts";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
 export type { UploadImage } from "./upload-image";

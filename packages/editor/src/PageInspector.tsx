@@ -1,6 +1,8 @@
 import type { PageMeta, Theme, TreeNode } from "@midito-kitchen/core";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
+import { FontSelect } from "./FontSelect";
+import type { FontDef } from "./fonts";
 import { PageHeightField } from "./PageHeightField";
 import { PageInfoFields, type PageInfoFieldsProps } from "./PageInfoFields";
 import fieldStyles from "./PropertiesPanel.module.css";
@@ -23,10 +25,11 @@ export interface PageInspectorProps {
   onPreview: (patch: { key: "background"; value: string | undefined }) => void;
   /** The background of the page changed: its colour or its picture. */
   onCommit: (patch: BackgroundPatch | { key: "background"; value: string | undefined }) => void;
-  themeActions: Pick<
-    ThemePanelProps,
-    "onSetColor" | "onRenameColor" | "onDeleteColor" | "onSetFont"
-  >;
+  themeActions: Pick<ThemePanelProps, "onSetColor" | "onRenameColor" | "onDeleteColor">;
+  /** The fonts the host lets people choose. */
+  fonts: readonly FontDef[];
+  /** The font of the whole page changed, or went back to the default (`undefined`). */
+  onPageFont: (stack: string | undefined) => void;
 }
 
 /**
@@ -45,6 +48,8 @@ export function PageInspector({
   onPreview,
   onCommit,
   themeActions,
+  fonts,
+  onPageFont,
 }: PageInspectorProps) {
   return (
     <div className={fieldStyles.content}>
@@ -82,6 +87,18 @@ export function PageInspector({
           />
         </div>
         <BackgroundFields styles={page.styles} uploadImage={uploadImage} onChange={onCommit} />
+      </Section>
+      <Section
+        title="Font"
+        help="The font of all the text on the page. A text can be set in another font of its own."
+      >
+        <FontSelect
+          label="Font"
+          value={theme?.fonts?.body ?? ""}
+          fonts={fonts}
+          emptyLabel="Default"
+          onChange={(stack) => onPageFont(stack === "" ? undefined : stack)}
+        />
       </Section>
       <ThemePanel theme={theme} bare {...themeActions} />
     </div>

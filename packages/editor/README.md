@@ -277,9 +277,33 @@ declare become the controls in the Properties panel. Draw the kind with the same
 
 ## Theme
 
-A page can carry a theme: named colours and a body and a heading font. A colour set to a theme
+A page can carry a theme: named colours and a font for the whole page. A colour set to a theme
 colour is stored as `@name`, so changing the theme colour changes every place that uses it. The
-theme is edited in the Theme tab.
+theme is edited in the page settings on the right (nothing selected).
+
+## Fonts
+
+You decide which fonts people can use. Give the editor a list:
+
+```tsx
+<Editor
+  data={page}
+  config={{
+    fonts: [
+      { name: "Inter", stack: "Inter, system-ui, sans-serif", group: "Sans serif" },
+      { name: "Lora", stack: "Lora, Georgia, serif", group: "Serif" },
+    ],
+  }}
+/>;
+```
+
+People pick from this list, nothing is typed: for the whole page (Font in the page settings) and for
+each text and button (Font in its properties, with "Page font" as the default). The font stack is
+stored in the page, so a published page still shows the font if you later change the list. A stack
+uses letters, digits, spaces, commas, hyphens and single quotes only (`'Playfair Display'`). You
+load the fonts yourself (Google Fonts, `@font-face`); the editor only names them. Without a list the
+fonts every browser has are offered. Pages that used the old `body` and `heading` roles still show as
+they did.
 
 `config.theme` is the theme of a **new** page: it is used only when the editor opens without `data`.
 A page you pass in keeps the theme it has, or none.

@@ -1,5 +1,5 @@
-import { isFontStack, isTokenName, resolveColor, type Theme } from "@midito-kitchen/core";
-import { type KeyboardEvent, useId, useState } from "react";
+import { isTokenName, resolveColor, type Theme } from "@midito-kitchen/core";
+import { type KeyboardEvent, useState } from "react";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -12,19 +12,16 @@ export interface ThemePanelProps {
   onRenameColor: (from: string, to: string) => void;
   /** A colour of the theme is gone; the blocks that used it keep the colour they showed. */
   onDeleteColor: (name: string) => void;
-  /** The body or heading font stack changes, or is taken away with `undefined`. */
-  onSetFont: (which: "body" | "heading", stack: string | undefined) => void;
   /** Only the sections, with no heading of their own, to sit inside another panel. */
   bare?: boolean;
 }
 
-/** The colours and fonts shared by the whole page, shown when no block is selected. */
+/** The colours shared by the whole page, shown with the rest of its settings when no block is selected. */
 export function ThemePanel({
   theme,
   onSetColor,
   onRenameColor,
   onDeleteColor,
-  onSetFont,
   bare = false,
 }: ThemePanelProps) {
   const colors = Object.entries(theme?.colors ?? {});
@@ -57,20 +54,6 @@ export function ThemePanel({
           />
         ))}
         {colors.length === 0 && <p className={styles.hint}>No colours yet. Add one with +.</p>}
-      </Section>
-      <Section title="Fonts">
-        {(["body", "heading"] as const).map((which) => (
-          <FontField
-            key={`${which}:${theme?.fonts?.[which] ?? ""}`}
-            label={which === "body" ? "Body" : "Heading"}
-            stored={theme?.fonts?.[which]}
-            onChange={(stack) => onSetFont(which, stack)}
-          />
-        ))}
-        <p className={styles.hint}>
-          A font has to be loaded by the page that holds the editor (Google Fonts, @font-face): this
-          only names it. Changes here apply to the whole page.
-        </p>
       </Section>
     </div>
   );
@@ -150,67 +133,5 @@ function AddColor({ taken, onAdd }: { taken: readonly string[]; onAdd: (name: st
     >
       <Icon name="plus" />
     </button>
-  );
-}
-
-function FontField({
-  label,
-  stored,
-  onChange,
-}: {
-  label: string;
-  stored: string | undefined;
-  onChange: (stack: string | undefined) => void;
-}) {
-  const errorId = useId();
-  const [text, setText] = useState(stored ?? "");
-  const [invalid, setInvalid] = useState(false);
-  const apply = () => {
-    const next = text.trim();
-    if (next === (stored ?? "")) {
-      setInvalid(false);
-      return;
-    }
-    if (next === "") {
-      setInvalid(false);
-      onChange(undefined);
-    } else if (isFontStack(next)) {
-      setInvalid(false);
-      onChange(next);
-    } else {
-      setInvalid(true);
-    }
-  };
-  const keys = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") apply();
-    if (event.key === "Escape") {
-      setText(stored ?? "");
-      setInvalid(false);
-    }
-  };
-  return (
-    <div className={styles.stack}>
-      <label className={styles.box} aria-invalid={invalid}>
-        <span className={styles.tag}>{label}</span>
-        <input
-          type="text"
-          className={styles.mono}
-          value={text}
-          placeholder="Inter, sans-serif"
-          spellCheck={false}
-          autoComplete="off"
-          aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : undefined}
-          onChange={(event) => setText(event.target.value)}
-          onBlur={apply}
-          onKeyDown={keys}
-        />
-      </label>
-      {invalid && (
-        <p id={errorId} className={styles.error} role="alert">
-          Letters, digits, spaces, commas, ' and - only.
-        </p>
-      )}
-    </div>
   );
 }

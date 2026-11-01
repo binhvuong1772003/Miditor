@@ -1,6 +1,7 @@
 import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitchen/editor";
 import { useState } from "react";
 import { actions } from "./actions";
+import { fonts } from "./fonts";
 import { components, renderers } from "./kinds";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
@@ -41,7 +42,7 @@ function Playground() {
     <>
       <Editor
         data={page}
-        config={{ components, renderers, uploadImage, actions }}
+        config={{ components, renderers, uploadImage, actions, fonts }}
         // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
         onChangeDebounce={{ wait: 800, maxWait: 4000 }}
         status={status}

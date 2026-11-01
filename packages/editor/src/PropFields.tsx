@@ -11,6 +11,8 @@ import {
 import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "react";
 import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
+import { FontSelect } from "./FontSelect";
+import { type FontDef, listedFont } from "./fonts";
 import { Icon, type IconName } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -25,6 +27,8 @@ export interface PropFieldsProps {
   theme?: Theme | undefined;
   /** What a button can do. Without any, the fields for an action are not shown. */
   actions?: readonly ActionDef[] | undefined;
+  /** The fonts the host lets people choose, for a font field. */
+  fonts?: readonly FontDef[] | undefined;
 }
 
 /** The heading of the fields that name no section. */
@@ -52,6 +56,7 @@ const wide = (name: string, field: Field) =>
   field.type === "link" ||
   field.type === "color" ||
   field.type === "action" ||
+  field.type === "font" ||
   field.type === "payload" ||
   (field.type === "select" && field.options.length === 3 && !isAlign(name, field));
 
@@ -60,7 +65,7 @@ const wide = (name: string, field: Field) =>
  * order it first appears. Within a section small fields sit two to a row and wide ones take a row.
  * A picture has no field here: it is added and changed on the canvas.
  */
-export function PropFields({ def, props, onChange, theme, actions }: PropFieldsProps) {
+export function PropFields({ def, props, onChange, theme, actions, fonts }: PropFieldsProps) {
   const sections = new Map<string, { name: string; field: Field }[]>();
   for (const [name, field] of Object.entries(def.fields)) {
     if (field.type === "image") continue;
@@ -102,6 +107,7 @@ export function PropFields({ def, props, onChange, theme, actions }: PropFieldsP
                 onChange={onChange}
                 theme={theme}
                 actions={actions}
+                fonts={fonts}
                 action={storedOf(def, props, "action")}
               />
             </div>
@@ -198,11 +204,22 @@ interface PropFieldProps {
   onChange: PropFieldsProps["onChange"];
   theme: Theme | undefined;
   actions: readonly ActionDef[] | undefined;
+  fonts: readonly FontDef[] | undefined;
   /** The action chosen on the same block, which decides what the payload asks for. */
   action: JsonValue | undefined;
 }
 
-function PropField({ def, name, field, stored, onChange, theme, actions, action }: PropFieldProps) {
+function PropField({
+  def,
+  name,
+  field,
+  stored,
+  onChange,
+  theme,
+  actions,
+  fonts,
+  action,
+}: PropFieldProps) {
   const shown = stored === undefined ? "" : String(stored);
   const [text, setText] = useState(shown);
   /** Stores `value` when the kind accepts it; otherwise the field goes back to what is stored. */
@@ -238,6 +255,18 @@ function PropField({ def, name, field, stored, onChange, theme, actions, action 
       >
         {field.label}
       </button>
+    );
+  }
+
+  if (field.type === "font") {
+    return (
+      <FontSelect
+        label={field.label}
+        value={listedFont(stored)}
+        fonts={fonts ?? []}
+        emptyLabel="Page font"
+        onChange={(stack) => apply(stack)}
+      />
     );
   }
 

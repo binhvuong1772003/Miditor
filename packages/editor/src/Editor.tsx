@@ -93,6 +93,7 @@ import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
 import { isEditableTarget } from "./editable";
+import { type FontDef, usableFonts } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
 import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
@@ -179,6 +180,13 @@ export interface EditorProps {
      * stores the name and the values, and `<Render onAction>` hands them to the host.
      */
     actions?: readonly ActionDef[];
+    /**
+     * The fonts people can choose from, for the page and for each text and button. Each is a name
+     * and a font stack (`{ name: "Inter", stack: "Inter, system-ui, sans-serif" }`). Nothing else can
+     * be typed. The host loads the fonts itself (Google Fonts, `@font-face`); without a list, the
+     * fonts every browser has are offered.
+     */
+    fonts?: readonly FontDef[];
     /** The theme of a new page, for a host that has its own colours and fonts. */
     theme?: Theme;
   };
@@ -1753,6 +1761,9 @@ export function Editor({
     };
   })();
 
+  // The fonts people can choose: the host's, or the ones every browser has.
+  const fonts = usableFonts(config?.fonts);
+
   // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
   const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
   const pageHeight = (() => {
@@ -2303,11 +2314,12 @@ export function Editor({
             uploadImage={config?.uploadImage}
             onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
             onCommit={(patch) => commitPatch(data.root.id, patch)}
+            fonts={fonts}
+            onPageFont={(stack) => setThemeFont("body", stack)}
             themeActions={{
               onSetColor: setThemeColor,
               onRenameColor: renameThemeColor,
               onDeleteColor: deleteThemeColor,
-              onSetFont: setThemeFont,
             }}
           />
         )}
@@ -2327,6 +2339,7 @@ export function Editor({
             onAlign={alignSelected}
             onDistribute={distributeSelected}
             actions={config?.actions}
+            fonts={fonts}
             def={selectedDef}
             onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
             onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
