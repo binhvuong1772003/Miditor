@@ -21,6 +21,8 @@ import type { ActionDef } from "./actions";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import type { FontDef } from "./fonts";
+import { useT } from "./i18n/context";
+import type { MessageKey } from "./i18n/en";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
@@ -115,6 +117,7 @@ export function PropertiesPanel({
   onAlign,
   onDistribute,
 }: PropertiesPanelProps) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("design");
   // Whether the background is a colour or a picture; it starts as what the block has.
   const [fill, setFill] = useState<"color" | "image" | null>(null);
@@ -125,8 +128,8 @@ export function PropertiesPanel({
       <div className={styles.content}>
         <div className={styles.heading}>
           <BackToPage onClick={onBackToPage} />
-          <h2 className={styles.title}>{selectedCount} blocks selected</h2>
-          <p className={styles.meta}>Press one block to edit it on its own.</p>
+          <h2 className={styles.title}>{t("props.manySelected", { n: selectedCount })}</h2>
+          <p className={styles.meta}>{t("props.manyHint")}</p>
         </div>
         <AlignSection selectedCount={selectedCount} onAlign={onAlign} onDistribute={onDistribute} />
       </div>
@@ -136,10 +139,8 @@ export function PropertiesPanel({
     return (
       <div className={styles.empty}>
         <Icon name="pointer" size={20} />
-        <h2 className={styles.emptyTitle}>Nothing selected</h2>
-        <p className={styles.emptyText}>
-          Click a block on the page to edit its words, colours and position.
-        </p>
+        <h2 className={styles.emptyTitle}>{t("props.emptyTitle")}</h2>
+        <p className={styles.emptyText}>{t("props.emptyText")}</p>
       </div>
     );
   }
@@ -174,12 +175,12 @@ export function PropertiesPanel({
       <div className={styles.heading}>
         <BackToPage onClick={onBackToPage} />
         <h2 className={styles.title}>{def?.label ?? node.type}</h2>
-        {!def && <p className={styles.meta}>Unknown kind of block</p>}
+        {!def && <p className={styles.meta}>{t("props.unknownKind")}</p>}
       </div>
       <div className={styles.tabsBar}>
         <div
           role="tablist"
-          aria-label="Properties"
+          aria-label={t("panel.properties")}
           className={styles.tabs}
           onKeyDown={(event) => {
             const names: Tab[] = ["design", "advanced"];
@@ -202,8 +203,8 @@ export function PropertiesPanel({
         >
           {(
             [
-              ["design", "Design"],
-              ["advanced", "Advanced"],
+              ["design", t("props.tabDesign")],
+              ["advanced", t("props.tabAdvanced")],
             ] as const
           ).map(([id, name]) => (
             <button
@@ -242,18 +243,19 @@ export function PropertiesPanel({
               />
             )}
             <Section
-              title="Background"
+              id="props.background"
+              title={t("background.title")}
               actions={
                 // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
                 <div
                   role="group"
-                  aria-label="Kind of background"
+                  aria-label={t("props.fillKind")}
                   className={`${styles.tabs} ${styles.mini}`}
                 >
                   {(
                     [
-                      ["color", "Colour"],
-                      ["image", "Image"],
+                      ["color", t("props.fillColour")],
+                      ["image", t("props.fillImage")],
                     ] as const
                   ).map(([id, name]) => (
                     <button
@@ -271,9 +273,9 @@ export function PropertiesPanel({
             >
               {backgroundKind === "color" ? (
                 <ColourField
-                  label="Fill"
-                  noneLabel="No fill"
-                  hint="The colour that fills the block. Clear it for no fill."
+                  label={t("props.fill")}
+                  noneLabel={t("props.noFill")}
+                  hint={t("props.fillHint")}
                   {...colour("background")}
                 />
               ) : (
@@ -284,23 +286,23 @@ export function PropertiesPanel({
                 />
               )}
             </Section>
-            <Section title="Border">
+            <Section id="props.border" title={t("props.border")}>
               <div className={styles.grid2}>
                 <LengthField
-                  label="Width"
-                  hint="In pixels, like 2. Leave it empty or 0 for no border."
+                  label={t("props.borderWidth")}
+                  hint={t("props.borderWidthHint")}
                   {...length("borderWidth")}
                 />
                 <LengthField
-                  label="Radius"
-                  hint="In pixels, like 4. Leave it empty or 0 for square corners."
+                  label={t("props.borderRadius")}
+                  hint={t("props.borderRadiusHint")}
                   {...length("borderRadius")}
                 />
                 <div className={styles.span2}>
                   <ColourField
-                    label="Colour"
-                    noneLabel="No border colour"
-                    hint="The colour of the border. Clear it to draw the border in the text colour."
+                    label={t("props.fillColour")}
+                    noneLabel={t("props.noBorderColour")}
+                    hint={t("props.borderColourHint")}
                     {...colour("borderColor")}
                   />
                 </div>
@@ -318,15 +320,15 @@ export function PropertiesPanel({
                     onDistribute={onDistribute}
                   />
                 )}
-                <Section title="Position and size">
+                <Section id="props.position" title={t("props.positionSize")}>
                   <div className={styles.pair}>
-                    {coordinate("X", "X position", "x")}
-                    {coordinate("Y", "Y position", "y")}
-                    {coordinate("W", "Width", "w")}
-                    {coordinate("H", "Height", "h")}
+                    {coordinate("X", t("props.x"), "x")}
+                    {coordinate("Y", t("props.y"), "y")}
+                    {coordinate("W", t("props.w"), "w")}
+                    {coordinate("H", t("props.h"), "h")}
                     <AngleField
                       label="R"
-                      name="Rotation"
+                      name={t("props.rotation")}
                       hint=""
                       stored={box.rotation}
                       onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
@@ -338,38 +340,39 @@ export function PropertiesPanel({
                     type="button"
                     className={styles.chip}
                     aria-pressed={keepsRatio(node, def)}
-                    title="Resizing keeps the width to height ratio"
+                    title={t("props.keepRatioTitle")}
                     onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
                   >
-                    Keep proportions
+                    {t("props.keepRatio")}
                   </button>
                 </Section>
                 <Section
-                  title="Anchors"
-                  help="What the block sticks to when the page changes size, for example on a phone."
+                  id="props.anchors"
+                  title={t("props.anchors")}
+                  help={t("props.anchorsHelp")}
                 >
                   <AnchorSelect
-                    label="Horizontal"
+                    label={t("props.horizontal")}
                     axis="x"
                     value={box.x.anchor}
                     onChange={(a) => onAnchor("x", a)}
                   />
                   <AnchorSelect
-                    label="Vertical"
+                    label={t("props.vertical")}
                     axis="y"
                     value={box.y.anchor}
                     onChange={(a) => onAnchor("y", a)}
                   />
                 </Section>
-                <Section title="Phone">
+                <Section id="props.phone" title={t("props.phone")}>
                   {device === "phone" ? (
                     <div className={styles.row}>
                       <span className={styles.status}>
-                        Layout: {byHand ? "set by hand" : "automatic"}
+                        {byHand ? t("props.layoutByHand") : t("props.layoutAuto")}
                       </span>
                       {byHand ? (
                         <button type="button" className={styles.reset} onClick={onResetPhone}>
-                          Reset to automatic
+                          {t("props.resetAuto")}
                         </button>
                       ) : (
                         <button
@@ -377,20 +380,19 @@ export function PropertiesPanel({
                           className={styles.reset}
                           onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
                         >
-                          Edit separately
+                          {t("props.editSeparately")}
                         </button>
                       )}
                     </div>
                   ) : (
                     <p className={styles.hint}>
-                      Layout: {byHand ? "set by hand for the phone" : "automatic"}. Switch to Phone
-                      to place this block separately.
+                      {byHand ? t("props.layoutByHandHint") : t("props.layoutAutoHint")}
                     </p>
                   )}
                 </Section>
               </>
             )}
-            <Section title="Developer info" closed>
+            <Section id="props.developer" title={t("props.developer")} closed>
               <dl className={styles.facts}>
                 <dt>type</dt>
                 <dd>{node.type}</dd>
@@ -408,20 +410,20 @@ export function PropertiesPanel({
 const ANCHORS: readonly AxisAnchor[] = ["start", "end", "center", "stretch", "scale"];
 
 /** What each anchor is called to a person, which depends on the axis: left and right, or top and bottom. */
-const ANCHOR_NAMES: Record<"x" | "y", Record<AxisAnchor, string>> = {
+const ANCHOR_KEYS: Record<"x" | "y", Record<AxisAnchor, MessageKey>> = {
   x: {
-    start: "Stick left",
-    end: "Stick right",
-    center: "Keep centered",
-    stretch: "Stretch both sides",
-    scale: "Scale with page",
+    start: "anchor.x.start",
+    end: "anchor.x.end",
+    center: "anchor.center",
+    stretch: "anchor.stretch",
+    scale: "anchor.scale",
   },
   y: {
-    start: "Stick top",
-    end: "Stick bottom",
-    center: "Keep centered",
-    stretch: "Stretch both sides",
-    scale: "Scale with page",
+    start: "anchor.y.start",
+    end: "anchor.y.end",
+    center: "anchor.center",
+    stretch: "anchor.stretch",
+    scale: "anchor.scale",
   },
 };
 
@@ -436,13 +438,14 @@ function AnchorSelect({
   value: AxisAnchor;
   onChange: (anchor: AxisAnchor) => void;
 }) {
+  const t = useT();
   return (
     <label className={styles.box}>
       <span className={styles.tag}>{label}</span>
       <select value={value} onChange={(event) => onChange(event.target.value as AxisAnchor)}>
         {ANCHORS.map((anchor) => (
           <option key={anchor} value={anchor}>
-            {ANCHOR_NAMES[axis][anchor]}
+            {t(ANCHOR_KEYS[axis][anchor])}
           </option>
         ))}
       </select>
@@ -563,13 +566,14 @@ const readAngle = (text: string): Reading<number> =>
   text.trim() === "" ? 0 : (parseAngle(text) ?? null);
 
 function LengthField(field: FieldProps<number>) {
+  const t = useT();
   return (
     <NumberField
       {...field}
       unit="px"
       placeholder="0"
       read={readLength}
-      error="Not a length. Use a number from 0 to 1000, like 4."
+      error={t("props.errorLength")}
     />
   );
 }
@@ -589,6 +593,7 @@ function CoordinateField({
   stored: number | undefined;
   onCommit: (value: number | undefined) => void;
 }) {
+  const t = useT();
   return (
     <NumberField
       label={label}
@@ -598,7 +603,7 @@ function CoordinateField({
       unit="px"
       placeholder="0"
       read={readCoordinate}
-      error="Not a number. Use pixels, like 120 or -8."
+      error={t("props.errorNumber")}
       onPreview={() => {}}
       onCommit={onCommit}
       onDiscard={() => {}}
@@ -607,13 +612,14 @@ function CoordinateField({
 }
 
 function AngleField(field: FieldProps<number> & { name?: string }) {
+  const t = useT();
   return (
     <NumberField
       {...field}
       unit="°"
       placeholder="0"
       read={readAngle}
-      error="Not an angle. Use a number of degrees, like 45."
+      error={t("props.errorAngle")}
     />
   );
 }
@@ -678,11 +684,12 @@ function NumberField({
 
 /** The way back to the page's own settings, above the name of what is selected. */
 function BackToPage({ onClick }: { onClick: (() => void) | undefined }) {
+  const t = useT();
   if (!onClick) return null;
   return (
-    <button type="button" className={styles.back} onClick={onClick} title="Back to the page (Esc)">
+    <button type="button" className={styles.back} onClick={onClick} title={t("props.backToPage")}>
       <Icon name="chevronRight" size={12} />
-      Page
+      {t("page.title")}
     </button>
   );
 }
