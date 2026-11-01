@@ -1413,10 +1413,7 @@ function EditorBody({
       : undefined;
   const editingField = editing && editingDef ? editingDef.fields[editing.prop] : undefined;
   const editingLimit = editingField?.type === "text" ? editingField.maxLength : undefined;
-  // A block that is gone (undone, say) ends the edit.
-  useEffect(() => {
-    if (editing && !editingNode) selecting.setEditing(null);
-  }, [editing, editingNode, selecting]);
+  // A block that is gone (undone, deleted) ends the edit: `reconcile` lets go of it with the page change.
   // The words of the block are hidden while they are typed over it, so they are not seen twice.
   useLayoutEffect(() => {
     if (!editingElement) return;

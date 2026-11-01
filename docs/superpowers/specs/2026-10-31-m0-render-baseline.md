@@ -26,6 +26,7 @@ canvas.
 | Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |
 | Phase 2, view state in the store | 258.75 kB | 67.73 kB |
 | Phase 3, selection in the store  | 263.07 kB | 68.86 kB |
+| Phase 4, document and commands   | 277.04 kB | 72.41 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -33,6 +34,13 @@ canvas.
 | --------- | ----- |
 | Before M0 | 2554  |
 | Phase 2   | 2576  |
+| Phase 3   | 2548  |
+| Phase 4   | 2152  |
 
 Phase 2 moves state, it does not remove code: the lines go down from phase 4 on, when the commands
 leave the component. The goal of 2300 lines at the end of phase 2 in the first plan was too early.
+
+Phase 4 took 22 functions that changed the page out of the component into pure commands, 3105 lines
+of `store/` (more than half of it tests), and the lines of `Editor.tsx` went down by about 400. What is
+left in it is the measuring of the screen, the gestures and the JSX, which phase 6 splits into parts.
+The estimate of 1500 lines at the end of phase 4 in the first plan was too low for the same reason.

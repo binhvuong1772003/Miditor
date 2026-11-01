@@ -59,3 +59,12 @@ test("the typing box sits over the block without moving it", async ({ page }) =>
   expect(typing?.x).toBeCloseTo(before.x, -1);
   expect(typing?.y).toBeCloseTo(before.y, -1);
 });
+
+test("Undo of the block being typed on ends the typing and leaves no box behind", async ({
+  page,
+}) => {
+  await openWords(page, "n1");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(field(page)).toHaveCount(0);
+  await expect(page.locator('[data-midito-id="n1"]')).toHaveCount(0);
+});
