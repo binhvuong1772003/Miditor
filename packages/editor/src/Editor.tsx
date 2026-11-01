@@ -24,7 +24,6 @@ import {
   inferBox,
   insertNode,
   isFreeNode,
-  isSavedTheme,
   isTheme,
   keepsRatio,
   lowestPageHeight,
@@ -116,6 +115,7 @@ import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
+import { usableThemes } from "./themes";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
 
@@ -1786,16 +1786,8 @@ export function Editor({
     };
   })();
 
-  // The host's themes that can be used: a good id, name, colours and font each, and no id twice.
-  const hostThemes = (() => {
-    const seen = new Set<string>();
-    return (config?.themes ?? []).flatMap((theme) => {
-      const { readonly, ...plain } = theme;
-      if (!isSavedTheme(plain) || seen.has(plain.id)) return [];
-      seen.add(plain.id);
-      return [theme];
-    });
-  })();
+  // The host's themes that can be used, from rows that may come straight from a database.
+  const hostThemes = usableThemes(config?.themes);
   const keepTheme = config?.onThemeSave;
   const renameTheme = config?.onThemeRename;
   const deleteTheme = config?.onThemeDelete;
