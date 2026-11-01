@@ -24,3 +24,14 @@ canvas.
 | -------------------------------- | --------- | -------- |
 | Before the store                 | 253.86 kB | 66.15 kB |
 | Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |
+| Phase 2, view state in the store | 258.75 kB | 67.73 kB |
+
+## Lines of `Editor.tsx`
+
+| Moment | Lines |
+| --- | --- |
+| Before M0 | 2554 |
+| Phase 2 | 2576 |
+
+Phase 2 moves state, it does not remove code: the lines go down from phase 4 on, when the commands
+leave the component. The goal of 2300 lines at the end of phase 2 in the first plan was too early.

@@ -10,6 +10,7 @@ import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
+import { Twin } from "./Twin";
 import { loadThemes, storeThemes, withId } from "./theme-store";
 import { suggestedThemes } from "./themes";
 
@@ -34,6 +35,7 @@ const embed = embedImage();
 export function App() {
   // `?preview` shows the stored page the way a visitor would get it, for any width.
   if (new URLSearchParams(window.location.search).has("preview")) return <Preview />;
+  if (new URLSearchParams(window.location.search).has("twin")) return <Twin />;
   if (new URLSearchParams(window.location.search).has("host")) {
     return (
       <HostDemo>

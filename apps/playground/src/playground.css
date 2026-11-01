@@ -255,3 +255,16 @@ body,
   --midito-focus: var(--focus);
   --midito-font: inherit;
 }
+
+/* `?twin`: two editors side by side, each in half of the window. */
+.twin {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  block-size: 100dvh;
+}
+
+.twin > section {
+  min-inline-size: 0;
+  min-block-size: 0;
+  block-size: 100dvh;
+}

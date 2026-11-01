@@ -49,12 +49,12 @@ test.describe("zoom", () => {
     await page.keyboard.down("Control");
     await page.mouse.wheel(0, -120);
     await expect(percent(page)).not.toHaveText("100%");
-    const once = await percent(page).innerText();
+    const once = (await percent(page).textContent()) ?? "";
     await page.mouse.wheel(0, -120);
     await page.mouse.wheel(0, -120);
     await page.keyboard.up("Control");
     await expect
-      .poll(async () => Number.parseInt(await percent(page).innerText(), 10))
+      .poll(async () => Number.parseInt((await percent(page).textContent()) ?? "", 10))
       .toBeGreaterThan(Number.parseInt(once, 10));
   });
 
