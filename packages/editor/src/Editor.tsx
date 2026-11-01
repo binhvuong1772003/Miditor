@@ -121,7 +121,7 @@ import { pageWidthVariables } from "./page-width";
 import { countCommit, useRenders } from "./perf";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
-import { createEditorStore, type EditorState, StoreProvider } from "./store";
+import { createEditorStore, type EditorState, initialViewState, StoreProvider } from "./store";
 import { type HostTheme, ThemesPanel } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
@@ -396,7 +396,14 @@ const elementOf = (scope: HTMLElement, id: string) =>
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
 export function Editor(props: EditorProps) {
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
-  const [store] = useState(() => createEditorStore<EditorState>({}));
+  const [store] = useState(() =>
+    createEditorStore<EditorState>(
+      initialViewState({
+        narrow:
+          typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1100px)").matches,
+      }),
+    ),
+  );
   return (
     <StoreProvider store={store}>
       <EditorBody {...props} />

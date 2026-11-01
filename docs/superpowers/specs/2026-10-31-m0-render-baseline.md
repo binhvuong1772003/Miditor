@@ -20,7 +20,7 @@ canvas.
 
 `packages/editor/dist/index.mjs`, raw and gzip.
 
-| Moment | raw | gzip |
-| --- | --- | --- |
-| Before the store | 253.86 kB | 66.15 kB |
+| Moment                           | raw       | gzip     |
+| -------------------------------- | --------- | -------- |
+| Before the store                 | 253.86 kB | 66.15 kB |
 | Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |

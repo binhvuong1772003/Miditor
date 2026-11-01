@@ -1,7 +1,9 @@
-import { createContext, type ReactNode, useContext } from "react";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import type { EditorStore } from "./create-editor-store";
+import type { EditorState } from "./state";
+import { type ViewCommands, viewCommands } from "./view";
 
 const StoreContext = createContext<EditorStore<never> | null>(null);
 
@@ -37,4 +39,14 @@ export function useStore<S extends object, R>(select: (state: S) => R): R {
 /** Like `useStore`, for a piece made of a new object or array each time: its members are compared. */
 export function useStoreShallow<S extends object, R>(select: (state: S) => R): R {
   return useZustand(useStoreApi<S>(), useShallow(select));
+}
+
+/** `useStore` for the state of the editor, so a part does not spell the type out. */
+export const useEditorState = <R,>(select: (state: EditorState) => R): R =>
+  useStore<EditorState, R>(select);
+
+/** The commands on the view (frame, zoom, tool, announcements). They stay the same for the life of the editor. */
+export function useViewCommands(): ViewCommands {
+  const store = useStoreApi<EditorState>();
+  return useMemo(() => viewCommands(store), [store]);
 }
