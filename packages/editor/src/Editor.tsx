@@ -102,7 +102,7 @@ import { type FontDef, usableFonts } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
 import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
-import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { canRedo, canUndo, redo, undo } from "./history";
 import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { TContext } from "./i18n/context";
@@ -124,9 +124,11 @@ import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
   createEditorStore,
   type EditorState,
+  initialDocumentState,
   initialSelectionState,
   initialViewState,
   StoreProvider,
+  useDocumentCommands,
   useEditorState,
   useSelectionCommands,
   useStoreApi,
@@ -415,17 +417,17 @@ export function Editor(props: EditorProps) {
           typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1100px)").matches,
       }),
       ...initialSelectionState(firstPage.root.id),
+      ...initialDocumentState(firstPage),
     }),
   );
   return (
     <StoreProvider store={store}>
-      <EditorBody {...props} firstPage={firstPage} />
+      <EditorBody {...props} />
     </StoreProvider>
   );
 }
 
 function EditorBody({
-  firstPage,
   className,
   onChange,
   onChangeDebounce,
@@ -438,28 +440,20 @@ function EditorBody({
   i18n,
   historyLimit,
   config,
-}: EditorProps & { firstPage: PageData }) {
+}: EditorProps) {
   useRenders("editor");
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
   const viewing = useViewCommands();
   const selecting = useSelectionCommands();
-  const [history, setHistory] = useState(() => createHistory(firstPage));
+  const documents = useDocumentCommands(historyLimit);
+  const history = useEditorState((state) => state.history);
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
-  const [savedPage, setSavedPage] = useState(data);
-  // A save that stored a pending change first: the page it saved is the one that change makes.
-  const marking = useRef(false);
-  useEffect(() => {
-    if (marking.current) {
-      marking.current = false;
-      setSavedPage(data);
-    }
-  }, [data]);
+  const savedPage = useEditorState((state) => state.savedPage);
   /** Store a change as one step. */
-  const setData = (change: (prev: PageData) => PageData) =>
-    setHistory((h) => commit(h, change(h.present), historyLimit));
+  const setData = documents.edit;
   // The page the host already has, so that `onChange` is called for a change and only once for it.
   const notified = useRef(data);
   const onChangeRef = useRef(onChange);
@@ -669,7 +663,8 @@ function EditorBody({
   } | null>(null);
   const editorRoot = useRef<HTMLDivElement>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
-  const [draft, setDraft] = useState<(PanelPatch & { id: string }) | null>(null);
+  const draft = useEditorState((state) => state.draft);
+  const setDraft = documents.setDraft;
   const shown = useMemo<PageData>(
     () => (draft ? withDraft(data, draft, frame, registry) : data),
     [data, draft, frame, registry],
@@ -1045,13 +1040,12 @@ function EditorBody({
     });
 
   /** Store one change on a node, once. The draft is over. */
-  const commitPatch = (id: string, patch: PanelPatch) => {
-    setDraft(null);
-    setData((prev) => {
-      const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame, registry));
-      return root === prev.root ? prev : { ...prev, root };
-    });
+  const patchOf = (id: string, patch: PanelPatch) => (prev: PageData) => {
+    const root = updateNode(prev.root, id, (n) => applyPatch(n, patch, frame, registry));
+    return root === prev.root ? prev : { ...prev, root };
   };
+  const commitPatch = (id: string, patch: PanelPatch) =>
+    documents.editAndEndDraft(patchOf(id, patch));
 
   /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
   const startGesture = () => {
@@ -1577,7 +1571,7 @@ function EditorBody({
       return root === prev.root ? prev : { ...prev, root };
     };
     // A run of small moves, such as a held arrow key, is one step to undo.
-    if (merge) setHistory((h) => amend(h, change(h.present), historyLimit));
+    if (merge) documents.editInLastStep(change);
     else setData(change);
   };
 
@@ -1787,12 +1781,7 @@ function EditorBody({
   };
 
   /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
-  const step = (move: typeof undo) => {
-    const next = move(history).present;
-    setDraft(null);
-    selecting.afterStep(next.root);
-    setHistory(move);
-  };
+  const step = documents.step;
 
   // The block whose words are being typed, the element that draws it, and the limit of the field.
   const editingNode = editing ? findNode(data.root, editing.id) : undefined;
@@ -2180,12 +2169,7 @@ function EditorBody({
                   onClick={() => {
                     // A change that is still pending is stored first, and it is part of what is saved.
                     const pending = draft;
-                    if (pending) {
-                      marking.current = true;
-                      commitPatch(pending.id, pending);
-                    } else {
-                      setSavedPage(data);
-                    }
+                    documents.saveWith(pending ? patchOf(pending.id, pending) : null);
                     onSave(pending ? withDraft(data, pending, frame, registry) : data);
                   }}
                 >

@@ -19,7 +19,7 @@ import {
   setHover,
   togglePick,
 } from "./selection";
-import type { EditorState, SelectionState } from "./state";
+import type { SelectionState, ViewState } from "./state";
 import { initialViewState } from "./view";
 
 function node(id: string, children: TreeNode[] = []): TreeNode {
@@ -269,7 +269,10 @@ describe("reconcile, whatever the selection and the page", () => {
 });
 
 describe("selectionCommands", () => {
-  const start = (): EditorState => ({ ...initialViewState({ narrow: false }), ...none });
+  const start = (): ViewState & SelectionState => ({
+    ...initialViewState({ narrow: false }),
+    ...none,
+  });
 
   it("run the commands on the store", () => {
     const store = createEditorStore(start());

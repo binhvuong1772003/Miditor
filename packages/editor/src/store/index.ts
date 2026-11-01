@@ -2,6 +2,7 @@
 
 export {
   StoreProvider,
+  useDocumentCommands,
   useEditorState,
   useSelectionCommands,
   useStore,
@@ -10,6 +11,15 @@ export {
   useViewCommands,
 } from "./context";
 export { createEditorStore, type EditorStore } from "./create-editor-store";
+export { type DocumentCommands, initialDocumentState } from "./document";
 export { initialSelectionState, type SelectionCommands, selectionCommands } from "./selection";
-export type { Editing, EditorState, SelectionState, Tool, ViewState } from "./state";
+export type {
+  DocumentState,
+  Draft,
+  Editing,
+  EditorState,
+  SelectionState,
+  Tool,
+  ViewState,
+} from "./state";
 export { initialViewState, type ViewCommands, viewCommands } from "./view";

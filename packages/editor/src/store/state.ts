@@ -1,4 +1,6 @@
-import type { Device } from "@midito-kitchen/core";
+import type { Device, PageData } from "@midito-kitchen/core";
+import type { History } from "../history";
+import type { PanelPatch } from "../patch";
 
 /** The panel the tool rail shows beside the canvas. */
 export type Tool = "blocks" | "layers" | "images" | "themes";
@@ -34,5 +36,16 @@ export type SelectionState = {
   editing: Editing | null;
 };
 
+/** A change that is being made in a panel and is only drawn: a colour being picked, a number being typed. */
+export type Draft = PanelPatch & { id: string };
+
+/** The page that is being edited, the steps that led to it and what has been saved of it. */
+export type DocumentState = {
+  history: History<PageData>;
+  /** The page as it was when it was last saved (or opened), to say whether there is more than that. */
+  savedPage: PageData;
+  draft: Draft | null;
+};
+
 /** What the editor keeps in its store; the pieces of state move here a few at a time. */
-export type EditorState = ViewState & SelectionState;
+export type EditorState = ViewState & SelectionState & DocumentState;
