@@ -11,6 +11,7 @@ const withHeight = (minHeight: unknown): PageData => {
 describe("the height of a page", () => {
   it("sets the minimum height of the root when it is valid", () => {
     expect(renderToStaticMarkup(<Render data={withHeight(1200)} />)).toContain("min-height:1200px");
+    expect(renderToStaticMarkup(<Render data={withHeight(1200)} />)).toContain("flex-grow:0");
   });
   it("writes nothing for a page without one, or with one that is not valid", () => {
     expect(renderToStaticMarkup(<Render data={emptyPage()} />)).not.toContain("min-height");

@@ -25,6 +25,7 @@ import {
   isFreeNode,
   isTheme,
   keepsRatio,
+  lowestPageHeight,
   migratePage,
   minSize,
   moveRect,
@@ -102,6 +103,7 @@ import { Icon } from "./icons";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
+import { PageEdge } from "./PageEdge";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
@@ -192,6 +194,7 @@ const withStylePatch = (node: TreeNode, patch: StylePatch): TreeNode => {
       return withStyle(node, patch.key, patch.value);
     case "borderWidth":
     case "borderRadius":
+    case "minHeight":
       return withStyle(node, patch.key, patch.value);
     case "backgroundImage":
       return withStyle(node, "backgroundImage", patch.value);
@@ -1707,6 +1710,20 @@ export function Editor({
     };
   })();
 
+  // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
+  const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
+  const pageHeight = (() => {
+    if (!pageElement) return { drawn: 0, floor: 0 };
+    // The shortest page that still holds every block, worked out from how each one is placed.
+    const boxes = data.root.children.flatMap((child) =>
+      isFreeNode(child) ? [boxFor(child, frame)] : [],
+    );
+    return {
+      drawn: pageElement.offsetHeight,
+      floor: lowestPageHeight(boxes, pageElement.clientWidth),
+    };
+  })();
+
   // The distances to show, only with Alt held: those of a drag that is on, or else those to the block pointed at.
   const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
 
@@ -1989,6 +2006,10 @@ export function Editor({
               }
               uploadImage={config?.uploadImage}
               meta={data.meta}
+              pageHeight={pageHeight}
+              onPageHeight={(height) =>
+                commitPatch(data.root.id, { key: "minHeight", value: height })
+              }
               onMeta={changeMeta}
               onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
               onCommit={(patch) => commitPatch(data.root.id, patch)}
@@ -2146,6 +2167,17 @@ export function Editor({
             onUngroup={ungroupSelected}
             onFront={() => reorderSelected("front")}
             onBack={() => reorderSelected("back")}
+          />
+        )}
+        {pageElement && workspace && !editing && (
+          <PageEdge
+            page={pageElement}
+            workspace={workspace}
+            zoom={zoom}
+            floor={pageHeight.floor}
+            onPreview={(height) => setDraft({ id: data.root.id, key: "minHeight", value: height })}
+            onCommit={(height) => commitPatch(data.root.id, { key: "minHeight", value: height })}
+            onCancel={() => setDraft(null)}
           />
         )}
         {groupInfo && !editing && (

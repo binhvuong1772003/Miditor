@@ -1,0 +1,48 @@
+/* The handle on the bottom edge of the page: a small pill, with the height beside it while it is dragged. */
+.edge {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  transform: translate(-50%, -50%);
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.grip {
+  display: block;
+  inline-size: 3rem;
+  block-size: 6px;
+  border-radius: 999px;
+  background: var(--_canvas);
+  border: 1px solid var(--_input);
+  box-shadow: var(--_lift);
+}
+
+.edge:hover .grip,
+.edge:focus-visible .grip {
+  border-color: var(--_focus);
+  background: var(--_focus);
+}
+
+.edge:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+  border-radius: var(--_radius);
+}
+
+.value {
+  position: absolute;
+  inset-inline-start: calc(100% - 0.5rem);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--_text);
+  color: var(--_canvas);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}

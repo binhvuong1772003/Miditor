@@ -28,7 +28,7 @@ import type { UploadImage } from "./upload-image";
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
   | { key: "background" | "borderColor"; value: string | undefined }
-  | { key: "borderWidth" | "borderRadius"; value: number | undefined }
+  | { key: "borderWidth" | "borderRadius" | "minHeight"; value: number | undefined }
   | BackgroundPatch;
 
 /** What the panel changes besides styles: the rotation, which every free node has and never loses. */

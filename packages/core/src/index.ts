@@ -4,6 +4,7 @@ export { type Frame, moveBetweenFrames } from "./position/frames";
 export { inferBox } from "./position/infer-box";
 export { MAX_COORDINATE } from "./position/limits";
 export { moveRect } from "./position/move-rect";
+export { lowestPageHeight } from "./position/page-floor";
 export { reparentBox } from "./position/reparent-box";
 export { resizeRotated } from "./position/resize-rotated";
 export { resolveRect } from "./position/resolve-rect";

@@ -126,8 +126,9 @@ export function nodeStyle(
     ...(isRoot ? { ...pageText(theme), flexGrow: 1, minWidth: 0 } : {}),
     ...lookOf(node.styles, theme),
     // The height of the page, when it was set: only the root has one, and it is a whole px in range.
+    // It then is that tall and no taller, so it stops filling the box the host gives it.
     ...(isRoot && isPageHeight(node.styles?.minHeight)
-      ? { minHeight: `${node.styles.minHeight}px` }
+      ? { minHeight: `${node.styles.minHeight}px`, flexGrow: 0 }
       : {}),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
