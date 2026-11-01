@@ -54,12 +54,16 @@ import type { ActionDef } from "./actions";
 import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { BlockLabel } from "./BlockLabel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
+import { elementOf } from "./canvas/element-of";
 import {
   isMoveableLayer,
   type ResizeResult,
   SelectionBox,
   type SelectionControls,
 } from "./canvas/SelectionBox";
+import { useAltHeld } from "./canvas/useAltHeld";
+import { useBlockMarks } from "./canvas/useBlockMarks";
+import { useStageSize } from "./canvas/useStageSize";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
@@ -110,7 +114,7 @@ import { Toolbar } from "./Toolbar";
 import { stepSelection } from "./tab-order";
 import { usableThemes } from "./themes";
 import type { UploadImage } from "./upload-image";
-import { fitZoom, stageWidth, zoomBy } from "./zoom";
+import { fitZoom, stageWidth } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -272,12 +276,6 @@ function openPage(data: PageData | undefined, theme?: Theme): PageData {
 /** How close together, in ms, arrow-key presses are one step of history. */
 const NUDGE_MERGE_MS = 500;
 
-/** The element `<Render>` made for a node. Looked up by comparing, so an id needs no escaping. */
-const elementOf = (scope: HTMLElement, id: string) =>
-  [...scope.querySelectorAll<HTMLElement>("[data-midito-id]")].find(
-    (element) => element.dataset.miditoId === id,
-  ) ?? null;
-
 /** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
 export function Editor(props: EditorProps) {
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
@@ -341,12 +339,7 @@ function EditorBody({
   );
   // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
   const zoom = useEditorState((state) => state.zoom);
-  const store = useStoreApi<EditorState>();
-  const [stageBox, setStageBox] = useState({ room: 0, page: 0, height: 0 });
-  const stage = useRef<HTMLDivElement>(null);
-  // The point of the page under the pointer when a wheel zoom began, so the page can be scrolled to
-  // keep that point where the pointer is.
-  const anchor = useRef<{ x: number; y: number; lx: number; ly: number } | null>(null);
+  const _store = useStoreApi<EditorState>();
   // A change that waits is not lost when the editor goes away or the delay changes.
   useEffect(() => {
     notifier.configure({ wait, maxWait });
@@ -401,23 +394,6 @@ function EditorBody({
   // Whether the last press on the frame really moved or turned the blocks, or was only a click.
   const groupMoved = useRef(false);
   const pendingDrag = useRef<{ press: globalThis.PointerEvent; up: boolean } | null>(null);
-  // Whether Alt is held: the distances to neighbours are shown only then, as in Figma.
-  const [altHeld, setAltHeld] = useState(false);
-  useEffect(() => {
-    const note = (event: KeyboardEvent) => {
-      if (event.key === "Alt") setAltHeld(event.type === "keydown");
-    };
-    const clear = () => setAltHeld(false);
-    window.addEventListener("keydown", note);
-    window.addEventListener("keyup", note);
-    // The key can go up while the window is not looking.
-    window.addEventListener("blur", clear);
-    return () => {
-      window.removeEventListener("keydown", note);
-      window.removeEventListener("keyup", note);
-      window.removeEventListener("blur", clear);
-    };
-  }, []);
   // The distances to what is next to the block being dragged, and where they are on the screen.
   const [measure, setMeasure] = useState<{
     gaps: Gap[];
@@ -431,70 +407,9 @@ function EditorBody({
   const [marquee, setMarquee] = useState<Edges | null>(null);
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
-  // Ctrl or Cmd with the wheel (a pinch on a trackpad too) zooms the canvas, not the browser. A
-  // listener of its own: React's are passive, and this one has to stop the browser's page zoom.
-  useEffect(() => {
-    if (!workspace) return;
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      const box = stage.current?.getBoundingClientRect();
-      const was = store.getState().zoom;
-      const next = zoomBy(was, event.deltaY);
-      if (next === was) return;
-      anchor.current = box
-        ? {
-            x: event.clientX,
-            y: event.clientY,
-            lx: (event.clientX - box.left) / was,
-            ly: (event.clientY - box.top) / was,
-          }
-        : null;
-      viewing.setZoom(next);
-    };
-    workspace.addEventListener("wheel", onWheel, { passive: false });
-    return () => workspace.removeEventListener("wheel", onWheel);
-  }, [workspace, store, viewing]);
-
-  // After a wheel zoom the page is scrolled so the point that was under the pointer still is.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new zoom is the trigger, not a value read
-  useLayoutEffect(() => {
-    const at = anchor.current;
-    anchor.current = null;
-    const box = stage.current?.getBoundingClientRect();
-    if (!at || !box || !workspace) return;
-    workspace.scrollLeft += box.left + at.lx * zoom - at.x;
-    workspace.scrollTop += box.top + at.ly * zoom - at.y;
-  }, [zoom]);
-
-  // What the zoomed stage needs to know: the room the workspace has, the width the page has at
-  // 100% and the height of the stage before it is scaled. Measured again when any of them changes.
-  useEffect(() => {
-    const box = stage.current;
-    if (!workspace || !box || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      const look = getComputedStyle(workspace);
-      const room =
-        workspace.clientWidth - parseFloat(look.paddingLeft) - parseFloat(look.paddingRight);
-      const page = box.querySelector<HTMLElement>("[data-midito-render]");
-      const widest = page ? Number.parseFloat(getComputedStyle(page).maxWidth) : Number.NaN;
-      setStageBox((prev) => {
-        const next = {
-          room,
-          page: Number.isFinite(widest) ? Math.min(widest, room) : room,
-          height: box.offsetHeight,
-        };
-        return prev.room === next.room && prev.page === next.page && prev.height === next.height
-          ? prev
-          : next;
-      });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(workspace);
-    observer.observe(box);
-    return () => observer.disconnect();
-  }, [workspace]);
+  const { stage, stageBox } = useStageSize(workspace);
+  // Whether Alt is held: the distances to neighbours are shown only then, as in Figma.
+  const altHeld = useAltHeld();
   const [block, setBlock] = useState<HTMLElement | null>(null);
   // The frame laid over several selected blocks, and what a gesture on it starts from.
   const [frameEl, setFrameEl] = useState<HTMLElement | null>(null);
@@ -528,6 +443,7 @@ function EditorBody({
     () => (draft ? withDraft(data, draft, frame, registry) : data),
     [data, draft, frame, registry],
   );
+  useBlockMarks({ workspace, selectedId, picked, hoverId, dropId, dragging, shown });
   const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
   // The block under the pointer, for its name tag. Its element comes from the last render.
   const hoverNode = hoverId ? findNode(data.root, hoverId) : undefined;
@@ -580,76 +496,6 @@ function EditorBody({
     pendingDrag.current = null;
     if (!pending.up) dragControls.current?.dragStart(pending.press);
   }, [block, selectedId]);
-
-  // Mark the other selected blocks. The elements belong to `<Render>`, so the mark is put on after
-  // each render and taken off again before the next. It is an inline style: every block has an
-  // inline `all: revert`, which a class could never beat.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
-  useLayoutEffect(() => {
-    if (!workspace) return;
-    const marked = picked.flatMap((id) => elementOf(workspace, id) ?? []);
-    for (const element of marked) {
-      element.dataset.miditoPicked = "";
-      element.style.outline = "2px solid var(--_focus)";
-      element.style.outlineOffset = "1px";
-    }
-    return () => {
-      for (const element of marked) {
-        delete element.dataset.miditoPicked;
-        element.style.removeProperty("outline");
-        element.style.removeProperty("outline-offset");
-      }
-    };
-  }, [workspace, picked, shown]);
-
-  // The block a press would select, outlined while the pointer rests on it, like a design tool does.
-  // Inline, for the same reason as the marks above: the block's own `all: revert` beats a rule.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
-  useLayoutEffect(() => {
-    const target = workspace && hoverId ? elementOf(workspace, hoverId) : null;
-    if (!target) return;
-    const colour = "color-mix(in srgb, var(--_focus) 70%, transparent)";
-    target.style.outline = `2px solid ${colour}`;
-    target.style.outlineOffset = "-1px";
-    // The outline fades in, so moving across the page reads as a soft trail and not a flicker.
-    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      target.animate?.([{ outlineColor: "transparent" }, { outlineColor: colour }], {
-        duration: 120,
-        easing: "ease-out",
-      });
-    }
-    return () => {
-      target.style.removeProperty("outline");
-      target.style.removeProperty("outline-offset");
-    };
-  }, [workspace, hoverId, shown]);
-
-  // While a block is dragged, the cursor is the cross of the move. Not before: a block at rest, even
-  // the selected one, keeps the plain cursor, and so does one that is only pointed at.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
-  useLayoutEffect(() => {
-    if (!workspace || !dragging) return;
-    const own = [selectedId, ...picked].flatMap((id) =>
-      id ? (elementOf(workspace, id) ?? []) : [],
-    );
-    for (const element of own) element.style.cursor = "move";
-    return () => {
-      for (const element of own) element.style.removeProperty("cursor");
-    };
-  }, [workspace, dragging, selectedId, picked, shown]);
-
-  // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
-  useLayoutEffect(() => {
-    const target = workspace && dropId ? elementOf(workspace, dropId) : null;
-    if (!target) return;
-    target.style.outline = "2px solid var(--_focus)";
-    target.style.outlineOffset = "-2px";
-    return () => {
-      target.style.removeProperty("outline");
-      target.style.removeProperty("outline-offset");
-    };
-  }, [workspace, dropId, shown]);
 
   /**
    * A drag from the empty page draws a box, and on release the blocks it touches are selected: the
