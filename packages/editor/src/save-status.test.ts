@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveStatus, STATUS_TEXT } from "./save-status";
+import { resolveStatus, STATUS_KEY } from "./save-status";
 
 const none = { hasSave: false, clean: true, waiting: false };
 
@@ -30,6 +30,6 @@ describe("resolveStatus", () => {
   });
 
   it("has a text for every state", () => {
-    expect(Object.keys(STATUS_TEXT).sort()).toEqual(["error", "saved", "saving", "unsaved"]);
+    expect(Object.keys(STATUS_KEY).sort()).toEqual(["error", "saved", "saving", "unsaved"]);
   });
 });

@@ -1,13 +1,15 @@
+import type { MessageKey } from "./i18n/en";
+
 /** How the page is stored, as the host tells the editor, or as the editor tells from its Save button. */
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
-/** What the header says for each state. */
-export const STATUS_TEXT: Record<SaveStatus, string> = {
-  saved: "Saved",
-  unsaved: "Unsaved changes",
-  saving: "Saving…",
-  error: "Couldn't save",
-};
+/** The sentence (see `i18n/en.ts`) the header says for each state. */
+export const STATUS_KEY = {
+  saved: "status.saved",
+  unsaved: "status.unsaved",
+  saving: "status.saving",
+  error: "status.error",
+} as const satisfies Record<SaveStatus, MessageKey>;
 
 /**
  * The state the header shows, or `undefined` for none. The host's own word wins, except that a change
