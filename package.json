@@ -12,10 +12,12 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run",
+    "e2e": "playwright test",
     "dev": "pnpm --filter playground dev"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "tsdown": "^0.23.2",
     "typescript": "^6.0.3",
