@@ -15,3 +15,12 @@ Every part commits as often as the editor does: nothing is skipped, so a drag re
 panel and the properties as much as the canvas. The target after M0 is that typing redraws only the
 properties, a selection change only Layers, properties and the selection box, and a drag only the
 canvas.
+
+## Package size
+
+`packages/editor/dist/index.mjs`, raw and gzip.
+
+| Moment | raw | gzip |
+| --- | --- | --- |
+| Before the store | 253.86 kB | 66.15 kB |
+| Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |
