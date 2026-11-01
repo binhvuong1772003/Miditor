@@ -78,7 +78,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { AssetsPanel } from "./AssetsPanel";
 import type { ActionDef } from "./actions";
 import { BlockLabel } from "./BlockLabel";
 import { BlocksPanel } from "./BlocksPanel";
@@ -98,17 +97,18 @@ import { GapLabels } from "./GapLabels";
 import { type Gap, gapsAround } from "./gaps";
 import { boundsOf, centreOf, rectAt, turnGroup } from "./group-math";
 import { amend, canRedo, canUndo, commit, createHistory, redo, undo } from "./history";
+import { ImagesPanel } from "./ImagesPanel";
 import { InlineEdit } from "./InlineEdit";
 import { Icon } from "./icons";
 import { nextLayer } from "./layers";
 import { boxBetween, type Edges, touched } from "./marquee";
 import { isNudgeKey, nudgeRect } from "./nudge";
 import { PageEdge } from "./PageEdge";
+import { PageInspector } from "./PageInspector";
 import { type PanelPatch, PropertiesPanel, type StylePatch } from "./PropertiesPanel";
 import { pageWidthVariables } from "./page-width";
 import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_TEXT } from "./save-status";
-import { ThemePanel } from "./ThemePanel";
 import { stepSelection } from "./tab-order";
 import { fitPicture, pictureSize, type UploadImage, uploadPicture } from "./upload-image";
 import { fitZoom, MAX_ZOOM, MIN_ZOOM, stageWidth, stepZoom, zoomBy, zoomText } from "./zoom";
@@ -164,7 +164,7 @@ export interface EditorProps {
    * The kinds of block a person can add. The editor starts with `builtInRegistry` and `components`
    * is put on top of it, so a host adds its own kinds, or replaces a built-in one, under its name.
    * `renderers` draws the kinds the host added, by name; a built-in kind is always drawn by the editor.
-   * `uploadImage` adds an Upload image button to the Assets panel: it is called with the file the person
+   * `uploadImage` adds an Upload image button to the Images panel: it is called with the file the person
    * chose and answers with the address of the uploaded picture (Cloudinary's `secure_url`, for
    * example), and an Image block showing it is added. The editor keeps no keys and no files, only
    * that address.
@@ -395,13 +395,13 @@ export function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The panel on the left shows the theme of the page instead of the blocks to add. The panel on the
   // right keeps the properties of the selected block, so both can be used together.
-  const [tool, setTool] = useState<"blocks" | "assets" | "theme">("blocks");
+  const [tool, setTool] = useState<"blocks" | "images">("blocks");
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const [panelOpen, setPanelOpen] = useState(
     () => typeof window === "undefined" || !window.matchMedia?.("(max-width: 1100px)").matches,
   );
   /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
-  const pickTool = (id: "blocks" | "assets" | "theme") => {
+  const pickTool = (id: "blocks" | "images") => {
     if (id === tool && panelOpen) {
       setPanelOpen(false);
       return;
@@ -2045,8 +2045,7 @@ export function Editor({
         {(
           [
             ["blocks", "Blocks", "grid"],
-            ["assets", "Assets", "img"],
-            ["theme", "Theme", "palette"],
+            ["images", "Images", "img"],
           ] as const
         ).map(([id, name, icon]) => (
           <button
@@ -2064,23 +2063,12 @@ export function Editor({
       </nav>
       <aside
         className={`${styles.panel} ${styles.start}`}
-        aria-label={tool === "theme" ? "Page theme" : tool === "assets" ? "Assets" : "Blocks"}
+        aria-label={tool === "images" ? "Images" : "Blocks"}
       >
-        {tool === "theme" && (
-          <ThemePanel
-            theme={data.theme}
-            onSetColor={setThemeColor}
-            onRenameColor={renameThemeColor}
-            onDeleteColor={deleteThemeColor}
-            onSetFont={setThemeFont}
-          />
-        )}
-        {tool === "assets" && (
+        {tool === "images" && (
           <>
             <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-            <AssetsPanel
-              page={data.root}
-              theme={data.theme}
+            <ImagesPanel
               disabled={onPhone}
               upload={
                 config?.uploadImage
@@ -2091,15 +2079,6 @@ export function Editor({
                     }
                   : undefined
               }
-              uploadImage={config?.uploadImage}
-              meta={data.meta}
-              pageHeight={pageHeight}
-              onPageHeight={(height) =>
-                commitPatch(data.root.id, { key: "minHeight", value: height })
-              }
-              onMeta={changeMeta}
-              onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
-              onCommit={(patch) => commitPatch(data.root.id, patch)}
             />
           </>
         )}
@@ -2311,26 +2290,54 @@ export function Editor({
         />
       </section>
       <aside className={`${styles.panel} ${styles.end}`} aria-label="Properties">
-        <PropertiesPanel
-          // A new panel for each node, so text typed for one is never applied to another.
-          key={selectedNode?.id ?? "none"}
-          node={selectedNode}
-          device={frame}
-          onResetPhone={resetPhone}
-          selectedCount={1 + picked.length}
-          onAlign={alignSelected}
-          onDistribute={distributeSelected}
-          actions={config?.actions}
-          def={selectedDef}
-          onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
-          onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
-          onDiscard={() => setDraft(null)}
-          onAnchor={changeAnchor}
-          rect={selectedRect}
-          onRect={setRect}
-          theme={data.theme}
-          uploadImage={config?.uploadImage}
-        />
+        {!selectedNode && (
+          <PageInspector
+            page={data.root}
+            theme={data.theme}
+            meta={data.meta}
+            onMeta={changeMeta}
+            pageHeight={pageHeight}
+            onPageHeight={(height) =>
+              commitPatch(data.root.id, { key: "minHeight", value: height })
+            }
+            uploadImage={config?.uploadImage}
+            onPreview={(patch) => setDraft({ id: data.root.id, ...patch })}
+            onCommit={(patch) => commitPatch(data.root.id, patch)}
+            themeActions={{
+              onSetColor: setThemeColor,
+              onRenameColor: renameThemeColor,
+              onDeleteColor: deleteThemeColor,
+              onSetFont: setThemeFont,
+            }}
+          />
+        )}
+        {selectedNode && (
+          <PropertiesPanel
+            onBackToPage={() => {
+              setPicked([]);
+              setSelectedId(null);
+              setScopeId(data.root.id);
+            }}
+            // A new panel for each node, so text typed for one is never applied to another.
+            key={selectedNode?.id ?? "none"}
+            node={selectedNode}
+            device={frame}
+            onResetPhone={resetPhone}
+            selectedCount={1 + picked.length}
+            onAlign={alignSelected}
+            onDistribute={distributeSelected}
+            actions={config?.actions}
+            def={selectedDef}
+            onPreview={(patch) => selectedNode && setDraft({ id: selectedNode.id, ...patch })}
+            onCommit={(patch) => selectedNode && commitPatch(selectedNode.id, patch)}
+            onDiscard={() => setDraft(null)}
+            onAnchor={changeAnchor}
+            rect={selectedRect}
+            onRect={setRect}
+            theme={data.theme}
+            uploadImage={config?.uploadImage}
+          />
+        )}
       </aside>
     </div>
   );

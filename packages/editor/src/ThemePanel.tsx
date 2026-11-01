@@ -14,6 +14,8 @@ export interface ThemePanelProps {
   onDeleteColor: (name: string) => void;
   /** The body or heading font stack changes, or is taken away with `undefined`. */
   onSetFont: (which: "body" | "heading", stack: string | undefined) => void;
+  /** Only the sections, with no heading of their own, to sit inside another panel. */
+  bare?: boolean;
 }
 
 /** The colours and fonts shared by the whole page, shown when no block is selected. */
@@ -23,14 +25,17 @@ export function ThemePanel({
   onRenameColor,
   onDeleteColor,
   onSetFont,
+  bare = false,
 }: ThemePanelProps) {
   const colors = Object.entries(theme?.colors ?? {});
   return (
     <div className={styles.content}>
-      <div className={styles.heading}>
-        <h2 className={styles.title}>Page theme</h2>
-        <p className={styles.meta}>Whole page</p>
-      </div>
+      {!bare && (
+        <div className={styles.heading}>
+          <h2 className={styles.title}>Page theme</h2>
+          <p className={styles.meta}>Whole page</p>
+        </div>
+      )}
       <Section
         title="Colours"
         actions={

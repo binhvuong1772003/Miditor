@@ -90,7 +90,7 @@ Without `status`, the header follows the Save button and shows nothing if there 
 
 ## Images
 
-Give `config.uploadImage` and the Assets panel gets an **Upload image** button, and a picture can
+Give `config.uploadImage` and the Images panel gets an **Upload image** button, and a picture can
 be set as the background of the page or of a block. It is one function:
 
 ```ts
@@ -167,8 +167,10 @@ are refused, whatever the host returns. If the function throws, its message is s
   the pointer when that block can hold it. Pressing a card still adds it in the middle. Esc cancels
   a drag, and letting go off the page adds nothing.
 - An empty page offers a first block.
+- Nothing selected means the page is: the panel on the right shows its settings (info, size,
+  background, colours and fonts). With a block selected, "‹ Page" above its name goes back.
 - The page is as tall as you make it: drag the handle on its bottom edge, or type a height under
-  Page height in the Assets panel. It is stored as `minHeight` in the page's styles (200 to 20000 px)
+  Size in the Page settings on the right (shown when no block is selected). It is stored as `minHeight` in the page's styles (200 to 20000 px)
   and `<Render>` draws the page that tall. It cannot be made shorter than what the blocks need.
 - The arrow keys move the selected blocks 1 px, 10 px with Shift; a run of presses is one undo step.
 - Enter on a block with words goes into them, like a double press.
@@ -235,7 +237,7 @@ the button falls back to its link. Inside the editor a button does nothing.
 
 ## Page info
 
-The Assets panel has a Page info section: a title, a description and a share picture (a full
+The Page settings on the right, shown when no block is selected, have a Page info section: a title, a description and a share picture (a full
 `https://` address). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
 
 ```tsx

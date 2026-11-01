@@ -62,6 +62,8 @@ export interface PropertiesPanelProps {
   theme?: Theme | undefined;
   /** The host's way to upload a picture, for the background picture of a block. */
   uploadImage?: UploadImage | undefined;
+  /** Go back to the page itself: nothing selected, its own settings shown. */
+  onBackToPage?: (() => void) | undefined;
   /** How many blocks are selected, for the Align section to say what they line up with. */
   selectedCount?: number | undefined;
   /** Line the selected blocks up. Without it the Align section is not shown. */
@@ -105,6 +107,7 @@ export function PropertiesPanel({
   uploadImage,
   actions,
   selectedCount = 1,
+  onBackToPage,
   onAlign,
   onDistribute,
 }: PropertiesPanelProps) {
@@ -117,6 +120,7 @@ export function PropertiesPanel({
     return (
       <div className={styles.content}>
         <div className={styles.heading}>
+          <BackToPage onClick={onBackToPage} />
           <h2 className={styles.title}>{selectedCount} blocks selected</h2>
           <p className={styles.meta}>Press one block to edit it on its own.</p>
         </div>
@@ -164,6 +168,7 @@ export function PropertiesPanel({
   return (
     <div className={styles.content}>
       <div className={styles.heading}>
+        <BackToPage onClick={onBackToPage} />
         <h2 className={styles.title}>{def?.label ?? node.type}</h2>
         {!def && <p className={styles.meta}>Unknown kind of block</p>}
       </div>
@@ -663,5 +668,16 @@ function NumberField({
         </p>
       )}
     </div>
+  );
+}
+
+/** The way back to the page's own settings, above the name of what is selected. */
+function BackToPage({ onClick }: { onClick: (() => void) | undefined }) {
+  if (!onClick) return null;
+  return (
+    <button type="button" className={styles.back} onClick={onClick} title="Back to the page (Esc)">
+      <Icon name="chevronRight" size={12} />
+      Page
+    </button>
   );
 }

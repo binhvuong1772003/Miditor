@@ -162,6 +162,39 @@ select.input {
   line-height: 1.25;
 }
 
+/* "Page" above the name of a block: the way back up, the arrow turned to point left. */
+.back {
+  appearance: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.25rem -0.25rem;
+  padding: 0.125rem 0.375rem;
+  border: 0;
+  border-radius: var(--_radius);
+  background: transparent;
+  color: var(--_muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.back svg {
+  transform: scaleX(-1);
+}
+
+.back:hover {
+  background: var(--_soft);
+  color: var(--_text);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--_focus);
+  outline-offset: 2px;
+}
+
 .heading .meta {
   margin: 0;
 }
