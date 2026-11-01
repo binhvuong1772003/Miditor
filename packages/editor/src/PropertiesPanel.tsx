@@ -16,10 +16,11 @@ import {
   type TreeNode,
 } from "@midito-kitchen/core";
 import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
+import { AlignSection } from "./AlignSection";
 import type { ActionDef } from "./actions";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
-import { Icon, type IconName } from "./icons";
+import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import { Section } from "./Section";
@@ -81,17 +82,6 @@ export interface PropertiesPanelProps {
   onRect: (field: "x" | "y" | "w" | "h", value: number) => void;
 }
 
-const ALIGN_ACROSS: [AlignTo, IconName, string][] = [
-  ["left", "edgeLeft", "Align left"],
-  ["center", "edgeCenter", "Align centre"],
-  ["right", "edgeRight", "Align right"],
-];
-const ALIGN_DOWN: [AlignTo, IconName, string][] = [
-  ["top", "edgeTop", "Align top"],
-  ["middle", "edgeMiddle", "Align middle"],
-  ["bottom", "edgeBottom", "Align bottom"],
-];
-
 /** The kinds of the kit's tabs: the content and look of a block, and where and how it sits. */
 type Tab = "design" | "advanced";
 
@@ -122,6 +112,18 @@ export function PropertiesPanel({
   // Whether the background is a colour or a picture; it starts as what the block has.
   const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
+  if (node && selectedCount > 1 && onAlign && onDistribute) {
+    // Several blocks: what can be done to all of them, not the fields of one of them.
+    return (
+      <div className={styles.content}>
+        <div className={styles.heading}>
+          <h2 className={styles.title}>{selectedCount} blocks selected</h2>
+          <p className={styles.meta}>Press one block to edit it on its own.</p>
+        </div>
+        <AlignSection selectedCount={selectedCount} onAlign={onAlign} onDistribute={onDistribute} />
+      </div>
+    );
+  }
   if (!node) {
     return (
       <div className={styles.empty}>
@@ -300,64 +302,11 @@ export function PropertiesPanel({
             {isFreeNode(node) && box && (
               <>
                 {onAlign && onDistribute && (
-                  <Section
-                    title="Align"
-                    help={
-                      selectedCount > 1
-                        ? "Line the selected blocks up with each other."
-                        : "Line the block up with the page."
-                    }
-                  >
-                    <div className={styles.grid2}>
-                      {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-                      <div role="group" aria-label="Align across" className={styles.seg}>
-                        {ALIGN_ACROSS.map(([to, icon, label]) => (
-                          <button
-                            key={to}
-                            type="button"
-                            className={styles.segButton}
-                            aria-label={label}
-                            title={label}
-                            onClick={() => onAlign(to)}
-                          >
-                            <Icon name={icon} />
-                          </button>
-                        ))}
-                      </div>
-                      {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-                      <div role="group" aria-label="Align down" className={styles.seg}>
-                        {ALIGN_DOWN.map(([to, icon, label]) => (
-                          <button
-                            key={to}
-                            type="button"
-                            className={styles.segButton}
-                            aria-label={label}
-                            title={label}
-                            onClick={() => onAlign(to)}
-                          >
-                            <Icon name={icon} />
-                          </button>
-                        ))}
-                      </div>
-                      {(["x", "y"] as const).map((axis) => (
-                        <button
-                          key={axis}
-                          type="button"
-                          className={styles.chip}
-                          disabled={selectedCount < 3}
-                          title={
-                            selectedCount < 3
-                              ? "Select three or more blocks to spread them"
-                              : `Equal gaps ${axis === "x" ? "across" : "down"}`
-                          }
-                          onClick={() => onDistribute(axis)}
-                        >
-                          <Icon name={axis === "x" ? "spreadX" : "spreadY"} />
-                          {axis === "x" ? "Across" : "Down"}
-                        </button>
-                      ))}
-                    </div>
-                  </Section>
+                  <AlignSection
+                    selectedCount={selectedCount}
+                    onAlign={onAlign}
+                    onDistribute={onDistribute}
+                  />
                 )}
                 <Section title="Position and size">
                   <div className={styles.pair}>

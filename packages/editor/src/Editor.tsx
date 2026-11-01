@@ -1658,6 +1658,16 @@ export function Editor({
   const endResize = ({ w, h, handle }: ResizeResult) =>
     endGesture((g) => resizeRotated(g.start, boxFor(g.before, frame).rotation, handle, w, h));
 
+  // The frame of a group is worked out from the size of the page as it is drawn, which only changes
+  // once the editor has drawn a new screen, zoom or page height. Draw once more then, or the frame
+  // would be the size of the page before.
+  const [, setLayoutTick] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: these are the triggers, the effect reads none of them
+  useLayoutEffect(
+    () => setLayoutTick((n) => n + 1),
+    [frame, zoom, stageBox, data.root.styles.minHeight],
+  );
+
   /**
    * With several free blocks of one parent selected, the frame that holds them all, in the page's own
    * px and on the screen, so they can be moved and turned as one. Nothing for a parent that is turned
