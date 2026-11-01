@@ -497,7 +497,7 @@ function EditorBody({
     waiting,
   });
   // The width the page is shown at. A view setting only: it is not in the page data and not in the history.
-  const [frame, setFrame] = useState<Device>("desktop");
+  const frame = useEditorState((state) => state.frame);
   // Adding, deleting and grouping change the blocks every screen shares, so they are done on the desktop.
   const onPhone = frame === "phone";
   const components = config?.components;
@@ -2131,7 +2131,7 @@ function EditorBody({
                 type="button"
                 className={styles.segment}
                 aria-pressed={frame === "desktop"}
-                onClick={() => setFrame("desktop")}
+                onClick={() => viewing.setFrame("desktop")}
               >
                 <Icon name="desk" />
                 {t("header.desktop")}
@@ -2140,7 +2140,7 @@ function EditorBody({
                 type="button"
                 className={styles.segment}
                 aria-pressed={frame === "phone"}
-                onClick={() => setFrame("phone")}
+                onClick={() => viewing.setFrame("phone")}
               >
                 <Icon name="phone" />
                 {t("header.phone")}
