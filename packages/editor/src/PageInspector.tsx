@@ -61,7 +61,7 @@ export function PageInspector({
         title="Page info"
         help="What the page says about itself in a tab, a search result or a share."
       >
-        <PageInfoFields meta={meta} onChange={onMeta} />
+        <PageInfoFields meta={meta} onChange={onMeta} uploadImage={uploadImage} />
       </Section>
       <Section
         title="Size"

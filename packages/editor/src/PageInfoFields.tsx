@@ -1,11 +1,14 @@
 import { isImageUrl, MAX_DESCRIPTION, MAX_TITLE, type PageMeta } from "@midito-kitchen/core";
-import { type KeyboardEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import styles from "./PropertiesPanel.module.css";
+import { type UploadImage, uploadPicture } from "./upload-image";
 
 export interface PageInfoFieldsProps {
   meta: PageMeta | undefined;
   /** The new info, or one field removed when it was emptied. A value the field refuses is not sent. */
   onChange: (patch: Partial<Record<keyof PageMeta, string | undefined>>) => void;
+  /** The host's way to upload a picture. Without it a person types the address of the share picture. */
+  uploadImage?: UploadImage | undefined;
 }
 
 /**
@@ -13,7 +16,7 @@ export interface PageInfoFieldsProps {
  * search result and the picture of a share card. Each field is stored when it is left or Enter is
  * pressed, and an address that is not a safe picture goes back to what is stored.
  */
-export function PageInfoFields({ meta, onChange }: PageInfoFieldsProps) {
+export function PageInfoFields({ meta, onChange, uploadImage }: PageInfoFieldsProps) {
   return (
     <div className={styles.stack}>
       <TextField
@@ -31,14 +34,79 @@ export function PageInfoFields({ meta, onChange }: PageInfoFieldsProps) {
         multiline
         onCommit={(description) => onChange({ description })}
       />
-      <TextField
-        label="Share picture"
-        hint="The address of the picture shown when the page is shared. Use a full https:// address."
-        stored={meta?.image}
-        accept={isImageUrl}
-        placeholder="https://…"
-        onCommit={(image) => onChange({ image })}
-      />
+      {uploadImage ? (
+        <SharePicture
+          stored={meta?.image}
+          uploadImage={uploadImage}
+          onCommit={(image) => onChange({ image })}
+        />
+      ) : (
+        <TextField
+          label="Share picture"
+          hint="The address of the picture shown when the page is shared. Use a full https:// address."
+          stored={meta?.image}
+          accept={isImageUrl}
+          placeholder="https://…"
+          onCommit={(image) => onChange({ image })}
+        />
+      )}
+    </div>
+  );
+}
+
+/** The share picture of a host that uploads: choose a file, and the address that comes back is stored. */
+function SharePicture({
+  stored,
+  uploadImage,
+  onCommit,
+}: {
+  stored: string | undefined;
+  uploadImage: UploadImage;
+  onCommit: (value: string | undefined) => void;
+}) {
+  const chooser = useRef<HTMLInputElement>(null);
+  const [state, setState] = useState<{ busy: boolean; error: string | null }>({
+    busy: false,
+    error: null,
+  });
+  const address = isImageUrl(stored) ? stored : undefined;
+  const pick = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setState({ busy: true, error: null });
+    const result = await uploadPicture(file, uploadImage);
+    setState({ busy: false, error: result.ok ? null : result.error });
+    if (result.ok) onCommit(result.url);
+  };
+  return (
+    <div className={styles.field} title="The picture shown when the page is shared.">
+      <div className={styles.row}>
+        <span
+          className={styles.thumb}
+          aria-hidden="true"
+          style={address ? { backgroundImage: `url("${address}")` } : undefined}
+        />
+        <input ref={chooser} type="file" accept="image/*" hidden onChange={pick} />
+        <button
+          type="button"
+          className={styles.reset}
+          disabled={state.busy}
+          onClick={() => chooser.current?.click()}
+        >
+          {state.busy ? "Uploading…" : address ? "Change image" : "Upload picture"}
+        </button>
+        {address && (
+          <button type="button" className={styles.reset} onClick={() => onCommit(undefined)}>
+            Remove
+          </button>
+        )}
+      </div>
+      {state.error && (
+        <p className={styles.error} role="alert">
+          {state.error}
+        </p>
+      )}
     </div>
   );
 }
