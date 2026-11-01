@@ -100,6 +100,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       className={styles.menu}
       style={place}
       onKeyDown={keys}
+      // The menu sits inside the canvas: a press on an item must not reach it and clear the selection.
+      onPointerDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
       {items.map((item, index) =>
