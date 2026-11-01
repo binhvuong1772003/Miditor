@@ -6,7 +6,8 @@ import { components, renderers } from "./kinds";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
-import { themes } from "./themes";
+import { loadThemes, storeThemes, withId } from "./theme-store";
+import { suggestedThemes } from "./themes";
 
 /** `?reset` in the address drops the stored page; it is taken out of the address so a reload keeps the page. */
 function openPage(): PageData {
@@ -38,12 +39,29 @@ function Playground() {
   const [sent, setSent] = useState<string | null>(null);
   // How the stand-in "server" is doing, for the header. A real host sets it from its own request.
   const [status, setStatus] = useState<SaveStatus>("saved");
+  // The themes a person saved: stored here, as a real host would store them in its database.
+  const [saved, setSaved] = useState(() => loadThemes(window.localStorage));
+  const changeThemes = (next: typeof saved) => {
+    storeThemes(window.localStorage, next);
+    setSaved(next);
+  };
 
   return (
     <>
       <Editor
         data={page}
-        config={{ components, renderers, uploadImage, actions, fonts, themes }}
+        config={{
+          components,
+          renderers,
+          uploadImage,
+          actions,
+          fonts,
+          themes: [...saved, ...suggestedThemes],
+          onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
+          onThemeRename: (id, name) =>
+            changeThemes(saved.map((theme) => (theme.id === id ? { ...theme, name } : theme))),
+          onThemeDelete: (id) => changeThemes(saved.filter((theme) => theme.id !== id)),
+        }}
         // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
         onChangeDebounce={{ wait: 800, maxWait: 4000 }}
         status={status}
