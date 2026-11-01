@@ -12,6 +12,7 @@ export {
 } from "./context";
 export { createEditorStore, type EditorStore } from "./create-editor-store";
 export { type DocumentCommands, initialDocumentState } from "./document";
+export { createNotifier, type Notifier } from "./notifier";
 export { initialSelectionState, type SelectionCommands, selectionCommands } from "./selection";
 export type {
   DocumentState,

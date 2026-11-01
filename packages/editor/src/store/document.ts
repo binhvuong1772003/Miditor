@@ -11,7 +11,7 @@ import type { DocumentState, Draft, SelectionState } from "./state";
 
 /** A page just opened: nothing to undo, nothing changed since it was saved. */
 export function initialDocumentState(page: PageData): DocumentState {
-  return { history: createHistory(page), savedPage: page, draft: null };
+  return { history: createHistory(page), savedPage: page, draft: null, waiting: false };
 }
 
 /** Stores one change as one step. */
@@ -43,6 +43,9 @@ export function editInLastStep<S extends DocumentState>(
   const history = amend(state.history, make(state.history.present), limit);
   return change(state, { history } as Partial<S>);
 }
+
+export const setWaiting = <S extends DocumentState>(state: S, waiting: boolean): S =>
+  change(state, { waiting } as Partial<S>);
 
 export const setDraft = <S extends DocumentState>(state: S, draft: Draft | null): S =>
   change(state, { draft } as Partial<S>);
@@ -90,6 +93,7 @@ export function documentCommands<S extends DocumentState & SelectionState>(
     editInLastStep: (make: (page: PageData) => PageData) =>
       run((state) => editInLastStep(state, make, env.limit)),
     setDraft: (draft: Draft | null) => run((state) => setDraft(state, draft)),
+    setWaiting: (waiting: boolean) => run((state) => setWaiting(state, waiting)),
     step: (move: (history: History<PageData>) => History<PageData>) =>
       run((state) => step(state, move)),
     markSaved: () => run(markSaved),

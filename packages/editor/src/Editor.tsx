@@ -93,7 +93,6 @@ import {
   SelectionBox,
   type SelectionControls,
 } from "./canvas/SelectionBox";
-import { createDebounce } from "./debounce";
 import { localPoint, placeAt } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EmptyPage } from "./EmptyPage";
@@ -123,6 +122,7 @@ import { QuickActions } from "./QuickActions";
 import { resolveStatus, type SaveStatus, STATUS_KEY } from "./save-status";
 import {
   createEditorStore,
+  createNotifier,
   type EditorState,
   initialDocumentState,
   initialSelectionState,
@@ -454,26 +454,16 @@ function EditorBody({
   const savedPage = useEditorState((state) => state.savedPage);
   /** Store a change as one step. */
   const setData = documents.edit;
-  // The page the host already has, so that `onChange` is called for a change and only once for it.
-  const notified = useRef(data);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const wait =
     typeof onChangeDebounce === "number" ? onChangeDebounce : (onChangeDebounce?.wait ?? 0);
   const maxWait = typeof onChangeDebounce === "object" ? onChangeDebounce.maxWait : undefined;
   // Whether a change waits for its delayed `onChange`, so the header does not call it saved.
-  const [waiting, setWaiting] = useState(false);
-  const debounced = useMemo(
-    () =>
-      createDebounce<PageData>(
-        (page) => {
-          setWaiting(false);
-          onChangeRef.current?.(page);
-        },
-        wait,
-        maxWait,
-      ),
-    [wait, maxWait],
+  const waiting = useEditorState((state) => state.waiting);
+  // What calls `onChange` for a change, only once for it: the page the host already has is this one.
+  const [notifier] = useState(() =>
+    createNotifier<PageData>(data, (page) => onChangeRef.current?.(page), documents.setWaiting),
   );
   // The canvas zoom. Under 100% the page shows smaller, over it larger; its blocks keep their own px.
   const zoom = useEditorState((state) => state.zoom);
@@ -484,13 +474,11 @@ function EditorBody({
   // keep that point where the pointer is.
   const anchor = useRef<{ x: number; y: number; lx: number; ly: number } | null>(null);
   // A change that waits is not lost when the editor goes away or the delay changes.
-  useEffect(() => () => debounced.flush(), [debounced]);
   useEffect(() => {
-    if (data === notified.current) return;
-    notified.current = data;
-    debounced.push(data);
-    setWaiting(debounced.pending());
-  }, [data, debounced]);
+    notifier.configure({ wait, maxWait });
+    return () => notifier.flush();
+  }, [notifier, wait, maxWait]);
+  useEffect(() => notifier.push(data), [notifier, data]);
   const headerStatus = resolveStatus(status, {
     hasSave: onSave !== undefined,
     clean: data === savedPage,

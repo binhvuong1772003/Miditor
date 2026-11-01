@@ -45,6 +45,8 @@ export type DocumentState = {
   /** The page as it was when it was last saved (or opened), to say whether there is more than that. */
   savedPage: PageData;
   draft: Draft | null;
+  /** A change waits for its delayed `onChange`, so the page is not yet what the host has. */
+  waiting: boolean;
 };
 
 /** What the editor keeps in its store; the pieces of state move here a few at a time. */

@@ -33,6 +33,7 @@ describe("a page just opened", () => {
     expect(state.history).toEqual({ past: [], present: page, future: [] });
     expect(state.savedPage).toBe(page);
     expect(state.draft).toBeNull();
+    expect(state.waiting).toBe(false);
   });
 });
 
@@ -205,6 +206,7 @@ describe("documentCommands", () => {
     const commands = documentCommands(store, { limit: LIMIT });
     commands.edit((p) => p);
     commands.setDraft(null);
+    commands.setWaiting(false);
     commands.saveWith(null);
     expect(listener).not.toHaveBeenCalled();
   });
