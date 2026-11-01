@@ -82,6 +82,7 @@ import {
   useState,
 } from "react";
 import type { ActionDef } from "./actions";
+import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { BlockLabel } from "./BlockLabel";
 import { BlocksPanel } from "./BlocksPanel";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
@@ -171,6 +172,12 @@ export interface EditorProps {
    * "Back to pages" link, the name of the page. The editor draws it as given and styles nothing of it.
    */
   headerStart?: ReactNode;
+  /**
+   * How the editor looks: a `scheme` (`light` or `dark`) to start from, `colors` by name, the corner
+   * `radius`, the `control` height and the `font`. Anything left out keeps the default of the scheme.
+   * The same can be done with the `--midito-*` variables in CSS; this is the typed way.
+   */
+  appearance?: Appearance;
   /**
    * How many steps undo can go back, 100 when not given. A whole number from 1 up, or `Infinity` for
    * no limit; anything else uses 100. It is read at each change, so a new value trims the oldest
@@ -371,6 +378,7 @@ export function Editor({
   headerActions,
   logo,
   headerStart,
+  appearance,
   historyLimit,
   config,
 }: EditorProps) {
@@ -1852,7 +1860,8 @@ export function Editor({
     <div
       ref={editorRoot}
       className={rootClass}
-      style={pageWidthVariables}
+      style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
+      data-scheme={schemeOf(appearance)}
       data-midito-editor=""
       data-panel={panelOpen ? "open" : "closed"}
       tabIndex={-1}

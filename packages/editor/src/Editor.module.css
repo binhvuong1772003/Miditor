@@ -22,6 +22,11 @@
   --_radius: var(--midito-radius, 6px);
   --_radius-card: var(--midito-radius-card, 8px);
   --_control: var(--midito-control, 2.25rem);
+  /* The page itself stays its own colour: a dark editor does not make the page dark. */
+  --_paper: var(--midito-paper, #ffffff);
+  /* The main button (Save). By default it is the text colour with the canvas on it. */
+  --_accent: var(--midito-accent, var(--_text));
+  --_on-accent: var(--midito-on-accent, var(--_canvas));
   --_lift: 0 1px 2px rgb(0 0 0 / 0.12);
   /* The width of the left panel; it is nothing when the person shuts it. */
   --_start: 19rem;
@@ -39,6 +44,22 @@
   font-family: var(--midito-font, Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+/* The dark set. A variable the host sets still wins over these, as it does over the light set. */
+.root[data-scheme="dark"] {
+  --_chrome: var(--midito-chrome, #18181b);
+  --_workspace: var(--midito-workspace, #09090b);
+  --_soft: var(--midito-soft, #27272a);
+  --_canvas: var(--midito-canvas, #1f1f23);
+  --_border: var(--midito-border, #3f3f46);
+  --_input: var(--midito-border-input, #52525b);
+  --_text: var(--midito-text, #fafafa);
+  --_focus: var(--midito-focus, #60a5fa);
+  --_scrollbar: var(--midito-scrollbar, #52525b);
+  --_muted: var(--midito-muted, #a1a1aa);
+  --_danger: var(--midito-danger, #f87171);
+  color-scheme: dark;
 }
 
 /* The root takes the focus when a node is pressed (so Esc works); it is not a control, so no ring. */
@@ -261,7 +282,7 @@
   max-inline-size: var(--_page-desktop);
   min-block-size: 40rem;
   margin-inline: auto;
-  background: var(--_canvas);
+  background: var(--_paper);
   border: 1px solid var(--_border);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 0.05),
@@ -354,9 +375,9 @@
 
 /* Default: the dark button, for the one main action. */
 .primary {
-  background: var(--_text);
-  border-color: var(--_text);
-  color: var(--_canvas);
+  background: var(--_accent);
+  border-color: var(--_accent);
+  color: var(--_on-accent);
 }
 
 .primary:hover:not(:disabled) {
