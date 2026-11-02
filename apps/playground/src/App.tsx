@@ -1,14 +1,17 @@
 import {
+  type Denial,
   Editor,
   type EditorController,
   embedImage,
+  type HideName,
   type Overrides,
   type PageData,
+  type Permissions,
   type SaveStatus,
   useCreateEditor,
 } from "@midito-kitchen/editor";
 import { vi } from "@midito-kitchen/editor/locales/vi";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { actions } from "./actions";
 import { ControlDemo } from "./ControlDemo";
 import { demoIcons } from "./demo-icons";
@@ -24,6 +27,15 @@ import {
   overridesB,
   throwingOverrides,
 } from "./OverridesDemo";
+import {
+  DeniedNotice,
+  hidden,
+  lockedFooter,
+  onDenied,
+  PERMISSIONS_PAGE,
+  PermissionsHeader,
+  viewer,
+} from "./PermissionsDemo";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -61,6 +73,7 @@ export function App() {
     );
   }
   if (new URLSearchParams(window.location.search).has("overrides")) return <OverridesPage />;
+  if (new URLSearchParams(window.location.search).has("permissions")) return <PermissionsPage />;
   if (new URLSearchParams(window.location.search).has("control")) {
     if (new URLSearchParams(window.location.search).has("outside")) return <Outside />;
     // `?control&two` draws two editors on one page, each with its own host part.
@@ -110,6 +123,28 @@ function OverridesPage() {
 }
 
 /**
+ * `?permissions` locks the footer block and hides two parts; `&viewer` lets nobody change anything. The
+ * host's notice of the last refusal is drawn above the editor.
+ */
+function PermissionsPage() {
+  const asViewer = new URLSearchParams(window.location.search).has("viewer");
+  return (
+    <>
+      <DeniedNotice />
+      <section style={{ blockSize: "85vh" }}>
+        <Playground
+          data={PERMISSIONS_PAGE}
+          permissions={asViewer ? viewer : lockedFooter}
+          hide={hidden}
+          onDenied={onDenied}
+          headerActions={<PermissionsHeader />}
+        />
+      </section>
+    </>
+  );
+}
+
+/**
  * `?control&outside`: a bar drawn outside the editor drives it through a controller. `&two` gives the
  * same controller to two editors (the second is ignored), `&closed` starts with the editor closed.
  */
@@ -144,13 +179,24 @@ function Playground({
   control = false,
   controller,
   overrides: given,
+  data,
+  permissions,
+  hide,
+  onDenied: denied,
+  headerActions,
 }: {
   embedded?: boolean;
   control?: boolean;
   controller?: EditorController;
   overrides?: Overrides;
+  data?: PageData;
+  permissions?: Permissions;
+  hide?: readonly HideName[];
+  onDenied?: (denial: Denial) => void;
+  headerActions?: ReactNode;
 }) {
-  const [page] = useState(openPage);
+  // A demo that brings its own page (`data`) keeps the stored one out of it.
+  const [page] = useState(() => data ?? openPage());
   const plain = new URLSearchParams(window.location.search).has("plain");
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
   const [uploaded, setUploaded] = useState(() => loadUploaded(window.localStorage));
@@ -202,6 +248,9 @@ function Playground({
         }}
         {...(controller ? { controller } : {})}
         {...(given ? { overrides: given } : {})}
+        {...(permissions ? { permissions } : {})}
+        {...(hide ? { hide } : {})}
+        {...(denied ? { onDenied: denied } : {})}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         // Inside a host that has its own navbar the editor shows no mark of its own.
         {...(embedded ? { logo: null } : {})}
@@ -214,7 +263,9 @@ function Playground({
           ? { appearance: { scheme: "dark" as const } }
           : {})}
         headerActions={
-          control ? (
+          headerActions ? (
+            headerActions
+          ) : control ? (
             <ControlDemo />
           ) : (
             <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
