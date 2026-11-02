@@ -345,7 +345,8 @@ const overrides: Overrides = {
 - **The parts sit in a CSS grid, and your wrapper becomes the grid item.** The header spans the whole
   top row, and the rail and the two panels each take a column. A plain `<div>` around one of them loses
   its place and the layout collapses. Give the wrapper the place of the part it wraps (for the header,
-  `grid-column: 1 / -1`), or use `display: contents` on a wrapper that only adds behaviour.
+  `grid-column: 1 / -1`), or use `display: contents` on a wrapper that only adds behaviour. This is
+  true of the default layout only; a [layout of your own](#lay-the-editor-out-yourself) has no grid.
 - **A mistake in your component does not kill the editor.** If an override throws while drawing, the
   editor's own part is drawn instead and one error in the console names the place. It is tried again
   only when your entry for that place changes. If `contextMenu` throws, or does not give a list of
@@ -364,6 +365,99 @@ The editor's parts are accessible; a replacement has to stay so.
 - **`contextMenu`:** the menu closes on Esc and gives focus back; this is the editor's, and your lines
   take part in it. Give every line a `label`.
 - **`quickActions`:** the buttons stay reachable by keyboard.
+
+## Lay the editor out yourself
+
+`<Editor>` is a fixed layout: header, rail, left panel, canvas and properties. To put the parts
+elsewhere, use `<EditorProvider>`. It takes the same props as `<Editor>` (`data`, `onSave`, `overrides`,
+`hide`, `permissions`, `controller`, `appearance`, `i18n`...) and the parts you place as its children.
+
+```tsx
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { Editor, EditorProvider, useEditorRoot, type PageData } from "@miditor/editor";
+import "@miditor/editor/style.css";
+
+// Properties in a dialog. It is drawn in the editor's root, so it keeps the look and the language.
+function PropertiesDialog() {
+  const root = useEditorRoot();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Properties
+      </button>
+      {open && root
+        ? createPortal(
+            <dialog open>
+              <Editor.Properties />
+              <button type="button" onClick={() => setOpen(false)}>
+                Close
+              </button>
+            </dialog>,
+            root,
+          )
+        : null}
+    </>
+  );
+}
+
+export function EditPage({ page }: { page: PageData }) {
+  return (
+    <EditorProvider data={page} onSave={(data) => save(data)}>
+      <div style={{ display: "flex", height: "100vh" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Editor.Canvas />
+        </div>
+        <div style={{ width: "18rem" }}>
+          <Editor.Layers />
+        </div>
+        <PropertiesDialog />
+      </div>
+    </EditorProvider>
+  );
+}
+```
+
+Each part is a member of `Editor` (`Editor.Layers`) and is also exported by name (`EditorLayers`).
+All of it is experimental: names and behaviour may change in a minor version.
+
+| Part                                          | Draws                                                                 | Brings                            |
+| --------------------------------------------- | --------------------------------------------------------------------- | --------------------------------- |
+| `Editor.Header`                               | Undo, redo, the frame, the zoom and Save                              | a `<header>`                      |
+| `Editor.Rail`                                 | The tool buttons                                                      | a `<nav>` with an `aria-label`    |
+| `Editor.StartPanel`                           | The panel of the tool the rail chose                                  | an `<aside>` with an `aria-label` |
+| `Editor.Blocks`, `Layers`, `Images`, `Themes` | That panel on its own, whatever tool the rail chose                   | an `<aside>` with an `aria-label` |
+| `Editor.Canvas`                               | The page, the selection, the labels, the context menu, inline editing | a labelled region (`<section>`)   |
+| `Editor.Properties`                           | The page settings, or the properties of the selected block            | an `<aside>` with an `aria-label` |
+
+A custom layout keeps these landmarks, but what surrounds them is yours. Keep the canvas reachable by
+keyboard.
+
+### The default layout
+
+`<Editor>` with no children is the same parts in a grid. Its root carries `data-layout="default"`, and the
+grid and the narrow-screen rules of `style.css` apply only under that attribute. A custom layout is sized
+by you: the root is a block with `block-size: 100%`, so give its parent a height. It has no breakpoints
+of its own.
+
+### Rules
+
+- **One canvas.** A second `Editor.Canvas` draws nothing and logs an error. If the first one unmounts (a
+  closed dialog), another can take its place. Every other part can be placed any number of times.
+- **Inside a provider.** A part outside an `<EditorProvider>` throws `<Name> must be used inside <EditorProvider>`.
+- **Portals.** The appearance variables and `lang` are on the editor's root, so a dialog drawn in a portal
+  elsewhere in the page loses them. Draw it into `useEditorRoot()`, which is `null` until the editor has
+  mounted. Keys, copy and paste work in a portal either way.
+- **Hidden tools stay hidden.** `hide: ["tool.layers"]` also removes `Editor.Layers`. The four tool panels
+  ignore `panelOpen`; `Editor.StartPanel` follows it only in the default layout.
+- **Without a canvas** the editor still works, with less. The keys that need a container (nudge, group,
+  ungroup, duplicate) do nothing, Fit does nothing, and adding a block uses zero sizes. Tab, Esc, undo
+  and redo work.
+- **Hide, overrides, permissions and the control API** work in any layout. Parts keep their override
+  places, and a part you leave out is simply not drawn.
+- **Closing a part loses nothing.** The selection, the history and a pending edit are in the editor, not
+  in the part. Only the choice of tab in the properties (Design or Advanced) starts again.
 
 ## Control what people can do
 

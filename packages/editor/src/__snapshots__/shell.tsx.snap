@@ -1,0 +1,31 @@
+/**
+ * What the parts of the editor need from the provider that is not already in the store or in one of
+ * the other contexts: for each part, the props it is drawn with. The provider builds it on every
+ * render, as it drew its parts before they became parts.
+ */
+export interface Shell {
+  header: ComponentProps<typeof Toolbar>;
+  rail: ComponentProps<typeof Rail>;
+  start: ComponentProps<typeof StartPanel>;
+  end: ComponentProps<typeof EndPanel>;
+  /** The canvas, as the provider draws it. */
+  canvas: ReactNode;
+  /** Which mounted canvas holds the editor's canvas; there is one at a time. */
+  canvasClaim: { current: symbol | null };
+}
+
+export const ShellContext = createContext<Shell | null>(null);
+
+/** The shell of the provider this part is drawn in; `part` names the part in the error. */
+export function useShell(part: string): Shell;
+
+/** The provider's root element, for a host to portal a dialog into and keep the look and the language. */
+export const RootContext = createContext<HTMLElement | null>(null);
+
+/**
+ * The element the provider draws, or `null` before it is mounted and outside a provider. A host that
+ * draws a dialog in a portal puts it in this element, so the appearance variables, `lang` and the keys
+ * of the editor reach it.
+ * @experimental
+ */
+export function useEditorRoot(): HTMLElement | null;

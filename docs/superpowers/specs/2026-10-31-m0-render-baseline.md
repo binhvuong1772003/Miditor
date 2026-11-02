@@ -33,6 +33,7 @@ canvas.
 | M1b, the controller              | 293.46 kB | 77.19 kB |
 | M2, overrides                    | 297.38 kB | 78.27 kB |
 | M3, hide and permissions         | 312.36 kB | 82.54 kB |
+| M4, composition                  | 320.74 kB | 84.25 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -119,3 +120,20 @@ asks the hide list with one lookup in a context.
 
 `pnpm perf` still gives the same numbers in all six moments (add Text 2, type 5 chars 2, drag 100px 15,
 select none 4, hover block 3, select block 4) with no permissions given.
+
+## M4: renders
+
+`<Editor />` with no children draws the same parts in the default layout. `pnpm perf` after the canvas
+holds its own state gives, for the parts in the order canvas, blocks, selection, properties, editor:
+
+| Moment       | canvas | blocks | selection | properties | editor |
+| ------------ | ------ | ------ | --------- | ---------- | ------ |
+| add Text     | 2      | 2      | 2         | 2          | 2      |
+| type 5 chars | 2      | 2      | 2         | 2          | 2      |
+| drag 100px   | 15     | 3      | 15        | 3          | 3      |
+| select none  | 4      | 4      | 4         | 4          | 4      |
+| hover block  | 3      | none   | 3         | none       | none   |
+| select block | 4      | 2      | 4         | 2          | 2      |
+
+No moment counts more than before. The drag, hover and select moments count less for the parts that are
+not the canvas, because the drag, the hover marks and the menu state no longer redraw the provider.

@@ -42,6 +42,8 @@ describe("public surface", () => {
     "overrides.tsx",
     "store/permissions.ts",
     "hide.tsx",
+    "parts.tsx",
+    "shell.tsx",
   ]) {
     it(`${file} keeps its types and signatures`, async () => {
       const source = readFileSync(new URL(`./${file}`, import.meta.url), "utf8");

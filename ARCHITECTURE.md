@@ -108,9 +108,9 @@ are in the surface snapshot.
 
 ## The screen
 
-`Editor.tsx` holds the pieces together and owns what they share: the elements of the canvas
-(`workspace`, the selected block), the keyboard handler of the root and the clipboard. The parts read the
-store themselves:
+`Editor.tsx` holds the pieces together and owns what they share: the keyboard handler of the root, the
+clipboard and the few canvas elements other parts need (see [Composition](#composition)). The parts read
+the store themselves:
 
 | Part                  | Draws                                                      |
 | --------------------- | ---------------------------------------------------------- |
@@ -118,6 +118,7 @@ store themselves:
 | `Rail`                | the tool buttons                                           |
 | `StartPanel`          | blocks, layers, images, themes                             |
 | `EndPanel`            | the page settings, or the properties of the selected block |
+| `canvas/CanvasView`   | the canvas: the page and everything drawn over it          |
 | `canvas/StagePage`    | the page, scaled by the zoom                               |
 | `canvas/SelectionBox` | the handles of the selected block                          |
 
@@ -131,9 +132,29 @@ Behaviour of the canvas is in hooks, in `src/canvas/`:
 | `useStageSize`  | the wheel zoom and the size of the room the page has   |
 | `useAltHeld`    | whether Alt is held                                    |
 
-The overlays of the canvas (name tags, quick actions, the edge of the page, the frame of a group) stay
-in `Editor.tsx`: they read `workspace`, `block` and the gesture, which the toolbar, the Tab key, paste
-and the library drop use too.
+The overlays of the canvas (name tags, quick actions, the edge of the page, the frame of a group, the
+menu, the marquee) are drawn by `canvas/CanvasView.tsx`.
+
+## Composition
+
+A host can place the parts itself (`parts.tsx`, `shell.tsx`; the types are in the surface snapshot).
+
+- `EditorProvider` (in `Editor.tsx`) holds the state, the hooks, the keys, the clipboard and the one root
+  element that has the appearance variables, `lang` and `data-miditor-editor`. It draws the host's
+  children inside that root.
+- The shell is an object the provider builds on each render and gives through `ShellContext`. It holds
+  the props each part is drawn with. A part reads it with `useShell(name)`, which throws outside a
+  provider. A part draws when it drew before the split.
+- The canvas holds its own state: gestures, pointer, marks, the context menu, the labels. The provider
+  keeps only what other parts read: the workspace, the selected block's element and the measures of the
+  stage. Two functions are not state, because nothing draws from them: `gesturing` (the keys ask whether
+  a gesture is on) and `dropHint` (the library drag sets the hint). The canvas registers both while it is
+  mounted and clears them when it unmounts. This is why a drag, a hover and the menu no longer redraw the
+  provider or the other parts.
+- One canvas is mounted at a time (`canvasClaim` in the shell). Without one the handle is empty and what
+  needs it does nothing.
+- The default layout is the old grid built from the same parts (`DefaultLayout`), marked with
+  `data-layout="default"`; the grid rules in `Editor.module.css` apply only under it.
 
 ## Rules
 

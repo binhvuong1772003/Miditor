@@ -1,0 +1,35 @@
+// The parts of the editor, each reading the provider's shell. A host places them anywhere inside
+// `<EditorProvider>`; `<Editor />` places them in the default layout.
+
+/** The bar at the top: undo, redo, the frame, the zoom and save. @experimental */
+export function EditorHeader();
+
+/** The tool buttons. @experimental */
+export function EditorRail();
+
+/** The panel of the tool the rail chose. @experimental */
+export function EditorStartPanel();
+
+/** The page's settings, or the properties of the selected block. @experimental */
+export function EditorProperties();
+
+/** The Blocks panel on its own: the cards to press or drag onto the page. @experimental */
+export function EditorBlocks();
+
+/** The Layers panel on its own: every block of the page as a list. @experimental */
+export function EditorLayers();
+
+/** The Images panel on its own. @experimental */
+export function EditorImages();
+
+/** The Themes panel on its own. @experimental */
+export function EditorThemes();
+
+/**
+ * The page and everything drawn over it. Place it once: a second one draws nothing and logs an error.
+ * @experimental
+ */
+export function EditorCanvas();
+
+/** The parts in the default layout: the header, the rail, the left panel, the canvas, the properties. */
+export function DefaultLayout();
