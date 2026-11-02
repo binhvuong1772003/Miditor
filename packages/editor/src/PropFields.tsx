@@ -16,6 +16,7 @@ import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
 import { useT } from "./i18n/context";
 import { Icon, type IconName } from "./icons";
+import { ValueInput } from "./nested-fields";
 import { OverrideSlot } from "./overrides";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
@@ -65,6 +66,8 @@ const wide = (name: string, field: Field) =>
   field.type === "action" ||
   field.type === "font" ||
   field.type === "payload" ||
+  field.type === "array" ||
+  field.type === "object" ||
   (field.type === "select" && field.options.length === 3 && !isAlign(name, field));
 
 /**
@@ -131,7 +134,18 @@ export function PropFields({
                   nodeId,
                 }}
               >
-                {field.type === "custom" ? (
+                {field.type === "array" || field.type === "object" ? (
+                  <ValueInput
+                    field={field}
+                    value={stored}
+                    label={field.label}
+                    nodeId={nodeId}
+                    inputs={customFields}
+                    onChange={(next) => {
+                      if (validateProps(def, { [name]: next }).length === 0) onChange(name, next);
+                    }}
+                  />
+                ) : field.type === "custom" ? (
                   <CustomField
                     name={name}
                     field={field}
