@@ -31,6 +31,7 @@ canvas.
 | End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
 | M1a, the control API             | 290.81 kB | 76.28 kB |
 | M1b, the controller              | 293.46 kB | 77.19 kB |
+| M2, overrides                    | 297.58 kB | 78.34 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -100,3 +101,8 @@ select block 4).
 
 Under StrictMode an editor that is refused a controller logs its error twice for one editor, because
 React mounts it, lets go and mounts it again. The first editor is not affected.
+
+## M2: renders
+
+Overrides add no state to the store and no render to an editor given none: a place without an entry in
+`overrides` draws its own part, after one lookup in a context.

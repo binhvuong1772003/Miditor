@@ -34,17 +34,18 @@ import { Render } from "@midito-kitchen/render";
 
 ## Props
 
-| Prop               | What it does                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
-| `data`             | The page to open. Read once.                                                                          |
-| `onSave`           | Called with the whole page when the person presses Save. The Save button shows only when it is given. |
-| `onChange`         | Called with the whole page after each change that is final (see [Saving](#saving)).                   |
-| `onChangeDebounce` | A wait in ms, or `{ wait, maxWait }`, so a run of changes is one `onChange` call.                     |
-| `status`           | `"saved"`, `"unsaved"`, `"saving"` or `"error"`: what the header says about the host's storing.       |
-| `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                 |
-| `historyLimit`     | How many steps undo goes back. 100 by default; `Infinity` for no limit.                               |
-| `className`        | An extra class on the root element.                                                                   |
-| `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                      |
+| Prop               | What it does                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `data`             | The page to open. Read once.                                                                                                  |
+| `onSave`           | Called with the whole page when the person presses Save. The Save button shows only when it is given.                         |
+| `onChange`         | Called with the whole page after each change that is final (see [Saving](#saving)).                                           |
+| `onChangeDebounce` | A wait in ms, or `{ wait, maxWait }`, so a run of changes is one `onChange` call.                                             |
+| `status`           | `"saved"`, `"unsaved"`, `"saving"` or `"error"`: what the header says about the host's storing.                               |
+| `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                                         |
+| `overrides`        | Wrap or replace parts of the editor; see [Change the editor with overrides](#change-the-editor-with-overrides). Experimental. |
+| `historyLimit`     | How many steps undo goes back. 100 by default; `Infinity` for no limit.                                                       |
+| `className`        | An extra class on the root element.                                                                                           |
+| `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                                              |
 
 
 ## Inside your product
@@ -247,6 +248,115 @@ same view as the one inside the editor, with the same rules for the selector.
   last session is kept in the controller.
 - **The controller is a handle, not the store.** It forwards commands and reads to the editor it holds;
   it keeps no page of its own.
+
+## Change the editor with overrides
+
+> Experimental. `overrides` and everything under it may change before it is stable.
+
+`overrides` is a prop of `<Editor>`: a list of named places, each of which you can **wrap** (keep the
+editor's own part and put something around or next to it) or **replace** (draw your own). A component
+override receives `editor` (the same object as `useEditor()`) and `children` (the editor's own part).
+Draw `children` to wrap, leave it out to replace. Your component is drawn inside the editor, so it can
+call `useEditor(selector)`.
+
+| Place           | Is                                                              | Props besides `editor` and `children`                                               |
+| --------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `header`        | The bar at the top.                                             | none                                                                                |
+| `headerActions` | The right end of the bar: your `headerActions` prop and Save.   | none                                                                                |
+| `field`         | The input of one property of the selected block.                | `name`, `field`, `value`, `onChange(value)`, `nodeId`                               |
+| `rail`          | The tool buttons beside the left panel.                         | `tools`: a list of `{ id, name, icon, active, pick() }` (`RailTool`)                |
+| `panelStart`    | The left panel (blocks, layers, images, themes).                | `tool`: `"blocks"`, `"layers"`, `"images"` or `"themes"`                            |
+| `panelEnd`      | The right panel: the page's settings or the block's properties. | `mode`: `"page"` or `"block"`; `nodeId`: the selected block, or `null` in page mode |
+| `quickActions`  | The row of buttons under the selected block.                    | `disabled`: true on the phone frame, where blocks cannot be added or removed        |
+| `contextMenu`   | The lines of the right-click menu.                              | A function, not a component: `({ editor, items }) => items`                         |
+
+Wrap a place:
+
+```tsx
+import { Editor, type Overrides } from "@midito-kitchen/editor";
+
+const overrides: Overrides = {
+  header: ({ children }) => <MyBar>{children}</MyBar>,
+};
+
+<Editor overrides={overrides} />;
+```
+
+Replace a place. This draws the tool buttons from `tools` and ignores `children`:
+
+```tsx
+const overrides: Overrides = {
+  rail: ({ tools }) => (
+    <nav aria-label="Tools">
+      {tools.map((tool) => (
+        <button key={tool.id} type="button" aria-pressed={tool.active} onClick={tool.pick}>
+          {tool.name}
+        </button>
+      ))}
+    </nav>
+  ),
+};
+```
+
+`contextMenu` gets the lines the editor would show and gives back the ones to show: add a line, drop
+one, reorder. It is called each time the menu opens, for a block (the page and the empty canvas have no
+menu). A line is `"separator"` or `{ label, onSelect }`, with an optional `id`, `hint`, `disabled` and
+`danger` (`ContextMenuItem`). Give your own lines an `id`: rows are keyed by `id`, else by label and
+place. A line you add closes the menu and then runs, like the editor's own.
+
+```tsx
+const overrides: Overrides = {
+  contextMenu: ({ editor, items }) => [
+    ...items,
+    "separator",
+    { id: "my-publish", label: "Save and publish", onSelect: () => editor.save() },
+  ],
+};
+```
+
+### The field place
+
+`field` draws one property of the selected block as one input. Wrap it, or replace it for the
+properties you care about and return `children` for the rest:
+
+```tsx
+const overrides: Overrides = {
+  field: ({ name, value, onChange, children }) =>
+    name === "href" ? <PagePicker value={String(value)} onChange={onChange} /> : children,
+};
+```
+
+- **One property, one input.** A run of two or more booleans is drawn as one group of switches; that
+  group is not overridable. A lone boolean is. An `action` or `payload` property is overridden as a
+  whole; its inner inputs stay inside `children`. The page's own settings (title, height, colours,
+  fonts) are not fields.
+- **`onChange(value)` writes this property only.** It cannot write another.
+- **The input is drawn again from scratch when the stored value changes**, as the editor's own is
+  (undo and redo rely on it). An input of yours that keeps its own state should expect that.
+
+### Rules
+
+- **Keep `overrides` stable**: a constant at module level, or `useMemo`. A new function for a place is a
+  new component to the editor, so it is drawn again from scratch. A new object whose functions are the
+  same is fine.
+- **A mistake in your component does not kill the editor.** If an override throws while drawing, the
+  editor's own part is drawn instead and one error in the console names the place. It is tried again
+  only when your entry for that place changes. If `contextMenu` throws, or does not give a list of
+  lines, the default menu is shown and one error is logged. A throw in your own event handler is yours,
+  as in any React app.
+- **A host with no `overrides` sees no change**, in code or in renders.
+
+### What a replacement must keep
+
+The editor's parts are accessible; a replacement has to stay so.
+
+- **`header`:** keep a landmark (`<header>` or `role="banner"`). If you replace Undo, Redo or Save,
+  keep them reachable by keyboard.
+- **`rail`:** use real `<button>`s with a name and `aria-pressed` or `aria-current` for the open tool.
+- **`panelStart`, `panelEnd`:** keep an `aria-label` on the region (the editor's own panels have one).
+- **`contextMenu`:** the menu closes on Esc and gives focus back; this is the editor's, and your lines
+  take part in it. Give every line a `label`.
+- **`quickActions`:** the buttons stay reachable by keyboard.
 
 ## Saving
 

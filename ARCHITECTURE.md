@@ -64,6 +64,25 @@ Its types are the public surface and are kept in snapshots by `public-surface.te
   (`attachController`) is internal and not exported; the editor still makes its own store, and the
   controller only points at it.
 
+## Overrides
+
+What a host can wrap or replace (`overrides.tsx`, the `overrides` prop of `<Editor>`). Its types are in
+the surface snapshot.
+
+- One context, `OverridesContext`, holds the host's `overrides`. `Editor.tsx` provides it.
+- `OverrideSlot` is a place. It looks its name up in the context: with no entry it draws its
+  `children`, the editor's own part, and nothing else, so a host with no `overrides` pays one lookup.
+  With an entry it draws the host's component with `editor`, the props of the place and the same
+  `children`.
+- `OverrideBoundary` wraps the host's component. If it throws, the editor's own part is drawn outside
+  the boundary and one error names the place; it tries the host's component again when the entry changes.
+- `applyContextMenu` is the same for the menu, which is data and not a component: the host's function is
+  called in a try/catch each time the menu opens, and a throw or a bad result gives the default lines.
+- The parts wrap themselves (`Toolbar`, `Rail`, `StartPanel`, `EndPanel`, the property inputs), so
+  `Editor.tsx` only draws the quick actions and the menu through the slot and `applyContextMenu`.
+- The place names are written once, in `ComponentOverrides` and `Overrides`; hiding a part (M3) uses the
+  same names.
+
 ## The screen
 
 `Editor.tsx` holds the pieces together and owns what they share: the elements of the canvas
@@ -99,6 +118,7 @@ and the library drop use too.
 - The store is changed only by its own commands: `store.setState` is called only in `store/`.
 - `store/` does not draw: only `context.tsx` uses React, and nothing there imports a component or CSS.
 - `canvas/` does not import `Editor.tsx`.
+- `overrides.tsx` does not import `Editor.tsx`: the parts use the slot, not the other way round.
 - A command returns the same state when it does nothing.
 
 ## Checking a change

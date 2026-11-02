@@ -15,6 +15,7 @@ export {
 export type { Renderer, RendererContext } from "@midito-kitchen/render";
 export type { ActionDef, ActionParam } from "./actions";
 export type { Appearance, AppearanceColor } from "./appearance";
+export type { ContextMenuItem } from "./ContextMenu";
 export type { EditorView } from "./control";
 export type { EditorApi } from "./control-api";
 export { useCreateEditor, useEditor } from "./control-context";
