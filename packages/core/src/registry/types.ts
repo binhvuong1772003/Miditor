@@ -52,7 +52,12 @@ type FieldKind =
   /** The name of an action the host handles, see `isActionName`; an empty string means none. */
   | { type: "action"; label: string }
   /** The values handed to the action, see `isPayload`. */
-  | { type: "payload"; label: string };
+  | { type: "payload"; label: string }
+  /**
+   * A value of any JSON shape that the host's own input edits. `kind` names the input the host gave the
+   * editor (`config.customFields`); the registry stays plain data, so the input itself is not here.
+   */
+  | { type: "custom"; label: string; kind: string };
 
 /** One kind of block: what it is called, what it starts with and what a person may change on it. */
 export interface ComponentDef {

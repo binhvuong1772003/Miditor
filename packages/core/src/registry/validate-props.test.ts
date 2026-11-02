@@ -15,6 +15,7 @@ const def: ComponentDef = {
     tint: { type: "color", label: "Tint" },
     photo: { type: "image", label: "Photo" },
     target: { type: "link", label: "Target" },
+    pick: { type: "custom", label: "Pick", kind: "picker" },
   },
 };
 
@@ -121,5 +122,13 @@ describe("validateProps", () => {
         expect(validateProps(open, { t, n })).toEqual([]);
       }),
     );
+  });
+});
+
+describe("validateProps, a custom field", () => {
+  it("takes any value that is JSON", () => {
+    for (const value of [null, true, 3, "x", [1, "a"], { id: "p1", tags: ["a"] }]) {
+      expect(validateProps(def, { pick: value })).toEqual([]);
+    }
   });
 });

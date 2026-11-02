@@ -38,6 +38,9 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
       return value === "" || isActionName(value) ? undefined : "type";
     case "payload":
       return isPayload(value) ? undefined : "type";
+    case "custom":
+      // Whatever the host's input makes; that it is JSON is checked with the rest of the page.
+      return undefined;
   }
 }
 

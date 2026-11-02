@@ -61,6 +61,8 @@ function fieldIsBroken(field: unknown): boolean {
     case "action":
     case "payload":
       return false;
+    case "custom":
+      return !(typeof field.kind === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(field.kind));
     default:
       return true;
   }

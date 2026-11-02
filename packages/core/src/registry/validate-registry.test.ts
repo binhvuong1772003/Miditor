@@ -214,3 +214,25 @@ describe("validateRegistry", () => {
     expect(validatePage(registry, page)).toEqual([]);
   });
 });
+
+describe("validateRegistry, a custom field", () => {
+  const custom = (field: unknown) =>
+    with_({ fields: { pick: field }, defaultProps: { pick: { id: "p1" } } });
+
+  it("accepts a name of an input the host draws", () => {
+    expect(
+      validateRegistry(custom({ type: "custom", label: "Pick", kind: "product-picker" })),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ["no kind", { type: "custom", label: "Pick" }],
+    ["an empty kind", { type: "custom", label: "Pick", kind: "" }],
+    ["a kind with capitals", { type: "custom", label: "Pick", kind: "Picker" }],
+    ["a kind that is not text", { type: "custom", label: "Pick", kind: 3 }],
+  ])("refuses %s", (_name, field) => {
+    expect(validateRegistry(custom(field))).toEqual([
+      { type: "Heart", key: "pick", code: "field" },
+    ]);
+  });
+});
