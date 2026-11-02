@@ -26,7 +26,7 @@ import {
 import { nudgeRect } from "../nudge";
 import { withBoxFor } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";
-import { type Env, edit, editInLastStep } from "./document";
+import { type Env, edit, editInLastStep, runner } from "./document";
 import { type Size, type State, settle } from "./structure";
 
 // The commands that put blocks somewhere: lining up, nudging, typed numbers, anchors, the phone layout
@@ -84,7 +84,7 @@ export function arrangeSelected<S extends State>(
       root,
     );
   });
-  return args.merge ? editInLastStep(settled, change, env.limit) : edit(settled, change, env.limit);
+  return args.merge ? editInLastStep(settled, change, env) : edit(settled, change, env);
 }
 
 /** Line the selected blocks up with each other, or one block with its parent. */
@@ -158,7 +158,7 @@ export function changeAnchor<S extends State>(
         return after === before ? n : withBoxFor(n, frame, after);
       }),
     ),
-    env.limit,
+    env,
   );
 }
 
@@ -179,7 +179,7 @@ export function resetPhone<S extends State>(state: S, env: Env): S {
         ),
       ),
     ),
-    env.limit,
+    env,
   );
 }
 
@@ -210,7 +210,7 @@ export function setRect<S extends State>(
         return after === before ? n : withBoxFor(n, frame, after);
       }),
     ),
-    env.limit,
+    env,
   );
 }
 
@@ -247,7 +247,7 @@ export function placeBoxes<S extends State>(
         root,
       ),
     ),
-    env.limit,
+    env,
   );
 }
 
@@ -268,7 +268,7 @@ export function turnBlock<S extends State>(
         return box.rotation === rotation ? n : withBoxFor(n, frame, { ...box, rotation });
       }),
     ),
-    env.limit,
+    env,
   );
 }
 
@@ -294,13 +294,13 @@ export function moveToParent<S extends State>(
       );
       return reparentNode(placed, args.before.id, args.targetId, args.options);
     }),
-    env.limit,
+    env,
   );
 }
 
 /** The commands tied to a store. */
 export function geometryCommands<S extends State>(store: EditorStore<S>, env: Env) {
-  const run = (command: (state: S) => S) => store.setState(command);
+  const run = runner(store, env);
   return {
     alignSelected: (container: Size | null, to: AlignTo) =>
       run((state) => alignSelected(state, { container, to }, env)),

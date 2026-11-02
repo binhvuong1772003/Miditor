@@ -167,3 +167,22 @@ export function guard(
   }
   return null;
 }
+
+/**
+ * Tells the host of a refusal, but a repeat of the same action on the same block within a second (a held
+ * arrow key) is told once.
+ */
+export function coalesced(
+  report: (denial: Denial) => void,
+  now: () => number = Date.now,
+): (denial: Denial) => void {
+  const last = new Map<string, number>();
+  return (denial) => {
+    const key = `${denial.action}:${denial.nodeId}`;
+    const at = now();
+    const before = last.get(key);
+    last.set(key, at);
+    if (before !== undefined && at - before < 1000) return;
+    report(denial);
+  };
+}

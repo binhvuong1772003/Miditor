@@ -18,7 +18,7 @@ import {
 import { placeAt } from "../drop-place";
 import { patchChange } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";
-import { type Env, edit, editAndEndDraft, setDraft } from "./document";
+import { type Env, edit, editAndEndDraft, runner, setDraft } from "./document";
 import { clearSelection, reconcile, selectMany, selectManyLast, selectOnly } from "./selection";
 import type { DocumentState, SelectionState, ViewState } from "./state";
 
@@ -38,11 +38,7 @@ export type Point = { x: number; y: number };
 export function settle<S extends State>(state: S, env: Env): S {
   const pending = state.draft;
   if (!pending) return state;
-  return editAndEndDraft(
-    state,
-    patchChange(pending.id, pending, state.frame, env.registry),
-    env.limit,
-  );
+  return editAndEndDraft(state, patchChange(pending.id, pending, state.frame, env.registry), env);
 }
 
 const rootOf = (state: DocumentState) => state.history.present.root;
@@ -85,7 +81,7 @@ export function addBlock<S extends State>(
     edit(
       settled,
       withRoot((tree) => insertNode(tree, parentId, node)),
-      env.limit,
+      env,
     ),
     id,
     parentId,
@@ -112,7 +108,7 @@ export function dropBlock<S extends State>(
     edit(
       settled,
       withRoot((tree) => insertNode(tree, args.parentId, node)),
-      env.limit,
+      env,
     ),
     id,
     args.parentId,
@@ -147,7 +143,8 @@ export function duplicateSelected<S extends State>(
     edit(
       settled,
       withRoot((tree) => originals.reduce((acc, id) => duplicateNode(acc, id, options), tree)),
-      env.limit,
+      env,
+      { kind: "duplicate", originals },
     ),
     copies,
   );
@@ -171,7 +168,7 @@ export function groupSelected<S extends State>(
     edit(
       settled,
       withRoot((tree) => groupNodes(tree, ids, id, container)),
-      env.limit,
+      env,
     ),
     [id],
   );
@@ -193,7 +190,7 @@ export function ungroupSelected<S extends State>(
     edit(
       state,
       withRoot((tree) => ungroupNode(tree, group.id, container)),
-      env.limit,
+      env,
     ),
     members,
   );
@@ -207,7 +204,7 @@ export function deleteSelected<S extends State>(state: S, env: Env): S {
   const next = edit(
     setDraft(state, null),
     withRoot((tree) => gone.reduce((acc, id) => removeNode(acc, id), tree)),
-    env.limit,
+    env,
   );
   return reconcile(clearSelection(next), rootOf(next));
 }
@@ -222,7 +219,7 @@ export function reorderSelected<S extends State>(state: S, to: Reorder, env: Env
   return edit(
     settled,
     withRoot((tree) => reorderNode(tree, id, to)),
-    env.limit,
+    env,
   );
 }
 
@@ -258,7 +255,7 @@ export function pasteBlocks<S extends State>(
               container: args.container,
             }).root,
         ),
-        env.limit,
+        env,
       ),
       done.ids,
       args.parentId,
@@ -269,7 +266,7 @@ export function pasteBlocks<S extends State>(
 
 /** The commands tied to a store. */
 export function structureCommands<S extends State>(store: EditorStore<S>, env: Env) {
-  const run = (command: (state: S) => S) => store.setState(command);
+  const run = runner(store, env);
   return {
     addBlock: (args: Parameters<typeof addBlock>[1]) => run((state) => addBlock(state, args, env)),
     dropBlock: (args: Parameters<typeof dropBlock>[1]) =>
@@ -287,12 +284,12 @@ export function structureCommands<S extends State>(store: EditorStore<S>, env: E
     /** Whether any block was pasted. */
     pasteBlocks: (args: Parameters<typeof pasteBlocks>[1]): boolean => {
       let pasted = false;
-      run((state) => {
+      const refused = run((state) => {
         const done = pasteBlocks(state, args, env);
         pasted = done.pasted;
         return done.state;
       });
-      return pasted;
+      return pasted && !refused;
     },
   };
 }

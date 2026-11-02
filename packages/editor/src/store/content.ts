@@ -11,7 +11,7 @@ import {
 import type { PanelPatch } from "../patch";
 import { patchChange } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";
-import { type Env, edit, editAndEndDraft, saveWith } from "./document";
+import { type Env, edit, editAndEndDraft, runner, saveWith } from "./document";
 import type { State } from "./structure";
 
 // The commands that change what a page says, not where its blocks are: the properties of a block, the
@@ -38,8 +38,7 @@ export const commitPatch = <S extends State>(
   state: S,
   args: { id: string; patch: PanelPatch },
   env: Env,
-): S =>
-  editAndEndDraft(state, patchChange(args.id, args.patch, state.frame, env.registry), env.limit);
+): S => editAndEndDraft(state, patchChange(args.id, args.patch, state.frame, env.registry), env);
 
 /** Save with what is pending in a panel stored first; it is part of what is saved. */
 export const saveDraft = <S extends State>(state: S, env: Env): S => {
@@ -47,7 +46,7 @@ export const saveDraft = <S extends State>(state: S, env: Env): S => {
   return saveWith(
     state,
     pending ? patchChange(pending.id, pending, state.frame, env.registry) : null,
-    env.limit,
+    env,
   );
 };
 
@@ -69,7 +68,7 @@ export const changeMeta = <S extends State>(
       const next = tidyMeta(merged);
       return next ? { ...rest, meta: next } : rest;
     },
-    env.limit,
+    env,
   );
 
 export const setThemeColor = <S extends State>(
@@ -84,7 +83,7 @@ export const setThemeColor = <S extends State>(
         ...prev.theme,
         colors: { ...prev.theme?.colors, [args.name]: args.color },
       }),
-    env.limit,
+    env,
   );
 
 /** A colour renamed is followed by the blocks that used it. */
@@ -108,7 +107,7 @@ export const renameThemeColor = <S extends State>(
         root: replaceColor(renamed.root, env.registry, args.from, colorRef(args.to)),
       };
     },
-    env.limit,
+    env,
   );
 
 /** A colour that goes is baked into the blocks that used it. */
@@ -122,7 +121,7 @@ export const deleteThemeColor = <S extends State>(state: S, name: string, env: E
         ? kept
         : { ...kept, root: replaceColor(kept.root, env.registry, name, gone) };
     },
-    env.limit,
+    env,
   );
 
 export const setThemeFont = <S extends State>(
@@ -139,7 +138,7 @@ export const setThemeFont = <S extends State>(
         fonts: args.stack === undefined ? others : { ...others, [args.which]: args.stack },
       });
     },
-    env.limit,
+    env,
   );
 
 /** The colours and fonts of a theme put on the page, and the blocks that used the old ones follow. */
@@ -147,11 +146,11 @@ export const putTheme = <S extends State>(
   state: S,
   theme: Pick<SavedTheme, "colors" | "font">,
   env: Env,
-): S => edit(state, (prev) => applyTheme(prev, env.registry, theme), env.limit);
+): S => edit(state, (prev) => applyTheme(prev, env.registry, theme), env);
 
 /** The commands tied to a store. */
 export function contentCommands<S extends State>(store: EditorStore<S>, env: Env) {
-  const run = (command: (state: S) => S) => store.setState(command);
+  const run = runner(store, env);
   return {
     commitPatch: (id: string, patch: PanelPatch) =>
       run((state) => commitPatch(state, { id, patch }, env)),
