@@ -1,0 +1,83 @@
+// What the host lets people do. A change of the page is compared with the page before it and sorted
+// into kinds (added, removed, moved, edited); each kind is asked of the permission for the node
+// concerned. Nothing here knows how the change was made, so every way of making one is covered.
+
+type OnNode = boolean | ((node: TreeNode) => boolean);
+
+export interface Permissions {
+  /** Change the props or the looks of a block, or the page's own settings, theme and fonts. */
+  canEdit?: OnNode;
+  /** Take a block away, with what is inside it. */
+  canDelete?: OnNode;
+  /** Make a copy of a block. */
+  canDuplicate?: OnNode;
+  /** Move, resize or turn a block, change its anchors or its place among the others. */
+  canDrag?: OnNode;
+  /** Put a new block of this kind in `parent`. */
+  canAdd?: boolean | ((parent: TreeNode, kind: string) => boolean);
+}
+
+export type Action = "edit" | "delete" | "duplicate" | "drag" | "add";
+
+/** What was refused: the kind of change and the block it concerned (the parent, for an add). */
+export type Denial = { action: Action; nodeId: string | null };
+
+/** What the command that made the change says about it, when the pages alone cannot tell. */
+export type Intent = { kind: "duplicate"; originals: readonly string[] } | undefined;
+
+type Entry = { node: TreeNode; parentId: string | null };
+
+function index(root: TreeNode): Map<string, Entry>;
+
+function same(a: unknown, b: unknown): boolean;
+
+/** Answers for a node are kept while the node object and the function are the same. */
+const answers = new WeakMap<object, WeakMap<object, boolean>>();
+
+export function allowed(permission: OnNode | undefined, node: TreeNode): boolean;
+
+/** Where a block is, how big, turned how, placed how on the phone: all that `canDrag` is about. */
+const placed = (node: TreeNode) => ({
+  position: node.position,
+  size: node.size,
+  rotation: node.rotation,
+  phone: node.phone,
+  lockRatio: node.lockRatio,
+});
+
+/** What `canEdit` is about: the content and the looks of a block. */
+const content = (node: TreeNode) => ({
+  props: node.props,
+  phoneProps: node.phoneProps,
+  styles: node.styles,
+});
+
+/** The place of each block among the siblings that stayed with its parent, before and after. */
+function ranks(parent: TreeNode, other: Map<string, Entry>): Map<string, number>;
+
+/**
+ * The first thing the change does that the permissions refuse, or `null` when they allow all of it (or
+ * there are none). A change is allowed whole or not at all.
+ */
+export function guard(
+  before: PageData,
+  after: PageData,
+  permissions: Permissions | undefined,
+  intent?: Intent,
+): Denial | null;
+
+/**
+ * Tells the host of a refusal, but a repeat of the same action on the same block within a second (a held
+ * arrow key) is told once.
+ */
+export function coalesced(
+  report: (denial: Denial) => void,
+  now: () => number = Date.now,
+): (denial: Denial) => void;
+
+/** Whether a block of `kind` may be put in `parent`. */
+export function mayAdd(
+  permissions: Permissions | undefined,
+  parent: TreeNode,
+  kind: string,
+): boolean;

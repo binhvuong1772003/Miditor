@@ -44,6 +44,9 @@ import { Render } from "@midito-kitchen/render";
 | `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                                         |
 | `overrides`        | Wrap or replace parts of the editor; see [Change the editor with overrides](#change-the-editor-with-overrides). Experimental. |
 | `historyLimit`     | How many steps undo goes back. 100 by default; `Infinity` for no limit.                                                       |
+| `permissions`      | What people may do, by block; see [Control what people can do](#control-what-people-can-do). Experimental.                    |
+| `hide`             | Names of parts of the editor not to draw, same section. Experimental.                                                         |
+| `onDenied`         | Called when a change is refused, same section. Experimental.                                                                  |
 | `className`        | An extra class on the root element.                                                                                           |
 | `config`           | `components`, `renderers`, `uploadImage` and `theme`; see below.                                                              |
 
@@ -361,6 +364,98 @@ The editor's parts are accessible; a replacement has to stay so.
 - **`contextMenu`:** the menu closes on Esc and gives focus back; this is the editor's, and your lines
   take part in it. Give every line a `label`.
 - **`quickActions`:** the buttons stay reachable by keyboard.
+
+## Control what people can do
+
+> Experimental. `permissions`, `hide` and `onDenied` may change before they are stable.
+
+**Read this first.** The editor's permissions stop the editor and the code that drives it. The page is
+plain data, and anyone can send your server a page that the editor would have refused. Your server must
+check the page again before it stores it.
+
+`permissions` says what people may do. A change that is refused is refused whatever way it was asked
+for: a button, a key, the right-click menu, a drag, a typed value, a paste, or a call of the control
+API such as `editor.remove()`. Each key is optional, is `true` when left out, and is a boolean or a
+function of the block as you store it. The functions must be pure and cheap.
+
+| Key            | Asks                                                                             | Value                                    |
+| -------------- | -------------------------------------------------------------------------------- | ---------------------------------------- |
+| `canEdit`      | May the props or the looks of this block change? Also the page's own settings.   | `boolean` or `(node) => boolean`         |
+| `canDelete`    | May this block be taken away, with what is inside it? (Delete, cut, ungroup.)    | `boolean` or `(node) => boolean`         |
+| `canDuplicate` | May this block be copied?                                                        | `boolean` or `(node) => boolean`         |
+| `canDrag`      | May this block move, resize, turn, change its anchors or its place among others? | `boolean` or `(node) => boolean`         |
+| `canAdd`       | May a block of this `kind` be put inside `parent`? (Library, paste, group.)      | `boolean` or `(parent, kind) => boolean` |
+
+```tsx
+<Editor
+  permissions={{
+    canDelete: (node) => node.id !== "footer",
+    canEdit: (node) => !node.props.locked,
+    canDrag: (node) => node.id !== "footer",
+    canAdd: (parent, kind) => kind !== "Video",
+  }}
+  onDenied={({ action, nodeId }) => toast(`Not allowed: ${action}`)}
+  hide={["tool.themes", "props.anchors"]}
+/>;
+```
+
+To lock a block, answer as a function of what you already store in the node: its id, a prop, a style.
+The editor adds no `locked` flag to the page. `permissions`, `hide` and `onDenied` are read when a
+change is made or a part is drawn, so you may change them while the editor is open.
+
+### How a change is sorted
+
+The editor compares the page before and after a change, finds each block by its id, and asks the
+permission that matches what happened to it:
+
+- **Added** (an id that was not there): `canAdd(parent, kind)`.
+- **Removed**: `canDelete(node)`.
+- **Moved** (the parent, the position, size, turn, anchors or phone placement changed, or its rank among
+  the siblings that stayed): `canDrag(node)`.
+- **Edited** (props, or looks other than position): `canEdit(node)`.
+
+Only the root of an added or removed subtree is asked, not what is inside it. A change of `children` is
+not an edit of the parent, and adding or deleting a sibling moves no one. A change that moves and edits
+a block asks both. Group adds the group (`canAdd(parent, "Group")`) and moves its children (`canDrag`).
+Ungroup removes the group (`canDelete`) and moves its children. Reordering and moving a block into
+another block are moves. Cut is a removal and paste is an add. Duplicate asks `canDuplicate` of each
+original and does not ask `canAdd`. The page's settings (title, height, background, theme, fonts) are
+asked of `canEdit` of the page's root block.
+
+### What a refusal does
+
+- The **whole change is refused**: if any part is refused, nothing is done and the page stays as it was.
+- The control API says so: a command such as `editor.remove()` returns `false`, and `addBlock` returns
+  `null`. A command that follows a change (selecting what was added) does not happen either.
+- A change typed in a panel is refused when it is stored, and the draft ends, so the field shows the
+  stored value again.
+- `onDenied({ action, nodeId })` is called once for the refusal. `action` is `"edit"`, `"delete"`,
+  `"duplicate"`, `"drag"` or `"add"`; `nodeId` is the block, or the parent for an add. The same action on
+  the same block within one second (a held arrow key) is told once.
+- A screen reader hears a short "Not allowed".
+
+The interface follows the permissions so it does not offer what would be refused: buttons and menu
+lines are off, a block that cannot be dragged shows no handles, and a block that cannot be edited has
+read-only fields.
+
+**Not governed:** undo and redo (they only walk back through changes that were allowed) and Save (it is
+not a change of the page; your server decides what it stores).
+
+### Hide parts of the editor
+
+`hide` is a list of names. A hidden part is not drawn. An unknown name is a type error, and is ignored
+with one warning at run time.
+
+| Group             | Names                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| Places            | `header`, `rail`, `panelStart`, `panelEnd`, `quickActions`, `contextMenu`                           |
+| Header parts      | `header.undo`, `header.redo`, `header.frame`, `header.zoom`, `header.save`, `header.status`         |
+| Tools             | `tool.blocks`, `tool.layers`, `tool.images`, `tool.themes`                                          |
+| Block panel parts | `props.align` (align and distribute), `props.anchors`, `props.phone` (reset to automatic placement) |
+
+If the open tool is hidden, the first tool left opens. Hiding `panelEnd` hides the properties, but
+people can still select blocks. **Hiding does not stop a command**: with `header.undo` hidden, Ctrl+Z and
+`editor.undo()` still work. Only `permissions` refuse.
 
 ## Saving
 

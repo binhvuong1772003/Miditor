@@ -36,10 +36,17 @@ function surfaceOf(source: string): string {
 }
 
 describe("public surface", () => {
-  for (const file of ["control.ts", "control-api.ts", "overrides.tsx"]) {
+  for (const file of [
+    "control.ts",
+    "control-api.ts",
+    "overrides.tsx",
+    "store/permissions.ts",
+    "hide.tsx",
+  ]) {
     it(`${file} keeps its types and signatures`, async () => {
       const source = readFileSync(new URL(`./${file}`, import.meta.url), "utf8");
-      await expect(surfaceOf(source)).toMatchFileSnapshot(`./__snapshots__/${file}.snap`);
+      const name = file.replace("/", "-");
+      await expect(surfaceOf(source)).toMatchFileSnapshot(`./__snapshots__/${name}.snap`);
     });
   }
 

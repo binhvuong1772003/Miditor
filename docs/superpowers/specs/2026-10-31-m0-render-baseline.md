@@ -32,6 +32,7 @@ canvas.
 | M1a, the control API             | 290.81 kB | 76.28 kB |
 | M1b, the controller              | 293.46 kB | 77.19 kB |
 | M2, overrides                    | 297.38 kB | 78.27 kB |
+| M3, hide and permissions         | 312.56 kB | 82.61 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -109,3 +110,9 @@ Overrides add no state to the store and no render to an editor given none: a pla
 
 With the overrides in place `pnpm perf` still gives the same numbers in all six moments (add Text 2, type
 5 chars 2, drag 100px 15, select none 4, hover block 3, select block 4).
+
+## M3: renders
+
+A host that gives no `permissions`, `hide` or `onDenied` sees no change. With no permissions the guard
+does nothing and returns the same objects, so a change costs the same and draws the same. A part
+asks the hide list with one lookup in a context.

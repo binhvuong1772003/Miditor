@@ -83,6 +83,29 @@ the surface snapshot.
 - The place names are written once, in `ComponentOverrides` and `Overrides`; hiding a part (M3) uses the
   same names.
 
+## Permissions
+
+What a host lets people do (`store/permissions.ts`, the `permissions` and `onDenied` props). Its types
+are in the surface snapshot.
+
+- Every change of the page ends in one of three functions of `store/document.ts`: `edit`,
+  `editAndEndDraft` and `editInLastStep`. Each makes the next page, then asks `guard(before, after,
+  permissions, intent)` before it stores anything. `guard` sorts the change into added, removed, moved
+  and edited blocks and asks the permission for each; with no permissions it does nothing and the same
+  objects come back.
+- A refusal is told to the host (`Env.denied`, through `coalesced`, so a held key is told once) and marked
+  in `Env.refusal`. `runner` reads the mark and gives the command up whole: the state comes back as it
+  was, with the panel draft ended when it was the panel's change that was refused. `createRun` returns
+  `false` for such a command, and so does the control API.
+- Undo and redo (`step`) and Save do not ask `guard`.
+- **Why not check in the buttons, keys and gestures.** There are many paths (23 call sites) and a new one
+  would be a hole until someone remembered it. One place that every change must pass is true for all of
+  them, now and later. The interface only asks the same permissions (`permissions-context.tsx`, `canRun`)
+  so it can draw itself off; that is looks, not safety.
+- **Hide** (`hide.tsx`) is a different thing: a context that holds the names to hide. The parts read it
+  with `useHidden(name)` when they draw, and `OverrideSlot` reads it for the places. Hiding never
+  reaches the store, so it never stops a command.
+
 ## The screen
 
 `Editor.tsx` holds the pieces together and owns what they share: the elements of the canvas
@@ -120,6 +143,7 @@ and the library drop use too.
 - `canvas/` does not import `Editor.tsx`.
 - `overrides.tsx` does not import `Editor.tsx`: the parts use the slot, not the other way round.
 - A command returns the same state when it does nothing.
+- The guard lives in `store/` and is the only place that decides a refusal.
 
 ## Checking a change
 
