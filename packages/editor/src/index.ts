@@ -15,6 +15,9 @@ export {
 export type { Renderer, RendererContext } from "@midito-kitchen/render";
 export type { ActionDef, ActionParam } from "./actions";
 export type { Appearance, AppearanceColor } from "./appearance";
+export type { EditorView } from "./control";
+export type { EditorApi } from "./control-api";
+export { useEditor } from "./control-context";
 export { Editor, type EditorProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
