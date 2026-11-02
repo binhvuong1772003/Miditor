@@ -35,11 +35,18 @@ export interface SelectionControls {
   dragStart: (press: MouseEvent) => void;
 }
 
+/** Which gestures the box offers: none when the blocks may not be moved, and no resize around a group. */
+export function gesturesOf(locked: boolean, group: boolean) {
+  return { draggable: !locked, resizable: !locked && !group, rotatable: !locked };
+}
+
 export interface SelectionBoxProps {
   /** The element to drag and resize. Pass it as state, not a ref: a ref is still null on the first render. */
   target: HTMLElement | null;
   /** The scrolling element that holds moveable's control layer. */
   container: HTMLElement | null;
+  /** The block may not be moved (`canDrag`): no handles, and it cannot be dragged. */
+  locked?: boolean | undefined;
   /** A class for moveable's control layer, to colour the selection outline. */
   className?: string | undefined;
   /** Resizing always keeps the width to height ratio, for a block that must not be squashed. */
@@ -146,6 +153,7 @@ export function SelectionBox({
   target,
   container,
   className,
+  locked = false,
   lockRatio = false,
   minSize,
   angle,
@@ -299,9 +307,7 @@ export function SelectionBox({
       target={target}
       container={container}
       {...(className ? { className } : {})}
-      draggable
-      resizable={!group}
-      rotatable
+      {...gesturesOf(locked, group)}
       rotationPosition={turnAt}
       keepRatio={lockRatio || keepRatio}
       origin={false}

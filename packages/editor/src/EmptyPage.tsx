@@ -1,6 +1,8 @@
 import styles from "./EmptyPage.module.css";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
+import { useMayAdd } from "./permissions-context";
+import { useEditorState } from "./store";
 
 export interface EmptyPageProps {
   /** Blocks cannot be added from this screen (the phone), so the button is off and says why. */
@@ -18,6 +20,9 @@ export interface EmptyPageProps {
  */
 export function EmptyPage({ disabled, onAdd, onOpenBlocks }: EmptyPageProps) {
   const t = useT();
+  // The first block is a Container; it is off when the page does not take one.
+  const root = useEditorState((state) => state.history.present.root);
+  const mayAdd = useMayAdd(root, "Container");
   return (
     <div className={styles.wrap}>
       <div className={styles.card}>
@@ -25,7 +30,12 @@ export function EmptyPage({ disabled, onAdd, onOpenBlocks }: EmptyPageProps) {
         <h2 className={styles.title}>{t("empty.title")}</h2>
         <p className={styles.text}>{disabled ? t("empty.desktopOnly") : t("empty.text")}</p>
         <div className={styles.actions}>
-          <button type="button" className={styles.primary} disabled={disabled} onClick={onAdd}>
+          <button
+            type="button"
+            className={styles.primary}
+            disabled={disabled || !mayAdd}
+            onClick={onAdd}
+          >
             {t("empty.add")}
           </button>
           <button type="button" className={styles.secondary} onClick={onOpenBlocks}>

@@ -4,6 +4,9 @@ import styles from "./BlocksPanel.module.css";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
 import { useRenders } from "./perf";
+import { usePermissions } from "./permissions-context";
+import { useEditorState } from "./store";
+import { mayAdd } from "./store/permissions";
 
 export interface BlocksPanelProps {
   registry: Registry;
@@ -44,6 +47,10 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
   const groups = libraryOf(registry, query);
   const nothing = groups.length === 0;
   const why = disabled ? t("blocks.disabled") : undefined;
+  // A card puts its block on the page when nothing else is selected, so the page is asked.
+  const root = useEditorState((state) => state.history.present.root);
+  const permissions = usePermissions();
+  const mayAddOf = (kind: string) => mayAdd(permissions, root, kind);
   const [ghost, setGhost] = useState<Ghost | null>(null);
   // A drag ends with a click event on the card; that click must not add a second block.
   const dragged = useRef(false);
@@ -60,7 +67,7 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
     type: string,
     def: { label: string; icon?: string | undefined },
   ) => {
-    if (disabled || event.button !== 0) return;
+    if (disabled || !mayAddOf(type) || event.button !== 0) return;
     // A drag that ended off the card sent no click to it, so the flag of that drag is stale.
     dragged.current = false;
     const from = { x: event.clientX, y: event.clientY };
@@ -123,7 +130,7 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
                 key={type}
                 type="button"
                 className={styles.card}
-                disabled={disabled}
+                disabled={disabled || !mayAddOf(type)}
                 title={why ?? def.description ?? t("blocks.add", { name: def.label })}
                 onPointerDown={(event) => press(event, type, def)}
                 onClick={() => {

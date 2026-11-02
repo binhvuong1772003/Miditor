@@ -27,6 +27,7 @@ import styles from "./PropertiesPanel.module.css";
 import { PropFields } from "./PropFields";
 import type { PanelPatch } from "./patch";
 import { useRenders } from "./perf";
+import { Lock, useMay } from "./permissions-context";
 import { Section } from "./Section";
 import type { UploadImage } from "./upload-image";
 
@@ -105,6 +106,9 @@ export function PropertiesPanel({
   // Whether the background is a colour or a picture; it starts as what the block has.
   const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
+  // Design is what `canEdit` governs; Advanced is where the block sits, which `canDrag` governs.
+  const mayEdit = useMay("canEdit", node);
+  const mayDrag = useMay("canDrag", node);
   if (node && selectedCount > 1 && onAlign && onDistribute) {
     // Several blocks: what can be done to all of them, not the fields of one of them.
     return (
@@ -212,180 +216,182 @@ export function PropertiesPanel({
         aria-labelledby={`${tabsId}-${tab}`}
         className={styles.tabpanel}
       >
-        {tab === "design" ? (
-          // A key per tab, so a section of one tab never takes over the open or shut state of another's.
-          <Fragment key="design">
-            {hasFields && def && (
-              <PropFields
-                def={def}
-                props={propsFor(node, device)}
-                theme={theme}
-                actions={actions}
-                fonts={fonts}
-                nodeId={node.id}
-                onChange={(name, value) => onCommit({ key: "prop", name, value })}
-              />
-            )}
-            <Section
-              id="props.background"
-              title={t("background.title")}
-              actions={
-                // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
-                <div
-                  role="group"
-                  aria-label={t("props.fillKind")}
-                  className={`${styles.tabs} ${styles.mini}`}
-                >
-                  {(
-                    [
-                      ["color", t("props.fillColour")],
-                      ["image", t("props.fillImage")],
-                    ] as const
-                  ).map(([id, name]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      className={styles.tab}
-                      aria-pressed={backgroundKind === id}
-                      onClick={() => setFill(id)}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              }
-            >
-              {backgroundKind === "color" ? (
-                <ColourField
-                  label={t("props.fill")}
-                  noneLabel={t("props.noFill")}
-                  hint={t("props.fillHint")}
-                  {...colour("background")}
-                />
-              ) : (
-                <BackgroundFields
-                  styles={node.styles}
-                  uploadImage={uploadImage}
-                  onChange={(patch) => onCommit(patch)}
+        <Lock locked={tab === "design" ? !mayEdit : !mayDrag}>
+          {tab === "design" ? (
+            // A key per tab, so a section of one tab never takes over the open or shut state of another's.
+            <Fragment key="design">
+              {hasFields && def && (
+                <PropFields
+                  def={def}
+                  props={propsFor(node, device)}
+                  theme={theme}
+                  actions={actions}
+                  fonts={fonts}
+                  nodeId={node.id}
+                  onChange={(name, value) => onCommit({ key: "prop", name, value })}
                 />
               )}
-            </Section>
-            <Section id="props.border" title={t("props.border")}>
-              <div className={styles.grid2}>
-                <LengthField
-                  label={t("props.borderWidth")}
-                  hint={t("props.borderWidthHint")}
-                  {...length("borderWidth")}
-                />
-                <LengthField
-                  label={t("props.borderRadius")}
-                  hint={t("props.borderRadiusHint")}
-                  {...length("borderRadius")}
-                />
-                <div className={styles.span2}>
+              <Section
+                id="props.background"
+                title={t("background.title")}
+                actions={
+                  // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+                  <div
+                    role="group"
+                    aria-label={t("props.fillKind")}
+                    className={`${styles.tabs} ${styles.mini}`}
+                  >
+                    {(
+                      [
+                        ["color", t("props.fillColour")],
+                        ["image", t("props.fillImage")],
+                      ] as const
+                    ).map(([id, name]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={styles.tab}
+                        aria-pressed={backgroundKind === id}
+                        onClick={() => setFill(id)}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                {backgroundKind === "color" ? (
                   <ColourField
-                    label={t("props.fillColour")}
-                    noneLabel={t("props.noBorderColour")}
-                    hint={t("props.borderColourHint")}
-                    {...colour("borderColor")}
+                    label={t("props.fill")}
+                    noneLabel={t("props.noFill")}
+                    hint={t("props.fillHint")}
+                    {...colour("background")}
                   />
-                </div>
-              </div>
-            </Section>
-          </Fragment>
-        ) : (
-          <Fragment key="advanced">
-            {isFreeNode(node) && box && (
-              <>
-                {onAlign && onDistribute && (
-                  <AlignSection
-                    selectedCount={selectedCount}
-                    onAlign={onAlign}
-                    onDistribute={onDistribute}
+                ) : (
+                  <BackgroundFields
+                    styles={node.styles}
+                    uploadImage={uploadImage}
+                    onChange={(patch) => onCommit(patch)}
                   />
                 )}
-                <Section id="props.position" title={t("props.positionSize")}>
-                  <div className={styles.pair}>
-                    {coordinate("X", t("props.x"), "x")}
-                    {coordinate("Y", t("props.y"), "y")}
-                    {coordinate("W", t("props.w"), "w")}
-                    {coordinate("H", t("props.h"), "h")}
-                    <AngleField
-                      label="R"
-                      name={t("props.rotation")}
-                      hint=""
-                      stored={box.rotation}
-                      onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
-                      onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
-                      onDiscard={onDiscard}
+              </Section>
+              <Section id="props.border" title={t("props.border")}>
+                <div className={styles.grid2}>
+                  <LengthField
+                    label={t("props.borderWidth")}
+                    hint={t("props.borderWidthHint")}
+                    {...length("borderWidth")}
+                  />
+                  <LengthField
+                    label={t("props.borderRadius")}
+                    hint={t("props.borderRadiusHint")}
+                    {...length("borderRadius")}
+                  />
+                  <div className={styles.span2}>
+                    <ColourField
+                      label={t("props.fillColour")}
+                      noneLabel={t("props.noBorderColour")}
+                      hint={t("props.borderColourHint")}
+                      {...colour("borderColor")}
                     />
                   </div>
-                  <button
-                    type="button"
-                    className={styles.chip}
-                    aria-pressed={keepsRatio(node, def)}
-                    title={t("props.keepRatioTitle")}
-                    onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
-                  >
-                    {t("props.keepRatio")}
-                  </button>
-                </Section>
-                <Section
-                  id="props.anchors"
-                  title={t("props.anchors")}
-                  help={t("props.anchorsHelp")}
-                >
-                  <AnchorSelect
-                    label={t("props.horizontal")}
-                    axis="x"
-                    value={box.x.anchor}
-                    onChange={(a) => onAnchor("x", a)}
-                  />
-                  <AnchorSelect
-                    label={t("props.vertical")}
-                    axis="y"
-                    value={box.y.anchor}
-                    onChange={(a) => onAnchor("y", a)}
-                  />
-                </Section>
-                <Section id="props.phone" title={t("props.phone")}>
-                  {device === "phone" ? (
-                    <div className={styles.row}>
-                      <span className={styles.status}>
-                        {byHand ? t("props.layoutByHand") : t("props.layoutAuto")}
-                      </span>
-                      {byHand ? (
-                        <button type="button" className={styles.reset} onClick={onResetPhone}>
-                          {t("props.resetAuto")}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className={styles.reset}
-                          onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
-                        >
-                          {t("props.editSeparately")}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <p className={styles.hint}>
-                      {byHand ? t("props.layoutByHandHint") : t("props.layoutAutoHint")}
-                    </p>
+                </div>
+              </Section>
+            </Fragment>
+          ) : (
+            <Fragment key="advanced">
+              {isFreeNode(node) && box && (
+                <>
+                  {onAlign && onDistribute && (
+                    <AlignSection
+                      selectedCount={selectedCount}
+                      onAlign={onAlign}
+                      onDistribute={onDistribute}
+                    />
                   )}
-                </Section>
-              </>
-            )}
-            <Section id="props.developer" title={t("props.developer")} closed>
-              <dl className={styles.facts}>
-                <dt>type</dt>
-                <dd>{node.type}</dd>
-                <dt>id</dt>
-                <dd>{node.id}</dd>
-              </dl>
-            </Section>
-          </Fragment>
-        )}
+                  <Section id="props.position" title={t("props.positionSize")}>
+                    <div className={styles.pair}>
+                      {coordinate("X", t("props.x"), "x")}
+                      {coordinate("Y", t("props.y"), "y")}
+                      {coordinate("W", t("props.w"), "w")}
+                      {coordinate("H", t("props.h"), "h")}
+                      <AngleField
+                        label="R"
+                        name={t("props.rotation")}
+                        hint=""
+                        stored={box.rotation}
+                        onPreview={(value) => onPreview({ key: "rotation", value: value ?? 0 })}
+                        onCommit={(value) => onCommit({ key: "rotation", value: value ?? 0 })}
+                        onDiscard={onDiscard}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.chip}
+                      aria-pressed={keepsRatio(node, def)}
+                      title={t("props.keepRatioTitle")}
+                      onClick={() => onCommit({ key: "lockRatio", value: !keepsRatio(node, def) })}
+                    >
+                      {t("props.keepRatio")}
+                    </button>
+                  </Section>
+                  <Section
+                    id="props.anchors"
+                    title={t("props.anchors")}
+                    help={t("props.anchorsHelp")}
+                  >
+                    <AnchorSelect
+                      label={t("props.horizontal")}
+                      axis="x"
+                      value={box.x.anchor}
+                      onChange={(a) => onAnchor("x", a)}
+                    />
+                    <AnchorSelect
+                      label={t("props.vertical")}
+                      axis="y"
+                      value={box.y.anchor}
+                      onChange={(a) => onAnchor("y", a)}
+                    />
+                  </Section>
+                  <Section id="props.phone" title={t("props.phone")}>
+                    {device === "phone" ? (
+                      <div className={styles.row}>
+                        <span className={styles.status}>
+                          {byHand ? t("props.layoutByHand") : t("props.layoutAuto")}
+                        </span>
+                        {byHand ? (
+                          <button type="button" className={styles.reset} onClick={onResetPhone}>
+                            {t("props.resetAuto")}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.reset}
+                            onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
+                          >
+                            {t("props.editSeparately")}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className={styles.hint}>
+                        {byHand ? t("props.layoutByHandHint") : t("props.layoutAutoHint")}
+                      </p>
+                    )}
+                  </Section>
+                </>
+              )}
+              <Section id="props.developer" title={t("props.developer")} closed>
+                <dl className={styles.facts}>
+                  <dt>type</dt>
+                  <dd>{node.type}</dd>
+                  <dt>id</dt>
+                  <dd>{node.id}</dd>
+                </dl>
+              </Section>
+            </Fragment>
+          )}
+        </Lock>
       </div>
     </div>
   );

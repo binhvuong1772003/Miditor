@@ -2,6 +2,16 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./QuickActions.module.css";
+import { type CanState, canRun } from "./store";
+
+/** Which buttons the permissions leave on, from the same answers a menu line is drawn from. */
+export function quickOffs(state: CanState) {
+  return {
+    reorder: canRun(state, "block.reorder", "forward"),
+    duplicate: canRun(state, "block.duplicate"),
+    delete: canRun(state, "block.delete"),
+  };
+}
 
 export interface QuickActionsProps {
   /** The element of the selected block, which the toolbar sits under. */
@@ -10,6 +20,8 @@ export interface QuickActionsProps {
   workspace: HTMLElement;
   /** Blocks cannot be added, moved or deleted from this screen (the phone), so every button is off. */
   disabled: boolean;
+  /** What `quickOffs` says; a button is off when it is false. Default: all on. */
+  allow?: ReturnType<typeof quickOffs> | undefined;
   /** More than one block is selected, so they can be grouped. */
   canGroup: boolean;
   /** The selected block is a group, so it can be taken apart. */
@@ -36,6 +48,7 @@ const GAP = 14;
 export function QuickActions(props: QuickActionsProps) {
   const t = useT();
   const { target, workspace, disabled } = props;
+  const allow = props.allow ?? { reorder: true, duplicate: true, delete: true };
   const [place, setPlace] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [open, setOpen] = useState(false);
@@ -116,7 +129,7 @@ export function QuickActions(props: QuickActionsProps) {
         className={styles.button}
         aria-label={t("quick.up")}
         title={off ?? t("quick.upTitle")}
-        disabled={disabled}
+        disabled={disabled || !allow.reorder}
         onClick={props.onForward}
       >
         <Icon name="up" />
@@ -126,7 +139,7 @@ export function QuickActions(props: QuickActionsProps) {
         className={styles.button}
         aria-label={t("quick.down")}
         title={off ?? t("quick.downTitle")}
-        disabled={disabled}
+        disabled={disabled || !allow.reorder}
         onClick={props.onBackward}
       >
         <Icon name="down" />
@@ -136,7 +149,7 @@ export function QuickActions(props: QuickActionsProps) {
         className={styles.button}
         aria-label={t("quick.duplicate")}
         title={off ?? t("quick.duplicateTitle")}
-        disabled={disabled}
+        disabled={disabled || !allow.duplicate}
         onClick={props.onDuplicate}
       >
         <Icon name="copy" />
@@ -146,7 +159,7 @@ export function QuickActions(props: QuickActionsProps) {
         className={`${styles.button} ${styles.danger}`}
         aria-label={t("quick.delete")}
         title={off ?? t("quick.deleteTitle")}
-        disabled={disabled}
+        disabled={disabled || !allow.delete}
         onClick={props.onDelete}
       >
         <Icon name="trash" />
