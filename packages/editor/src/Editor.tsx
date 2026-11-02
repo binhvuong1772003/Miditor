@@ -303,7 +303,6 @@ function EditorBody({
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
   const savedPage = useEditorState((state) => state.savedPage);
-  /** Store a change as one step. */
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const wait =
@@ -343,7 +342,6 @@ function EditorBody({
   const selectedId = useEditorState((state) => state.selectedId);
   // Whether the panel of the tool is open. A narrow screen starts without it, to leave room for the page.
   const panelOpen = useEditorState((state) => state.panelOpen);
-  /** A tool of the rail: the panel shows it, and pressing the one that is shown shuts the panel. */
   // The words of a block being typed on the block itself, which block and which of its props.
   const editing = useEditorState((state) => state.editing);
   // The block whose children a press selects: the page at the start, a group once it is entered.
@@ -644,10 +642,6 @@ function EditorBody({
     return parent ? { w: parent.clientWidth, h: parent.clientHeight } : undefined;
   };
 
-  /**
-   * The commands by name, which a key (and, as they move over, a menu line and a button) gives. The
-   * measure and the note are the ones of this render.
-   */
   /** What a button or a menu line looks at to be on, from the state this part already draws from. */
   const canState = { frame, selectedId, picked, history, zoom };
   const fit = () => {
@@ -722,8 +716,6 @@ function EditorBody({
       pasted.current = { text, times };
     }
   };
-
-  /** One step back or forward. What is still pending is dropped; the selection stays if its node does. */
 
   // The block whose words are being typed, the element that draws it, and the limit of the field.
   const editingNode = editing ? findNode(data.root, editing.id) : undefined;

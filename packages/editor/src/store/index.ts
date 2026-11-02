@@ -27,7 +27,7 @@ export { createEditorStore, type EditorStore } from "./create-editor-store";
 export { type DocumentCommands, initialDocumentState } from "./document";
 export type { GeometryCommands } from "./geometry";
 export { createNotifier, type Notifier } from "./notifier";
-export { initialSelectionState, type SelectionCommands, selectionCommands } from "./selection";
+export { initialSelectionState, type SelectionCommands } from "./selection";
 export type {
   DocumentState,
   Draft,
@@ -38,4 +38,4 @@ export type {
   ViewState,
 } from "./state";
 export type { StructureCommands } from "./structure";
-export { initialViewState, type ViewCommands, viewCommands } from "./view";
+export { initialViewState, type ViewCommands } from "./view";
