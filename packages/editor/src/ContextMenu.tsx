@@ -5,6 +5,8 @@ import { useT } from "./i18n/context";
 /** One line of the menu, or a rule between two groups. */
 export type ContextMenuItem =
   | {
+      /** A stable identity for the line; the row is keyed by it, or by its label and place. */
+      id?: string;
       label: string;
       /** The shortcut, shown at the right end, such as "Ctrl+D". Only said, not wired here. */
       hint?: string;
@@ -110,7 +112,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           <hr key={index} className={styles.rule} />
         ) : (
           <button
-            key={item.label}
+            key={item.id ?? `${item.label}:${index}`}
             type="button"
             role="menuitem"
             className={`${styles.item} ${item.danger ? styles.danger : ""}`}

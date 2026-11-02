@@ -135,3 +135,32 @@ export function OverrideSlot<N extends keyof ComponentOverrides>({
     </OverrideBoundary>
   );
 }
+
+const isItem = (item: unknown): boolean =>
+  item === "separator" ||
+  (typeof item === "object" &&
+    item !== null &&
+    typeof (item as { label?: unknown }).label === "string" &&
+    typeof (item as { onSelect?: unknown }).onSelect === "function");
+
+/**
+ * The lines of the menu after the host's `contextMenu`. Without one, or if it throws or gives back
+ * something that is not a list of lines, they are the editor's own, and one error says why.
+ */
+export function applyContextMenu(
+  override: Overrides["contextMenu"],
+  editor: EditorApi,
+  items: readonly ContextMenuItem[],
+): readonly ContextMenuItem[] {
+  if (!override) return items;
+  try {
+    const out = override({ editor, items });
+    if (Array.isArray(out) && out.every(isItem)) return out;
+    console.error(
+      '[midito] the override of "contextMenu" did not give a list of lines (a line is "separator" or { label, onSelect }); the default menu is shown',
+    );
+  } catch (error) {
+    console.error(`[midito] the override of "contextMenu" threw: ${String(error)}`);
+  }
+  return items;
+}

@@ -66,7 +66,7 @@ import { type IconComponent, IconsContext, usableIcons } from "./icons";
 import type { LibraryImage } from "./images";
 import { KEY_HINTS, matchKey } from "./keymap";
 import { isNudgeKey } from "./nudge";
-import { type Overrides, OverridesContext } from "./overrides";
+import { applyContextMenu, OverrideSlot, type Overrides, OverridesContext } from "./overrides";
 import { PageEdge } from "./PageEdge";
 import { pageWidthVariables } from "./page-width";
 import { useRenders } from "./perf";
@@ -721,6 +721,13 @@ function EditorBody({
     }),
   );
 
+  // The host's say on the menu is asked once each time it opens, not on every render while it is open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the lines are fixed for as long as the menu is open
+  const shownMenu = useMemo(
+    () => (menuAt ? applyContextMenu(overrides?.contextMenu, api, menuItems()) : undefined),
+    [menuAt],
+  );
+
   // Hand the control object to the controller the host gave, for as long as this editor is open.
   useEffect(
     () => (controller ? (attachController(controller, { api, store }) ?? undefined) : undefined),
@@ -1026,7 +1033,7 @@ function EditorBody({
                   <ContextMenu
                     x={menuAt.x}
                     y={menuAt.y}
-                    items={menuItems()}
+                    items={shownMenu ?? []}
                     onClose={() => {
                       setMenuAt(null);
                       // The keys of the editor work again where the pointer was.
@@ -1061,21 +1068,23 @@ function EditorBody({
                   !menuAt &&
                   selectedId &&
                   selectedId !== data.root.id && (
-                    <QuickActions
-                      target={block}
-                      workspace={workspace}
-                      disabled={onPhone}
-                      canGroup={picked.length > 0}
-                      canUngroup={selectedNode?.type === "Group"}
-                      onForward={() => run("block.reorder", "forward")}
-                      onBackward={() => run("block.reorder", "backward")}
-                      onDuplicate={() => run("block.duplicate")}
-                      onDelete={() => run("block.delete")}
-                      onGroup={() => run("block.group")}
-                      onUngroup={() => run("block.ungroup")}
-                      onFront={() => run("block.reorder", "front")}
-                      onBack={() => run("block.reorder", "back")}
-                    />
+                    <OverrideSlot name="quickActions" props={{ disabled: onPhone }}>
+                      <QuickActions
+                        target={block}
+                        workspace={workspace}
+                        disabled={onPhone}
+                        canGroup={picked.length > 0}
+                        canUngroup={selectedNode?.type === "Group"}
+                        onForward={() => run("block.reorder", "forward")}
+                        onBackward={() => run("block.reorder", "backward")}
+                        onDuplicate={() => run("block.duplicate")}
+                        onDelete={() => run("block.delete")}
+                        onGroup={() => run("block.group")}
+                        onUngroup={() => run("block.ungroup")}
+                        onFront={() => run("block.reorder", "front")}
+                        onBack={() => run("block.reorder", "back")}
+                      />
+                    </OverrideSlot>
                   )}
                 {pageElement && workspace && !editing && (
                   <PageEdge
