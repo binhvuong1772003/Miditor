@@ -2,6 +2,8 @@ import {
   type Denial,
   Editor,
   type EditorController,
+  type EditorProps,
+  EditorProvider,
   embedImage,
   type HideName,
   type Overrides,
@@ -13,6 +15,7 @@ import {
 import { vi } from "@miditor/editor/locales/vi";
 import { type ReactNode, useState } from "react";
 import { actions } from "./actions";
+import { BareLayout, CanvasAndLayers, ComposeLayout, NoCanvasLayout } from "./ComposeDemo";
 import { ControlDemo } from "./ControlDemo";
 import { demoIcons } from "./demo-icons";
 import { fonts } from "./fonts";
@@ -72,6 +75,7 @@ export function App() {
       </HostDemo>
     );
   }
+  if (new URLSearchParams(window.location.search).has("compose")) return <ComposePage />;
   if (new URLSearchParams(window.location.search).has("overrides")) return <OverridesPage />;
   if (new URLSearchParams(window.location.search).has("permissions")) return <PermissionsPage />;
   if (new URLSearchParams(window.location.search).has("control")) {
@@ -92,6 +96,38 @@ export function App() {
     );
   }
   return <Playground />;
+}
+
+/**
+ * `?compose` lays the parts out inside `<EditorProvider>`; `&bare` is the canvas alone, `&nocanvas` has none,
+ * `&two` draws two providers.
+ */
+function ComposePage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("two")) {
+    return (
+      <>
+        <section data-testid="editor-a" style={{ blockSize: "45vh" }}>
+          <Playground layout={<CanvasAndLayers />} />
+        </section>
+        <section data-testid="editor-b" style={{ blockSize: "45vh" }}>
+          <Playground layout={<CanvasAndLayers />} />
+        </section>
+      </>
+    );
+  }
+  const layout = params.has("bare") ? (
+    <BareLayout />
+  ) : params.has("nocanvas") ? (
+    <NoCanvasLayout />
+  ) : (
+    <ComposeLayout />
+  );
+  return (
+    <section style={{ blockSize: "85vh" }}>
+      <Playground layout={layout} />
+    </section>
+  );
 }
 
 /**
@@ -184,6 +220,7 @@ function Playground({
   hide,
   onDenied: denied,
   headerActions,
+  layout,
 }: {
   embedded?: boolean;
   control?: boolean;
@@ -194,6 +231,8 @@ function Playground({
   hide?: readonly HideName[];
   onDenied?: (denial: Denial) => void;
   headerActions?: ReactNode;
+  /** The host's own layout of the parts; without it the editor draws its default one. */
+  layout?: ReactNode;
 }) {
   // A demo that brings its own page (`data`) keeps the stored one out of it.
   const [page] = useState(() => data ?? openPage());
@@ -218,62 +257,67 @@ function Playground({
     setSaved(next);
   };
 
+  // The props both paths share: the default `<Editor>` and the host's `<EditorProvider>`.
+  const editorProps: EditorProps = {
+    data: page,
+    config: {
+      components,
+      renderers,
+      uploadImage,
+      actions,
+      fonts,
+      images: [...uploaded, ...seedImages],
+      // `?icons` swaps a few icons for the host's own, to show `config.icons`.
+      ...(new URLSearchParams(window.location.search).has("icons") ? { icons: demoIcons } : {}),
+      themes: [...saved, ...suggestedThemes],
+      onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
+      onThemeRename: (id, name) =>
+        changeThemes(saved.map((theme) => (theme.id === id ? { ...theme, name } : theme))),
+      onThemeDelete: (id) => changeThemes(saved.filter((theme) => theme.id !== id)),
+    },
+    // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
+    // `?plain` is a host that sets neither: onChange at once, and the header follows the Save button.
+    ...(plain ? {} : { onChangeDebounce: { wait: 800, maxWait: 4000 }, status }),
+    onChange: (data) => {
+      setStatus("saving");
+      storePage(window.localStorage, data);
+      // A request to a back end takes a moment; this is that moment.
+      window.setTimeout(() => setStatus("saved"), 300);
+    },
+    ...(controller ? { controller } : {}),
+    ...(given ? { overrides: given } : {}),
+    ...(permissions ? { permissions } : {}),
+    ...(hide ? { hide } : {}),
+    ...(denied ? { onDenied: denied } : {}),
+    onSave: (data) => setSent(JSON.stringify(data, null, 2)),
+    // Inside a host that has its own navbar the editor shows no mark of its own.
+    ...(embedded ? { logo: null } : {}),
+    // `?lang=vi` shows the editor in Vietnamese.
+    ...(new URLSearchParams(window.location.search).get("lang") === "vi"
+      ? { i18n: { locale: "vi", messages: vi } }
+      : {}),
+    // `?dark` shows the dark scheme of the editor.
+    ...(new URLSearchParams(window.location.search).has("dark")
+      ? { appearance: { scheme: "dark" as const } }
+      : {}),
+    headerActions: headerActions ? (
+      headerActions
+    ) : control ? (
+      <ControlDemo />
+    ) : (
+      <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
+        Responsive preview
+      </a>
+    ),
+  };
+
   return (
     <>
-      <Editor
-        data={page}
-        config={{
-          components,
-          renderers,
-          uploadImage,
-          actions,
-          fonts,
-          images: [...uploaded, ...seedImages],
-          // `?icons` swaps a few icons for the host's own, to show `config.icons`.
-          ...(new URLSearchParams(window.location.search).has("icons") ? { icons: demoIcons } : {}),
-          themes: [...saved, ...suggestedThemes],
-          onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
-          onThemeRename: (id, name) =>
-            changeThemes(saved.map((theme) => (theme.id === id ? { ...theme, name } : theme))),
-          onThemeDelete: (id) => changeThemes(saved.filter((theme) => theme.id !== id)),
-        }}
-        // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
-        // `?plain` is a host that sets neither: onChange at once, and the header follows the Save button.
-        {...(plain ? {} : { onChangeDebounce: { wait: 800, maxWait: 4000 }, status })}
-        onChange={(data) => {
-          setStatus("saving");
-          storePage(window.localStorage, data);
-          // A request to a back end takes a moment; this is that moment.
-          window.setTimeout(() => setStatus("saved"), 300);
-        }}
-        {...(controller ? { controller } : {})}
-        {...(given ? { overrides: given } : {})}
-        {...(permissions ? { permissions } : {})}
-        {...(hide ? { hide } : {})}
-        {...(denied ? { onDenied: denied } : {})}
-        onSave={(data) => setSent(JSON.stringify(data, null, 2))}
-        // Inside a host that has its own navbar the editor shows no mark of its own.
-        {...(embedded ? { logo: null } : {})}
-        // `?lang=vi` shows the editor in Vietnamese.
-        {...(new URLSearchParams(window.location.search).get("lang") === "vi"
-          ? { i18n: { locale: "vi", messages: vi } }
-          : {})}
-        // `?dark` shows the dark scheme of the editor.
-        {...(new URLSearchParams(window.location.search).has("dark")
-          ? { appearance: { scheme: "dark" as const } }
-          : {})}
-        headerActions={
-          headerActions ? (
-            headerActions
-          ) : control ? (
-            <ControlDemo />
-          ) : (
-            <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
-              Responsive preview
-            </a>
-          )
-        }
-      />
+      {layout === undefined ? (
+        <Editor {...editorProps} />
+      ) : (
+        <EditorProvider {...editorProps}>{layout}</EditorProvider>
+      )}
       {sent !== null && <SentDataDialog json={sent} onClose={() => setSent(null)} />}
     </>
   );
