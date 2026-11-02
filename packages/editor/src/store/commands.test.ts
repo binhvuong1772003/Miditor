@@ -7,6 +7,7 @@ import {
 } from "@midito-kitchen/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
+import { MAX_ZOOM, MIN_ZOOM } from "../zoom";
 import { type CommandContext, type CommandName, canRun, commandTable, createRun } from "./commands";
 import { createEditorStore } from "./create-editor-store";
 import { type Env, initialDocumentState } from "./document";
@@ -172,6 +173,47 @@ describe("history", () => {
   });
 });
 
+describe("select, clear and zoom to", () => {
+  it("selects a block alone, with its parent as the scope", () => {
+    const { store, run } = setup(pick(withTexts(), "t1", "t2"));
+    expect(run("selection.select", "t3")).toBe(true);
+    const state = store.getState();
+    expect(state.selectedId).toBe("t3");
+    expect(state.picked).toEqual([]);
+    expect(state.scopeId).toBe("root");
+  });
+
+  it("gives the same state for an id that is not in the page", () => {
+    const { store, run } = setup(withTexts());
+    const before = store.getState();
+    run("selection.select", "nope");
+    expect(store.getState()).toBe(before);
+    expect(canRun(before, "selection.select", "nope")).toBe(false);
+  });
+
+  it("lets go of the selection and the picks, and the scope stays", () => {
+    const { store, run } = setup(pick(withTexts(), "t1", "t2"));
+    run("selection.clear");
+    const state = store.getState();
+    expect(state.selectedId).toBeNull();
+    expect(state.picked).toEqual([]);
+    expect(state.scopeId).toBe("root");
+  });
+
+  it("zooms to a value and keeps it inside the ladder", () => {
+    const { store, run } = setup(withTexts());
+    run("view.zoomTo", 0.8);
+    expect(store.getState().zoom).toBe(0.8);
+    run("view.zoomTo", 99);
+    expect(store.getState().zoom).toBe(MAX_ZOOM);
+    run("view.zoomTo", 0);
+    expect(store.getState().zoom).toBe(MIN_ZOOM);
+    const before = store.getState();
+    run("view.zoomTo", Number.NaN);
+    expect(store.getState()).toBe(before);
+  });
+});
+
 // A button or a menu line that is off must be one that could do nothing.
 describe("canRun and the command agree", () => {
   const states = fc
@@ -198,6 +240,9 @@ describe("canRun and the command agree", () => {
     ["block.reorder", "backward"],
     ["view.zoom", "in"],
     ["view.zoom", "out"],
+    ["selection.select", "nope"],
+    ["selection.clear", undefined],
+    ["view.zoomTo", 1],
   ];
 
   it.each(calls)("%s %s: when it is off, the state comes back as it was", (name, args) => {

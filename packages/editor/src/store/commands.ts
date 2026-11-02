@@ -1,8 +1,9 @@
-import { type Device, findNode, type Reorder } from "@midito-kitchen/core";
+import { type Device, findNode, parentOf, type Reorder } from "@midito-kitchen/core";
 import { canRedo, canUndo, redo, undo } from "../history";
 import { MAX_ZOOM, MIN_ZOOM, stepZoom } from "../zoom";
 import type { EditorStore } from "./create-editor-store";
 import { type Env, step } from "./document";
+import { clearSelection, selectOnly } from "./selection";
 import type { EditorState, Tool } from "./state";
 import {
   deleteSelected,
@@ -32,6 +33,9 @@ export type CommandArgs = {
   "block.reorder": Reorder;
   "view.zoom": ZoomMove;
   "view.frame": Device;
+  "view.zoomTo": number;
+  "selection.select": string;
+  "selection.clear": undefined;
   "tool.pick": Tool;
 };
 
@@ -118,6 +122,22 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
   "view.frame": {
     run: (state, frame) => setFrame(state, frame),
     can: () => true,
+  },
+  "view.zoomTo": {
+    run: (state, zoom) =>
+      Number.isFinite(zoom) ? setZoom(state, Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))) : state,
+    can: () => true,
+  },
+  "selection.select": {
+    run: (state, id) => {
+      const root = state.history.present.root;
+      return findNode(root, id) ? selectOnly(state, id, parentOf(root, id)?.id ?? root.id) : state;
+    },
+    can: (state, id) => findNode(state.history.present.root, id) !== undefined,
+  },
+  "selection.clear": {
+    run: (state) => clearSelection(state),
+    can: (state) => state.selectedId !== null || state.picked.length > 0,
   },
   "tool.pick": {
     run: (state, tool) => pickTool(state, tool),
