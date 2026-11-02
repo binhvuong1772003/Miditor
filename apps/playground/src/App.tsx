@@ -1,4 +1,11 @@
-import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitchen/editor";
+import {
+  Editor,
+  type EditorController,
+  embedImage,
+  type PageData,
+  type SaveStatus,
+  useCreateEditor,
+} from "@midito-kitchen/editor";
 import { vi } from "@midito-kitchen/editor/locales/vi";
 import { useState } from "react";
 import { actions } from "./actions";
@@ -8,6 +15,7 @@ import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
+import { OutsideBar } from "./OutsideBar";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -45,6 +53,7 @@ export function App() {
     );
   }
   if (new URLSearchParams(window.location.search).has("control")) {
+    if (new URLSearchParams(window.location.search).has("outside")) return <Outside />;
     // `?control&two` draws two editors on one page, each with its own host part.
     const two = new URLSearchParams(window.location.search).has("two");
     return two ? (
@@ -63,12 +72,44 @@ export function App() {
   return <Playground />;
 }
 
+/**
+ * `?control&outside`: a bar drawn outside the editor drives it through a controller. `&two` gives the
+ * same controller to two editors (the second is ignored), `&closed` starts with the editor closed.
+ */
+function Outside() {
+  const params = new URLSearchParams(window.location.search);
+  const editor = useCreateEditor();
+  const [open, setOpen] = useState(!params.has("closed"));
+  return (
+    <>
+      <OutsideBar editor={editor} open={open} onToggle={() => setOpen(!open)} />
+      {open &&
+        (params.has("two") ? (
+          <>
+            <section data-testid="editor-a" style={{ blockSize: "80vh" }}>
+              <Playground controller={editor} />
+            </section>
+            <section data-testid="editor-b" style={{ blockSize: "80vh" }}>
+              <Playground controller={editor} />
+            </section>
+          </>
+        ) : (
+          <section style={{ blockSize: "85vh" }}>
+            <Playground controller={editor} />
+          </section>
+        ))}
+    </>
+  );
+}
+
 function Playground({
   embedded = false,
   control = false,
+  controller,
 }: {
   embedded?: boolean;
   control?: boolean;
+  controller?: EditorController;
 }) {
   const [page] = useState(openPage);
   const plain = new URLSearchParams(window.location.search).has("plain");
@@ -120,6 +161,7 @@ function Playground({
           // A request to a back end takes a moment; this is that moment.
           window.setTimeout(() => setStatus("saved"), 300);
         }}
+        {...(controller ? { controller } : {})}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         // Inside a host that has its own navbar the editor shows no mark of its own.
         {...(embedded ? { logo: null } : {})}
