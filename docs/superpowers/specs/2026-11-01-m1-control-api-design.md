@@ -135,8 +135,9 @@ Settled without the owner, after the builder check; each can be changed.
 
 - **`save()`** returns `Promise<boolean>`: `true` once `onSave` has settled, `false` when it could not
   run (no editor attached, or `onSave` threw). It is not a pure reducer, so it is not in the
-  reducer table; it is registered in the same list with the other commands that need the screen, and
-  `before`/`after` run around the call.
+  reducer table. `save`, `addBlock` and `fit` need the screen and are plain functions of the
+  control object; the `before`/`after` hooks are for the table commands only, and are widened to these
+  three in M3, when a rule needs them.
 - **`addBlock(kind, overrides?)`** takes what `addBlockOf` takes. It lands where the editor's own
   add does (inside the selected block if that kind can hold it, otherwise on the page). It returns the id of
   the new block, or `null` on the phone frame, as the buttons are off there.
