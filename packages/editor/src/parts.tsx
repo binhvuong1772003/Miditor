@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { EndPanel } from "./EndPanel";
 import { Rail } from "./Rail";
-import { StartPanel } from "./StartPanel";
+import { StartPanel, ToolPanel } from "./StartPanel";
 import { useShell } from "./shell";
 import { Toolbar } from "./Toolbar";
 
@@ -27,15 +28,59 @@ export function EditorProperties() {
   return <EndPanel {...useShell("Editor.Properties").end} />;
 }
 
+/** The Blocks panel on its own: the cards to press or drag onto the page. @experimental */
+export function EditorBlocks() {
+  return <ToolPanel tool="blocks" {...useShell("Editor.Blocks").start} />;
+}
+
+/** The Layers panel on its own: every block of the page as a list. @experimental */
+export function EditorLayers() {
+  return <ToolPanel tool="layers" {...useShell("Editor.Layers").start} />;
+}
+
+/** The Images panel on its own. @experimental */
+export function EditorImages() {
+  return <ToolPanel tool="images" {...useShell("Editor.Images").start} />;
+}
+
+/** The Themes panel on its own. @experimental */
+export function EditorThemes() {
+  return <ToolPanel tool="themes" {...useShell("Editor.Themes").start} />;
+}
+
+/**
+ * The page and everything drawn over it. Place it once: a second one draws nothing and logs an error.
+ * @experimental
+ */
+export function EditorCanvas() {
+  const shell = useShell("Editor.Canvas");
+  const me = useRef(Symbol("canvas")).current;
+  // The first to draw holds the canvas. Claimed while drawing, so a second one never draws the page.
+  if (shell.canvasClaim.current === null) shell.canvasClaim.current = me;
+  const mine = shell.canvasClaim.current === me;
+  useEffect(() => {
+    // StrictMode lets go and takes hold again; a canvas that closed lets another one take its place.
+    if (shell.canvasClaim.current === null) shell.canvasClaim.current = me;
+    if (shell.canvasClaim.current !== me) {
+      console.error(
+        "[miditor] there is already a canvas in this editor: the second one is not drawn",
+      );
+    }
+    return () => {
+      if (shell.canvasClaim.current === me) shell.canvasClaim.current = null;
+    };
+  }, [shell.canvasClaim, me]);
+  return mine ? shell.canvas : null;
+}
+
 /** The parts in the default layout: the header, the rail, the left panel, the canvas, the properties. */
 export function DefaultLayout() {
-  const shell = useShell("Editor");
   return (
     <>
       <EditorHeader />
       <EditorRail />
       <EditorStartPanel />
-      {shell.canvas}
+      <EditorCanvas />
       <EditorProperties />
     </>
   );

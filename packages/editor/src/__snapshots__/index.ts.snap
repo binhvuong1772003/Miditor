@@ -20,7 +20,7 @@ export type { EditorView } from "./control";
 export type { EditorApi } from "./control-api";
 export { useCreateEditor, useEditor } from "./control-context";
 export { createEditor, type EditorController } from "./controller";
-export { Editor, type EditorProps } from "./Editor";
+export { Editor, type EditorProps, EditorProvider, type EditorProviderProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
 export type { HideName } from "./hide";
@@ -30,8 +30,20 @@ export type { I18n, Params } from "./i18n/translate";
 export { ICON_NAMES, type IconComponent, type IconName } from "./icons";
 export type { LibraryImage } from "./images";
 export type { ComponentOverrides, Overrides, RailTool } from "./overrides";
+export {
+  EditorBlocks,
+  EditorCanvas,
+  EditorHeader,
+  EditorImages,
+  EditorLayers,
+  EditorProperties,
+  EditorRail,
+  EditorStartPanel,
+  EditorThemes,
+} from "./parts";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
+export { useEditorRoot } from "./shell";
 export type { Denial, Permissions } from "./store";
 export type { HostTheme } from "./ThemesPanel";
 export type { UploadImage } from "./upload-image";

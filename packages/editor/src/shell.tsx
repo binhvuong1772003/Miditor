@@ -16,6 +16,8 @@ export interface Shell {
   end: ComponentProps<typeof EndPanel>;
   /** The canvas, as the provider draws it. */
   canvas: ReactNode;
+  /** Which mounted canvas holds the editor's canvas; there is one at a time. */
+  canvasClaim: { current: symbol | null };
 }
 
 export const ShellContext = createContext<Shell | null>(null);
@@ -25,4 +27,17 @@ export function useShell(part: string): Shell {
   const shell = useContext(ShellContext);
   if (!shell) throw new Error(`${part} must be used inside <EditorProvider>`);
   return shell;
+}
+
+/** The provider's root element, for a host to portal a dialog into and keep the look and the language. */
+export const RootContext = createContext<HTMLElement | null>(null);
+
+/**
+ * The element the provider draws, or `null` before it is mounted and outside a provider. A host that
+ * draws a dialog in a portal puts it in this element, so the appearance variables, `lang` and the keys
+ * of the editor reach it.
+ * @experimental
+ */
+export function useEditorRoot(): HTMLElement | null {
+  return useContext(RootContext);
 }

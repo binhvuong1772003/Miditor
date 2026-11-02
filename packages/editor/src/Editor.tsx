@@ -29,6 +29,7 @@ import type { Renderer } from "@miditor/render";
 import {
   type ClipboardEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -69,12 +70,23 @@ import { isNudgeKey } from "./nudge";
 import { applyContextMenu, HostContexts, OverrideSlot, type Overrides } from "./overrides";
 import { PageEdge } from "./PageEdge";
 import { pageWidthVariables } from "./page-width";
-import { DefaultLayout } from "./parts";
+import {
+  DefaultLayout,
+  EditorBlocks,
+  EditorCanvas,
+  EditorHeader,
+  EditorImages,
+  EditorLayers,
+  EditorProperties,
+  EditorRail,
+  EditorStartPanel,
+  EditorThemes,
+} from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
 import { QuickActions, quickOffs } from "./QuickActions";
 import { resolveStatus, type SaveStatus } from "./save-status";
-import { type Shell, ShellContext } from "./shell";
+import { RootContext, type Shell, ShellContext } from "./shell";
 import {
   type CommandName,
   canRun,
@@ -331,10 +343,26 @@ export function EditorProvider(props: EditorProviderProps) {
   );
 }
 
-/** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
-export function Editor(props: EditorProps) {
+function EditorRoot(props: EditorProps) {
   return <EditorProvider {...props} />;
 }
+
+/**
+ * The editor: toolbar, left panel, canvas with a page drawn from data, right panel. The parts it is made
+ * of are on it too (`Editor.Header`, `Editor.Canvas`...), to place inside an `<EditorProvider>`.
+ */
+export const Editor = Object.assign(EditorRoot, {
+  Provider: EditorProvider,
+  Header: EditorHeader,
+  Rail: EditorRail,
+  StartPanel: EditorStartPanel,
+  Blocks: EditorBlocks,
+  Layers: EditorLayers,
+  Images: EditorImages,
+  Themes: EditorThemes,
+  Canvas: EditorCanvas,
+  Properties: EditorProperties,
+});
 
 function EditorBody({
   className,
@@ -518,7 +546,14 @@ function EditorBody({
     onPhone,
     documents,
   });
-  const editorRoot = useRef<HTMLDivElement>(null);
+  const editorRoot = useRef<HTMLDivElement | null>(null);
+  // The root element is also state, for `useEditorRoot` (a dialog the host portals into it).
+  const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
+  const setEditorRoot = useCallback((element: HTMLDivElement | null) => {
+    editorRoot.current = element;
+    setRootElement(element);
+  }, []);
+  const canvasClaim = useRef<symbol | null>(null);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const draft = useEditorState((state) => state.draft);
   const setDraft = documents.setDraft;
@@ -1071,6 +1106,7 @@ function EditorBody({
     },
     end: { config, documents, selecting, parentSize, pageHeight, selectedRect, shownDef },
     canvas,
+    canvasClaim,
   };
 
   return (
@@ -1080,134 +1116,137 @@ function EditorBody({
           <TContext.Provider value={t}>
             <IconsContext.Provider value={icons}>
               <ShellContext.Provider value={shell}>
-                {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
-                <div
-                  ref={editorRoot}
-                  className={rootClass}
-                  style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
-                  data-scheme={schemeOf(appearance)}
-                  lang={i18n?.locale}
-                  data-miditor-editor=""
-                  data-panel={panelOpen ? "open" : "closed"}
-                  data-layout={children === undefined ? "default" : undefined}
-                  tabIndex={-1}
-                  onCopy={copySelected}
-                  onCut={cutSelected}
-                  onPaste={pasteBlocks}
-                  onKeyDown={(event) => {
-                    // A field keeps its own Esc and its own undo.
-                    if (isEditableTarget(event.target)) return;
-                    // Tab on the canvas goes from block to block of the level the person is working in; at the end
-                    // of the level it goes on to the next control, so the keyboard is never stuck on the page.
-                    if (
-                      event.key === "Tab" &&
-                      !event.ctrlKey &&
-                      !event.metaKey &&
-                      !event.altKey &&
-                      (event.target === event.currentTarget || event.target === workspace)
-                    ) {
-                      const level =
-                        (selectedId ? parentOf(data.root, selectedId) : undefined) ??
-                        findNode(data.root, scopeId) ??
-                        data.root;
-                      const next = stepSelection(
-                        level.children.map((child) => child.id),
-                        selectedId,
-                        event.shiftKey,
-                      );
-                      if (next) {
-                        event.preventDefault();
-                        selecting.selectOnly(next, level.id);
+                <RootContext.Provider value={rootElement}>
+                  {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
+                  <div
+                    ref={setEditorRoot}
+                    className={rootClass}
+                    style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
+                    data-scheme={schemeOf(appearance)}
+                    lang={i18n?.locale}
+                    data-miditor-editor=""
+                    data-panel={panelOpen ? "open" : "closed"}
+                    data-layout={children === undefined ? "default" : undefined}
+                    tabIndex={-1}
+                    onCopy={copySelected}
+                    onCut={cutSelected}
+                    onPaste={pasteBlocks}
+                    onKeyDown={(event) => {
+                      // A field keeps its own Esc and its own undo.
+                      if (isEditableTarget(event.target)) return;
+                      // Tab on the canvas goes from block to block of the level the person is working in; at the end
+                      // of the level it goes on to the next control, so the keyboard is never stuck on the page.
+                      if (
+                        event.key === "Tab" &&
+                        !event.ctrlKey &&
+                        !event.metaKey &&
+                        !event.altKey &&
+                        (event.target === event.currentTarget || event.target === workspace)
+                      ) {
+                        const level =
+                          (selectedId ? parentOf(data.root, selectedId) : undefined) ??
+                          findNode(data.root, scopeId) ??
+                          data.root;
+                        const next = stepSelection(
+                          level.children.map((child) => child.id),
+                          selectedId,
+                          event.shiftKey,
+                        );
+                        if (next) {
+                          event.preventDefault();
+                          selecting.selectOnly(next, level.id);
+                          return;
+                        }
+                      }
+                      if (event.key === "Escape") {
+                        setDraft(null);
+                        // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
+                        const scope =
+                          scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
+                        if (selectedId && scope) {
+                          selecting.selectOnly(
+                            scope.id,
+                            parentOf(data.root, scope.id)?.id ?? data.root.id,
+                          );
+                        } else {
+                          selecting.clearSelection();
+                        }
                         return;
                       }
-                    }
-                    if (event.key === "Escape") {
-                      setDraft(null);
-                      // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
-                      const scope =
-                        scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
-                      if (selectedId && scope) {
-                        selecting.selectOnly(
-                          scope.id,
-                          parentOf(data.root, scope.id)?.id ?? data.root.id,
-                        );
-                      } else {
-                        selecting.clearSelection();
+                      if (gesture.current) return;
+                      if (
+                        event.key === "Enter" &&
+                        selectedId &&
+                        mayType &&
+                        selectedDef?.inlineText &&
+                        !event.ctrlKey &&
+                        !event.metaKey &&
+                        !event.altKey &&
+                        !event.shiftKey
+                      ) {
+                        // Enter on a block that has words goes into them, like a double press on the block does.
+                        event.preventDefault();
+                        documents.settleDraft();
+                        selecting.setEditing({
+                          id: selectedId,
+                          prop: selectedDef.inlineText.prop,
+                          multiline: selectedDef.inlineText.multiline === true,
+                        });
+                        return;
                       }
-                      return;
-                    }
-                    if (gesture.current) return;
-                    if (
-                      event.key === "Enter" &&
-                      selectedId &&
-                      mayType &&
-                      selectedDef?.inlineText &&
-                      !event.ctrlKey &&
-                      !event.metaKey &&
-                      !event.altKey &&
-                      !event.shiftKey
-                    ) {
-                      // Enter on a block that has words goes into them, like a double press on the block does.
-                      event.preventDefault();
-                      documents.settleDraft();
-                      selecting.setEditing({
-                        id: selectedId,
-                        prop: selectedDef.inlineText.prop,
-                        multiline: selectedDef.inlineText.multiline === true,
-                      });
-                      return;
-                    }
-                    if (
-                      event.key === "Enter" &&
-                      selectedNode?.type === "Group" &&
-                      selectedNode.children[0] &&
-                      !event.ctrlKey &&
-                      !event.metaKey &&
-                      !event.altKey
-                    ) {
-                      // Enter on a group goes into it, as Esc goes back up.
-                      event.preventDefault();
-                      selecting.selectOnly(selectedNode.children[0].id, selectedNode.id);
-                      return;
-                    }
-                    if (
-                      isNudgeKey(event.key) &&
-                      selectedId &&
-                      !event.ctrlKey &&
-                      !event.metaKey &&
-                      !event.altKey
-                    ) {
-                      // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
-                      // on the same blocks, are one step to undo.
-                      event.preventDefault();
-                      const same = lastNudge.current.key === selectionKey;
-                      const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
-                      lastNudge.current = { key: selectionKey, at: event.timeStamp };
-                      documents.nudgeSelected({
-                        container: parentSize() ?? null,
-                        key: event.key,
-                        shift: event.shiftKey,
-                        merge,
-                      });
-                      return;
-                    }
-                    // The browser's own page zoom would scale the whole editor, and the keys of the editor are
-                    // not the browser's: a key that is ours is stopped even when the command has nothing to do.
-                    const given = matchKey(event, selectedId);
-                    if (given) {
-                      event.preventDefault();
-                      (run as (name: CommandName, args?: unknown) => boolean)(
-                        given.name,
-                        given.args,
-                      );
-                    }
-                  }}
-                >
-                  <div role="status" aria-live="polite" className={styles.visuallyHidden}>
-                    {announcement}
+                      if (
+                        event.key === "Enter" &&
+                        selectedNode?.type === "Group" &&
+                        selectedNode.children[0] &&
+                        !event.ctrlKey &&
+                        !event.metaKey &&
+                        !event.altKey
+                      ) {
+                        // Enter on a group goes into it, as Esc goes back up.
+                        event.preventDefault();
+                        selecting.selectOnly(selectedNode.children[0].id, selectedNode.id);
+                        return;
+                      }
+                      if (
+                        isNudgeKey(event.key) &&
+                        selectedId &&
+                        !event.ctrlKey &&
+                        !event.metaKey &&
+                        !event.altKey
+                      ) {
+                        // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
+                        // on the same blocks, are one step to undo.
+                        event.preventDefault();
+                        const same = lastNudge.current.key === selectionKey;
+                        const merge =
+                          same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
+                        lastNudge.current = { key: selectionKey, at: event.timeStamp };
+                        documents.nudgeSelected({
+                          container: parentSize() ?? null,
+                          key: event.key,
+                          shift: event.shiftKey,
+                          merge,
+                        });
+                        return;
+                      }
+                      // The browser's own page zoom would scale the whole editor, and the keys of the editor are
+                      // not the browser's: a key that is ours is stopped even when the command has nothing to do.
+                      const given = matchKey(event, selectedId);
+                      if (given) {
+                        event.preventDefault();
+                        (run as (name: CommandName, args?: unknown) => boolean)(
+                          given.name,
+                          given.args,
+                        );
+                      }
+                    }}
+                  >
+                    <div role="status" aria-live="polite" className={styles.visuallyHidden}>
+                      {announcement}
+                    </div>
+                    {children ?? <DefaultLayout />}
                   </div>
-                  {children ?? <DefaultLayout />}
-                </div>
+                </RootContext.Provider>
               </ShellContext.Provider>
             </IconsContext.Provider>
           </TContext.Provider>
