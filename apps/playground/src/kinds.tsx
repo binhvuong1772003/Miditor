@@ -13,6 +13,32 @@ export const components: Registry = {
     defaultProps: { color: "#e11d48" },
     fields: { color: { type: "color", label: "Colour" } },
   },
+  // A kind with a list of objects: the entries of a menu, each a label and a link.
+  Menu: {
+    label: "Menu",
+    category: "From your website",
+    icon: "box",
+    keywords: ["navigation", "demo"],
+    size: { w: 320, h: 48 },
+    canContain: false,
+    defaultProps: { items: [{ label: "Home", link: "" }] },
+    fields: {
+      items: {
+        type: "array",
+        label: "Entries",
+        minItems: 1,
+        maxItems: 5,
+        item: {
+          type: "object",
+          label: "Entry",
+          fields: {
+            label: { type: "text", label: "Label", maxLength: 20 },
+            link: { type: "link", label: "Link" },
+          },
+        },
+      },
+    },
+  },
   // A kind with a field the host draws the input of (`config.customFields`): a product picker.
   Product: {
     label: "Product",
@@ -28,6 +54,24 @@ export const components: Registry = {
 
 /** How the host draws its own kind: a heart that fills its box, in the colour stored on the block. */
 export const renderers: Record<string, Renderer> = {
+  Menu: ({ props }) => {
+    const items = Array.isArray(props.items) ? props.items : [];
+    return (
+      <ul
+        data-testid="menu-entries"
+        style={{ display: "flex", gap: 16, listStyle: "none", margin: 0, padding: 8 }}
+      >
+        {items.map((item, at) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the entries have no ids
+          <li key={at}>
+            {typeof item === "object" && item !== null && !Array.isArray(item)
+              ? String(item.label ?? "")
+              : ""}
+          </li>
+        ))}
+      </ul>
+    );
+  },
   Product: ({ props }) => {
     const product = props.product;
     const name =

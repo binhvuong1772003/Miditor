@@ -901,6 +901,39 @@ function ShopPanel({ editor, label }: HostToolPanelProps) {
 - In a layout of your own, `<Editor.Tool id="shop" />` draws the panel of any tool on its own.
 - The `rail` and `panelStart` places of `overrides` see your tools like the editor's.
 
+### Lists and groups of values
+
+> Experimental.
+
+A field can be a list (`array`) or a group of named values (`object`), for things like the entries of a
+menu:
+
+```tsx
+fields: {
+  items: {
+    type: "array",
+    label: "Entries",
+    minItems: 1,
+    maxItems: 5,
+    item: {
+      type: "object",
+      label: "Entry",
+      fields: { label: { type: "text", label: "Label" }, link: { type: "link", label: "Link" } },
+    },
+  },
+}
+```
+
+- The panel shows a row for each item, with Move up, Move down and Remove, and an Add button. Add stops
+  at `maxItems` and Remove stops at `minItems`. A list is never longer than 100.
+- Inside a list or a group a field can be any type except `image`, `action` and `payload` (they need
+  the context of the whole block), nested at most three deep. A field inside has no `group`,
+  `perDevice` or `help`. A `custom` field works as an item.
+- A new item starts empty (an empty text, the first choice, `false`, `0` or the field's `min`).
+- The whole value is one step of history. Words and numbers are stored when the input is left or Enter
+  is pressed. A value the fields refuse is not stored.
+- Copy, paste and duplicate need nothing: the value is plain JSON in the block's props.
+
 ### Draw the input of a field yourself
 
 > Experimental.
