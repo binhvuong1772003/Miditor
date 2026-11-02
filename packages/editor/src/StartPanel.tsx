@@ -13,6 +13,7 @@ import { ImagesPanel } from "./ImagesPanel";
 import { useT } from "./i18n/context";
 import { type LibraryImage, usableImages } from "./images";
 import { LayersPanel } from "./LayersPanel";
+import { OverrideSlot } from "./overrides";
 import { useEditorState, useSelectionCommands } from "./store";
 import { ThemesPanel } from "./ThemesPanel";
 import { usableThemes } from "./themes";
@@ -111,73 +112,75 @@ export function StartPanel({
 
   const keepTheme = config?.onThemeSave;
   return (
-    <aside
-      className={`${styles.panel} ${styles.start}`}
-      aria-label={t(
-        tool === "images"
-          ? "rail.images"
-          : tool === "themes"
-            ? "rail.themes"
-            : tool === "layers"
-              ? "rail.layers"
-              : "rail.blocks",
-      )}
-    >
-      {tool === "layers" && (
-        <LayersPanel
-          root={data.root}
-          registry={registry}
-          selectedId={selectedId}
-          picked={picked}
-          hoverId={hoverId}
-          onSelect={pickFromLayers}
-          onHover={selecting.setHover}
-        />
-      )}
-      {tool === "images" && (
-        <>
-          <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
-          <ImagesPanel
-            disabled={onPhone}
-            images={usableImages(config?.images)}
-            onAdd={addLibraryImage}
-            upload={
-              config?.uploadImage
-                ? {
-                    busy: adding.busy,
-                    error: adding.error,
-                    onChoose: () => chooser.current?.click(),
-                  }
-                : undefined
-            }
+    <OverrideSlot name="panelStart" props={{ tool }}>
+      <aside
+        className={`${styles.panel} ${styles.start}`}
+        aria-label={t(
+          tool === "images"
+            ? "rail.images"
+            : tool === "themes"
+              ? "rail.themes"
+              : tool === "layers"
+                ? "rail.layers"
+                : "rail.blocks",
+        )}
+      >
+        {tool === "layers" && (
+          <LayersPanel
+            root={data.root}
+            registry={registry}
+            selectedId={selectedId}
+            picked={picked}
+            hoverId={hoverId}
+            onSelect={pickFromLayers}
+            onHover={selecting.setHover}
           />
-        </>
-      )}
-      {tool === "themes" && (
-        <ThemesPanel
-          current={data.theme}
-          themes={usableThemes(config?.themes)}
-          onApply={onApplyTheme}
-          onSave={
-            keepTheme &&
-            ((name) => {
-              const { id: _id, ...theme } = savedFrom(data.theme, "", name);
-              return keepTheme(theme);
-            })
-          }
-          onRename={config?.onThemeRename}
-          onDelete={config?.onThemeDelete}
-        />
-      )}
-      {tool === "blocks" && (
-        <BlocksPanel
-          registry={registry}
-          disabled={onPhone}
-          onAdd={(type) => onAddBlock(type)}
-          onDragMove={onDragMove}
-          onDrop={onDrop}
-        />
-      )}
-    </aside>
+        )}
+        {tool === "images" && (
+          <>
+            <input ref={chooser} type="file" accept="image/*" hidden onChange={addPicture} />
+            <ImagesPanel
+              disabled={onPhone}
+              images={usableImages(config?.images)}
+              onAdd={addLibraryImage}
+              upload={
+                config?.uploadImage
+                  ? {
+                      busy: adding.busy,
+                      error: adding.error,
+                      onChoose: () => chooser.current?.click(),
+                    }
+                  : undefined
+              }
+            />
+          </>
+        )}
+        {tool === "themes" && (
+          <ThemesPanel
+            current={data.theme}
+            themes={usableThemes(config?.themes)}
+            onApply={onApplyTheme}
+            onSave={
+              keepTheme &&
+              ((name) => {
+                const { id: _id, ...theme } = savedFrom(data.theme, "", name);
+                return keepTheme(theme);
+              })
+            }
+            onRename={config?.onThemeRename}
+            onDelete={config?.onThemeDelete}
+          />
+        )}
+        {tool === "blocks" && (
+          <BlocksPanel
+            registry={registry}
+            disabled={onPhone}
+            onAdd={(type) => onAddBlock(type)}
+            onDragMove={onDragMove}
+            onDrop={onDrop}
+          />
+        )}
+      </aside>
+    </OverrideSlot>
   );
 }

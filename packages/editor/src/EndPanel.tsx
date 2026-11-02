@@ -4,6 +4,7 @@ import type { EditorProps } from "./Editor";
 import styles from "./Editor.module.css";
 import { usableFonts } from "./fonts";
 import { useT } from "./i18n/context";
+import { OverrideSlot } from "./overrides";
 import { PageInspector } from "./PageInspector";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { type useDocumentCommands, useEditorState, type useSelectionCommands } from "./store";
@@ -41,61 +42,66 @@ export function EndPanel({
   // The fonts people can choose: the host's, or the ones every browser has.
   const fonts = usableFonts(config?.fonts);
   return (
-    <aside className={`${styles.panel} ${styles.end}`} aria-label={t("panel.properties")}>
-      {!selectedNode && (
-        <PageInspector
-          page={data.root}
-          theme={data.theme}
-          meta={data.meta}
-          onMeta={documents.changeMeta}
-          pageHeight={pageHeight}
-          onPageHeight={(height) =>
-            documents.commitPatch(data.root.id, { key: "minHeight", value: height })
-          }
-          uploadImage={config?.uploadImage}
-          onPreview={(patch) => documents.setDraft({ id: data.root.id, ...patch })}
-          onCommit={(patch) => documents.commitPatch(data.root.id, patch)}
-          fonts={fonts}
-          onPageFont={(stack) => documents.setThemeFont("body", stack)}
-          themeActions={{
-            onSetColor: documents.setThemeColor,
-            onRenameColor: documents.renameThemeColor,
-            onDeleteColor: documents.deleteThemeColor,
-          }}
-        />
-      )}
-      {selectedNode && (
-        <PropertiesPanel
-          onBackToPage={() => {
-            selecting.selectPage(data.root.id);
-          }}
-          // A new panel for each node, so text typed for one is never applied to another.
-          key={selectedNode?.id ?? "none"}
-          node={selectedNode}
-          device={frame}
-          onResetPhone={documents.resetPhone}
-          selectedCount={1 + picked.length}
-          onAlign={(to) => documents.alignSelected(parentSize() ?? null, to)}
-          onDistribute={(axis) => documents.distributeSelected(parentSize() ?? null, axis)}
-          actions={config?.actions}
-          fonts={fonts}
-          def={shownDef}
-          onPreview={(patch) =>
-            selectedNode && documents.setDraft({ id: selectedNode.id, ...patch })
-          }
-          onCommit={(patch) => selectedNode && documents.commitPatch(selectedNode.id, patch)}
-          onDiscard={() => documents.setDraft(null)}
-          onAnchor={(axis, anchor) =>
-            documents.changeAnchor({ axis, anchor, container: parentSize() ?? null })
-          }
-          rect={selectedRect}
-          onRect={(field, value) =>
-            documents.setRect({ field, value, container: parentSize() ?? null })
-          }
-          theme={data.theme}
-          uploadImage={config?.uploadImage}
-        />
-      )}
-    </aside>
+    <OverrideSlot
+      name="panelEnd"
+      props={{ mode: selectedNode ? "block" : "page", nodeId: selectedNode?.id ?? null }}
+    >
+      <aside className={`${styles.panel} ${styles.end}`} aria-label={t("panel.properties")}>
+        {!selectedNode && (
+          <PageInspector
+            page={data.root}
+            theme={data.theme}
+            meta={data.meta}
+            onMeta={documents.changeMeta}
+            pageHeight={pageHeight}
+            onPageHeight={(height) =>
+              documents.commitPatch(data.root.id, { key: "minHeight", value: height })
+            }
+            uploadImage={config?.uploadImage}
+            onPreview={(patch) => documents.setDraft({ id: data.root.id, ...patch })}
+            onCommit={(patch) => documents.commitPatch(data.root.id, patch)}
+            fonts={fonts}
+            onPageFont={(stack) => documents.setThemeFont("body", stack)}
+            themeActions={{
+              onSetColor: documents.setThemeColor,
+              onRenameColor: documents.renameThemeColor,
+              onDeleteColor: documents.deleteThemeColor,
+            }}
+          />
+        )}
+        {selectedNode && (
+          <PropertiesPanel
+            onBackToPage={() => {
+              selecting.selectPage(data.root.id);
+            }}
+            // A new panel for each node, so text typed for one is never applied to another.
+            key={selectedNode?.id ?? "none"}
+            node={selectedNode}
+            device={frame}
+            onResetPhone={documents.resetPhone}
+            selectedCount={1 + picked.length}
+            onAlign={(to) => documents.alignSelected(parentSize() ?? null, to)}
+            onDistribute={(axis) => documents.distributeSelected(parentSize() ?? null, axis)}
+            actions={config?.actions}
+            fonts={fonts}
+            def={shownDef}
+            onPreview={(patch) =>
+              selectedNode && documents.setDraft({ id: selectedNode.id, ...patch })
+            }
+            onCommit={(patch) => selectedNode && documents.commitPatch(selectedNode.id, patch)}
+            onDiscard={() => documents.setDraft(null)}
+            onAnchor={(axis, anchor) =>
+              documents.changeAnchor({ axis, anchor, container: parentSize() ?? null })
+            }
+            rect={selectedRect}
+            onRect={(field, value) =>
+              documents.setRect({ field, value, container: parentSize() ?? null })
+            }
+            theme={data.theme}
+            uploadImage={config?.uploadImage}
+          />
+        )}
+      </aside>
+    </OverrideSlot>
   );
 }
