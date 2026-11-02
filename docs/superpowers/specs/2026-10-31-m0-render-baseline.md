@@ -34,6 +34,7 @@ canvas.
 | M2, overrides                    | 297.38 kB | 78.27 kB |
 | M3, hide and permissions         | 312.36 kB | 82.54 kB |
 | M4, composition                  | 320.74 kB | 84.25 kB |
+| M5a, custom field                | 322.06 kB | 84.58 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -137,3 +138,8 @@ holds its own state gives, for the parts in the order canvas, blocks, selection,
 
 No moment counts more than before. The drag, hover and select moments count less for the parts that are
 not the canvas, because the drag, the hover marks and the menu state no longer redraw the provider.
+
+## M5a: renders
+
+A custom field adds no state and no render. `pnpm perf` gives the same numbers as after M4 in all six
+moments.

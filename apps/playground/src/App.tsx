@@ -40,6 +40,7 @@ import {
   viewer,
 } from "./PermissionsDemo";
 import { Preview } from "./Preview";
+import { ProductPicker } from "./ProductPicker";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
 import { Twin } from "./Twin";
@@ -270,6 +271,10 @@ function Playground({
       // `?icons` swaps a few icons for the host's own, to show `config.icons`.
       ...(new URLSearchParams(window.location.search).has("icons") ? { icons: demoIcons } : {}),
       themes: [...saved, ...suggestedThemes],
+      // `?nopicker` leaves the product picker out, to show the note a kind with no input gets.
+      ...(new URLSearchParams(window.location.search).has("nopicker")
+        ? {}
+        : { customFields: { "product-picker": ProductPicker } }),
       onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
       onThemeRename: (id, name) =>
         changeThemes(saved.map((theme) => (theme.id === id ? { ...theme, name } : theme))),

@@ -13,10 +13,29 @@ export const components: Registry = {
     defaultProps: { color: "#e11d48" },
     fields: { color: { type: "color", label: "Colour" } },
   },
+  // A kind with a field the host draws the input of (`config.customFields`): a product picker.
+  Product: {
+    label: "Product",
+    category: "From your website",
+    icon: "shape",
+    keywords: ["shop", "demo"],
+    size: { w: 200, h: 60 },
+    canContain: false,
+    defaultProps: { product: { id: "p1", name: "Blue mug" } },
+    fields: { product: { type: "custom", label: "Product", kind: "product-picker" } },
+  },
 };
 
 /** How the host draws its own kind: a heart that fills its box, in the colour stored on the block. */
 export const renderers: Record<string, Renderer> = {
+  Product: ({ props }) => {
+    const product = props.product;
+    const name =
+      typeof product === "object" && product !== null && !Array.isArray(product)
+        ? String(product.name ?? "")
+        : "";
+    return <div style={{ padding: 8, font: "600 16px system-ui" }}>{name}</div>;
+  },
   Heart: ({ props, theme }) => (
     <svg
       viewBox="0 0 24 24"

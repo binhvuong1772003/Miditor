@@ -878,6 +878,44 @@ const renderers = {
 declare become the controls in the Properties panel. Draw the kind with the same `renderers` in
 `<Render>` so the published page matches the editor.
 
+### Draw the input of a field yourself
+
+> Experimental.
+
+The built-in field types cover text, numbers, choices, colours, pictures, links, fonts and actions. For
+anything else (a product picker, a map point, a form of your own) declare a `custom` field and give the
+editor the input that edits it:
+
+```tsx
+import type { CustomFieldProps } from "@miditor/editor";
+
+const components: Registry = {
+  Product: {
+    label: "Product",
+    canContain: false,
+    defaultProps: { product: { id: "p1", name: "Blue mug" } },
+    fields: { product: { type: "custom", label: "Product", kind: "product-picker" } },
+  },
+};
+
+function ProductPicker({ label, value, onChange, readOnly }: CustomFieldProps) {
+  return <MyPicker label={label} value={value} disabled={readOnly} onPick={onChange} />;
+}
+
+<Editor config={{ components, customFields: { "product-picker": ProductPicker } }} />;
+```
+
+- `kind` names the input; it is lower case letters, digits and `-`, and it is the key in `customFields`.
+  The registry stays plain data, so the input itself is not in it.
+- The value is any JSON. The editor stores it as the prop and does not look inside, so check what you
+  need in your input and in your server. It is one step of history, and undo brings the old value back.
+- The input gets `name`, `label`, `value` (what is stored, or the kind's default), `onChange(value)`,
+  `readOnly` (true when `permissions.canEdit` refuses the block), `nodeId` and `editor` (the control
+  object, see `useEditor`). It is not made again when its value changes, so it keeps its own state and
+  focus.
+- A kind with no input in `customFields` shows a short note in the panel and one warning in the console.
+- The `field` place of `overrides` still wraps a custom field like any other.
+
 ## Theme
 
 A page can carry a theme: named colours and a font for the whole page. A colour set to a theme
