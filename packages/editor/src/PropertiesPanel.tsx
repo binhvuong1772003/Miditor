@@ -222,6 +222,7 @@ export function PropertiesPanel({
                 theme={theme}
                 actions={actions}
                 fonts={fonts}
+                nodeId={node.id}
                 onChange={(name, value) => onCommit({ key: "prop", name, value })}
               />
             )}

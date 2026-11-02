@@ -15,6 +15,7 @@ import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
 import { useT } from "./i18n/context";
 import { Icon, type IconName } from "./icons";
+import { OverrideSlot } from "./overrides";
 import styles from "./PropertiesPanel.module.css";
 import { Section } from "./Section";
 
@@ -30,6 +31,8 @@ export interface PropFieldsProps {
   actions?: readonly ActionDef[] | undefined;
   /** The fonts the host lets people choose, for a font field. */
   fonts?: readonly FontDef[] | undefined;
+  /** The selected block, which a host's `field` override is told. */
+  nodeId: string;
 }
 
 /** The heading of the fields that name no section. */
@@ -66,7 +69,15 @@ const wide = (name: string, field: Field) =>
  * order it first appears. Within a section small fields sit two to a row and wide ones take a row.
  * A picture has no field here: it is added and changed on the canvas.
  */
-export function PropFields({ def, props, onChange, theme, actions, fonts }: PropFieldsProps) {
+export function PropFields({
+  def,
+  props,
+  onChange,
+  theme,
+  actions,
+  fonts,
+  nodeId,
+}: PropFieldsProps) {
   const t = useT();
   const sections = new Map<string, { name: string; field: Field }[]>();
   for (const [name, field] of Object.entries(def.fields)) {
@@ -101,17 +112,28 @@ export function PropFields({ def, props, onChange, theme, actions, fonts }: Prop
               key={field.type === "payload" ? name : `${name}:${JSON.stringify(stored)}`}
               className={`${styles.stack} ${wide(name, field) ? styles.span2 : ""}`}
             >
-              <PropField
-                def={def}
-                name={name}
-                field={field}
-                stored={stored}
-                onChange={onChange}
-                theme={theme}
-                actions={actions}
-                fonts={fonts}
-                action={storedOf(def, props, "action")}
-              />
+              <OverrideSlot
+                name="field"
+                props={{
+                  name,
+                  field,
+                  value: stored as JsonValue,
+                  onChange: (value) => onChange(name, value),
+                  nodeId,
+                }}
+              >
+                <PropField
+                  def={def}
+                  name={name}
+                  field={field}
+                  stored={stored}
+                  onChange={onChange}
+                  theme={theme}
+                  actions={actions}
+                  fonts={fonts}
+                  action={storedOf(def, props, "action")}
+                />
+              </OverrideSlot>
             </div>
           );
         })}
