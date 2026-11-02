@@ -339,6 +339,10 @@ const overrides: Overrides = {
 - **Keep `overrides` stable**: a constant at module level, or `useMemo`. A new function for a place is a
   new component to the editor, so it is drawn again from scratch. A new object whose functions are the
   same is fine.
+- **The parts sit in a CSS grid, and your wrapper becomes the grid item.** The header spans the whole
+  top row, and the rail and the two panels each take a column. A plain `<div>` around one of them loses
+  its place and the layout collapses. Give the wrapper the place of the part it wraps (for the header,
+  `grid-column: 1 / -1`), or use `display: contents` on a wrapper that only adds behaviour.
 - **A mistake in your component does not kill the editor.** If an override throws while drawing, the
   editor's own part is drawn instead and one error in the console names the place. It is tried again
   only when your entry for that place changes. If `contextMenu` throws, or does not give a list of
