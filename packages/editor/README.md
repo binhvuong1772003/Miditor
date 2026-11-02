@@ -449,6 +449,14 @@ of its own.
 - **Portals.** The appearance variables and `lang` are on the editor's root, so a dialog drawn in a portal
   elsewhere in the page loses them. Draw it into `useEditorRoot()`, which is `null` until the editor has
   mounted. Keys, copy and paste work in a portal either way.
+- **Size the cells.** The rail and the panels have no height of their own: they fill the cell you give
+  them and scroll inside it. Put the canvas in a cell with `min-block-size: 0` and `overflow: hidden`
+  (a grid or flex item), and give the root's content `block-size: 100%`, since the root is `100%` tall.
+- **Style a dialog with the public variables.** A dialog drawn into `useEditorRoot()` gets the
+  `--miditor-*` variables, not the editor's private `--_*` names. Set its background with `--miditor-chrome` and its
+  text with `--miditor-text` (or your own colours).
+- **`Editor.Provider`** is the same component as `EditorProvider`, for a host that prefers to write
+  `<Editor.Provider>`.
 - **Hidden tools stay hidden.** `hide: ["tool.layers"]` also removes `Editor.Layers`. The four tool panels
   ignore `panelOpen`; `Editor.StartPanel` follows it only in the default layout.
 - **Without a canvas** the editor still works, with less. The keys that need a container (nudge, group,
