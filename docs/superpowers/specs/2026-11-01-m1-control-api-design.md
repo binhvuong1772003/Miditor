@@ -105,17 +105,31 @@ What the code of today shows, which shapes this:
   read it through the context) without making a part redraw more often than now.
 - Outside an editor, `useEditor` throws a clear error, as the store hooks already do.
 
-## Made for tier 3 (M1b, designed now, built later)
+## Tier 3: the controller (M1b)
 
-- The control object is already separate from the component that fills it.
-- M1b adds `createEditor()` and `useCreateEditor()` (stable across renders and StrictMode) and the
-  `controller` prop. The controller holds the store and the control object. `Editor` uses a given
-  controller's store and otherwise makes its own, as it does now.
-- The page is read when `<Editor>` mounts, so a controller made before the editor starts with an
-  empty store and `<Editor>` loads `data` into it when it attaches.
-- Rules to settle in M1b: a controller attached to two editors is an error; a command called while no
-  editor is attached does nothing and says so (a dev-mode warning); what happens to the history when
-  the editor unmounts and mounts again.
+M1b changes the plan above in one way, found while designing it: the controller does **not** hold the
+store. The editor keeps making its own store from `data` as it does today, and the controller is a
+handle that the editor attaches itself to. So tiers 1 and 2 change by nothing, and there is no empty
+store waiting for data.
+
+- `createEditor(): EditorController` and `useCreateEditor(): EditorController` (made once, stable in
+  StrictMode). `EditorController` has every member of `EditorApi`, so `editor.save()` works anywhere.
+- `<Editor controller={editor} />`: when the editor mounts it attaches its control object and its
+  store to the controller; when it unmounts it lets go.
+- `useEditor(editor)` returns `editor`; `useEditor(editor, (view) => view.canUndo)` reads a piece of
+  the attached editor and redraws only when that piece changes. Inside the tree `useEditor()` stays as
+  it is.
+- Before an editor is attached, after it is gone, or when no `controller` was given: a command does
+  nothing and returns `false` (`null` for `addBlock`, `Promise<false>` for `save`), warning once; a
+  read gives an idle view (an empty page, nothing selected, desktop, 100 %, nothing to undo, no
+  status).
+- A second editor given a controller that is already attached: the first keeps it, the second is
+  ignored, and a `console.error` says so. Giving another controller to a mounted editor attaches the
+  new one and lets go of the old.
+- Opening the editor again starts a new page from `data`, with a new history: the controller keeps
+  nothing between editors.
+- The way to attach is internal (not exported from the package), so the public surface is
+  `createEditor`, `useCreateEditor`, `EditorController` and the extra forms of `useEditor`.
 
 ## Testing
 
