@@ -1,6 +1,7 @@
 import type { Device, PageData } from "@midito-kitchen/core";
 import type { History } from "../history";
 import type { PanelPatch } from "../patch";
+import type { SaveStatus } from "../save-status";
 
 /** The panel the tool rail shows beside the canvas. */
 export type Tool = "blocks" | "layers" | "images" | "themes";
@@ -49,5 +50,13 @@ export type DocumentState = {
   waiting: boolean;
 };
 
+/** What the host told the editor in its props, which the header shows or the Save button depends on. */
+export type HostState = {
+  /** The host's own word for how the page is stored (`status`), if it gave one. */
+  hostStatus: SaveStatus | undefined;
+  /** The host gave a way to save (`onSave`). */
+  hasSave: boolean;
+};
+
 /** What the editor keeps in its store; the pieces of state move here a few at a time. */
-export type EditorState = ViewState & SelectionState & DocumentState;
+export type EditorState = ViewState & SelectionState & DocumentState & HostState;

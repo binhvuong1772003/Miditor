@@ -6,6 +6,7 @@ import {
   createEditorStore,
   type EditorState,
   initialDocumentState,
+  initialHostState,
   initialSelectionState,
   initialViewState,
   type Run,
@@ -105,6 +106,7 @@ describe("useRun", () => {
       ...initialViewState({ narrow: false }),
       ...initialSelectionState("root"),
       ...initialDocumentState(emptyPage()),
+      ...initialHostState({ hostStatus: undefined, hasSave: false }),
     });
     const a = createEditorStore<EditorState>(state());
     const b = createEditorStore<EditorState>(state());

@@ -77,11 +77,13 @@ import {
   createNotifier,
   type EditorState,
   initialDocumentState,
+  initialHostState,
   initialSelectionState,
   initialViewState,
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useHostSync,
   useRun,
   useSelectionCommands,
   useViewCommands,
@@ -267,6 +269,7 @@ export function Editor(props: EditorProps) {
       }),
       ...initialSelectionState(firstPage.root.id),
       ...initialDocumentState(firstPage),
+      ...initialHostState({ hostStatus: props.status, hasSave: props.onSave !== undefined }),
     }),
   );
   return (
@@ -322,6 +325,8 @@ function EditorBody({
     return () => notifier.flush();
   }, [notifier, wait, maxWait]);
   useEffect(() => notifier.push(data), [notifier, data]);
+  // What the host says is in the store too, for a part that reads the status of the header.
+  useHostSync(status, onSave !== undefined);
   const headerStatus = resolveStatus(status, {
     hasSave: onSave !== undefined,
     clean: data === savedPage,

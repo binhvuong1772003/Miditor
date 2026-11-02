@@ -16,6 +16,7 @@ export {
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useHostSync,
   useRun,
   useSelectionCommands,
   useStore,
@@ -26,6 +27,7 @@ export {
 export { createEditorStore, type EditorStore } from "./create-editor-store";
 export { type DocumentCommands, initialDocumentState } from "./document";
 export type { GeometryCommands } from "./geometry";
+export { initialHostState, setHost } from "./host";
 export { createNotifier, type Notifier } from "./notifier";
 export { initialSelectionState, type SelectionCommands } from "./selection";
 export type {
@@ -33,6 +35,7 @@ export type {
   Draft,
   Editing,
   EditorState,
+  HostState,
   SelectionState,
   Tool,
   ViewState,

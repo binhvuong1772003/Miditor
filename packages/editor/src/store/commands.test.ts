@@ -11,6 +11,7 @@ import { MAX_ZOOM, MIN_ZOOM } from "../zoom";
 import { type CommandContext, type CommandName, canRun, commandTable, createRun } from "./commands";
 import { createEditorStore } from "./create-editor-store";
 import { type Env, initialDocumentState } from "./document";
+import { initialHostState } from "./host";
 import { initialSelectionState, selectManyLast, selectOnly } from "./selection";
 import type { EditorState } from "./state";
 import { initialViewState } from "./view";
@@ -28,6 +29,7 @@ function withTexts(count = 3): EditorState {
     ...initialViewState({ narrow: false }),
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...start, root }),
+    ...initialHostState({ hostStatus: undefined, hasSave: false }),
   };
 }
 

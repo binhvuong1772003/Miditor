@@ -1,12 +1,14 @@
 import type { Registry } from "@midito-kitchen/core";
-import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import type { SaveStatus } from "../save-status";
 import { type CommandContext, type CommandHooks, createRun, type Run } from "./commands";
 import { type ContentCommands, contentCommands } from "./content";
 import type { EditorStore } from "./create-editor-store";
 import { type DocumentCommands, documentCommands } from "./document";
 import { type GeometryCommands, geometryCommands } from "./geometry";
+import { setHost } from "./host";
 import { type SelectionCommands, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
 import { type StructureCommands, structureCommands } from "./structure";
@@ -114,4 +116,12 @@ export function useRun(
       ),
     [store],
   );
+}
+
+/** Keep what the host told the editor (`status`, `onSave`) in the store, changing it only when it changes. */
+export function useHostSync(hostStatus: SaveStatus | undefined, hasSave: boolean): void {
+  const store = useStoreApi<EditorState>();
+  useEffect(() => {
+    store.setState((state) => setHost(state, { hostStatus, hasSave }));
+  }, [store, hostStatus, hasSave]);
 }
