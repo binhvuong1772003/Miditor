@@ -42,6 +42,7 @@ import {
 import { Preview } from "./Preview";
 import { ProductPicker } from "./ProductPicker";
 import { SentDataDialog } from "./SentDataDialog";
+import { shopTool } from "./ShopTool";
 import { loadPage, storePage } from "./storage";
 import { Twin } from "./Twin";
 import { loadThemes, storeThemes, withId } from "./theme-store";
@@ -275,6 +276,8 @@ function Playground({
       ...(new URLSearchParams(window.location.search).has("nopicker")
         ? {}
         : { customFields: { "product-picker": ProductPicker } }),
+      // `?tools` puts a tool of the host on the rail, with its own panel.
+      ...(new URLSearchParams(window.location.search).has("tools") ? { tools: [shopTool] } : {}),
       onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),
       onThemeRename: (id, name) =>
         changeThemes(saved.map((theme) => (theme.id === id ? { ...theme, name } : theme))),

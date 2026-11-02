@@ -878,6 +878,29 @@ const renderers = {
 declare become the controls in the Properties panel. Draw the kind with the same `renderers` in
 `<Render>` so the published page matches the editor.
 
+### Put a tool of your own on the rail
+
+> Experimental.
+
+```tsx
+function ShopPanel({ editor, label }: HostToolPanelProps) {
+  return <button onClick={() => editor.addBlock("Product")}>Add a product</button>;
+}
+
+<Editor
+  config={{ tools: [{ id: "shop", label: "Shop", icon: <ShopIcon />, panel: ShopPanel }] }}
+/>;
+```
+
+- The tool goes on the rail after the editor's own, and its panel is drawn beside the canvas when it is
+  chosen. The panel gets the control object (`editor`) and the `label`.
+- `id` is lower case letters, digits and `-`, and not `blocks`, `layers`, `images` or `themes`. A bad or
+  repeated id is left out with one warning. Translate `label` yourself.
+- `icon` is a name of the editor's icons or a node of yours; without it the rail shows the first two
+  letters of the label.
+- In a layout of your own, `<Editor.Tool id="shop" />` draws the panel of any tool on its own.
+- The `rail` and `panelStart` places of `overrides` see your tools like the editor's.
+
 ### Draw the input of a field yourself
 
 > Experimental.
