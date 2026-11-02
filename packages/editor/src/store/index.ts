@@ -17,6 +17,7 @@ export {
   useDocumentCommands,
   useEditorState,
   useHostSync,
+  useOptionalStore,
   useRun,
   useSelectionCommands,
   useStore,

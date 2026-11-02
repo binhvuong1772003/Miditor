@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { createApi, type EditorApi } from "./control-api";
 import { ControlProvider, useEditor } from "./control-context";
+import { attachController, createEditor } from "./controller";
 import {
   createEditorStore,
   type EditorState,
@@ -58,6 +59,26 @@ function Shape() {
   const { zoom, status } = useEditor((view) => ({ zoom: view.zoom, status: view.status }));
   return <b>{`${zoom}|${status}`}</b>;
 }
+
+function Outside({ editor }: { editor: ReturnType<typeof createEditor> }) {
+  const same = useEditor(editor) === editor;
+  const frame = useEditor(editor, (view) => view.frame);
+  const shape = useEditor(editor, (view) => ({ zoom: view.zoom, undo: view.canUndo }));
+  return <b>{`${same}|${frame}|${shape.zoom}|${shape.undo}`}</b>;
+}
+
+describe("useEditor with a controller", () => {
+  it("gives the idle view before an editor is attached", () => {
+    expect(renderToString(<Outside editor={createEditor()} />)).toContain("true|desktop|1|false");
+  });
+
+  it("reads the editor that is attached", () => {
+    const editor = createEditor();
+    const store = makeStore("phone");
+    attachController(editor, { api: stubApi(store), store });
+    expect(renderToString(<Outside editor={editor} />)).toContain("true|phone|1|false");
+  });
+});
 
 describe("useEditor", () => {
   it("gives the control object of the editor it is drawn in", () => {

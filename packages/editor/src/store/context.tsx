@@ -29,6 +29,11 @@ export function StoreProvider<S extends object>({
   );
 }
 
+/** The store of the editor this part is drawn in, or `null` outside an editor. */
+export function useOptionalStore(): EditorStore<EditorState> | null {
+  return useContext(StoreContext) as EditorStore<EditorState> | null;
+}
+
 /** The store itself, to give it commands. It does not draw the part again when the state changes. */
 export function useStoreApi<S extends object>(): EditorStore<S> {
   const store = useContext(StoreContext);

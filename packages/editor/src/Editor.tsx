@@ -50,6 +50,7 @@ import { usePointer } from "./canvas/usePointer";
 import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
 import { ControlProvider } from "./control-context";
+import { attachController, type EditorController } from "./controller";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { EndPanel } from "./EndPanel";
@@ -150,6 +151,13 @@ export interface EditorProps {
    * "Back to pages" link, the name of the page. The editor draws it as given and styles nothing of it.
    */
   headerStart?: ReactNode;
+  /**
+   * A controller from `useCreateEditor()`, to drive this editor from code outside its tree: a bar of
+   * your own app with a Publish button, a panel next to the editor. The editor attaches to it when it
+   * opens and lets go when it closes. One controller belongs to one editor at a time: a second editor
+   * given the same one is ignored and an error is logged.
+   */
+  controller?: EditorController;
   /**
    * How the editor looks: a `scheme` (`light` or `dark`) to start from, `colors` by name, the corner
    * `radius`, the `control` height and the `font`. Anything left out keeps the default of the scheme.
@@ -291,6 +299,7 @@ function EditorBody({
   headerActions,
   logo,
   headerStart,
+  controller,
   appearance,
   i18n,
   historyLimit,
@@ -701,6 +710,12 @@ function EditorBody({
       fit: () => latest.current.fit(),
       alive: () => alive.current,
     }),
+  );
+
+  // Hand the control object to the controller the host gave, for as long as this editor is open.
+  useEffect(
+    () => (controller ? (attachController(controller, { api, store }) ?? undefined) : undefined),
+    [controller, api, store],
   );
 
   /**
