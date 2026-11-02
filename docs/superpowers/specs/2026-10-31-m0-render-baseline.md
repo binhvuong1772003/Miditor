@@ -29,6 +29,7 @@ canvas.
 | Phase 4, document and commands   | 277.04 kB | 72.41 kB |
 | Phase 5, command table and keys  | 280.74 kB | 73.60 kB |
 | End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
+| M1a, the control API             | 291.20 kB | 76.36 kB |
 
 ## Lines of `Editor.tsx`
 

@@ -135,6 +135,75 @@ variables below. Set only the ones you want to change:
 The playground shows it: open `?host` to see the editor in a stand-in product with its own sidebar
 and navbar.
 
+## Control the editor from your code
+
+A part you draw inside the editor (`headerActions`, `headerStart`, `logo`) can read the editor and give
+it commands with `useEditor`.
+
+```tsx
+import { Editor, useEditor } from "@midito-kitchen/editor";
+
+function PublishButton() {
+  const editor = useEditor(); // the commands
+  const canUndo = useEditor((view) => view.canUndo); // a piece of the editor
+
+  return (
+    <>
+      <button type="button" disabled={!canUndo} onClick={() => editor.undo()}>
+        Undo
+      </button>
+      <button
+        type="button"
+        onClick={async () => {
+          if (await editor.save()) publish();
+        }}
+      >
+        Save and publish
+      </button>
+    </>
+  );
+}
+
+<Editor onSave={(data) => store(data)} headerActions={<PublishButton />} />;
+```
+
+`useEditor()` outside an `<Editor>` throws. A part that reads with a selector is drawn again only when
+what the selector gives changes; the selector may build a new object or array (`(view) => ({ id:
+view.selection.id })`), its members are compared.
+
+**What you can read** (the argument of the selector):
+
+| Read                 | What it is                                                                    |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `data`               | The page as stored, as `onSave` would get it, without a pending draft.        |
+| `selection`          | `{ id, picked }`: the selected block (or `null`) and the ones picked with it. |
+| `frame`              | `"desktop"` or `"phone"`.                                                     |
+| `zoom`               | The zoom of the canvas, 1 for the page at its own size.                       |
+| `canUndo`, `canRedo` | Whether there is a step to undo or redo.                                      |
+| `status`             | What the header says: the `status` prop or the Save button's own state.       |
+
+**What you can do** (the object `useEditor()` gives): `undo`, `redo`, `save`, `select(id)`, `clearSelection`,
+`setFrame`, `setZoom`, `fit`, `addBlock(kind, overrides?)`, `remove`, `duplicate`, `group`, `ungroup`.
+They run the same code as the editor's buttons and keys, so a host button and the editor's own button
+cannot disagree.
+
+- **Stable and experimental.** Each member is marked `@stable` or `@experimental` in its type comment.
+  Stable: `data`, `selection`, `frame`, `canUndo`, `canRedo`, `status`, `undo`, `redo`, `save`, `select`,
+  `setFrame`. The rest is experimental and may change.
+- **A command that cannot run says `false`.** Nothing to undo, no block selected, an id that is not in
+  the page: nothing changes and the call returns `false`. It does not throw.
+- **`save()`** stores a pending draft (a colour or value still being picked) first,
+  then calls `onSave`. It resolves `true` once `onSave` has settled, and `false` when it could not run:
+  no `onSave`, the status is `"saving"`, `onSave` threw, or the editor is gone.
+- **`addBlock(kind, overrides?)`** adds the block where the editor's own add would (inside the selected
+  block if it can hold it, otherwise on the page), selects it and returns its id. It returns `null`
+  when nothing was added: an unknown `kind`, or the phone frame.
+- **After the editor went away**, or before it started, a command does nothing, returns `false` (`null`
+  for `addBlock`) and warns once in the console. Keeping `editor` after the part unmounted is safe.
+
+Driving the editor from outside the `<Editor>` tree (your own app bar, a sidebar, a script) is not
+there yet. Today `useEditor` works only in parts the editor draws.
+
 ## Saving
 
 The editor never sends anything by itself. What leaves it is the **whole page as JSON**, and only

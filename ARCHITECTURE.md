@@ -34,10 +34,29 @@ host's rules (M3) will go.
 `run` does not ask it.
 
 What does not go through `run`: Tab, Esc and Enter, the arrow keys that nudge, copy, cut and paste,
-Save, adding a block, and the gestures (drag, resize, turn). They use the commands of the document,
+Save, adding a block, fit, and the gestures (drag, resize, turn). They use the commands of the document,
 selection and view directly (`useDocumentCommands`, `useSelectionCommands`, `useViewCommands`).
 
 Keys are read by `keymap.ts`: `matchKey(event, selectedId)` names the command, and the caller runs it.
+
+## Control API
+
+What a host can read and do from its own code (`control.ts`, `control-api.ts`, `control-context.tsx`).
+Its types are the public surface and are kept in snapshots by `public-surface.test.ts`.
+
+- `EditorBody` builds the control object (`createApi`) from the same `run`, `save`, add-block and fit
+  that the buttons use, so a host call and a button cannot differ. It is made once, its identity does
+  not change between renders, and it is given to the parts through `ControlProvider`.
+- `useEditor()` returns that object. `useEditor(selector)` gives the selector an `EditorView` (`viewOf`,
+  a pure function of the state) through the store hook, so a part is drawn again only when its
+  selected value changes.
+- The host's side of the header (the `status` prop, whether `onSave` exists) lives in the store, put
+  there by `useHostSync` in `Editor.tsx`, so `status` is read like the rest.
+- A command called after the editor unmounted does nothing and warns once. A command that cannot run
+  returns `false`; the check is `canRun`, the same one the buttons use.
+- `hooks.before` and `hooks.after` cover the commands of the table only. `save`, `addBlock` and `fit`
+  need the screen and do not go through them.
+- The store is never handed out, and there is no raw `dispatch`.
 
 ## The screen
 
