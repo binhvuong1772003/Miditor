@@ -29,7 +29,7 @@ canvas.
 | Phase 4, document and commands   | 277.04 kB | 72.41 kB |
 | Phase 5, command table and keys  | 280.74 kB | 73.60 kB |
 | End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
-| M1a, the control API             | 291.20 kB | 76.36 kB |
+| M1a, the control API             | 290.81 kB | 76.28 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -82,3 +82,10 @@ person has, both give the same numbers above.
 Phase 6 split `Editor.tsx` into `Toolbar`, `Rail`, `StartPanel`, `EndPanel`, `canvas/StagePage`,
 `canvas/Marquee` and five hooks in `canvas/` (1086 lines left, from 2127). The overlays of the canvas
 stay in it: they share the canvas elements with the toolbar, the Tab key, paste and the library drop.
+
+## M1a: renders, measured again
+
+After the control API (`useEditor`, the host status in the store), `pnpm perf` gives the same numbers as
+the end of M0 in all six moments (add Text 2, type 5 chars 2, drag 100px 15, select none 4, hover block 3,
+select block 4). A host part that reads `useEditor((view) => view.canUndo)` is drawn again only when
+that value changes (`e2e/control.spec.ts` counts its renders).
