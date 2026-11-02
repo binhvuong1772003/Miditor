@@ -129,6 +129,23 @@ What the code of today shows, which shapes this:
 - An API report of the public types (api-extractor or a snapshot of `index.d.ts`) so a change to the
   surface shows in review.
 
+## Calls made by the designer
+
+Settled without the owner, after the builder check; each can be changed.
+
+- **`save()`** returns `Promise<boolean>`: `true` once `onSave` has settled, `false` when it could not
+  run (no editor attached, or `onSave` threw). It is not a pure reducer, so it is not in the
+  reducer table; it is registered in the same list with the other commands that need the screen, and
+  `before`/`after` run around the call.
+- **`addBlock(kind, overrides?)`** takes what `addBlockOf` takes. It lands where the editor's own
+  add does (inside the selected block if that kind can hold it, otherwise on the page). It returns
+  `false` on the phone frame, as the buttons are off there.
+- **Before the editor has mounted, or after it unmounted:** a command does nothing, returns `false`
+  and warns once in development. The same rule serves tier 3.
+- **`select`, `clearSelection`, `setZoom`** are plain reducers and join `commandTable`; `fit`,
+  `save` and `addBlock` need the screen (measures) and go through the command context.
+- **API report:** a Vitest snapshot of the public types, run with the other tests. No extra tool.
+
 ## Left to the builder
 
 File and folder names, the internal shape of the context, how `@stable` is checked, how the demo in
