@@ -20,6 +20,7 @@ export type { EditorView } from "./control";
 export type { EditorApi } from "./control-api";
 export { useCreateEditor, useEditor } from "./control-context";
 export { createEditor, type EditorController } from "./controller";
+export type { CustomFieldInput, CustomFieldProps } from "./custom-field";
 export { Editor, type EditorProps, EditorProvider, type EditorProviderProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";

@@ -19,6 +19,7 @@ import { AlignSection } from "./AlignSection";
 import type { ActionDef } from "./actions";
 import { BackgroundFields } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
+import type { CustomFieldInput } from "./custom-field";
 import type { FontDef } from "./fonts";
 import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
@@ -61,6 +62,8 @@ export interface PropertiesPanelProps {
   initialTab?: Tab | undefined;
   /** What a button can do, for its Action field. */
   actions?: readonly ActionDef[] | undefined;
+  /** The inputs the host draws for its `custom` fields, by kind. */
+  customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
   /** The fonts the host lets people choose, for a Font field. */
   fonts?: readonly FontDef[] | undefined;
   /** Drop the preview and show what is stored. */
@@ -97,6 +100,7 @@ export function PropertiesPanel({
   theme,
   uploadImage,
   actions,
+  customFields,
   fonts,
   selectedCount = 1,
   onBackToPage,
@@ -240,6 +244,7 @@ export function PropertiesPanel({
                   theme={theme}
                   actions={actions}
                   fonts={fonts}
+                  customFields={customFields}
                   nodeId={node.id}
                   onChange={(name, value) => onCommit({ key: "prop", name, value })}
                 />

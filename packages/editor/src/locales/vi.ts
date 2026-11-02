@@ -134,6 +134,7 @@ export const vi: Messages = {
   "colour.green": "Xanh lá",
   "colour.blue": "Xanh dương",
   "props.manySelected": "Đã chọn {n} khối",
+  "field.noInput": "Chưa có ô nhập cho loại trường “{kind}”.",
   "props.manyHint": "Bấm vào một khối để chỉnh riêng khối đó.",
   "props.emptyTitle": "Chưa chọn gì",
   "props.emptyText": "Bấm vào một khối trên trang để chỉnh chữ, màu và vị trí của nó.",

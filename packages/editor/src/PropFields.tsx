@@ -11,6 +11,7 @@ import {
 import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "react";
 import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
+import { CustomField, type CustomFieldInput } from "./custom-field";
 import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
 import { useT } from "./i18n/context";
@@ -31,6 +32,8 @@ export interface PropFieldsProps {
   actions?: readonly ActionDef[] | undefined;
   /** The fonts the host lets people choose, for a font field. */
   fonts?: readonly FontDef[] | undefined;
+  /** The inputs the host draws for its `custom` fields, by kind. */
+  customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
   /** The selected block, which a host's `field` override is told. */
   nodeId: string;
 }
@@ -76,6 +79,7 @@ export function PropFields({
   theme,
   actions,
   fonts,
+  customFields,
   nodeId,
 }: PropFieldsProps) {
   const t = useT();
@@ -109,7 +113,12 @@ export function PropFields({
           // The details keep theirs: each value there follows the stored one itself, so focus stays while typing.
           return (
             <div
-              key={field.type === "payload" ? name : `${name}:${JSON.stringify(stored)}`}
+              // A host input keeps its own state, so it is not made again when its value changes.
+              key={
+                field.type === "payload" || field.type === "custom"
+                  ? name
+                  : `${name}:${JSON.stringify(stored)}`
+              }
               className={`${styles.stack} ${wide(name, field) ? styles.span2 : ""}`}
             >
               <OverrideSlot
@@ -122,17 +131,28 @@ export function PropFields({
                   nodeId,
                 }}
               >
-                <PropField
-                  def={def}
-                  name={name}
-                  field={field}
-                  stored={stored}
-                  onChange={onChange}
-                  theme={theme}
-                  actions={actions}
-                  fonts={fonts}
-                  action={storedOf(def, props, "action")}
-                />
+                {field.type === "custom" ? (
+                  <CustomField
+                    name={name}
+                    field={field}
+                    stored={stored}
+                    nodeId={nodeId}
+                    onChange={onChange}
+                    inputs={customFields}
+                  />
+                ) : (
+                  <PropField
+                    def={def}
+                    name={name}
+                    field={field}
+                    stored={stored}
+                    onChange={onChange}
+                    theme={theme}
+                    actions={actions}
+                    fonts={fonts}
+                    action={storedOf(def, props, "action")}
+                  />
+                )}
               </OverrideSlot>
             </div>
           );

@@ -42,6 +42,7 @@ import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
 import { ControlProvider } from "./control-context";
 import { attachController, type EditorController } from "./controller";
+import type { CustomFieldInput } from "./custom-field";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -232,6 +233,13 @@ export interface EditorProps {
      * fonts every browser has are offered.
      */
     fonts?: readonly FontDef[];
+    /**
+     * The inputs you draw for your own `custom` fields, by the `kind` the field names:
+     * `{ "product-picker": ProductPicker }`. Each is a component that gets the value, `onChange` for a
+     * new value (any JSON), `readOnly` and the control object of the editor. A field whose kind has no
+     * input here shows a note instead. Experimental.
+     */
+    customFields?: Readonly<Record<string, CustomFieldInput>>;
     /**
      * The pictures of the host's library, shown in the Images panel to add to the page: an `url` each,
      * and when known a `name`, a smaller `thumb`, the natural `width` and `height`, a `folder` and

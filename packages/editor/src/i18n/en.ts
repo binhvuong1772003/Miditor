@@ -136,6 +136,7 @@ export const en = {
   "colour.green": "Green",
   "colour.blue": "Blue",
   "props.manySelected": "{n} blocks selected",
+  "field.noInput": "No input was given for the field kind “{kind}”.",
   "props.manyHint": "Press one block to edit it on its own.",
   "props.emptyTitle": "Nothing selected",
   "props.emptyText": "Click a block on the page to edit its words, colours and position.",
