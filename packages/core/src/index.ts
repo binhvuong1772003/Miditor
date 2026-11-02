@@ -15,6 +15,7 @@ export { type RectOptions, type RectPatch, withRect } from "./position/with-rect
 export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
 export { canMove } from "./registry/can-move";
+export { defaultValueOf } from "./registry/default-value";
 export { keepsRatio } from "./registry/keeps-ratio";
 export {
   BASIC_CATEGORY,
@@ -26,9 +27,16 @@ export {
 } from "./registry/library";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
-export type { ComponentDef, Field, Registry } from "./registry/types";
+export {
+  type ComponentDef,
+  type Field,
+  type ItemField,
+  MAX_FIELD_DEPTH,
+  MAX_ITEMS,
+  type Registry,
+} from "./registry/types";
 export { type PageIssue, validatePage } from "./registry/validate-page";
-export { type PropIssue, validateProps } from "./registry/validate-props";
+export { type PropIssue, validateProps, validateValue } from "./registry/validate-props";
 export { type RegistryIssue, validateRegistry } from "./registry/validate-registry";
 export {
   isActionName,

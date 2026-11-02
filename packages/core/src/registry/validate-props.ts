@@ -3,12 +3,26 @@ import { isImageUrl } from "../styles/image-url";
 import { isLinkUrl } from "../styles/link-url";
 import { isColorValue, isFontStack } from "../styles/theme";
 import type { JsonValue } from "../tree/types";
-import type { ComponentDef, Field } from "./types";
+import { type ComponentDef, type Field, type ItemField, MAX_ITEMS } from "./types";
 
 /** What is wrong with one prop. `unknown`: no such field. `type`: the wrong kind of value. `range`: too long, too small or too big. `option`: not one of the choices. */
 export interface PropIssue {
   key: string;
   code: "unknown" | "type" | "range" | "option";
+}
+
+const isPlainObject = (value: unknown): value is { [key: string]: JsonValue } =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * The code for a value that a field refuses, or `undefined` when it accepts it. For an array or an
+ * object it is the first problem found inside.
+ */
+export function validateValue(
+  field: Field | ItemField,
+  value: JsonValue,
+): PropIssue["code"] | undefined {
+  return problemWith(field as Field, value);
 }
 
 /** The code for a value that a field refuses, or `undefined` when it accepts it. */
@@ -41,6 +55,26 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
     case "custom":
       // Whatever the host's input makes; that it is JSON is checked with the rest of the page.
       return undefined;
+    case "array": {
+      if (!Array.isArray(value)) return "type";
+      const most = Math.min(field.maxItems ?? MAX_ITEMS, MAX_ITEMS);
+      if (value.length > most || value.length < (field.minItems ?? 0)) return "range";
+      for (const item of value) {
+        const code = problemWith(field.item as Field, item);
+        if (code) return code;
+      }
+      return undefined;
+    }
+    case "object": {
+      if (!isPlainObject(value)) return "type";
+      for (const [key, inner] of Object.entries(value)) {
+        const nested = Object.hasOwn(field.fields, key) ? field.fields[key] : undefined;
+        if (!nested) return "unknown";
+        const code = problemWith(nested as Field, inner);
+        if (code) return code;
+      }
+      return undefined;
+    }
   }
 }
 

@@ -57,7 +57,26 @@ type FieldKind =
    * A value of any JSON shape that the host's own input edits. `kind` names the input the host gave the
    * editor (`config.customFields`); the registry stays plain data, so the input itself is not here.
    */
-  | { type: "custom"; label: string; kind: string };
+  | { type: "custom"; label: string; kind: string }
+  /**
+   * A list of values that all follow `item`: the menu entries of a navigation, the cards of a row. At
+   * most `MAX_ITEMS` long (100), and `maxItems` can only lower that.
+   */
+  | { type: "array"; label: string; item: ItemField; minItems?: number; maxItems?: number }
+  /** A group of named values that each follow their own field: `{ label, link }` of a menu entry. */
+  | { type: "object"; label: string; fields: Record<string, ItemField> };
+
+/**
+ * A field inside an array or an object: any type except the ones that need the page's host context
+ * (`image`, `action`, `payload`). It has no `group`, `perDevice` or `help` of its own.
+ */
+export type ItemField = Exclude<FieldKind, { type: "image" | "action" | "payload" }>;
+
+/** The longest an array can be, whatever its `maxItems`. */
+export const MAX_ITEMS = 100;
+
+/** How deep arrays and objects may nest. */
+export const MAX_FIELD_DEPTH = 3;
 
 /** One kind of block: what it is called, what it starts with and what a person may change on it. */
 export interface ComponentDef {

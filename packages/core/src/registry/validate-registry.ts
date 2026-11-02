@@ -1,5 +1,5 @@
 import type { JsonValue } from "../tree/types";
-import type { Registry } from "./types";
+import { MAX_FIELD_DEPTH, MAX_ITEMS, type Registry } from "./types";
 import { validateProps } from "./validate-props";
 
 /**
@@ -27,8 +27,10 @@ const isGroupName = (value: unknown) =>
   typeof value === "string" && value !== "" && value.trim() === value && value.length <= 40;
 
 /** Why a field could never be filled in, or `undefined` when it is a usable field. */
-function fieldIsBroken(field: unknown): boolean {
+function fieldIsBroken(field: unknown, depth = 0): boolean {
   if (!isObject(field) || !isLabel(field.label)) return true;
+  // A field inside an array or an object has no section, no phone value of its own.
+  if (depth > 0 && (field.perDevice !== undefined || field.group !== undefined)) return true;
   if (field.perDevice !== undefined && typeof field.perDevice !== "boolean") return true;
   if (field.group !== undefined && !isGroupName(field.group)) return true;
   if (field.help !== undefined && !(typeof field.help === "string" && field.help.length <= 200)) {
@@ -55,12 +57,37 @@ function fieldIsBroken(field: unknown): boolean {
       );
     case "boolean":
     case "color":
-    case "image":
     case "link":
     case "font":
+      return false;
+    case "image":
     case "action":
     case "payload":
-      return false;
+      // They need the page's host context, so they are for the props of a block only.
+      return depth > 0;
+    case "array": {
+      if (depth + 1 > MAX_FIELD_DEPTH) return true;
+      const { minItems, maxItems } = field;
+      if (minItems !== undefined && !isCount(minItems)) return true;
+      if (maxItems !== undefined && !(isCount(maxItems) && (maxItems as number) <= MAX_ITEMS)) {
+        return true;
+      }
+      if (typeof minItems === "number" && typeof maxItems === "number" && minItems > maxItems) {
+        return true;
+      }
+      return fieldIsBroken(field.item, depth + 1);
+    }
+    case "object": {
+      if (depth + 1 > MAX_FIELD_DEPTH || !isObject(field.fields)) return true;
+      const entries = Object.entries(field.fields);
+      return (
+        entries.length === 0 ||
+        entries.some(
+          ([key, inner]) =>
+            !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || fieldIsBroken(inner, depth + 1),
+        )
+      );
+    }
     case "custom":
       return !(typeof field.kind === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(field.kind));
     default:
