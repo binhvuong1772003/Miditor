@@ -23,6 +23,7 @@ export function defaultValueOf(field: Field | ItemField): JsonValue {
     case "payload":
       return {};
     case "custom":
+    case "external":
       return null;
     case "array":
       return Array.from({ length: field.minItems ?? 0 }, () => defaultValueOf(field.item));

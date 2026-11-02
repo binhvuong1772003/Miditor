@@ -55,6 +55,14 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
     case "custom":
       // Whatever the host's input makes; that it is JSON is checked with the rest of the page.
       return undefined;
+    case "external":
+      if (value === null) return undefined;
+      return isPlainObject(value) &&
+        typeof value.id === "string" &&
+        typeof value.label === "string" &&
+        Object.keys(value).length === 2
+        ? undefined
+        : "type";
     case "array": {
       if (!Array.isArray(value)) return "type";
       const most = Math.min(field.maxItems ?? MAX_ITEMS, MAX_ITEMS);

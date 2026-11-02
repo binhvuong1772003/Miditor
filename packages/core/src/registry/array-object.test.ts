@@ -157,3 +157,38 @@ describe("validateRegistry, arrays and objects", () => {
     expect(validateRegistry(registry({ a: field }))).toEqual([]);
   });
 });
+
+describe("an external field", () => {
+  const pick: Field = { type: "external", label: "Page", source: "pages" };
+
+  it("accepts nothing chosen, or an id with its label", () => {
+    expect(validateValue(pick, null)).toBeUndefined();
+    expect(validateValue(pick, { id: "p1", label: "Home" })).toBeUndefined();
+    expect(defaultValueOf(pick)).toBeNull();
+  });
+
+  it.each([
+    [""],
+    [3],
+    [{ id: "p1" }],
+    [{ id: 1, label: "x" }],
+    [{ id: "p", label: "x", more: 1 }],
+    [[]],
+  ])("refuses %j", (value) => {
+    expect(validateValue(pick, value as never)).toBe("type");
+  });
+
+  it("needs the name of a source in the registry", () => {
+    const of = (field: unknown) =>
+      validateRegistry({
+        Nav: { label: "Nav", canContain: false, defaultProps: {}, fields: { a: field } },
+      } as unknown as Registry);
+    expect(of(pick)).toEqual([]);
+    expect(of({ type: "external", label: "P" })).toEqual([
+      { type: "Nav", key: "a", code: "field" },
+    ]);
+    expect(of({ type: "external", label: "P", source: "Pages" })).toEqual([
+      { type: "Nav", key: "a", code: "field" },
+    ]);
+  });
+});

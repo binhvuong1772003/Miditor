@@ -41,6 +41,7 @@ import {
 } from "./PermissionsDemo";
 import { Preview } from "./Preview";
 import { ProductPicker } from "./ProductPicker";
+import { pagesSource } from "./pages-source";
 import { SentDataDialog } from "./SentDataDialog";
 import { shopTool } from "./ShopTool";
 import { loadPage, storePage } from "./storage";
@@ -276,6 +277,10 @@ function Playground({
       ...(new URLSearchParams(window.location.search).has("nopicker")
         ? {}
         : { customFields: { "product-picker": ProductPicker } }),
+      // `?nosource` leaves the list of pages out, to show the note a field with no list gets.
+      ...(new URLSearchParams(window.location.search).has("nosource")
+        ? {}
+        : { sources: { pages: pagesSource } }),
       // `?tools` puts a tool of the host on the rail, with its own panel.
       ...(new URLSearchParams(window.location.search).has("tools") ? { tools: [shopTool] } : {}),
       onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),

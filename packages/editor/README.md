@@ -878,6 +878,33 @@ const renderers = {
 declare become the controls in the Properties panel. Draw the kind with the same `renderers` in
 `<Render>` so the published page matches the editor.
 
+### Choose from a list you keep
+
+> Experimental.
+
+An `external` field stores a pick from a list that lives in your system (pages, products, articles). You
+give the editor a search for it:
+
+```tsx
+fields: { page: { type: "external", label: "Page", source: "pages" } },
+
+<Editor
+  config={{
+    components,
+    sources: { pages: { search: (query, signal) => fetchPages(query, { signal }) } },
+  }}
+/>;
+```
+
+- `search(query, signal)` answers with `{ id, label }` items. It is asked with an empty text when the
+  panel opens and again, a moment after the last key, as the person types; an earlier question is aborted
+  through `signal`, so stop your request when it is.
+- The panel shows Loading, the items, "Nothing found" or an error when `search` rejects.
+- The stored value is `null` or `{ id, label }`; a Clear button stores `null`. Keep your own data by the
+  `id`: the label is only what the person saw when they chose.
+- A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list
+  or a group too.
+
 ### Put a tool of your own on the rail
 
 > Experimental.

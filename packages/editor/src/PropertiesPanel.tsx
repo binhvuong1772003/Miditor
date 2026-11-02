@@ -20,6 +20,7 @@ import type { ActionDef } from "./actions";
 import { BackgroundFields } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import type { CustomFieldInput } from "./custom-field";
+import type { ExternalSource } from "./external-field";
 import type { FontDef } from "./fonts";
 import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
@@ -64,6 +65,8 @@ export interface PropertiesPanelProps {
   actions?: readonly ActionDef[] | undefined;
   /** The inputs the host draws for its `custom` fields, by kind. */
   customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
+  /** The lists the host searches for its `external` fields, by source. */
+  sources?: Readonly<Record<string, ExternalSource>> | undefined;
   /** The fonts the host lets people choose, for a Font field. */
   fonts?: readonly FontDef[] | undefined;
   /** Drop the preview and show what is stored. */
@@ -101,6 +104,7 @@ export function PropertiesPanel({
   uploadImage,
   actions,
   customFields,
+  sources,
   fonts,
   selectedCount = 1,
   onBackToPage,
@@ -245,6 +249,7 @@ export function PropertiesPanel({
                   actions={actions}
                   fonts={fonts}
                   customFields={customFields}
+                  sources={sources}
                   nodeId={node.id}
                   onChange={(name, value) => onCommit({ key: "prop", name, value })}
                 />

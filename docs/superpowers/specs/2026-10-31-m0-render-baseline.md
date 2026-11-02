@@ -20,21 +20,22 @@ canvas.
 
 `packages/editor/dist/index.mjs`, raw and gzip.
 
-| Moment                           | raw       | gzip     |
-| -------------------------------- | --------- | -------- |
-| Before the store                 | 253.86 kB | 66.15 kB |
-| Phase 1, with zustand bundled in | 255.54 kB | 66.71 kB |
-| Phase 2, view state in the store | 258.75 kB | 67.73 kB |
-| Phase 3, selection in the store  | 263.07 kB | 68.86 kB |
-| Phase 4, document and commands   | 277.04 kB | 72.41 kB |
-| Phase 5, command table and keys  | 280.74 kB | 73.60 kB |
-| End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
-| M1a, the control API             | 290.81 kB | 76.28 kB |
-| M1b, the controller              | 293.46 kB | 77.19 kB |
-| M2, overrides                    | 297.38 kB | 78.27 kB |
-| M3, hide and permissions         | 312.36 kB | 82.54 kB |
-| M4, composition                  | 320.74 kB | 84.25 kB |
-| M5a, custom field                | 322.06 kB | 84.58 kB |
+| Moment                             | raw       | gzip     |
+| ---------------------------------- | --------- | -------- |
+| Before the store                   | 253.86 kB | 66.15 kB |
+| Phase 1, with zustand bundled in   | 255.54 kB | 66.71 kB |
+| Phase 2, view state in the store   | 258.75 kB | 67.73 kB |
+| Phase 3, selection in the store    | 263.07 kB | 68.86 kB |
+| Phase 4, document and commands     | 277.04 kB | 72.41 kB |
+| Phase 5, command table and keys    | 280.74 kB | 73.60 kB |
+| End of M0 (phases 6 and 7)         | 284.14 kB | 74.73 kB |
+| M1a, the control API               | 290.81 kB | 76.28 kB |
+| M1b, the controller                | 293.46 kB | 77.19 kB |
+| M2, overrides                      | 297.38 kB | 78.27 kB |
+| M3, hide and permissions           | 312.36 kB | 82.54 kB |
+| M4, composition                    | 320.74 kB | 84.25 kB |
+| M5a, custom field                  | 322.06 kB | 84.58 kB |
+| M5b to M5d, tools, lists, external | 335.57 kB | 87.48 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -143,3 +144,8 @@ not the canvas, because the drag, the hover marks and the menu state no longer r
 
 A custom field adds no state and no render. `pnpm perf` gives the same numbers as after M4 in all six
 moments.
+
+## M5b to M5d: renders
+
+Tools of the host, array and object fields and external fields add no state to the store and no render to a
+host that does not use them. `pnpm perf` gives the same numbers as after M4 in all six moments.

@@ -63,6 +63,11 @@ type FieldKind =
    * most `MAX_ITEMS` long (100), and `maxItems` can only lower that.
    */
   | { type: "array"; label: string; item: ItemField; minItems?: number; maxItems?: number }
+  /**
+   * A choice from a list that the host keeps (products, articles, pages): stored as `null` or
+   * `{ id, label }`. `source` names the search the host gave the editor (`config.sources`).
+   */
+  | { type: "external"; label: string; source: string }
   /** A group of named values that each follow their own field: `{ label, link }` of a menu entry. */
   | { type: "object"; label: string; fields: Record<string, ItemField> };
 

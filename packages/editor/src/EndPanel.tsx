@@ -84,6 +84,7 @@ export function EndPanel({
             onDistribute={(axis) => documents.distributeSelected(parentSize() ?? null, axis)}
             actions={config?.actions}
             customFields={config?.customFields}
+            sources={config?.sources}
             fonts={fonts}
             def={shownDef}
             onPreview={(patch) =>

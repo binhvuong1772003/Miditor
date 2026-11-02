@@ -12,6 +12,7 @@ import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "rea
 import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
 import { CustomField, type CustomFieldInput } from "./custom-field";
+import type { ExternalSource } from "./external-field";
 import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
 import { useT } from "./i18n/context";
@@ -35,6 +36,8 @@ export interface PropFieldsProps {
   fonts?: readonly FontDef[] | undefined;
   /** The inputs the host draws for its `custom` fields, by kind. */
   customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
+  /** The lists the host searches for its `external` fields, by source. */
+  sources?: Readonly<Record<string, ExternalSource>> | undefined;
   /** The selected block, which a host's `field` override is told. */
   nodeId: string;
 }
@@ -83,6 +86,7 @@ export function PropFields({
   actions,
   fonts,
   customFields,
+  sources,
   nodeId,
 }: PropFieldsProps) {
   const t = useT();
@@ -134,13 +138,14 @@ export function PropFields({
                   nodeId,
                 }}
               >
-                {field.type === "array" || field.type === "object" ? (
+                {field.type === "array" || field.type === "object" || field.type === "external" ? (
                   <ValueInput
                     field={field}
                     value={stored}
                     label={field.label}
                     nodeId={nodeId}
                     inputs={customFields}
+                    sources={sources}
                     onChange={(next) => {
                       if (validateProps(def, { [name]: next }).length === 0) onChange(name, next);
                     }}

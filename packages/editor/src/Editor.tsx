@@ -46,6 +46,7 @@ import type { CustomFieldInput } from "./custom-field";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
+import type { ExternalSource } from "./external-field";
 import type { FontDef } from "./fonts";
 import type { HideName } from "./hide";
 import { type HostTool, usableTools } from "./host-tool";
@@ -248,6 +249,12 @@ export interface EditorProps {
      * `editor` (the control object) and its `label`. Experimental.
      */
     tools?: readonly HostTool[];
+    /**
+     * The lists you keep, for `external` fields, by the `source` the field names:
+     * `{ pages: { search: (query, signal) => fetchPages(query, signal) } }`. `search` answers with
+     * `{ id, label }` items and should stop when `signal` is aborted. Experimental.
+     */
+    sources?: Readonly<Record<string, ExternalSource>>;
     /**
      * The pictures of the host's library, shown in the Images panel to add to the page: an `url` each,
      * and when known a `name`, a smaller `thumb`, the natural `width` and `height`, a `folder` and

@@ -13,6 +13,17 @@ export const components: Registry = {
     defaultProps: { color: "#e11d48" },
     fields: { color: { type: "color", label: "Colour" } },
   },
+  // A kind with a field that chooses from a list the host keeps (`config.sources`).
+  Related: {
+    label: "Related page",
+    category: "From your website",
+    icon: "box",
+    keywords: ["link", "demo"],
+    size: { w: 240, h: 40 },
+    canContain: false,
+    defaultProps: { page: null },
+    fields: { page: { type: "external", label: "Page", source: "pages" } },
+  },
   // A kind with a list of objects: the entries of a menu, each a label and a link.
   Menu: {
     label: "Menu",
@@ -54,6 +65,18 @@ export const components: Registry = {
 
 /** How the host draws its own kind: a heart that fills its box, in the colour stored on the block. */
 export const renderers: Record<string, Renderer> = {
+  Related: ({ props }) => {
+    const page = props.page;
+    const label =
+      typeof page === "object" && page !== null && !Array.isArray(page)
+        ? String(page.label)
+        : "none";
+    return (
+      <div data-testid="related-page" style={{ padding: 8 }}>
+        Related: {label}
+      </div>
+    );
+  },
   Menu: ({ props }) => {
     const items = Array.isArray(props.items) ? props.items : [];
     return (

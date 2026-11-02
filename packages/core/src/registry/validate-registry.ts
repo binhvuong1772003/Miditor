@@ -88,6 +88,8 @@ function fieldIsBroken(field: unknown, depth = 0): boolean {
         )
       );
     }
+    case "external":
+      return !(typeof field.source === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(field.source));
     case "custom":
       return !(typeof field.kind === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(field.kind));
     default:

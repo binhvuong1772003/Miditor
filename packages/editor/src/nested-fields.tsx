@@ -7,11 +7,13 @@ import {
 } from "@miditor/core";
 import { useState } from "react";
 import { CustomField, type CustomFieldInput } from "./custom-field";
+import { ExternalField, type ExternalSource } from "./external-field";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 
 type Inputs = Readonly<Record<string, CustomFieldInput>> | undefined;
+type Sources = Readonly<Record<string, ExternalSource>> | undefined;
 
 const isObject = (value: unknown): value is { [key: string]: JsonValue } =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -63,6 +65,7 @@ export function ValueInput({
   label,
   nodeId,
   inputs,
+  sources,
   depth = 0,
 }: {
   field: ItemField | Field;
@@ -71,6 +74,7 @@ export function ValueInput({
   label: string;
   nodeId: string;
   inputs: Inputs;
+  sources?: Sources;
   depth?: number;
 }) {
   const t = useT();
@@ -114,6 +118,16 @@ export function ValueInput({
           </select>
         </label>
       );
+    case "external":
+      return (
+        <ExternalField
+          label={label}
+          source={field.source}
+          value={value}
+          onChange={onChange}
+          sources={sources}
+        />
+      );
     case "custom":
       return (
         <CustomField
@@ -139,6 +153,7 @@ export function ValueInput({
               label={inner.label}
               nodeId={nodeId}
               inputs={inputs}
+              sources={sources}
               depth={depth + 1}
             />
           ))}
@@ -171,6 +186,7 @@ export function ValueInput({
                   label={field.item.label}
                   nodeId={nodeId}
                   inputs={inputs}
+                  sources={sources}
                   depth={depth + 1}
                 />
                 <div className={styles.row}>
