@@ -2,6 +2,7 @@ import { Editor, embedImage, type PageData, type SaveStatus } from "@midito-kitc
 import { vi } from "@midito-kitchen/editor/locales/vi";
 import { useState } from "react";
 import { actions } from "./actions";
+import { ControlDemo } from "./ControlDemo";
 import { demoIcons } from "./demo-icons";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
@@ -43,10 +44,32 @@ export function App() {
       </HostDemo>
     );
   }
+  if (new URLSearchParams(window.location.search).has("control")) {
+    // `?control&two` draws two editors on one page, each with its own host part.
+    const two = new URLSearchParams(window.location.search).has("two");
+    return two ? (
+      <>
+        <section data-testid="editor-a" style={{ blockSize: "90vh" }}>
+          <Playground control />
+        </section>
+        <section data-testid="editor-b" style={{ blockSize: "90vh" }}>
+          <Playground control />
+        </section>
+      </>
+    ) : (
+      <Playground control />
+    );
+  }
   return <Playground />;
 }
 
-function Playground({ embedded = false }: { embedded?: boolean }) {
+function Playground({
+  embedded = false,
+  control = false,
+}: {
+  embedded?: boolean;
+  control?: boolean;
+}) {
   const [page] = useState(openPage);
   const plain = new URLSearchParams(window.location.search).has("plain");
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
@@ -109,9 +132,13 @@ function Playground({ embedded = false }: { embedded?: boolean }) {
           ? { appearance: { scheme: "dark" as const } }
           : {})}
         headerActions={
-          <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
-            Responsive preview
-          </a>
+          control ? (
+            <ControlDemo />
+          ) : (
+            <a className="preview-link" href="?preview" target="_blank" rel="noreferrer">
+              Responsive preview
+            </a>
+          )
         }
       />
       {sent !== null && <SentDataDialog json={sent} onClose={() => setSent(null)} />}
