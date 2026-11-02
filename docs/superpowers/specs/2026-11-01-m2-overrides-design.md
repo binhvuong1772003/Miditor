@@ -107,6 +107,33 @@ made lazily, and the exact wording of docs and messages.
 - `field` covers the properties of the selected block only.
 - Overrides are experimental in the first release.
 
+## Settled after the builder check
+
+Questions a fresh reader asked; each is the designer's call and can be changed.
+
+- **What `field` covers.** One property = one entry of the kind's `fields`, drawn as one input: text,
+  number, select, colour, length, link, font, action, payload, and a lone boolean. A run of two or more
+  booleans is drawn as one group of switches and is **not** overridable in M2 (the group is not one
+  property). An `action` or `payload` property is overridden as a whole; its sub-inputs stay inside
+  `children`. `onChange(value)` writes this property only; the host cannot write others through it.
+  The input remounts when the stored value changes, as the default does (undo and redo rely on it), so
+  a host input that keeps its own state should expect that.
+- **`panelEnd` knows its mode.** Its props are `{ editor, mode: "page" | "block", nodeId: string | null,
+  children }`.
+- **`contextMenu`.** Called each time the menu opens, with the lines the editor would show; there is
+  one menu, for a block (the page and the empty canvas have none). `ContextMenuItem` gains an optional
+  `id`; rows are keyed by `id`, else by label and place, so a repeated label breaks nothing. A line the
+  host adds closes the menu and then runs, like the editor's own.
+- **The phone frame is a view of the page, not another layout,** so each place has one insertion
+  point. `quickActions` also receives `disabled: boolean` (true on the phone frame, where blocks cannot
+  be added or removed).
+- **The boundary.** After a throw the default is drawn until the host's `overrides` entry for that
+  place changes (a new function), then the host's component is tried again. The default is drawn
+  outside the boundary; if it throws, that is the editor's own error and is not hidden.
+- **The name `overrides`** is also the name of the second argument of `addBlock`. The two live in
+  different places (a prop of `<Editor>`, a parameter of one command), and `overrides` is the name
+  Puck uses, so it stays.
+
 ## Open for the owner
 
-Nothing the design cannot settle alone is left. The builder check may add some.
+Nothing the design cannot settle alone is left.
