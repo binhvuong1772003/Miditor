@@ -17,8 +17,7 @@ const step = async (label, fn) => {
   console.log(label.padEnd(14), JSON.stringify(await read()));
 };
 
-await p.getByRole("button", { name: "Text", exact: true }).first().click();
-await p.waitForTimeout(300);
+await step("add Text", () => p.getByRole("button", { name: "Text", exact: true }).first().click());
 const props = p.locator('aside[aria-label="Properties"]');
 const field = props.locator("textarea, input[type=text]").first();
 await step("type 5 chars", async () => {
@@ -32,4 +31,13 @@ await step("drag 100px", async () => {
   await p.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2 + 60, { steps: 10 });
   await p.mouse.up();
 });
+const moved = await p.locator('[data-midito-type="Text"]').first().boundingBox();
+const page = await p.locator("[data-midito-render]").first().boundingBox();
+await step("select none", () => p.mouse.click(page.x + 5, page.y + page.height - 5));
+await step("hover block", () =>
+  p.mouse.move(moved.x + moved.width / 2, moved.y + moved.height / 2, { steps: 4 }),
+);
+await step("select block", () =>
+  p.mouse.click(moved.x + moved.width / 2, moved.y + moved.height / 2),
+);
 await b.close();

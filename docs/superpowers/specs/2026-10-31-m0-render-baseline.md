@@ -28,6 +28,7 @@ canvas.
 | Phase 3, selection in the store  | 263.07 kB | 68.86 kB |
 | Phase 4, document and commands   | 277.04 kB | 72.41 kB |
 | Phase 5, command table and keys  | 280.74 kB | 73.60 kB |
+| End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -38,6 +39,8 @@ canvas.
 | Phase 3   | 2548  |
 | Phase 4   | 2152  |
 | Phase 5   | 2128  |
+| Phase 6   | 1086  |
+| Phase 7   | 1078  |
 
 Phase 2 moves state, it does not remove code: the lines go down from phase 4 on, when the commands
 leave the component. The goal of 2300 lines at the end of phase 2 in the first plan was too early.
@@ -51,3 +54,30 @@ Phase 5 put ten commands under names (`store/commands.ts`), one door `run(name, 
 data (`keymap.ts`). Render counts did not change in the two moments `pnpm perf` measures (type 5 chars 2, drag 15); add
 and select were not measured again, the e2e perf spec only checks that the parts draw. The only code that is smaller is the wrappers in `Editor.tsx`; the gain is a single place
 for a rule or a message to the host, which M1 and M3 use.
+
+## End of M0: renders, measured again
+
+`pnpm perf` now measures five moments (the pause before "select block" comes from the new
+"hover block" step). Same script, run on the commit before the store (`906943d`) and on the end of M0:
+
+| Moment       | Before the store | End of M0 |
+| ------------ | ---------------- | --------- |
+| add Text     | 2                | 2         |
+| type 5 chars | 2                | 2         |
+| drag 100px   | 15               | 15        |
+| select none  | 4                | 4         |
+| hover block  | 3                | 3         |
+| select block | 4                | 4         |
+
+Every part commits the same number of times in each moment (canvas, blocks, selection, properties,
+editor), so the store did not add renders to the editor.
+
+One thing to know when reading the script: if "select block" is run as one instant click (the mouse
+moves onto the block and presses in the same moment), the end of M0 shows 5 and the old code 4. The fifth
+commit is the hover that the old code merged into the press; it came with phase 3, when the hover moved
+into the store, whose updates are rendered at once. With a pause between the move and the press, as a
+person has, both give the same numbers above.
+
+Phase 6 split `Editor.tsx` into `Toolbar`, `Rail`, `StartPanel`, `EndPanel`, `canvas/StagePage`,
+`canvas/Marquee` and five hooks in `canvas/` (1086 lines left, from 2127). The overlays of the canvas
+stay in it: they share the canvas elements with the toolbar, the Tab key, paste and the library drop.
