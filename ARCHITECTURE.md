@@ -57,6 +57,12 @@ Its types are the public surface and are kept in snapshots by `public-surface.te
 - `hooks.before` and `hooks.after` cover the commands of the table only. `save`, `addBlock` and `fit`
   need the screen and do not go through them.
 - The store is never handed out, and there is no raw `dispatch`.
+- The controller (`controller.ts`) is the same API for a host outside the tree. It holds the control
+  object and the store of the editor attached to it, forwards commands to that control object, and
+  answers with `false` (and one warning) when there is none. `useEditor(controller, selector)` follows
+  it with `useSyncExternalStore`, and gives the idle view while nothing is attached. Attaching
+  (`attachController`) is internal and not exported; the editor still makes its own store, and the
+  controller only points at it.
 
 ## The screen
 

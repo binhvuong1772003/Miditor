@@ -201,8 +201,52 @@ cannot disagree.
 - **After the editor went away**, or before it started, a command does nothing, returns `false` (`null`
   for `addBlock`) and warns once in the console. Keeping `editor` after the part unmounted is safe.
 
-Driving the editor from outside the `<Editor>` tree (your own app bar, a sidebar, a script) is not
-there yet. Today `useEditor` works only in parts the editor draws.
+### Control the editor from outside
+
+For an app bar, a sidebar or a script that is not drawn by the editor, make a controller and give it to
+the editor. `useCreateEditor()` makes it once for the part that calls it.
+
+```tsx
+import { Editor, type EditorController, useCreateEditor, useEditor } from "@midito-kitchen/editor";
+
+function App() {
+  const editor = useCreateEditor();
+  return (
+    <>
+      <AppBar editor={editor} />
+      <Editor controller={editor} data={page} onSave={(data) => store(data)} />
+    </>
+  );
+}
+
+function AppBar({ editor }: { editor: EditorController }) {
+  const canUndo = useEditor(editor, (view) => view.canUndo);
+  return (
+    <>
+      <button type="button" disabled={!canUndo} onClick={() => editor.undo()}>
+        Undo
+      </button>
+      <button type="button" onClick={() => editor.save()}>
+        Save
+      </button>
+    </>
+  );
+}
+```
+
+The controller has the same commands as `useEditor()` and `useEditor(controller, selector)` reads the
+same view as the one inside the editor, with the same rules for the selector.
+
+- **One controller, one editor at a time.** A second editor given a controller that already has one is
+  ignored and an error is logged; the first keeps working.
+- **With no editor attached** (not opened yet, or closed) a command does nothing and returns `false`
+  (`null` for `addBlock`, a promise of `false` for `save`), and warns once in the console.
+- **A read gives an idle view** then: an empty page, nothing selected, `"desktop"`, zoom 1, nothing to
+  undo or redo, no status.
+- **Opening the editor again** starts a new page from its `data` with a new history; nothing of the
+  last session is kept in the controller.
+- **The controller is a handle, not the store.** It forwards commands and reads to the editor it holds;
+  it keeps no page of its own.
 
 ## Saving
 
