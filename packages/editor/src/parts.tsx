@@ -33,6 +33,11 @@ export function EditorBlocks() {
   return <ToolPanel tool="blocks" {...useShell("Editor.Blocks").start} />;
 }
 
+/** The panel of any tool on its own, the editor's or the host's, by its id. @experimental */
+export function EditorTool({ id }: { id: string }) {
+  return <ToolPanel tool={id} {...useShell("Editor.Tool").start} />;
+}
+
 /** The Layers panel on its own: every block of the page as a list. @experimental */
 export function EditorLayers() {
   return <ToolPanel tool="layers" {...useShell("Editor.Layers").start} />;

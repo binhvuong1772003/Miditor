@@ -48,6 +48,7 @@ import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
 import type { FontDef } from "./fonts";
 import type { HideName } from "./hide";
+import { type HostTool, usableTools } from "./host-tool";
 import { TContext } from "./i18n/context";
 import { localiseRegistry } from "./i18n/registry";
 import { createT, type I18n } from "./i18n/translate";
@@ -68,6 +69,7 @@ import {
   EditorRail,
   EditorStartPanel,
   EditorThemes,
+  EditorTool,
 } from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
@@ -241,6 +243,12 @@ export interface EditorProps {
      */
     customFields?: Readonly<Record<string, CustomFieldInput>>;
     /**
+     * Tools of your own on the rail, after the editor's, each with a panel you draw beside the canvas:
+     * `{ id: "products", label: "Products", icon: <ShopIcon />, panel: ProductsPanel }`. The panel gets
+     * `editor` (the control object) and its `label`. Experimental.
+     */
+    tools?: readonly HostTool[];
+    /**
      * The pictures of the host's library, shown in the Images panel to add to the page: an `url` each,
      * and when known a `name`, a smaller `thumb`, the natural `width` and `height`, a `folder` and
      * `tags`. The editor lays them out in their own shapes, can search them by name, folder and tag
@@ -354,6 +362,7 @@ export const Editor = Object.assign(EditorRoot, {
   Themes: EditorThemes,
   Canvas: EditorCanvas,
   Properties: EditorProperties,
+  Tool: EditorTool,
 });
 
 function EditorBody({
@@ -734,7 +743,7 @@ function EditorBody({
       onFit: fit,
       run,
     },
-    rail: { run },
+    rail: { run, hostTools: usableTools(config?.tools) },
     start: {
       registry: shownRegistry,
       config,

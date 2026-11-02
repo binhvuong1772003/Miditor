@@ -35,6 +35,7 @@ export { createNotifier, type Notifier } from "./notifier";
 export { coalesced, type Denial, type Permissions } from "./permissions";
 export { initialSelectionState, type SelectionCommands } from "./selection";
 export type {
+  BuiltInTool,
   DocumentState,
   Draft,
   Editing,

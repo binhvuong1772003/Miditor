@@ -3,8 +3,11 @@ import type { History } from "../history";
 import type { PanelPatch } from "../patch";
 import type { SaveStatus } from "../save-status";
 
-/** The panel the tool rail shows beside the canvas. */
-export type Tool = "blocks" | "layers" | "images" | "themes";
+/** The tools the editor has. */
+export type BuiltInTool = "blocks" | "layers" | "images" | "themes";
+
+/** The panel the tool rail shows beside the canvas: one of the editor's or one of the host's (`config.tools`). */
+export type Tool = BuiltInTool | (string & {});
 
 /**
  * How the editor is looked at, none of it in the page data or its history: the width the page is shown

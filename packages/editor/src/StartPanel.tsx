@@ -7,9 +7,11 @@ import {
 } from "@miditor/core";
 import { type ChangeEvent, useRef, useState } from "react";
 import { BlocksPanel } from "./BlocksPanel";
+import { useEditor } from "./control-context";
 import type { EditorProps } from "./Editor";
 import styles from "./Editor.module.css";
-import { useHidden, useVisibleTool } from "./hide";
+import { type HideName, useHidden, useVisibleTool } from "./hide";
+import { type HostTool, usableTools } from "./host-tool";
 import { ImagesPanel } from "./ImagesPanel";
 import { useT } from "./i18n/context";
 import { type LibraryImage, usableImages } from "./images";
@@ -184,6 +186,24 @@ export function BlocksTool({
   );
 }
 
+/** The panel of a tool of the host. */
+function HostToolContent({ tool }: { tool: HostTool }) {
+  const editor = useEditor();
+  const Panel = tool.panel;
+  return <Panel editor={editor} label={tool.label} />;
+}
+
+/** What the panel of a tool is called: the editor's words for its own, the host's for the rest. */
+function labelOf(
+  tool: Tool,
+  hostTools: readonly HostTool[],
+  t: (key: (typeof LABELS)[keyof typeof LABELS]) => string,
+) {
+  const host = hostTools.find(({ id }) => id === tool);
+  if (host) return host.label;
+  return t(LABELS[tool as keyof typeof LABELS] ?? "rail.blocks");
+}
+
 const LABELS = {
   images: "rail.images",
   themes: "rail.themes",
@@ -193,6 +213,8 @@ const LABELS = {
 
 /** The tool's own panel, whichever tool the rail chose. */
 function ToolContent({ tool, ...props }: StartPanelProps & { tool: Tool }) {
+  const host = usableTools(props.config?.tools).find(({ id }) => id === tool);
+  if (host) return <HostToolContent tool={host} />;
   if (tool === "layers") return <LayersTool registry={props.registry} />;
   if (tool === "images") return <ImagesTool config={props.config} onAddBlock={props.onAddBlock} />;
   if (tool === "themes") {
@@ -211,10 +233,14 @@ function ToolContent({ tool, ...props }: StartPanelProps & { tool: Tool }) {
 /** The panel on the left: the blocks, the layers, the pictures or the themes, as the rail chose. */
 export function StartPanel(props: StartPanelProps) {
   const t = useT();
-  const tool = useVisibleTool(useEditorState((state) => state.tool));
+  const hostTools = usableTools(props.config?.tools);
+  const tool = useVisibleTool(
+    useEditorState((state) => state.tool),
+    hostTools.map(({ id }) => id),
+  );
   return (
     <OverrideSlot name="panelStart" props={{ tool }}>
-      <aside className={`${styles.panel} ${styles.start}`} aria-label={t(LABELS[tool])}>
+      <aside className={`${styles.panel} ${styles.start}`} aria-label={labelOf(tool, hostTools, t)}>
         <ToolContent tool={tool} {...props} />
       </aside>
     </OverrideSlot>
@@ -227,11 +253,13 @@ export function StartPanel(props: StartPanelProps) {
  */
 export function ToolPanel({ tool, ...props }: StartPanelProps & { tool: Tool }) {
   const t = useT();
-  const hidden = useHidden(`tool.${tool}`);
-  if (hidden) return null;
+  const hostTools = usableTools(props.config?.tools);
+  const isHost = hostTools.some(({ id }) => id === tool);
+  const hidden = useHidden(`tool.${tool}` as HideName);
+  if (hidden && !isHost) return null;
   return (
     <OverrideSlot name="panelStart" props={{ tool }}>
-      <aside className={styles.panel} aria-label={t(LABELS[tool])}>
+      <aside className={styles.panel} aria-label={labelOf(tool, hostTools, t)}>
         <ToolContent tool={tool} {...props} />
       </aside>
     </OverrideSlot>

@@ -45,7 +45,7 @@ const NAMES: ReadonlySet<string> = new Set<HideName>([
   "props.phone",
 ]);
 
-const TOOLS: readonly Tool[] = ["blocks", "layers", "images", "themes"];
+const TOOLS: readonly BuiltInTool[] = ["blocks", "layers", "images", "themes"];
 
 const warned = new Set<string>();
 
@@ -70,7 +70,11 @@ export function useHidden(name: HideName): boolean;
 export function useHiddenName(name: string): boolean;
 
 /** The tool whose panel is shown: the open one, or the first tool left when it is hidden. */
-export function visibleTool(tool: Tool, hidden: (name: HideName) => boolean): Tool;
+export function visibleTool(
+  tool: Tool,
+  hidden: (name: HideName) => boolean,
+  hostIds: readonly string[] = [],
+): Tool;
 
 /** The open tool as the panel and the rail show it. */
-export function useVisibleTool(tool: Tool): Tool;
+export function useVisibleTool(tool: Tool, hostIds: readonly string[] = []): Tool;

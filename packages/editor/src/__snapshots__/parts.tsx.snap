@@ -16,6 +16,9 @@ export function EditorProperties();
 /** The Blocks panel on its own: the cards to press or drag onto the page. @experimental */
 export function EditorBlocks();
 
+/** The panel of any tool on its own, the editor's or the host's, by its id. @experimental */
+export function EditorTool({ id }: { id: string });
+
 /** The Layers panel on its own: every block of the page as a list. @experimental */
 export function EditorLayers();
 

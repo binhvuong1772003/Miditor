@@ -13,7 +13,8 @@ type Base = {
 export interface RailTool {
   id: Tool;
   name: string;
-  icon: IconName;
+  /** A name of the editor's icons, or a node the host gave. */
+  icon: IconName | ReactNode;
   /** Its panel is the one open. */
   active: boolean;
   /** Show its panel, or shut the panel if it is the one shown. */

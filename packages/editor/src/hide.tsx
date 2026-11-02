@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import type { Tool } from "./store";
+import type { BuiltInTool, Tool } from "./store";
 
 /**
  * The parts of the interface a host can hide, by name. Hiding only stops a part being drawn; it never
@@ -48,7 +48,7 @@ const NAMES: ReadonlySet<string> = new Set<HideName>([
   "props.phone",
 ]);
 
-const TOOLS: readonly Tool[] = ["blocks", "layers", "images", "themes"];
+const TOOLS: readonly BuiltInTool[] = ["blocks", "layers", "images", "themes"];
 
 const warned = new Set<string>();
 
@@ -90,13 +90,20 @@ export function useHiddenName(name: string): boolean {
 }
 
 /** The tool whose panel is shown: the open one, or the first tool left when it is hidden. */
-export function visibleTool(tool: Tool, hidden: (name: HideName) => boolean): Tool {
-  if (!hidden(`tool.${tool}`)) return tool;
-  return TOOLS.find((id) => !hidden(`tool.${id}`)) ?? tool;
+export function visibleTool(
+  tool: Tool,
+  hidden: (name: HideName) => boolean,
+  hostIds: readonly string[] = [],
+): Tool {
+  const builtIn = (TOOLS as readonly string[]).includes(tool);
+  // A tool of the host is open while the host still gives it; otherwise the first tool left.
+  if (!builtIn && hostIds.includes(tool)) return tool;
+  if (builtIn && !hidden(`tool.${tool}` as HideName)) return tool;
+  return TOOLS.find((id) => !hidden(`tool.${id}`)) ?? (builtIn ? tool : "blocks");
 }
 
 /** The open tool as the panel and the rail show it. */
-export function useVisibleTool(tool: Tool): Tool {
+export function useVisibleTool(tool: Tool, hostIds: readonly string[] = []): Tool {
   const set = useContext(HideContext);
-  return visibleTool(tool, (name) => set?.has(name) ?? false);
+  return visibleTool(tool, (name) => set?.has(name) ?? false, hostIds);
 }
