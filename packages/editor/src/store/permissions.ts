@@ -53,7 +53,7 @@ function same(a: unknown, b: unknown): boolean {
 /** Answers for a node are kept while the node object and the function are the same. */
 const answers = new WeakMap<object, WeakMap<object, boolean>>();
 
-function allowed(permission: OnNode | undefined, node: TreeNode): boolean {
+export function allowed(permission: OnNode | undefined, node: TreeNode): boolean {
   if (permission === undefined) return true;
   if (typeof permission === "boolean") return permission;
   let byNode = answers.get(permission);
@@ -185,4 +185,14 @@ export function coalesced(
     if (before !== undefined && at - before < 1000) return;
     report(denial);
   };
+}
+
+/** Whether a block of `kind` may be put in `parent`. */
+export function mayAdd(
+  permissions: Permissions | undefined,
+  parent: TreeNode,
+  kind: string,
+): boolean {
+  const can = permissions?.canAdd;
+  return can === undefined || (typeof can === "boolean" ? can : can(parent, kind));
 }

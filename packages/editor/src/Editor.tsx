@@ -79,14 +79,17 @@ import {
   canRun,
   createEditorStore,
   createNotifier,
+  type Denial,
   type EditorState,
   initialDocumentState,
   initialHostState,
   initialSelectionState,
   initialViewState,
+  type Permissions,
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useHostRules,
   useHostSync,
   useRun,
   useSelectionCommands,
@@ -166,6 +169,18 @@ export interface EditorProps {
    * Experimental.
    */
   overrides?: Overrides;
+  /**
+   * What people may do, each a boolean or a function of the block (`canEdit`, `canDelete`,
+   * `canDuplicate`, `canDrag`, `canAdd`). A change that is refused is refused whatever way it was
+   * asked for: a button, a key, a drag, a paste, or a call of the control API. This stops the editor;
+   * the page is plain data and your server must check it again before storing it. Experimental.
+   */
+  permissions?: Permissions;
+  /**
+   * Called when a change is refused, with the kind of change and the block it concerned. A repeat of
+   * the same refusal within a second is told once. Experimental.
+   */
+  onDenied?: (denial: Denial) => void;
   /**
    * How the editor looks: a `scheme` (`light` or `dark`) to start from, `colors` by name, the corner
    * `radius`, the `control` height and the `font`. Anything left out keeps the default of the scheme.
@@ -309,6 +324,8 @@ function EditorBody({
   headerStart,
   controller,
   overrides,
+  permissions,
+  onDenied,
   appearance,
   i18n,
   historyLimit,
@@ -322,7 +339,8 @@ function EditorBody({
   const selecting = useSelectionCommands();
   const components = config?.components;
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
-  const documents = useDocumentCommands(historyLimit, registry);
+  const rules = useHostRules(permissions, onDenied, viewing.announce, t("a11y.denied"));
+  const documents = useDocumentCommands(historyLimit, registry, rules);
   const history = useEditorState((state) => state.history);
   const data = history.present;
   // The page as it was when it was last saved (or opened), to say whether there is more than that.
@@ -669,7 +687,7 @@ function EditorBody({
   };
 
   /** What a button or a menu line looks at to be on, from the state this part already draws from. */
-  const canState = { frame, selectedId, picked, history, zoom };
+  const canState = { frame, selectedId, picked, history, zoom, permissions };
   const fit = () => {
     const look = workspace ? getComputedStyle(workspace) : undefined;
     const roomHeight = workspace
@@ -692,12 +710,18 @@ function EditorBody({
       return false;
     }
   };
-  const run = useRun(historyLimit, registry, {
-    parentSize: () => parentSize() ?? null,
-    note: (done) => {
-      note.current = t(done === "duplicated" ? "a11y.duplicated" : "a11y.deleted");
+  const run = useRun(
+    historyLimit,
+    registry,
+    {
+      parentSize: () => parentSize() ?? null,
+      note: (done) => {
+        note.current = t(done === "duplicated" ? "a11y.duplicated" : "a11y.deleted");
+      },
     },
-  });
+    undefined,
+    rules,
+  );
 
   // The control object: made once, it reads the latest render through a ref, as `useRun` does.
   const store = useStoreApi<EditorState>();

@@ -233,6 +233,7 @@ export const vi: Messages = {
   "a11y.added": "Đã thêm khối",
   "a11y.duplicated": "Đã nhân đôi khối",
   "a11y.deleted": "Đã xóa khối",
+  "a11y.denied": "Không được phép",
   "menu.forward": "Đưa lên một lớp",
   "menu.backward": "Đưa xuống một lớp",
   "upload.notImage": "Hãy chọn một tệp ảnh.",

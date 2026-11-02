@@ -6,13 +6,20 @@ import type { SaveStatus } from "../save-status";
 import { type CommandContext, type CommandHooks, createRun, type Run } from "./commands";
 import { type ContentCommands, contentCommands } from "./content";
 import type { EditorStore } from "./create-editor-store";
-import { type DocumentCommands, documentCommands } from "./document";
+import { type DocumentCommands, documentCommands, type Env } from "./document";
 import { type GeometryCommands, geometryCommands } from "./geometry";
 import { setHost } from "./host";
+import { coalesced, type Denial, type Permissions } from "./permissions";
 import { type SelectionCommands, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
 import { type StructureCommands, structureCommands } from "./structure";
 import { type ViewCommands, viewCommands } from "./view";
+
+/** What the host says about who may do what; read each time a command runs, so it may change. */
+export type HostRules = {
+  permissions?: Permissions | undefined;
+  denied?: ((denial: Denial) => void) | undefined;
+};
 
 const StoreContext = createContext<EditorStore<never> | null>(null);
 
@@ -78,11 +85,14 @@ export function useSelectionCommands(): SelectionCommands {
 export function useDocumentCommands(
   limit: unknown,
   registry: Registry,
+  rules?: HostRules,
 ): DocumentCommands & StructureCommands & GeometryCommands & ContentCommands {
   const store = useStoreApi<EditorState>();
-  const env = useRef({ limit, registry });
+  const env = useRef<Env>({ limit, registry });
   env.current.limit = limit;
   env.current.registry = registry;
+  env.current.permissions = rules?.permissions;
+  env.current.denied = rules?.denied;
   return useMemo(
     () => ({
       ...documentCommands(store, env.current),
@@ -104,11 +114,14 @@ export function useRun(
   registry: Registry,
   context: CommandContext,
   hooks?: CommandHooks,
+  rules?: HostRules,
 ): Run {
   const store = useStoreApi<EditorState>();
-  const live = useRef({ env: { limit, registry }, context, hooks });
+  const live = useRef({ env: { limit, registry } as Env, context, hooks });
   live.current.env.limit = limit;
   live.current.env.registry = registry;
+  live.current.env.permissions = rules?.permissions;
+  live.current.env.denied = rules?.denied;
   live.current.context = context;
   live.current.hooks = hooks;
   return useMemo(
@@ -129,4 +142,30 @@ export function useHostSync(hostStatus: SaveStatus | undefined, hasSave: boolean
   useEffect(() => {
     store.setState((state) => setHost(state, { hostStatus, hasSave }));
   }, [store, hostStatus, hasSave]);
+}
+
+/**
+ * What the host said about who may do what (`permissions`, `onDenied`), as the commands read it. A
+ * refusal is told to the host and to the screen reader after the change has been settled, not from inside
+ * the store's update, so a host that reacts by driving the editor is safe.
+ */
+export function useHostRules(
+  permissions: Permissions | undefined,
+  onDenied: ((denial: Denial) => void) | undefined,
+  announce: (text: string) => void,
+  deniedText: string,
+): HostRules {
+  const live = useRef({ onDenied, announce, deniedText });
+  live.current = { onDenied, announce, deniedText };
+  const denied = useMemo(
+    () =>
+      coalesced((denial: Denial) => {
+        queueMicrotask(() => {
+          live.current.onDenied?.(denial);
+          live.current.announce(live.current.deniedText);
+        });
+      }),
+    [],
+  );
+  return { permissions, denied };
 }

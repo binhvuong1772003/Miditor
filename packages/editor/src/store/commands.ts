@@ -2,7 +2,8 @@ import { type Device, findNode, parentOf, type Reorder } from "@midito-kitchen/c
 import { canRedo, canUndo, redo, undo } from "../history";
 import { MAX_ZOOM, MIN_ZOOM, stepZoom } from "../zoom";
 import type { EditorStore } from "./create-editor-store";
-import { type Env, step } from "./document";
+import { type Env, runner, step } from "./document";
+import { allowed, mayAdd, type Permissions } from "./permissions";
 import { clearSelection, selectOnly } from "./selection";
 import type { EditorState, Tool } from "./state";
 import {
@@ -55,7 +56,10 @@ export type CommandContext = {
 };
 
 /** What a button or a menu line looks at to be on or off: the part of the state a part already draws from. */
-export type CanState = Pick<EditorState, "frame" | "selectedId" | "picked" | "history" | "zoom">;
+export type CanState = Pick<EditorState, "frame" | "selectedId" | "picked" | "history" | "zoom"> & {
+  /** What the host lets people do; a command the permissions would refuse is off. */
+  permissions?: Permissions | undefined;
+};
 
 type Spec<A> = {
   /** The new state; the very same one when there is nothing to do. */
@@ -68,6 +72,14 @@ type Spec<A> = {
 };
 
 const onPage = (state: CanState) => state.frame !== "phone";
+/** The blocks the selection holds, as stored. */
+const selected = (state: CanState) =>
+  [state.selectedId, ...state.picked].flatMap((id) =>
+    id ? (findNode(state.history.present.root, id) ?? []) : [],
+  );
+/** Every selected block passes this permission. */
+const everyAllowed = (state: CanState, pick: (p: Permissions) => Permissions[keyof Permissions]) =>
+  selected(state).every((node) => allowed(pick(state.permissions ?? {}) as never, node));
 const rootId = (state: CanState) => state.history.present.root.id;
 /** A block other than the page is selected, on the screen where blocks can be changed. */
 const hasBlock = (state: CanState) =>
@@ -87,7 +99,7 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
       context.note("duplicated");
       return duplicateSelected(state, { container: context.parentSize() }, env);
     },
-    can: hasBlock,
+    can: (state) => hasBlock(state) && everyAllowed(state, (p) => p.canDuplicate),
   },
   "block.delete": {
     run: (state, _, env, context) => {
@@ -95,11 +107,20 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
       context.note("deleted");
       return deleteSelected(state, env);
     },
-    can: hasBlock,
+    can: (state) => hasBlock(state) && everyAllowed(state, (p) => p.canDelete),
   },
   "block.group": {
     run: (state, _, env, context) => groupSelected(state, { container: context.parentSize() }, env),
-    can: (state) => onPage(state) && state.picked.length > 0,
+    can: (state) => {
+      const root = state.history.present.root;
+      const first = state.selectedId ? parentOf(root, state.selectedId) : undefined;
+      return (
+        onPage(state) &&
+        state.picked.length > 0 &&
+        (!first || mayAdd(state.permissions, first, "Group")) &&
+        everyAllowed(state, (p) => p.canDrag)
+      );
+    },
   },
   "block.ungroup": {
     run: (state, _, env, context) =>
@@ -107,11 +128,12 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
     can: (state) =>
       onPage(state) &&
       state.selectedId !== null &&
-      findNode(state.history.present.root, state.selectedId)?.type === "Group",
+      findNode(state.history.present.root, state.selectedId)?.type === "Group" &&
+      everyAllowed(state, (p) => p.canDelete),
   },
   "block.reorder": {
     run: (state, to, env) => reorderSelected(state, to, env),
-    can: hasBlock,
+    can: (state) => hasBlock(state) && everyAllowed(state, (p) => p.canDrag),
   },
   "view.zoom": {
     run: (state, move) =>
@@ -175,13 +197,15 @@ export function createRun(
   context: () => CommandContext,
   hooks: () => CommandHooks = () => ({}),
 ) {
+  const apply = runner(store, env);
   return function run<N extends CommandName>(name: N, ...args: ArgsOf<N>): boolean {
     if (!Object.hasOwn(commandTable, name)) return false;
     const spec = commandTable[name] as Spec<CommandArgs[N]>;
     const value = args[0] as CommandArgs[N];
     const { before, after } = hooks();
     if (before?.(name, value, store.getState()) === false) return false;
-    store.setState((state) => spec.run(state, value, env, context()));
+    // A command the permissions refuse is given up whole and says so.
+    if (apply((state) => spec.run(state, value, env, context()))) return false;
     after?.(name, value, store.getState());
     return true;
   };

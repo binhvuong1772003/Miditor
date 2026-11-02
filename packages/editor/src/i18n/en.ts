@@ -237,6 +237,7 @@ export const en = {
   "a11y.added": "Block added",
   "a11y.duplicated": "Block duplicated",
   "a11y.deleted": "Block deleted",
+  "a11y.denied": "Not allowed",
   "menu.forward": "Bring forward",
   "menu.backward": "Send backward",
   "upload.notImage": "Choose a picture file.",

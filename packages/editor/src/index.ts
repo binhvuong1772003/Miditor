@@ -31,5 +31,6 @@ export type { LibraryImage } from "./images";
 export type { ComponentOverrides, Overrides, RailTool } from "./overrides";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
+export type { Denial, Permissions } from "./store";
 export type { HostTheme } from "./ThemesPanel";
 export type { UploadImage } from "./upload-image";

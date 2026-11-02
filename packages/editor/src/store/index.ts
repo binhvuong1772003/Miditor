@@ -13,9 +13,11 @@ export {
 } from "./commands";
 export { type ContentCommands, tidyTheme, withTheme } from "./content";
 export {
+  type HostRules,
   StoreProvider,
   useDocumentCommands,
   useEditorState,
+  useHostRules,
   useHostSync,
   useOptionalStore,
   useRun,
@@ -30,6 +32,7 @@ export { type DocumentCommands, initialDocumentState } from "./document";
 export type { GeometryCommands } from "./geometry";
 export { initialHostState, setHost } from "./host";
 export { createNotifier, type Notifier } from "./notifier";
+export { coalesced, type Denial, type Permissions } from "./permissions";
 export { initialSelectionState, type SelectionCommands } from "./selection";
 export type {
   DocumentState,
