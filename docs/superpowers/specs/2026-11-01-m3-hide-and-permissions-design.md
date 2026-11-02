@@ -151,6 +151,40 @@ where the interface needs a name not listed.
 - Locking is the host's function of what it stores; no new flag in the page data.
 - Everything is `@experimental` in the first release.
 
+## Settled after the builder check
+
+Questions a fresh reader asked; each is the designer's call and can be changed.
+
+- **Telling the host once.** `onDenied` is called from the guard, which runs inside `store.setState`.
+  The store library calls that updater once per `setState` (StrictMode doubles component renders, not the
+  store), and an e2e under StrictMode proves "once". Repeats of the same action on the same block within
+  one second (a held arrow key) are told once.
+- **A refused gesture.** A block whose `canDrag` is false shows no handles and cannot be dragged, so a
+  gesture is not started. If a change is refused anyway (a nudge key, the control API), it is refused whole
+  and `onDenied` is told for that command. When a panel change is refused, the draft ends, so the screen
+  shows the stored value again.
+- **How a change is sorted.** Nodes are compared by id between the page before and after.
+  - _Added_: an id only in the new page. _Removed_: an id only in the old one. Only the **root** of an
+    added or removed subtree is asked; its descendants are not.
+  - _Moved_: the parent changed, or position, size, rotation, anchors or the phone placement changed, or
+    the node's rank among the siblings that were there before and after changed. Deleting or adding a
+    sibling alone moves no one.
+  - _Edited_: props, or styles other than position, changed; or the page's own settings, theme or fonts.
+    A change of `children` is not an edit of the parent.
+  - A style change that touches both position and something else is both moved and edited and both are asked.
+  - _Group_: the group is added (`canAdd(parent, "Group")`), and its children are moved (`canDrag` each).
+    _Ungroup_: the group is removed (`canDelete`), its children are moved. _Reorder_ and _move into
+    another block_: moved (`canDrag`) only; whether the new parent takes the block is still the registry's rule.
+    _Cut_: removed. _Paste_: added.
+- **Duplicate** is told by an intent carried by the command that makes the copy. It asks `canDuplicate`
+  of each original (all must allow it, else none is made) and does not ask `canAdd`.
+- **Updating.** `permissions`, `hide` and `onDenied` are read when a change is made or a part is drawn,
+  like `historyLimit` and the registry, so a host may change them while the editor is open. Kept answers
+  are cached by node object and permission function, and dropped when either changes.
+- **Drafts and Save.** There is no check before a draft is typed; it is checked when it is stored. Save
+  is not a change of the page and is not governed by permissions (the host's server decides); a draft
+  that Save would store and the permission refuses is dropped and the stored page is saved.
+
 ## Open for the owner
 
-Nothing the design cannot settle alone is left. The builder check may add some.
+Nothing the design cannot settle alone is left.
