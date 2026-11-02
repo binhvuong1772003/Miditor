@@ -30,7 +30,7 @@ canvas.
 | Phase 5, command table and keys  | 280.74 kB | 73.60 kB |
 | End of M0 (phases 6 and 7)       | 284.14 kB | 74.73 kB |
 | M1a, the control API             | 290.81 kB | 76.28 kB |
-| M1b, the controller              | 293.65 kB | 77.27 kB |
+| M1b, the controller              | 293.46 kB | 77.19 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -94,5 +94,9 @@ that value changes (`e2e/control.spec.ts` counts its renders).
 ## M1b: renders
 
 The `controller` prop adds no state to the store and no render to editors that do not use it: an
-editor given no controller does not touch the controller code. `pnpm perf` was not run for this note;
-the numbers are left to the person who runs it.
+editor given no controller does not touch the controller code. `pnpm perf` gives the same numbers as
+after M1a in all six moments (add Text 2, type 5 chars 2, drag 100px 15, select none 4, hover block 3,
+select block 4).
+
+Under StrictMode an editor that is refused a controller logs its error twice for one editor, because
+React mounts it, lets go and mounts it again. The first editor is not affected.
