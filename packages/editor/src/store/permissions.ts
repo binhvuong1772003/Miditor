@@ -1,4 +1,4 @@
-import type { PageData, TreeNode } from "@midito-kitchen/core";
+import type { PageData, TreeNode } from "@miditor/core";
 
 // What the host lets people do. A change of the page is compared with the page before it and sorted
 // into kinds (added, removed, moved, edited); each kind is asked of the permission for the node

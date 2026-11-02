@@ -1,4 +1,4 @@
-import { type Device, findNode, parentOf, type Reorder } from "@midito-kitchen/core";
+import { type Device, findNode, parentOf, type Reorder } from "@miditor/core";
 import { canRedo, canUndo, redo, undo } from "../history";
 import { MAX_ZOOM, MIN_ZOOM, stepZoom } from "../zoom";
 import type { EditorStore } from "./create-editor-store";

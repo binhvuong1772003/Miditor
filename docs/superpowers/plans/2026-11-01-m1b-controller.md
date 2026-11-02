@@ -38,7 +38,7 @@
 - Test: `packages/editor/src/controller.test.ts`
 
 **Interfaces:**
-- Consumes: `EditorApi` (`control-api.ts`), `EditorView` and `viewOf` (`control.ts`), `EditorState`, `EditorStore` (`./store`), `emptyPage` (`@midito-kitchen/core`).
+- Consumes: `EditorApi` (`control-api.ts`), `EditorView` and `viewOf` (`control.ts`), `EditorState`, `EditorStore` (`./store`), `emptyPage` (`@miditor/core`).
 - Produces:
 
   ```ts
@@ -97,7 +97,7 @@
 - Test: `e2e/controller.spec.ts`
 
 **Interfaces:**
-- Consumes: `useCreateEditor`, `useEditor(controller, selector)` from `@midito-kitchen/editor`.
+- Consumes: `useCreateEditor`, `useEditor(controller, selector)` from `@miditor/editor`.
 - Produces: a host bar above the editor (outside `<Editor>`) with "Outside undo" (disabled by `canUndo`), "Outside save", "Outside add Text", a selection readout; `?control&outside&two` gives one controller to two editors.
 
 - [ ] **Step 1: Write failing e2e** (`controller.spec.ts`): `the bar before the editor mounts is idle, then follows the editor`; `Outside add Text adds a block and the readout shows its id`; `Outside undo is off until there is a change, then undoes`; `a second editor given the same controller is ignored and the first keeps working` (the console error is seen); `the readout goes idle when the editor is closed` (a toggle button in the demo unmounts it); each also under `E2E_STRICT=1`.

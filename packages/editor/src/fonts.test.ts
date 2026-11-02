@@ -1,4 +1,4 @@
-import { isFontStack } from "@midito-kitchen/core";
+import { isFontStack } from "@miditor/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_FONTS, fontName, listedFont, usableFonts } from "./fonts";
 

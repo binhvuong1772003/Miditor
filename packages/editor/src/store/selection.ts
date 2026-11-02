@@ -1,4 +1,4 @@
-import { findNode, parentOf, type TreeNode } from "@midito-kitchen/core";
+import { findNode, parentOf, type TreeNode } from "@miditor/core";
 import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import type { Editing, SelectionState } from "./state";

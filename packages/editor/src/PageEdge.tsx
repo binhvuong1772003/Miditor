@@ -1,4 +1,4 @@
-import { clampPageHeight } from "@midito-kitchen/core";
+import { clampPageHeight } from "@miditor/core";
 import { type PointerEvent, useLayoutEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PageEdge.module.css";

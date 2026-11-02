@@ -1,4 +1,4 @@
-import { DEVICE_WIDTH } from "@midito-kitchen/core";
+import { DEVICE_WIDTH } from "@miditor/core";
 import type { CSSProperties } from "react";
 
 /**

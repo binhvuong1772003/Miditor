@@ -1,4 +1,4 @@
-import { isSavedTheme, type SavedTheme } from "@midito-kitchen/core";
+import { isSavedTheme, type SavedTheme } from "@miditor/core";
 import type { HostTheme } from "./ThemesPanel";
 
 /** The longest id a host theme may have. The id is only a key the host knows the theme by. */
@@ -16,7 +16,7 @@ export function usableThemes(themes: readonly unknown[] | undefined): HostTheme[
   for (const row of themes ?? []) {
     const reason = refuse(row, seen);
     if (reason) {
-      console.warn(`[midito] a theme in \`config.themes\` is left out: ${reason}`);
+      console.warn(`[miditor] a theme in \`config.themes\` is left out: ${reason}`);
       continue;
     }
     const { id, name, colors, font, readonly } = row as HostTheme;

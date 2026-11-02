@@ -7,7 +7,7 @@ export async function openEditor(page: Page, query = ""): Promise<void> {
 }
 
 /** The blocks drawn on the page, the page itself included. */
-export const blocks = (page: Page) => page.locator("[data-midito-id]");
+export const blocks = (page: Page) => page.locator("[data-miditor-id]");
 
 export const saveState = (page: Page) => page.locator("[data-state]").first();
 
@@ -28,7 +28,7 @@ export async function openTool(page: Page, name: "Blocks" | "Layers" | "Images" 
 type Where = { x: number; y: number; width: number; height: number };
 
 export async function boxOf(page: Page, id: string): Promise<Where> {
-  const box = await page.locator(`[data-midito-id="${id}"]`).boundingBox();
+  const box = await page.locator(`[data-miditor-id="${id}"]`).boundingBox();
   if (!box) throw new Error(`block ${id} is not on the page`);
   return box;
 }
@@ -72,7 +72,8 @@ export async function addTwoTexts(page: Page): Promise<void> {
 }
 
 /** The words of a block, as the page draws them (not the box being typed in). */
-export const wordsOf = (page: Page, id: string) => page.locator(`[data-midito-id="${id}"]`).first();
+export const wordsOf = (page: Page, id: string) =>
+  page.locator(`[data-miditor-id="${id}"]`).first();
 
 /** Double-clicks in the middle of a block, which opens its words for typing. */
 export async function openWords(page: Page, id: string): Promise<void> {
@@ -103,7 +104,7 @@ export async function storedPage(
   await expect
     .poll(
       async () => {
-        const text = await page.evaluate(() => localStorage.getItem("midito-playground-page"));
+        const text = await page.evaluate(() => localStorage.getItem("miditor-playground-page"));
         found = text ? (JSON.parse(text) as StoredPage) : undefined;
         return found !== undefined && (until ? until(found) : true);
       },

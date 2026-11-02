@@ -1,4 +1,4 @@
-import { emptyPage, type PageData } from "@midito-kitchen/core";
+import { emptyPage, type PageData } from "@miditor/core";
 import { describe, expect, it } from "vitest";
 import { viewOf } from "./control";
 import { commit, undo } from "./history";

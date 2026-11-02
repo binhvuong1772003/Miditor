@@ -1,4 +1,4 @@
-import type { LibraryImage } from "@midito-kitchen/editor";
+import type { LibraryImage } from "@miditor/editor";
 import type { PageStorage } from "./storage";
 
 const photo = (id: number, w: number, h: number): string =>
@@ -71,7 +71,7 @@ export const seedImages: readonly LibraryImage[] = [
 ];
 
 /** Where the demo keeps the pictures a person uploaded, standing in for the host's library. */
-export const IMAGES_KEY = "midito-playground-images";
+export const IMAGES_KEY = "miditor-playground-images";
 
 export function loadUploaded(storage: PageStorage): LibraryImage[] {
   try {

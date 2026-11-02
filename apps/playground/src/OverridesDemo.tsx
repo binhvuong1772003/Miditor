@@ -1,4 +1,4 @@
-import type { Overrides } from "@midito-kitchen/editor";
+import type { Overrides } from "@miditor/editor";
 import { useSyncExternalStore } from "react";
 
 // The host's side of `overrides` (`?overrides`): a bar around the editor's, the host's own rail, frames

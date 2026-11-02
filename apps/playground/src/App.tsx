@@ -9,8 +9,8 @@ import {
   type Permissions,
   type SaveStatus,
   useCreateEditor,
-} from "@midito-kitchen/editor";
-import { vi } from "@midito-kitchen/editor/locales/vi";
+} from "@miditor/editor";
+import { vi } from "@miditor/editor/locales/vi";
 import { type ReactNode, useState } from "react";
 import { actions } from "./actions";
 import { ControlDemo } from "./ControlDemo";

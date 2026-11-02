@@ -1,4 +1,4 @@
-import { builtInRegistry, emptyPage } from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage } from "@miditor/core";
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";

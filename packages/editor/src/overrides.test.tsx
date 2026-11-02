@@ -1,5 +1,5 @@
-import type { Field, JsonValue } from "@midito-kitchen/core";
-import { emptyPage } from "@midito-kitchen/core";
+import type { Field, JsonValue } from "@miditor/core";
+import { emptyPage } from "@miditor/core";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";

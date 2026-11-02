@@ -1,7 +1,7 @@
 {
-  "name": "@midito-kitchen/core",
+  "name": "@miditor/core",
   "version": "0.0.0",
-  "description": "MiDito core: schema, registry, tree operations and commands (framework-free).",
+  "description": "Miditor core: schema, registry, tree operations and commands (framework-free).",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",

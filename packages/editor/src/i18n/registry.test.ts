@@ -1,4 +1,4 @@
-import { builtInRegistry, type Registry } from "@midito-kitchen/core";
+import { builtInRegistry, type Registry } from "@miditor/core";
 import { describe, expect, it } from "vitest";
 import { vi } from "../locales/vi";
 import { localiseRegistry } from "./registry";

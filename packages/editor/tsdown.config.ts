@@ -7,7 +7,7 @@ export default defineConfig({
   clean: true,
   // Deterministic class names: the default hash depends on the absolute build path.
   // Keep *.module.css file names unique across the package to avoid collisions.
-  css: { lightningcss: { cssModules: { pattern: "midito-[name]-[local]" } } },
+  css: { lightningcss: { cssModules: { pattern: "miditor-[name]-[local]" } } },
   deps: {
     neverBundle: ["react", "react-dom", "react/jsx-runtime"],
     // The store library is a devDependency that ends up inside the package, so a host installs nothing

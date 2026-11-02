@@ -1,4 +1,4 @@
-import { emptyPage } from "@midito-kitchen/core";
+import { emptyPage } from "@miditor/core";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContextMenu, type ContextMenuItem } from "./ContextMenu";

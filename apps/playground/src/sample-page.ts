@@ -1,4 +1,4 @@
-import { type PageData, SCHEMA_VERSION } from "@midito-kitchen/editor";
+import { type PageData, SCHEMA_VERSION } from "@miditor/editor";
 
 /** The page the playground opens when nothing is stored: two free blocks to select, drag, resize and turn. */
 export const SAMPLE_PAGE: PageData = {

@@ -17,10 +17,10 @@ export interface ResponsiveOptions {
 /**
  * The custom property that says "this is a phone". It is not set on a desktop, where it counts as
  * having no value, and it is set to an empty value on a phone (see `responsiveCss`). A declaration
- * that uses it, like `--m-left-p: var(--midito-phone) 4%`, is only valid on a phone, and a `var()`
+ * that uses it, like `--m-left-p: var(--miditor-phone) 4%`, is only valid on a phone, and a `var()`
  * with a fallback picks the phone value or the desktop value by that.
  */
-export const PHONE_VAR = "--midito-phone";
+export const PHONE_VAR = "--miditor-phone";
 
 const kebab = (name: string) => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
@@ -68,14 +68,14 @@ const widthOf = (breakpoint: number | undefined) =>
 
 /**
  * The one style sheet that every responsive page needs, with no part that depends on the page. Where
- * the page is narrow it gives the first node inside the page box `--midito-phone` with an empty
+ * the page is narrow it gives the first node inside the page box `--miditor-phone` with an empty
  * value, which every block under it inherits, so each `var(--m-x-p, var(--m-x-d))` of `splitStyles`
  * takes its phone value. A `container` query looks at the width of the page box, which has to be a
  * container (`container-type: inline-size`); a `viewport` query looks at the window.
  */
 export function responsiveCss(options: ResponsiveOptions = {}): string {
   const width = widthOf(options.breakpoint);
-  const rule = `:where([data-midito-render]) > * { ${PHONE_VAR}: ; }`;
+  const rule = `:where([data-miditor-render]) > * { ${PHONE_VAR}: ; }`;
   return options.query === "viewport"
     ? `@media (max-width: ${width}px) { ${rule} }`
     : `@container (max-width: ${width}px) { ${rule} }`;

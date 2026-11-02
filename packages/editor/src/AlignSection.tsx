@@ -1,4 +1,4 @@
-import type { AlignTo } from "@midito-kitchen/core";
+import type { AlignTo } from "@miditor/core";
 import { useT } from "./i18n/context";
 import type { MessageKey } from "./i18n/en";
 import { Icon, type IconName } from "./icons";

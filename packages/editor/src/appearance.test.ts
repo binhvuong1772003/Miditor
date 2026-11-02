@@ -17,13 +17,13 @@ describe("appearanceVariables", () => {
         font: "Lora, serif",
       }),
     ).toEqual({
-      "--midito-chrome": "#111",
-      "--midito-border-input": "#222",
-      "--midito-on-accent": "white",
-      "--midito-radius": "2px",
-      "--midito-radius-card": "4px",
-      "--midito-control": "2rem",
-      "--midito-font": "Lora, serif",
+      "--miditor-chrome": "#111",
+      "--miditor-border-input": "#222",
+      "--miditor-on-accent": "white",
+      "--miditor-radius": "2px",
+      "--miditor-radius-card": "4px",
+      "--miditor-control": "2rem",
+      "--miditor-font": "Lora, serif",
     });
   });
 
@@ -37,7 +37,7 @@ describe("appearanceVariables", () => {
       soft: "#eee",
     } as Record<string, string>;
     expect(appearanceVariables({ colors, radius: 4 as unknown as string })).toEqual({
-      "--midito-soft": "#eee",
+      "--miditor-soft": "#eee",
     });
   });
 });

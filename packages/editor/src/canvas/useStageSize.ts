@@ -64,7 +64,7 @@ export function useStageSize(workspace: HTMLElement | null): {
       const look = getComputedStyle(workspace);
       const room =
         workspace.clientWidth - parseFloat(look.paddingLeft) - parseFloat(look.paddingRight);
-      const page = box.querySelector<HTMLElement>("[data-midito-render]");
+      const page = box.querySelector<HTMLElement>("[data-miditor-render]");
       const widest = page ? Number.parseFloat(getComputedStyle(page).maxWidth) : Number.NaN;
       setStageBox((prev) => {
         const next = {

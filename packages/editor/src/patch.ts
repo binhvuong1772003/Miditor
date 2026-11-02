@@ -3,7 +3,7 @@ import type {
   BackgroundRepeat,
   BackgroundSize,
   JsonValue,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 
 /** One change to the background picture of a block, made by a field below. `undefined` removes it. */
 export type BackgroundPatch =

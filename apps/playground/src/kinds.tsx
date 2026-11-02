@@ -1,4 +1,4 @@
-import { type Registry, type Renderer, resolveColor } from "@midito-kitchen/editor";
+import { type Registry, type Renderer, resolveColor } from "@miditor/editor";
 
 /** A kind of the host's own, to try `config`: it keeps its ratio when resized. */
 export const components: Registry = {

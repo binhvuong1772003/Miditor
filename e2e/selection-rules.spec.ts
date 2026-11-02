@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { announcement, blocks, boxOf, openEditor, pressBlock, properties } from "./helpers";
 
 // The fresh page holds two blocks, `sample` and `sample-2`, both children of the page.
-const picked = (page: import("@playwright/test").Page) => page.locator("[data-midito-picked]");
+const picked = (page: import("@playwright/test").Page) => page.locator("[data-miditor-picked]");
 
 async function marqueeAll(page: import("@playwright/test").Page): Promise<void> {
   await page.mouse.move(430, 90);
@@ -116,7 +116,7 @@ test("pressing a block of a group and then the empty page selects nothing", asyn
 
 const outlined = (page: import("@playwright/test").Page, id: string) =>
   page
-    .locator(`[data-midito-id="${id}"]`)
+    .locator(`[data-miditor-id="${id}"]`)
     .evaluate((element) => element.style.outline.includes("solid"));
 
 test("a block under the pointer is outlined, and the outline goes when the pointer leaves", async ({

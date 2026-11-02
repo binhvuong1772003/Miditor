@@ -1,4 +1,4 @@
-import { type EditorController, useEditor } from "@midito-kitchen/editor";
+import { type EditorController, useEditor } from "@miditor/editor";
 
 /**
  * A bar of the host's own, drawn outside `<Editor>` and above it. It has no editor around it: it holds

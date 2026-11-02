@@ -1,4 +1,4 @@
-import type { IconComponent } from "@midito-kitchen/editor";
+import type { IconComponent } from "@miditor/editor";
 import type { ReactNode } from "react";
 
 /** One icon of the host's own: a bolder, rounder drawing on a 24 px grid, filled where it helps. */

@@ -66,5 +66,5 @@ test("Undo of the block being typed on ends the typing and leaves no box behind"
   await openWords(page, "n1");
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(field(page)).toHaveCount(0);
-  await expect(page.locator('[data-midito-id="n1"]')).toHaveCount(0);
+  await expect(page.locator('[data-miditor-id="n1"]')).toHaveCount(0);
 });

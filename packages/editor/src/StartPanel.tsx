@@ -4,7 +4,7 @@ import {
   type Registry,
   type SavedTheme,
   savedFrom,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { type ChangeEvent, useRef, useState } from "react";
 import { BlocksPanel } from "./BlocksPanel";
 import type { EditorProps } from "./Editor";

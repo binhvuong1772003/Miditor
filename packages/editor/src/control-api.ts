@@ -1,4 +1,4 @@
-import type { NewNodeOverrides } from "@midito-kitchen/core";
+import type { NewNodeOverrides } from "@miditor/core";
 import { type ArgsOf, type CommandName, canRun, type EditorState, type Run } from "./store";
 
 /** The commands a host can give the editor from code. Each says whether it did something. */
@@ -50,7 +50,7 @@ export function createApi(deps: ApiDeps): EditorApi {
     if (deps.alive()) return true;
     if (!warned) {
       warned = true;
-      console.warn("[midito] an editor command was called after the editor went away: ignored");
+      console.warn("[miditor] an editor command was called after the editor went away: ignored");
     }
     return false;
   };

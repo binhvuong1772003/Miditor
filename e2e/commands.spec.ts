@@ -62,7 +62,7 @@ test.describe("the right-click menu", () => {
     await expect(menuLine(page, /^Group/)).toBeDisabled();
     await page.keyboard.press("Escape");
     const idsOf = () =>
-      blocks(page).evaluateAll((els) => els.map((el) => el.getAttribute("data-midito-id") ?? ""));
+      blocks(page).evaluateAll((els) => els.map((el) => el.getAttribute("data-miditor-id") ?? ""));
     const before = await idsOf();
     await pressBlock(page, "n1", true);
     await openMenu(page, "n2");
@@ -82,7 +82,7 @@ test.describe("the right-click menu", () => {
     await expect(menuLine(page, /Bring forward/)).toBeEnabled();
     await menuLine(page, /Send to back/).press("Space");
     const ids = await blocks(page).evaluateAll((els) =>
-      els.map((el) => el.getAttribute("data-midito-id")),
+      els.map((el) => el.getAttribute("data-miditor-id")),
     );
     expect(ids.indexOf("n2")).toBeLessThan(ids.indexOf("n1"));
   });

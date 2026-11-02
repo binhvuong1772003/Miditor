@@ -252,8 +252,8 @@ body,
 .host-work {
   min-block-size: 0;
   /* The host dresses the editor in its own colours with the public variables. */
-  --midito-focus: var(--focus);
-  --midito-font: inherit;
+  --miditor-focus: var(--focus);
+  --miditor-font: inherit;
 }
 
 /* `?twin`: two editors side by side, each in half of the window. */

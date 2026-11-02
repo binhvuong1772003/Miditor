@@ -59,7 +59,7 @@ function known(hide: readonly string[]): ReadonlySet<string> {
     if (NAMES.has(name)) set.add(name);
     else if (!warned.has(name)) {
       warned.add(name);
-      console.warn(`[midito] hide: "${name}" is not a part that can be hidden; ignored.`);
+      console.warn(`[miditor] hide: "${name}" is not a part that can be hidden; ignored.`);
     }
   }
   return set;

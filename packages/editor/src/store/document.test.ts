@@ -1,4 +1,4 @@
-import { builtInRegistry, emptyPage, type PageData } from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage, type PageData } from "@miditor/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { redo, undo } from "../history";

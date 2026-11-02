@@ -1,4 +1,4 @@
-import type { ActionDef } from "@midito-kitchen/editor";
+import type { ActionDef } from "@miditor/editor";
 
 /** What the demo's buttons can do. A real host would add to a cart, open a dialog, call its API. */
 export const actions: readonly ActionDef[] = [

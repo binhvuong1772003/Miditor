@@ -15,7 +15,7 @@ test("a block added to the page is the one selected", async ({ page }) => {
 test("pressing a block selects it and pressing the empty page selects nothing", async ({
   page,
 }) => {
-  const box = page.locator('[data-midito-type="Container"]').last();
+  const box = page.locator('[data-miditor-type="Container"]').last();
   await box.click({ position: { x: 4, y: 4 } });
   await expect(properties(page)).toContainText("Box");
 
@@ -34,7 +34,7 @@ test("Tab goes from block to block on the level and Shift+Tab goes back", async 
   };
 
   await page
-    .locator('[data-midito-type="Container"]')
+    .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });
   const last = await indexOfSelected();
@@ -47,7 +47,7 @@ test("Tab goes from block to block on the level and Shift+Tab goes back", async 
 
 test("Escape lets go of the selection", async ({ page }) => {
   await page
-    .locator('[data-midito-type="Container"]')
+    .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });
   await page.keyboard.press("Escape");
@@ -66,7 +66,7 @@ test("the Layers tool lists the blocks and selecting a row selects the block", a
 test("selecting on the canvas shows in the Layers tool", async ({ page }) => {
   await openTool(page, "Layers");
   await page
-    .locator('[data-midito-type="Container"]')
+    .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });
   await expect(page.locator('[data-layer][aria-pressed="true"]')).toHaveCount(1);

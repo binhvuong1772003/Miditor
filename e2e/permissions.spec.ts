@@ -45,7 +45,7 @@ test.describe("a host locks blocks through permissions", () => {
     await expect(page.getByTestId("host-remove-result")).toHaveText("false");
     await expect(count(page)).toHaveText("2");
     await expect(blocks(page)).toHaveCount(before);
-    await expect(page.locator(`[data-midito-id="${FOOTER}"]`)).toBeVisible();
+    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
   });
 
   test("editor.remove() takes a free block away", async ({ page }) => {
@@ -119,7 +119,7 @@ test.describe("a host locks blocks through permissions", () => {
     const back = await boxOf(page, "sample");
     expect(Math.round(back.x)).toBe(Math.round(first.x));
     expect(Math.round(back.y)).toBe(Math.round(first.y));
-    await expect(page.locator(`[data-midito-id="${FOOTER}"]`)).toBeVisible();
+    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
     // Redo brings the free block back to where it was put, and still the footer is there.
     await page.getByRole("button", { name: "Redo" }).click();
@@ -138,7 +138,7 @@ test.describe("a host locks blocks through permissions", () => {
     await pastTheSecond(page);
     await page.keyboard.press("Control+x");
     await expect(blocks(page)).toHaveCount(before);
-    await expect(page.locator(`[data-midito-id="${FOOTER}"]`)).toBeVisible();
+    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
 
     // Grouping a locked block with a free one is refused whole: no group, nothing moved.
     await pastTheSecond(page);
@@ -186,7 +186,7 @@ test.describe("a viewer can look but not change", () => {
     await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
     await expect(page.getByRole("textbox", { name: "Edit the text of the block" })).toHaveCount(0);
     await page.keyboard.type("abc");
-    await expect(page.locator(`[data-midito-id="${FOOTER}"]`)).toContainText("Footer, kept");
+    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toContainText("Footer, kept");
 
     // Delete, a nudge and a drag of a free block change nothing.
     await pressBlock(page, "sample");
@@ -236,7 +236,7 @@ test.describe("a viewer can look but not change", () => {
     await expect(blocks(page)).toHaveCount(before);
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
     // Nothing was written for the host to keep.
-    const stored = await page.evaluate(() => localStorage.getItem("midito-playground-page"));
+    const stored = await page.evaluate(() => localStorage.getItem("miditor-playground-page"));
     expect(stored === null || JSON.parse(stored).root.children.length === 3).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ import {
   type Payload,
   type Theme,
   validateProps,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "react";
 import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";

@@ -12,7 +12,7 @@ import {
   type Rect,
   resolveRect,
   type TreeNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { createEditorStore } from "./create-editor-store";

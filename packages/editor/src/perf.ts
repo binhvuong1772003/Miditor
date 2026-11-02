@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 /**
  * `?perf` in the address counts how often each part of the editor commits, so a refactor can show
- * it did not make the editor redraw more. The counts sit in `window.__midito_perf`; without the
+ * it did not make the editor redraw more. The counts sit in `window.__miditor_perf`; without the
  * flag the hook does nothing.
  */
 type Counts = Record<string, number>;
@@ -12,13 +12,13 @@ const enabled =
 
 declare global {
   interface Window {
-    __midito_perf?: Counts;
+    __miditor_perf?: Counts;
   }
 }
 
 function count(id: string): void {
-  const counts = window.__midito_perf ?? {};
-  window.__midito_perf = counts;
+  const counts = window.__miditor_perf ?? {};
+  window.__miditor_perf = counts;
   counts[id] = (counts[id] ?? 0) + 1;
 }
 

@@ -4,7 +4,7 @@ import {
   type PageData,
   type Permissions,
   useEditor,
-} from "@midito-kitchen/editor";
+} from "@miditor/editor";
 import { useState, useSyncExternalStore } from "react";
 import { SAMPLE_PAGE } from "./sample-page";
 

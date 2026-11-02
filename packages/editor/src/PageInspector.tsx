@@ -1,4 +1,4 @@
-import type { PageMeta, Theme, TreeNode } from "@midito-kitchen/core";
+import type { PageMeta, Theme, TreeNode } from "@miditor/core";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import { FontSelect } from "./FontSelect";

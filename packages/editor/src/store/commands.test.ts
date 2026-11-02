@@ -1,10 +1,4 @@
-import {
-  builtInRegistry,
-  emptyPage,
-  insertNode,
-  newNode,
-  type TreeNode,
-} from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage, insertNode, newNode, type TreeNode } from "@miditor/core";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_ZOOM, MIN_ZOOM } from "../zoom";

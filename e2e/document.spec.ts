@@ -41,8 +41,10 @@ test.describe("the clipboard", () => {
 test.describe("the order of the layers", () => {
   const order = async (page: import("@playwright/test").Page) =>
     page
-      .locator("[data-midito-id]")
-      .evaluateAll((elements) => elements.map((element) => element.getAttribute("data-midito-id")));
+      .locator("[data-miditor-id]")
+      .evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("data-miditor-id")),
+      );
 
   test("Move block down puts a block before its brother and Undo puts it back", async ({
     page,
@@ -143,7 +145,7 @@ test.describe("onChange", () => {
       w.__stores = 0;
       const set = Storage.prototype.setItem;
       Storage.prototype.setItem = function (key: string, value: string) {
-        if (key === "midito-playground-page") w.__stores += 1;
+        if (key === "miditor-playground-page") w.__stores += 1;
         return set.call(this, key, value);
       };
     });

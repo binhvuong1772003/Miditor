@@ -1,4 +1,4 @@
-import type { HostTheme } from "@midito-kitchen/editor";
+import type { HostTheme } from "@miditor/editor";
 
 /**
  * The themes the demo suggests. They all use the same colour names as the demo's own page

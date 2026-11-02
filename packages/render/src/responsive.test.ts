@@ -94,7 +94,7 @@ describe("splitStyles", () => {
         continue;
       }
       const wanted = String(style[`${match[1]}-p`]);
-      // `var(--midito-phone) X` is valid only when the phone variable has a value.
+      // `var(--miditor-phone) X` is valid only when the phone variable has a value.
       out[key] = phone ? wanted.replace(`var(${PHONE_VAR}) `, "") : String(style[`${match[2]}-d`]);
     }
     return out;
@@ -134,7 +134,7 @@ describe("splitStyles", () => {
 });
 
 describe("responsiveCss", () => {
-  const rule = `:where([data-midito-render]) > * { ${PHONE_VAR}: ; }`;
+  const rule = `:where([data-miditor-render]) > * { ${PHONE_VAR}: ; }`;
 
   it("switches by the width of the box that holds the page, at 640 px by default", () => {
     expect(DEFAULT_BREAKPOINT).toBe(640);

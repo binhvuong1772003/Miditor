@@ -1,4 +1,4 @@
-import { emptyPage } from "@midito-kitchen/core";
+import { emptyPage } from "@miditor/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorApi } from "./control-api";
 import { attachController, controllerState, createEditor, idleView } from "./controller";

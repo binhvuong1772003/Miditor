@@ -1,4 +1,4 @@
-import type { PageData } from "@midito-kitchen/core";
+import type { PageData } from "@miditor/core";
 import { useLayoutEffect } from "react";
 import { elementOf } from "./element-of";
 
@@ -33,13 +33,13 @@ export function useBlockMarks({
     if (!workspace) return;
     const marked = picked.flatMap((id) => elementOf(workspace, id) ?? []);
     for (const element of marked) {
-      element.dataset.miditoPicked = "";
+      element.dataset.miditorPicked = "";
       element.style.outline = "2px solid var(--_focus)";
       element.style.outlineOffset = "1px";
     }
     return () => {
       for (const element of marked) {
-        delete element.dataset.miditoPicked;
+        delete element.dataset.miditorPicked;
         element.style.removeProperty("outline");
         element.style.removeProperty("outline-offset");
       }

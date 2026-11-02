@@ -1,8 +1,8 @@
-import { migratePage, type PageData } from "@midito-kitchen/editor";
+import { migratePage, type PageData } from "@miditor/editor";
 import { SAMPLE_PAGE } from "./sample-page";
 
 /** Where the playground keeps the page. The editor knows nothing about this: it only calls `onChange`. */
-export const STORAGE_KEY = "midito-playground-page";
+export const STORAGE_KEY = "miditor-playground-page";
 
 /** The part of `localStorage` the playground uses, so a test can pass a stand-in. */
 export type PageStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;

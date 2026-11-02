@@ -1,4 +1,4 @@
-import { emptyPage, type PageData } from "@midito-kitchen/editor";
+import { emptyPage, type PageData } from "@miditor/editor";
 import { describe, expect, it, vi } from "vitest";
 import { SAMPLE_PAGE } from "./sample-page";
 import { loadPage, type PageStorage, STORAGE_KEY, storePage } from "./storage";

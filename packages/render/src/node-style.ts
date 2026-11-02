@@ -13,7 +13,7 @@ import {
   resolveColor,
   type Theme,
   type TreeNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import type { CSSProperties } from "react";
 import { pageFont } from "./kind-style";
 

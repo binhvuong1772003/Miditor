@@ -1,4 +1,4 @@
-import type { Field, Registry } from "@midito-kitchen/core";
+import type { Field, Registry } from "@miditor/core";
 import type { T } from "./translate";
 
 /**

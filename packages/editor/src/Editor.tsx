@@ -24,8 +24,8 @@ import {
   turnOf,
   validatePage,
   validateRegistry,
-} from "@midito-kitchen/core";
-import type { Renderer } from "@midito-kitchen/render";
+} from "@miditor/core";
+import type { Renderer } from "@miditor/render";
 import {
   type ClipboardEvent,
   type ReactNode,
@@ -197,12 +197,12 @@ export interface EditorProps {
   /**
    * How the editor looks: a `scheme` (`light` or `dark`) to start from, `colors` by name, the corner
    * `radius`, the `control` height and the `font`. Anything left out keeps the default of the scheme.
-   * The same can be done with the `--midito-*` variables in CSS; this is the typed way.
+   * The same can be done with the `--miditor-*` variables in CSS; this is the typed way.
    */
   appearance?: Appearance;
   /**
    * The language of the editor: a `locale`, a translation in `messages` (English is built in; the
-   * other languages are in `@midito-kitchen/editor/locales/*`) and, for a system that has its own
+   * other languages are in `@miditor/editor/locales/*`) and, for a system that has its own
    * translator, a `translate` function that is asked first. See `I18n`.
    */
   i18n?: I18n;
@@ -250,7 +250,7 @@ export interface EditorProps {
      * Icons of your own in place of the editor's, by name (`undo`, `redo`, `img`, `trash`...; the
      * names are in `ICON_NAMES`). Each is a component that takes the `size` in px, so an icon of a
      * library such as lucide-react can be given as it is: `{ undo: Undo2 }`. Names you leave out keep
-     * the editor's icon. The stroke of the editor's own icons is set with `--midito-icon-stroke`.
+     * the editor's icon. The stroke of the editor's own icons is set with `--miditor-icon-stroke`.
      */
     icons?: Readonly<Record<string, IconComponent>>;
     /**
@@ -294,7 +294,7 @@ function openPage(data: PageData | undefined, theme?: Theme): PageData {
       invalid: "it is not valid",
     }[opened.reason];
     throw new Error(
-      `[midito] \`data\` is not a page this editor can open: ${why} (check it with migratePage)`,
+      `[miditor] \`data\` is not a page this editor can open: ${why} (check it with migratePage)`,
     );
   }
   return opened.page;
@@ -393,7 +393,7 @@ function EditorBody({
   // A mistake in the host's kinds is told once per registry, and the editor goes on with it.
   useEffect(() => {
     for (const { type, key, code } of validateRegistry(registry)) {
-      console.error(`[midito] config.components.${type}${key ? `.${key}` : ""}: ${code}`);
+      console.error(`[miditor] config.components.${type}${key ? `.${key}` : ""}: ${code}`);
     }
   }, [registry]);
   // The selection belongs to the editor, not to the page data: Save does not include it.
@@ -582,7 +582,7 @@ function EditorBody({
   // The box has the block that was just pressed: the press, if it is still down, goes on to drag it.
   useLayoutEffect(() => {
     const pending = pendingDrag.current;
-    if (!pending || !block || block.dataset.miditoId !== selectedId) return;
+    if (!pending || !block || block.dataset.miditorId !== selectedId) return;
     pendingDrag.current = null;
     if (!pending.up) dragControls.current?.dragStart(pending.press);
   }, [block, selectedId, pendingDrag, dragControls]);
@@ -659,7 +659,7 @@ function EditorBody({
     if (!probe || onPhone || !workspace) return undefined;
     for (const element of document.elementsFromPoint(point.x, point.y)) {
       if (!(element instanceof HTMLElement) || !workspace.contains(element)) continue;
-      const id = element.dataset.miditoId;
+      const id = element.dataset.miditorId;
       if (id !== undefined && canInsert(registry, data.root, id, probe)) return { id, element };
     }
     return undefined;
@@ -897,7 +897,7 @@ function EditorBody({
                 style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
                 data-scheme={schemeOf(appearance)}
                 lang={i18n?.locale}
-                data-midito-editor=""
+                data-miditor-editor=""
                 data-panel={panelOpen ? "open" : "closed"}
                 tabIndex={-1}
                 onCopy={copySelected}

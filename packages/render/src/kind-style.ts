@@ -10,7 +10,7 @@ import {
   PHONE_RATIO,
   resolveColor,
   type Theme,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import type { CSSProperties } from "react";
 
 type Props = Record<string, JsonValue>;

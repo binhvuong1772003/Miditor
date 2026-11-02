@@ -22,7 +22,7 @@ import {
   withPhoneBox,
   withPhoneProp,
   withRect,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { nudgeRect } from "../nudge";
 import { withBoxFor } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";

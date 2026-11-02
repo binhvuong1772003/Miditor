@@ -11,8 +11,8 @@ export {
   type SavedTheme,
   SCHEMA_VERSION,
   type Theme,
-} from "@midito-kitchen/core";
-export type { Renderer, RendererContext } from "@midito-kitchen/render";
+} from "@miditor/core";
+export type { Renderer, RendererContext } from "@miditor/render";
 export type { ActionDef, ActionParam } from "./actions";
 export type { Appearance, AppearanceColor } from "./appearance";
 export type { ContextMenuItem } from "./ContextMenu";

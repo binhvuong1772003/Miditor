@@ -1,10 +1,4 @@
-import {
-  colorRef,
-  nameOfColorRef,
-  parseHexColor,
-  resolveColor,
-  type Theme,
-} from "@midito-kitchen/core";
+import { colorRef, nameOfColorRef, parseHexColor, resolveColor, type Theme } from "@miditor/core";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,

@@ -1,4 +1,4 @@
-import type { Rect } from "@midito-kitchen/core";
+import type { Rect } from "@miditor/core";
 
 /** A block as it sits in its parent: the upright box and how far it is turned, in degrees. */
 export interface Placed {

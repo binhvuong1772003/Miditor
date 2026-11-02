@@ -4,7 +4,7 @@ import { addFromBlocks, openEditor } from "./helpers";
 const percent = (page: import("@playwright/test").Page) =>
   page.getByRole("button", { name: /^\d+%$/ });
 const pageWidth = async (page: import("@playwright/test").Page) =>
-  (await page.locator("[data-midito-render]").first().boundingBox())?.width ?? 0;
+  (await page.locator("[data-miditor-render]").first().boundingBox())?.width ?? 0;
 
 test.describe("zoom", () => {
   test.beforeEach(async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe("zoom", () => {
   });
 
   test("Ctrl with + - and 0 zooms the canvas, not the browser", async ({ page }) => {
-    await page.locator("[data-midito-editor]").focus();
+    await page.locator("[data-miditor-editor]").focus();
     await page.keyboard.press("ControlOrMeta+=");
     await expect(percent(page)).toHaveText("125%");
     await page.keyboard.press("ControlOrMeta+-");
@@ -90,10 +90,10 @@ test.describe("frame", () => {
 
   test("the frame does not change what the page holds", async ({ page }) => {
     await addFromBlocks(page, "Text");
-    const count = await page.locator("[data-midito-id]").count();
+    const count = await page.locator("[data-miditor-id]").count();
     await page.getByRole("button", { name: "Phone" }).click();
     await page.getByRole("button", { name: "Desktop" }).click();
-    await expect(page.locator("[data-midito-id]")).toHaveCount(count);
+    await expect(page.locator("[data-miditor-id]")).toHaveCount(count);
   });
 });
 

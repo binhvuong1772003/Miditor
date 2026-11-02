@@ -1,4 +1,4 @@
-import type { PageData, Registry } from "@midito-kitchen/core";
+import type { PageData, Registry } from "@miditor/core";
 import { amend, commit, createHistory, type History } from "../history";
 import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";

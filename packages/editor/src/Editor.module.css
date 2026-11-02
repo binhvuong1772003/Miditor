@@ -1,32 +1,32 @@
 /*
- * Hosts re-theme the editor by setting the public --midito-* variables on an ancestor or on the
+ * Hosts re-theme the editor by setting the public --miditor-* variables on an ancestor or on the
  * root class. The private --_* variables below only add the fallback values.
  */
 .root {
   /*
-   * The look follows the MiDito UI kit: zinc neutrals, one blue accent, 6px controls 36px tall, 8px
+   * The look follows the Miditor UI kit: zinc neutrals, one blue accent, 6px controls 36px tall, 8px
    * cards. A host changes any of it with the public variables.
    */
-  --_chrome: var(--midito-chrome, #ffffff);
-  --_workspace: var(--midito-workspace, #e4e4e7);
-  --_soft: var(--midito-soft, #ececef);
-  --_canvas: var(--midito-canvas, #ffffff);
-  --_border: var(--midito-border, #a9a9b2);
+  --_chrome: var(--miditor-chrome, #ffffff);
+  --_workspace: var(--miditor-workspace, #e4e4e7);
+  --_soft: var(--miditor-soft, #ececef);
+  --_canvas: var(--miditor-canvas, #ffffff);
+  --_border: var(--miditor-border, #a9a9b2);
   /* Inputs and selects get a darker edge than dividers, so a field reads as a field. */
-  --_input: var(--midito-border-input, #71717a);
-  --_text: var(--midito-text, #09090b);
-  --_focus: var(--midito-focus, #1d4ed8);
-  --_scrollbar: var(--midito-scrollbar, #71717a);
-  --_muted: var(--midito-muted, #3f3f46);
-  --_danger: var(--midito-danger, #b91c1c);
-  --_radius: var(--midito-radius, 6px);
-  --_radius-card: var(--midito-radius-card, 8px);
-  --_control: var(--midito-control, 2.25rem);
+  --_input: var(--miditor-border-input, #71717a);
+  --_text: var(--miditor-text, #09090b);
+  --_focus: var(--miditor-focus, #1d4ed8);
+  --_scrollbar: var(--miditor-scrollbar, #71717a);
+  --_muted: var(--miditor-muted, #3f3f46);
+  --_danger: var(--miditor-danger, #b91c1c);
+  --_radius: var(--miditor-radius, 6px);
+  --_radius-card: var(--miditor-radius-card, 8px);
+  --_control: var(--miditor-control, 2.25rem);
   /* The page itself stays its own colour: a dark editor does not make the page dark. */
-  --_paper: var(--midito-paper, #ffffff);
+  --_paper: var(--miditor-paper, #ffffff);
   /* The main button (Save). By default it is the text colour with the canvas on it. */
-  --_accent: var(--midito-accent, var(--_text));
-  --_on-accent: var(--midito-on-accent, var(--_canvas));
+  --_accent: var(--miditor-accent, var(--_text));
+  --_on-accent: var(--miditor-on-accent, var(--_canvas));
   --_lift: 0 1px 2px rgb(0 0 0 / 0.12);
   /* The width of the left panel; it is nothing when the person shuts it. */
   --_start: 19rem;
@@ -41,24 +41,24 @@
   min-block-size: 0;
   background: var(--_workspace);
   color: var(--_text);
-  font-family: var(--midito-font, Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+  font-family: var(--miditor-font, Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
   font-size: 0.875rem;
   line-height: 1.4;
 }
 
 /* The dark set. A variable the host sets still wins over these, as it does over the light set. */
 .root[data-scheme="dark"] {
-  --_chrome: var(--midito-chrome, #18181b);
-  --_workspace: var(--midito-workspace, #09090b);
-  --_soft: var(--midito-soft, #27272a);
-  --_canvas: var(--midito-canvas, #1f1f23);
-  --_border: var(--midito-border, #3f3f46);
-  --_input: var(--midito-border-input, #52525b);
-  --_text: var(--midito-text, #fafafa);
-  --_focus: var(--midito-focus, #60a5fa);
-  --_scrollbar: var(--midito-scrollbar, #52525b);
-  --_muted: var(--midito-muted, #a1a1aa);
-  --_danger: var(--midito-danger, #f87171);
+  --_chrome: var(--miditor-chrome, #18181b);
+  --_workspace: var(--miditor-workspace, #09090b);
+  --_soft: var(--miditor-soft, #27272a);
+  --_canvas: var(--miditor-canvas, #1f1f23);
+  --_border: var(--miditor-border, #3f3f46);
+  --_input: var(--miditor-border-input, #52525b);
+  --_text: var(--miditor-text, #fafafa);
+  --_focus: var(--miditor-focus, #60a5fa);
+  --_scrollbar: var(--miditor-scrollbar, #52525b);
+  --_muted: var(--miditor-muted, #a1a1aa);
+  --_danger: var(--miditor-danger, #f87171);
   color-scheme: dark;
 }
 

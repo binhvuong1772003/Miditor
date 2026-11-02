@@ -1,4 +1,4 @@
-import type { TreeNode } from "@midito-kitchen/core";
+import type { TreeNode } from "@miditor/core";
 
 /** One line of the layers list: a block, how deep it is, and whether it can be opened. */
 export interface LayerRow {

@@ -1,4 +1,4 @@
-import type { Device, PageData } from "@midito-kitchen/core";
+import type { Device, PageData } from "@miditor/core";
 import type { History } from "../history";
 import type { PanelPatch } from "../patch";
 import type { SaveStatus } from "../save-status";

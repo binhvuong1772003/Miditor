@@ -1,4 +1,4 @@
-import type { Device, PageData } from "@midito-kitchen/core";
+import type { Device, PageData } from "@miditor/core";
 import { resolveStatus, type SaveStatus } from "./save-status";
 import { canRun, type EditorState } from "./store";
 

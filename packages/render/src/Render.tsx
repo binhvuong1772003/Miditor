@@ -6,7 +6,7 @@ import {
   propsFor,
   type Theme,
   type TreeNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import type { CSSProperties, ReactNode } from "react";
 import {
   buttonActionStyle,
@@ -172,9 +172,9 @@ function RenderNode(all: NodeProps) {
   // What the node has on this screen: on a phone the values set by hand for it come over the others.
   const props = propsFor(node, device);
   const common = {
-    "data-midito-id": node.id,
-    "data-midito-type": node.type,
-    ...(only ? { "data-midito-screen": only } : {}),
+    "data-miditor-id": node.id,
+    "data-miditor-type": node.type,
+    ...(only ? { "data-miditor-screen": only } : {}),
     style: {
       ...(only
         ? onlyOn(styleOn(node, isRoot, only, theme), only)
@@ -190,7 +190,7 @@ function RenderNode(all: NodeProps) {
   if (!isBuiltIn(node.type)) {
     const draw =
       renderers && Object.hasOwn(renderers, node.type) ? renderers[node.type] : undefined;
-    if (!draw) return <div {...common} data-midito-unknown="" />;
+    if (!draw) return <div {...common} data-miditor-unknown="" />;
     return (
       <div {...common}>
         {draw({
@@ -293,7 +293,7 @@ export function Render({
   return (
     <div
       className={className}
-      data-midito-render=""
+      data-miditor-render=""
       style={{
         display: "flex",
         flexDirection: "column",

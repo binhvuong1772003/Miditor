@@ -1,4 +1,4 @@
-import type { Registry, TreeNode } from "@midito-kitchen/core";
+import type { Registry, TreeNode } from "@miditor/core";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";

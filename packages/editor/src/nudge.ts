@@ -1,4 +1,4 @@
-import type { Rect } from "@midito-kitchen/core";
+import type { Rect } from "@miditor/core";
 
 /** The keys that move a block, and the way each one goes. */
 const STEP: Record<string, { x: number; y: number }> = {

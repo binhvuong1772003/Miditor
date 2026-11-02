@@ -1,4 +1,4 @@
-import type { Device } from "@midito-kitchen/core";
+import type { Device } from "@miditor/core";
 import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import type { Tool, ViewState } from "./state";

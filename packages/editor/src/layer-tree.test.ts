@@ -1,4 +1,4 @@
-import type { TreeNode } from "@midito-kitchen/core";
+import type { TreeNode } from "@miditor/core";
 import { describe, expect, it } from "vitest";
 import { ancestorIds, layerRows } from "./layer-tree";
 

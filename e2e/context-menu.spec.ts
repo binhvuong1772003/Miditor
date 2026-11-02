@@ -3,7 +3,7 @@ import { announcement, blocks, boxOf, openEditor, pressBlock } from "./helpers";
 
 // The fresh page holds two blocks, `sample` and `sample-2`, both children of the page.
 const idsInOrder = (page: import("@playwright/test").Page) =>
-  blocks(page).evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-midito-id")));
+  blocks(page).evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-miditor-id")));
 
 /** Selects a block, opens the menu on it with a right press and clicks one of its lines. */
 async function choose(page: import("@playwright/test").Page, id: string, name: string) {

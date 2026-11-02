@@ -1,11 +1,11 @@
-import type { HostTheme, SavedTheme } from "@midito-kitchen/editor";
+import type { HostTheme, SavedTheme } from "@miditor/editor";
 import type { PageStorage } from "./storage";
 
 /**
  * Where the playground keeps the themes a person saved. It stands in for the host's database: the
  * editor never reads this, it only calls `onThemeSave`, `onThemeRename` and `onThemeDelete`.
  */
-export const THEMES_KEY = "midito-playground-themes";
+export const THEMES_KEY = "miditor-playground-themes";
 
 /** The saved themes, or none when nothing is stored or the stored text is not a list. */
 export function loadThemes(storage: PageStorage): HostTheme[] {

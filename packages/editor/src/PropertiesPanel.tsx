@@ -13,7 +13,7 @@ import {
   type Rect,
   type Theme,
   type TreeNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { Fragment, type KeyboardEvent, useEffect, useId, useState } from "react";
 import { AlignSection } from "./AlignSection";
 import type { ActionDef } from "./actions";

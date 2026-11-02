@@ -129,7 +129,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const Custom = useContext(IconsContext)[name];
   if (Custom) {
     return (
-      <span className="midito-icon" aria-hidden="true" style={{ display: "inline-flex" }}>
+      <span className="miditor-icon" aria-hidden="true" style={{ display: "inline-flex" }}>
         <Custom size={size} />
       </span>
     );
@@ -142,7 +142,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="1.4"
-      style={{ strokeWidth: "var(--midito-icon-stroke, 1.4)" }}
+      style={{ strokeWidth: "var(--miditor-icon-stroke, 1.4)" }}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

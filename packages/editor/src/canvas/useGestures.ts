@@ -14,7 +14,7 @@ import {
   resizeRotated,
   resolveRect,
   turnOf,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { useRef, useState } from "react";
 import { type Gap, gapsAround } from "../gaps";
 import { centreOf, rectAt, turnGroup } from "../group-math";
@@ -173,12 +173,12 @@ export function useGestures({
     const under = block.ownerDocument
       .elementsFromPoint(x, y)
       .filter(
-        (el): el is HTMLElement => el instanceof HTMLElement && el.dataset.miditoId !== undefined,
+        (el): el is HTMLElement => el instanceof HTMLElement && el.dataset.miditorId !== undefined,
       );
     const hit = under.find((el) =>
-      canMove(registry, data.root, g.before.id, el.dataset.miditoId as string),
+      canMove(registry, data.root, g.before.id, el.dataset.miditorId as string),
     );
-    const id = hit?.dataset.miditoId;
+    const id = hit?.dataset.miditorId;
     if (!hit || id === undefined || id === parentOf(data.root, g.before.id)?.id) return undefined;
     // Each parent as a frame on the screen: its padding box, where its middle is (the middle of a
     // turned element is the middle of the box around it) and how far it and its parents are turned.
@@ -187,7 +187,7 @@ export function useGestures({
       return {
         size: { w: el.clientWidth, h: el.clientHeight },
         center: { x: (box.left + box.width / 2) / zoom, y: (box.top + box.height / 2) / zoom },
-        rotation: turnOf(data.root, el.dataset.miditoId ?? "", frame),
+        rotation: turnOf(data.root, el.dataset.miditorId ?? "", frame),
       };
     };
     return { id, options: { from: frameOf(from), to: frameOf(hit) } };

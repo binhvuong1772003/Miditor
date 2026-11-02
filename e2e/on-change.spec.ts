@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
     w.__stores = 0;
     const set = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key: string, value: string) {
-      if (key === "midito-playground-page") w.__stores += 1;
+      if (key === "miditor-playground-page") w.__stores += 1;
       return set.call(this, key, value);
     };
   });

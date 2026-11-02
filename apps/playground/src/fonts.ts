@@ -1,4 +1,4 @@
-import type { FontDef } from "@midito-kitchen/editor";
+import type { FontDef } from "@miditor/editor";
 
 /** The fonts people can choose in the demo. A real host lists the fonts its own site loads. */
 export const fonts: readonly FontDef[] = [

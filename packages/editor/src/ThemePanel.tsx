@@ -1,4 +1,4 @@
-import { isTokenName, resolveColor, type Theme } from "@midito-kitchen/core";
+import { isTokenName, resolveColor, type Theme } from "@miditor/core";
 import { type KeyboardEvent, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";

@@ -1,4 +1,4 @@
-import { Editor } from "@midito-kitchen/editor";
+import { Editor } from "@miditor/editor";
 
 /**
  * Two editors on one page, `?twin`, to see that each keeps its own page, selection, zoom and frame.

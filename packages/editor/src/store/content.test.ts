@@ -7,7 +7,7 @@ import {
   newNode,
   type PageData,
   type TreeNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { describe, expect, it, vi } from "vitest";
 import {
   changeMeta,

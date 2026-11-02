@@ -74,8 +74,10 @@ test("Shift adds a block of the same level, and Ctrl+G groups them", async ({ pa
   await expect(announcement(page)).toHaveText("2 blocks selected");
 
   await page.keyboard.press("ControlOrMeta+g");
-  await expect(page.locator('[data-midito-type="Group"]')).toHaveCount(1);
-  await expect(page.locator('[data-midito-type="Group"] [data-midito-type="Text"]')).toHaveCount(2);
+  await expect(page.locator('[data-miditor-type="Group"]')).toHaveCount(1);
+  await expect(page.locator('[data-miditor-type="Group"] [data-miditor-type="Text"]')).toHaveCount(
+    2,
+  );
 });
 
 test("Shift+Ctrl+G takes the blocks out of their group", async ({ page }) => {
@@ -83,11 +85,11 @@ test("Shift+Ctrl+G takes the blocks out of their group", async ({ page }) => {
   await pressBlock(page, "n1");
   await pressBlock(page, "n2", true);
   await page.keyboard.press("ControlOrMeta+g");
-  await expect(page.locator('[data-midito-type="Group"]')).toHaveCount(1);
+  await expect(page.locator('[data-miditor-type="Group"]')).toHaveCount(1);
 
   await page.keyboard.press("ControlOrMeta+Shift+g");
-  await expect(page.locator('[data-midito-type="Group"]')).toHaveCount(0);
-  await expect(page.locator('[data-midito-type="Text"]')).toHaveCount(2);
+  await expect(page.locator('[data-miditor-type="Group"]')).toHaveCount(0);
+  await expect(page.locator('[data-miditor-type="Text"]')).toHaveCount(2);
 });
 
 test("grouping can be undone", async ({ page }) => {

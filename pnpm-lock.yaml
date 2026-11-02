@@ -29,10 +29,10 @@ importers:
 
   apps/playground:
     dependencies:
-      '@midito-kitchen/editor':
+      '@miditor/editor':
         specifier: workspace:*
         version: link:../../packages/editor
-      '@midito-kitchen/render':
+      '@miditor/render':
         specifier: workspace:*
         version: link:../../packages/render
       react:
@@ -63,10 +63,10 @@ importers:
 
   packages/editor:
     dependencies:
-      '@midito-kitchen/core':
+      '@miditor/core':
         specifier: workspace:*
         version: link:../core
-      '@midito-kitchen/render':
+      '@miditor/render':
         specifier: workspace:*
         version: link:../render
       react-moveable:
@@ -97,7 +97,7 @@ importers:
 
   packages/render:
     dependencies:
-      '@midito-kitchen/core':
+      '@miditor/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

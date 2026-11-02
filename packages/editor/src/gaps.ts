@@ -1,4 +1,4 @@
-import type { Rect } from "@midito-kitchen/core";
+import type { Rect } from "@miditor/core";
 
 /** A measured gap: the line from the moving block to what is next to it, and how long it is, in px. */
 export interface Gap {

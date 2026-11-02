@@ -40,7 +40,7 @@ test("the turn handle turns a block, and Undo turns it back", async ({ page }) =
   await page.mouse.move(centre.x + 150, centre.y, { steps: 10 });
   await page.mouse.up();
   const turn_ = () =>
-    page.locator('[data-midito-id="n1"]').evaluate((e) => getComputedStyle(e).rotate);
+    page.locator('[data-miditor-id="n1"]').evaluate((e) => getComputedStyle(e).rotate);
   await expect.poll(turn_).not.toBe("none");
 
   await page.getByRole("button", { name: "Undo" }).click();
@@ -55,10 +55,10 @@ test("a block dragged onto another one that can hold it goes into it", async ({ 
   await page.mouse.down();
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 14 });
   await page.mouse.up();
-  await expect(page.locator('[data-midito-id="sample"] [data-midito-id="n1"]')).toHaveCount(1);
+  await expect(page.locator('[data-miditor-id="sample"] [data-miditor-id="n1"]')).toHaveCount(1);
 
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.locator('[data-midito-id="sample"] [data-midito-id="n1"]')).toHaveCount(0);
+  await expect(page.locator('[data-miditor-id="sample"] [data-miditor-id="n1"]')).toHaveCount(0);
 });
 
 test("the frame around several blocks moves them all", async ({ page }) => {

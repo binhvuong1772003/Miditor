@@ -1,7 +1,7 @@
 {
-  "name": "@midito-kitchen/editor",
+  "name": "@miditor/editor",
   "version": "0.0.0",
-  "description": "MiDito editor: <Editor> with canvas, layers, properties and drag and drop.",
+  "description": "Miditor editor: <Editor> with canvas, layers, properties and drag and drop.",
   "type": "module",
   "sideEffects": [
     "*.css"
@@ -39,8 +39,8 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "@midito-kitchen/core": "workspace:*",
-    "@midito-kitchen/render": "workspace:*",
+    "@miditor/core": "workspace:*",
+    "@miditor/render": "workspace:*",
     "react-moveable": "0.56.0"
   },
   "peerDependencies": {

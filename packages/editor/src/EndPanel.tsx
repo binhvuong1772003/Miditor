@@ -1,4 +1,4 @@
-import { findNode } from "@midito-kitchen/core";
+import { findNode } from "@miditor/core";
 import type { ComponentProps } from "react";
 import type { EditorProps } from "./Editor";
 import styles from "./Editor.module.css";

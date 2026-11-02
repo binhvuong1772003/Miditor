@@ -1,5 +1,5 @@
 {
-  "name": "midito",
+  "name": "miditor",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.8",

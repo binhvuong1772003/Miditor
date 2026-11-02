@@ -6,7 +6,7 @@ import {
   type JsonValue,
   type PageData,
   resolveColor,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Render, type Renderer } from "./Render";
@@ -39,7 +39,7 @@ const html = (data: PageData, className?: string, device?: Device) =>
 
 /** The opening tag of the element for this node id. */
 const tagOf = (markup: string, id: string) =>
-  new RegExp(`<div[^>]*data-midito-id="${id}"[^>]*>`).exec(markup)?.[0] ?? "";
+  new RegExp(`<div[^>]*data-miditor-id="${id}"[^>]*>`).exec(markup)?.[0] ?? "";
 
 describe("<Render>", () => {
   const data = page(
@@ -49,21 +49,21 @@ describe("<Render>", () => {
 
   it("renders on the server with no window or document", () => {
     expect(typeof window).toBe("undefined");
-    expect(markup).toContain('data-midito-id="root"');
+    expect(markup).toContain('data-miditor-id="root"');
   });
 
   it("draws every node with its id and type, in tree order", () => {
     const order = ["root", "box", "hero", "tail"].map((id) =>
-      markup.indexOf(`data-midito-id="${id}"`),
+      markup.indexOf(`data-miditor-id="${id}"`),
     );
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(tagOf(markup, "hero")).toContain('data-midito-type="Container"');
+    expect(tagOf(markup, "hero")).toContain('data-miditor-type="Container"');
   });
 
   it("nests the nodes the way the tree nests them", () => {
     const heroInBox =
-      markup.indexOf('data-midito-id="hero"') < markup.indexOf('data-midito-id="tail"');
+      markup.indexOf('data-miditor-id="hero"') < markup.indexOf('data-miditor-id="tail"');
     expect(heroInBox).toBe(true);
     expect(markup.match(/<div/g)?.length).toBe(5); // wrapper + four nodes
     expect(markup.match(/<\/div>/g)?.length).toBe(5);
@@ -103,14 +103,14 @@ describe("<Render>", () => {
   it("keeps a free node before a flow node in the markup, so the later one paints on top", () => {
     const data2 = page(flow("root", "Page", [free("under"), flow("over", "Container")]));
     const m = html(data2);
-    expect(m.indexOf('data-midito-id="under"')).toBeLessThan(m.indexOf('data-midito-id="over"'));
+    expect(m.indexOf('data-miditor-id="under"')).toBeLessThan(m.indexOf('data-miditor-id="over"'));
     expect(tagOf(m, "under")).toContain("position:absolute");
     expect(tagOf(m, "over")).toContain("position:relative");
   });
 
   it("puts the class on a wrapper that has no reset, never on a node", () => {
     const withClass = html(data, "host-box");
-    expect(withClass.startsWith('<div class="host-box" data-midito-render=""')).toBe(true);
+    expect(withClass.startsWith('<div class="host-box" data-miditor-render=""')).toBe(true);
     expect(withClass.match(/host-box/g)?.length).toBe(1);
     // The only `class` attribute in the whole output is the wrapper's.
     expect(withClass.match(/class=/g)?.length).toBe(1);
@@ -124,9 +124,9 @@ describe("<Render>", () => {
     const m = html(
       page(flow("root", "Page", [flow("odd", "Mystery", [flow("inside", "Container")])])),
     );
-    expect(tagOf(m, "odd")).toContain("data-midito-unknown");
+    expect(tagOf(m, "odd")).toContain("data-miditor-unknown");
     expect(tagOf(m, "odd")).toContain("position:relative");
-    expect(m).not.toContain('data-midito-id="inside"');
+    expect(m).not.toContain('data-miditor-id="inside"');
   });
 
   it("draws the background colour of a node, and only a stored colour", () => {
@@ -168,8 +168,8 @@ describe("<Render>", () => {
     const m = html(
       page(flow("root", "Page", [flow("odd", "constructor", [flow("inside", "Container")])])),
     );
-    expect(tagOf(m, "odd")).toContain("data-midito-unknown");
-    expect(m).not.toContain('data-midito-id="inside"');
+    expect(tagOf(m, "odd")).toContain("data-miditor-unknown");
+    expect(m).not.toContain('data-miditor-id="inside"');
   });
 
   it("escapes what it prints into attributes", () => {
@@ -205,7 +205,7 @@ describe("<Render> Text and Shape", () => {
     expect(tag).toContain("display:flex");
     expect(tag).toContain("align-items:center");
     expect(tag).toContain("justify-content:center");
-    expect(tag).not.toContain("data-midito-unknown");
+    expect(tag).not.toContain("data-miditor-unknown");
     expect(m).toContain(">Hello</div>");
   });
 
@@ -220,7 +220,7 @@ describe("<Render> Text and Shape", () => {
     const m = html(
       page(flow("root", "Page", [text("t", { text: "Hi" }, [flow("inside", "Container")])])),
     );
-    expect(m).not.toContain('data-midito-id="inside"');
+    expect(m).not.toContain('data-miditor-id="inside"');
   });
 
   it("draws a shape as a layer under the blocks inside it", () => {
@@ -232,8 +232,8 @@ describe("<Render> Text and Shape", () => {
       ),
     );
     const layer = m.indexOf('aria-hidden="true"');
-    expect(layer).toBeGreaterThan(m.indexOf('data-midito-id="s"'));
-    expect(layer).toBeLessThan(m.indexOf('data-midito-id="t"'));
+    expect(layer).toBeGreaterThan(m.indexOf('data-miditor-id="s"'));
+    expect(layer).toBeLessThan(m.indexOf('data-miditor-id="t"'));
     expect(m).toContain("border-radius:50%");
     expect(m).toContain("background-color:#00ff00");
     expect(m).toContain("pointer-events:none");
@@ -266,11 +266,11 @@ describe("<Render> Group", () => {
         flow("root", "Page", [flow("g", "Group", [flow("a", "Container"), flow("b", "Shape")])]),
       ),
     );
-    expect(tagOf(m, "g")).not.toContain("data-midito-unknown");
+    expect(tagOf(m, "g")).not.toContain("data-miditor-unknown");
     expect(tagOf(m, "g")).toContain("display:block");
     expect(tagOf(m, "g")).toContain("background-color:transparent");
-    expect(m.indexOf('data-midito-id="g"')).toBeLessThan(m.indexOf('data-midito-id="a"'));
-    expect(m.indexOf('data-midito-id="a"')).toBeLessThan(m.indexOf('data-midito-id="b"'));
+    expect(m.indexOf('data-miditor-id="g"')).toBeLessThan(m.indexOf('data-miditor-id="a"'));
+    expect(m.indexOf('data-miditor-id="a"')).toBeLessThan(m.indexOf('data-miditor-id="b"'));
     // The only layer is the one the shape draws, and the group has none.
     expect(m.match(/aria-hidden/g)).toHaveLength(1);
   });
@@ -368,19 +368,19 @@ describe("<Render> renderers", () => {
     const markup = draw(data, { Heart: Probe }, "phone");
     expect(markup).toContain('data-c="#ff0000"');
     expect(markup).toContain('data-d="phone"');
-    expect(markup.indexOf("<b")).toBeLessThan(markup.indexOf('data-midito-id="in"'));
-    expect(tagOf(markup, "h")).not.toContain("data-midito-unknown");
+    expect(markup.indexOf("<b")).toBeLessThan(markup.indexOf('data-miditor-id="in"'));
+    expect(tagOf(markup, "h")).not.toContain("data-miditor-unknown");
   });
 
   it("leaves out the blocks inside when the function does not use them", () => {
     const data = page(flow("root", "Page", [heart("h", [free("in")])]));
-    expect(draw(data, { Heart: Plain })).not.toContain('data-midito-id="in"');
+    expect(draw(data, { Heart: Plain })).not.toContain('data-miditor-id="in"');
   });
 
   it("keeps a kind with no function an empty box", () => {
     const data = page(flow("root", "Page", [heart("h")]));
-    expect(tagOf(draw(data, {}), "h")).toContain("data-midito-unknown");
-    expect(tagOf(draw(data, undefined), "h")).toContain("data-midito-unknown");
+    expect(tagOf(draw(data, {}), "h")).toContain("data-miditor-unknown");
+    expect(tagOf(draw(data, undefined), "h")).toContain("data-miditor-unknown");
   });
 
   it("never lets a function replace a built-in type", () => {
@@ -390,7 +390,7 @@ describe("<Render> renderers", () => {
 
   it("ignores a name on the prototype", () => {
     const data = page(flow("root", "Page", [{ ...flow("t", "toString") }]));
-    expect(tagOf(draw(data, {}), "t")).toContain("data-midito-unknown");
+    expect(tagOf(draw(data, {}), "t")).toContain("data-miditor-unknown");
   });
 });
 
@@ -427,7 +427,7 @@ describe("<Render> Image", () => {
 
   it("does not draw blocks inside a picture", () => {
     const markup = html(image({ src: "/a.png" }, [free("in")]));
-    expect(markup).not.toContain('data-midito-id="in"');
+    expect(markup).not.toContain('data-miditor-id="in"');
   });
 
   it("clips the picture to its box", () => {
@@ -579,7 +579,7 @@ describe("<Render> Button", () => {
         { ...flow("b", "Button", [free("in")]), props: { label: "Go", href: "" } },
       ]),
     );
-    expect(live(data)).not.toContain('data-midito-id="in"');
+    expect(live(data)).not.toContain('data-miditor-id="in"');
   });
 
   it("draws the label as nothing when it is not a string", () => {
@@ -648,7 +648,7 @@ const Colour: Renderer = ({ props, device, responsive }) => (
 describe("<Render> responsive, a block that differs inside", () => {
   const draw = (data: PageData) => renderToStaticMarkup(<Render data={data} responsive={{}} />);
   const count = (markup: string, id: string) =>
-    (markup.match(new RegExp(`data-midito-id="${id}"`, "g")) ?? []).length;
+    (markup.match(new RegExp(`data-miditor-id="${id}"`, "g")) ?? []).length;
   const one = (
     type: string,
     props: Record<string, JsonValue>,
@@ -662,12 +662,12 @@ describe("<Render> responsive, a block that differs inside", () => {
     const markup = draw(one("Text", { text: "Desktop words" }, { text: "Phone words" }));
     expect(count(markup, "n")).toBe(2);
     const desktop = tagOf(markup, "n");
-    expect(desktop).toContain('data-midito-screen="desktop"');
+    expect(desktop).toContain('data-miditor-screen="desktop"');
     expect(desktop).toContain("display:var(--m-hide-d, flex)");
-    expect(desktop).toContain("--m-hide-d:var(--midito-phone) none");
-    expect(markup).toContain('data-midito-screen="phone"');
+    expect(desktop).toContain("--m-hide-d:var(--miditor-phone) none");
+    expect(markup).toContain('data-miditor-screen="phone"');
     expect(markup).toContain("display:var(--m-show-p, none)");
-    expect(markup).toContain("--m-show-p:var(--midito-phone) flex");
+    expect(markup).toContain("--m-show-p:var(--miditor-phone) flex");
     expect(markup.indexOf("Desktop words")).toBeLessThan(markup.indexOf("Phone words"));
   });
 
@@ -798,7 +798,7 @@ describe("<Render> responsive", () => {
     const markup = draw(page(flow("root", "Page")));
     expect(markup).toContain("container-type:inline-size");
     expect(markup).toContain("<style>@container (max-width: 640px)");
-    expect(markup).toContain("--midito-phone: ;");
+    expect(markup).toContain("--miditor-phone: ;");
   });
 
   it("can follow the window, and then the box is no container", () => {
@@ -824,10 +824,10 @@ describe("<Render> responsive", () => {
     const tag = tagOf(draw(page(flow("root", "Page", [{ ...withPhone(), id: "hero" }]))), "hero");
     expect(tag).toContain("left:var(--m-left-p, var(--m-left-d))");
     expect(tag).toContain("--m-left-d:");
-    expect(tag).toContain("--m-left-p:var(--midito-phone) 4px");
-    expect(tag).toContain("--m-top-p:var(--midito-phone) 8px");
-    expect(tag).toContain("--m-width-p:var(--midito-phone) 90%");
-    expect(tag).toContain("--m-height-p:var(--midito-phone) 50px");
+    expect(tag).toContain("--m-left-p:var(--miditor-phone) 4px");
+    expect(tag).toContain("--m-top-p:var(--miditor-phone) 8px");
+    expect(tag).toContain("--m-width-p:var(--miditor-phone) 90%");
+    expect(tag).toContain("--m-height-p:var(--miditor-phone) 50px");
   });
 
   it("writes what the two screens share as it is, and a block of the flow needs no variable", () => {
@@ -839,10 +839,10 @@ describe("<Render> responsive", () => {
   it("shrinks a block that nobody placed for the phone, like a phone does", () => {
     const tag = tagOf(draw(page(flow("root", "Page", [free("a")]))), "a");
     expect(tag).toContain("--m-right-d:20px");
-    expect(tag).toContain("--m-right-p:var(--midito-phone) 7.81px");
-    expect(tag).toContain("--m-top-p:var(--midito-phone) 15.63px");
+    expect(tag).toContain("--m-right-p:var(--miditor-phone) 7.81px");
+    expect(tag).toContain("--m-top-p:var(--miditor-phone) 15.63px");
     expect(tag).toContain("--m-height-d:96px");
-    expect(tag).toContain("--m-height-p:var(--midito-phone) 37.5px");
+    expect(tag).toContain("--m-height-p:var(--miditor-phone) 37.5px");
   });
 
   it("sets a text in its own size on each screen", () => {
@@ -854,7 +854,7 @@ describe("<Render> responsive", () => {
     const tag = tagOf(draw(data), "t");
     expect(tag).toContain("font-size:var(--m-font-size-p, var(--m-font-size-d))");
     expect(tag).toContain("--m-font-size-d:40px");
-    expect(tag).toContain("--m-font-size-p:var(--midito-phone) 20px");
+    expect(tag).toContain("--m-font-size-p:var(--miditor-phone) 20px");
   });
 
   it("shrinks the size of a text that has none of its own for the phone", () => {
@@ -863,7 +863,7 @@ describe("<Render> responsive", () => {
     );
     const tag = tagOf(draw(data), "t");
     expect(tag).toContain("--m-font-size-d:40px");
-    expect(tag).toContain("--m-font-size-p:var(--midito-phone) 15.63px");
+    expect(tag).toContain("--m-font-size-p:var(--miditor-phone) 15.63px");
   });
 
   it("gives a button the colours it has on each screen", () => {
@@ -878,7 +878,7 @@ describe("<Render> responsive", () => {
     );
     const tag = tagOf(draw(data), "b");
     expect(tag).toContain("--m-background-color-d:#111111");
-    expect(tag).toContain("--m-background-color-p:var(--midito-phone) #ff0000");
+    expect(tag).toContain("--m-background-color-p:var(--miditor-phone) #ff0000");
   });
 
   it("tells the function of a host that the page is responsive and that it draws for a desktop", () => {
@@ -899,7 +899,7 @@ describe("<Render> responsive", () => {
     const data = page(flow("root", "Page", [flow("box", "Container", [flow("in", "Container")])]));
     const strip = (markup: string) => markup.replace(/<style>.*?<\/style>/, "");
     const responsive = strip(draw(data));
-    expect(responsive).toContain('data-midito-id="in"');
+    expect(responsive).toContain('data-miditor-id="in"');
     expect(strip(html(data))).not.toContain("--m-");
   });
 });

@@ -14,7 +14,7 @@ import {
   reorderNode,
   type TreeNode,
   ungroupNode,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { placeAt } from "../drop-place";
 import { patchChange } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";

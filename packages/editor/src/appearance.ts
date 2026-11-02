@@ -2,20 +2,20 @@ import type { CSSProperties } from "react";
 
 /** The colours of the editor a host can set, by the name used in `appearance.colors`. */
 export const APPEARANCE_COLORS = {
-  chrome: "--midito-chrome",
-  workspace: "--midito-workspace",
-  canvas: "--midito-canvas",
-  soft: "--midito-soft",
-  border: "--midito-border",
-  borderInput: "--midito-border-input",
-  text: "--midito-text",
-  muted: "--midito-muted",
-  focus: "--midito-focus",
-  danger: "--midito-danger",
-  scrollbar: "--midito-scrollbar",
-  paper: "--midito-paper",
-  accent: "--midito-accent",
-  onAccent: "--midito-on-accent",
+  chrome: "--miditor-chrome",
+  workspace: "--miditor-workspace",
+  canvas: "--miditor-canvas",
+  soft: "--miditor-soft",
+  border: "--miditor-border",
+  borderInput: "--miditor-border-input",
+  text: "--miditor-text",
+  muted: "--miditor-muted",
+  focus: "--miditor-focus",
+  danger: "--miditor-danger",
+  scrollbar: "--miditor-scrollbar",
+  paper: "--miditor-paper",
+  accent: "--miditor-accent",
+  onAccent: "--miditor-on-accent",
 } as const;
 
 export type AppearanceColor = keyof typeof APPEARANCE_COLORS;
@@ -61,10 +61,10 @@ export function appearanceVariables(appearance: Appearance | undefined): CSSProp
     if (isValue(value)) out[variable] = value.trim();
   }
   const others: [string, unknown][] = [
-    ["--midito-radius", appearance.radius],
-    ["--midito-radius-card", appearance.radiusCard],
-    ["--midito-control", appearance.control],
-    ["--midito-font", appearance.font],
+    ["--miditor-radius", appearance.radius],
+    ["--miditor-radius-card", appearance.radiusCard],
+    ["--miditor-control", appearance.control],
+    ["--miditor-font", appearance.font],
   ];
   for (const [variable, value] of others) if (isValue(value)) out[variable] = value.trim();
   return out;

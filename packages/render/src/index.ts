@@ -1,4 +1,4 @@
-export { SCHEMA_VERSION } from "@midito-kitchen/core";
+export { SCHEMA_VERSION } from "@miditor/core";
 export { pageMeta } from "./page-meta";
 export { Render, type Renderer, type RendererContext, type RenderProps } from "./Render";
 export {

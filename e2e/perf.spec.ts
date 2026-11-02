@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("?perf counts how often each part of the editor commits", async ({ page }) => {
   await page.goto("/?reset&perf");
   const counts = await page.evaluate(
-    () => (window as unknown as { __midito_perf?: Record<string, number> }).__midito_perf,
+    () => (window as unknown as { __miditor_perf?: Record<string, number> }).__miditor_perf,
   );
   expect(counts?.editor).toBeGreaterThan(0);
   expect(counts?.canvas).toBeGreaterThan(0);
@@ -13,7 +13,7 @@ test("?perf counts how often each part of the editor commits", async ({ page }) 
 test("without ?perf nothing is counted", async ({ page }) => {
   await page.goto("/?reset");
   const counts = await page.evaluate(
-    () => (window as unknown as { __midito_perf?: unknown }).__midito_perf,
+    () => (window as unknown as { __miditor_perf?: unknown }).__miditor_perf,
   );
   expect(counts).toBeUndefined();
 });

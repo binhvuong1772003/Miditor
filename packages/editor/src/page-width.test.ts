@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
-import { DEVICE_WIDTH } from "@midito-kitchen/core";
+import { DEVICE_WIDTH } from "@miditor/core";
 import { describe, expect, it } from "vitest";
 import { pageWidthVariables } from "./page-width";
 

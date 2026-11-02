@@ -161,7 +161,7 @@
 - Test: `e2e/control.spec.ts`
 
 **Interfaces:**
-- Consumes: `useEditor` from `@midito-kitchen/editor`.
+- Consumes: `useEditor` from `@miditor/editor`.
 - Produces: a host part in `headerActions` with buttons "Host save", "Host undo" (disabled by `canUndo`), "Host select first", "Host add Text".
 
 - [ ] **Step 1: Write the failing e2e** (`control.spec.ts`): `Host undo is off until there is something to undo, then undoes`, `Host add Text adds a block and selects it`, `Host select first selects the first block`, `Host save reaches onSave once with the page`, each also run with `E2E_STRICT=1`.

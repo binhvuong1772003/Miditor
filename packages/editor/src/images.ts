@@ -1,4 +1,4 @@
-import { isImageUrl } from "@midito-kitchen/core";
+import { isImageUrl } from "@miditor/core";
 
 /** One picture of the host's library, to add to the page from the Images panel. */
 export interface LibraryImage {
@@ -42,11 +42,11 @@ export function usableImages(rows: readonly unknown[] | undefined): LibraryImage
   for (const row of rows ?? []) {
     const r = typeof row === "object" && row !== null ? (row as Record<string, unknown>) : {};
     if (!isImageUrl(r.url)) {
-      console.warn("[midito] a picture in `config.images` is left out: its url cannot be used");
+      console.warn("[miditor] a picture in `config.images` is left out: its url cannot be used");
       continue;
     }
     if (seen.has(r.url)) {
-      console.warn("[midito] a picture in `config.images` is left out: its url is used twice");
+      console.warn("[miditor] a picture in `config.images` is left out: its url is used twice");
       continue;
     }
     seen.add(r.url);

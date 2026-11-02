@@ -93,11 +93,11 @@ test.describe("a host reshapes the editor through overrides", () => {
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
     await label.fill("Go");
     await label.blur();
-    await expect(page.locator('[data-midito-id="n1"]').first()).toContainText("Go");
+    await expect(page.locator('[data-miditor-id="n1"]').first()).toContainText("Go");
     // The link survived the other change, and Undo of the label leaves it.
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
     await page.getByTestId("host-bar").getByRole("button", { name: "Undo" }).click();
-    await expect(page.locator('[data-midito-id="n1"]').first()).toContainText("Button");
+    await expect(page.locator('[data-miditor-id="n1"]').first()).toContainText("Button");
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
   });
 

@@ -3,9 +3,9 @@
   "compilerOptions": {
     "types": ["node"],
     "paths": {
-      "@midito-kitchen/core": ["./packages/core/src/index.ts"],
-      "@midito-kitchen/render": ["./packages/render/src/index.ts"],
-      "@midito-kitchen/editor": ["./packages/editor/src/index.ts"]
+      "@miditor/core": ["./packages/core/src/index.ts"],
+      "@miditor/render": ["./packages/render/src/index.ts"],
+      "@miditor/editor": ["./packages/editor/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "packages/*/*.ts", "apps/*/src", "apps/*/*.ts", "*.ts"]

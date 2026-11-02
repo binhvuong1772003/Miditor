@@ -4,7 +4,7 @@ import {
   MAX_THEME_NAME,
   type SavedTheme,
   type Theme,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { type KeyboardEvent, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";

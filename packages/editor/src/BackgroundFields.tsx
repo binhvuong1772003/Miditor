@@ -6,7 +6,7 @@ import {
   isBackgroundSize,
   isImageUrl,
   type NodeStyles,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { type ChangeEvent, type KeyboardEvent, useId, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import type { MessageKey } from "./i18n/en";

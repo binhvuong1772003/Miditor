@@ -1,4 +1,4 @@
-import { pageMeta, Render } from "@midito-kitchen/render";
+import { pageMeta, Render } from "@miditor/render";
 import { useEffect, useState } from "react";
 import { renderers } from "./kinds";
 import { loadPage } from "./storage";

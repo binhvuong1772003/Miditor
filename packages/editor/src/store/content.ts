@@ -7,7 +7,7 @@ import {
   type SavedTheme,
   type Theme,
   tidyMeta,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import type { PanelPatch } from "../patch";
 import { patchChange } from "./apply-patch";
 import type { EditorStore } from "./create-editor-store";

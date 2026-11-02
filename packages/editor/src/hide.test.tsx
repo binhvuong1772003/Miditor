@@ -1,10 +1,4 @@
-import {
-  builtInRegistry,
-  emptyPage,
-  insertNode,
-  newNode,
-  type TreeNode,
-} from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage, insertNode, newNode, type TreeNode } from "@miditor/core";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";

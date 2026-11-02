@@ -1,4 +1,4 @@
-import type { Handle } from "@midito-kitchen/core";
+import type { Handle } from "@miditor/core";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Moveable, {
@@ -105,7 +105,7 @@ function guarded<A extends unknown[]>(handler: (...args: A) => void) {
     try {
       handler(...args);
     } catch (error) {
-      console.error("[midito] gesture handler failed", error);
+      console.error("[miditor] gesture handler failed", error);
     }
   };
 }
@@ -296,7 +296,7 @@ export function SelectionBox({
           target.parentElement,
           ...[...target.parentElement.children].filter(
             (el): el is HTMLElement =>
-              el !== target && el instanceof HTMLElement && el.dataset.miditoId !== undefined,
+              el !== target && el instanceof HTMLElement && el.dataset.miditorId !== undefined,
           ),
         ]
       : [];

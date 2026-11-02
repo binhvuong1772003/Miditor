@@ -1,4 +1,4 @@
-import type { Field, JsonValue } from "@midito-kitchen/core";
+import type { Field, JsonValue } from "@miditor/core";
 import {
   Component,
   type ComponentProps,
@@ -103,7 +103,7 @@ export class OverrideBoundary extends Component<
   }
 
   override componentDidCatch(error: unknown) {
-    console.error(`[midito] the override of "${this.props.name}" threw: ${String(error)}`);
+    console.error(`[miditor] the override of "${this.props.name}" threw: ${String(error)}`);
   }
 
   override render() {
@@ -160,10 +160,10 @@ export function applyContextMenu(
     const out = override({ editor, items });
     if (Array.isArray(out) && out.every(isItem)) return out;
     console.error(
-      '[midito] the override of "contextMenu" did not give a list of lines (a line is "separator" or { label, onSelect }); the default menu is shown',
+      '[miditor] the override of "contextMenu" did not give a list of lines (a line is "separator" or { label, onSelect }); the default menu is shown',
     );
   } catch (error) {
-    console.error(`[midito] the override of "contextMenu" threw: ${String(error)}`);
+    console.error(`[miditor] the override of "contextMenu" threw: ${String(error)}`);
   }
   return items;
 }

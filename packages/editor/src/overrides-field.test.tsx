@@ -1,4 +1,4 @@
-import type { ComponentDef, JsonValue } from "@midito-kitchen/core";
+import type { ComponentDef, JsonValue } from "@miditor/core";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";

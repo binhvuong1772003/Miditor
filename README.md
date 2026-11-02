@@ -1,4 +1,4 @@
-# MiDito
+# Miditor
 
 An embeddable visual page editor for React.
 
@@ -14,8 +14,8 @@ JSON with `<Render>`. Data goes in through props and comes out through callbacks
 | `packages/editor` | `<Editor>`: canvas, layers, properties, drag and drop         |
 | `apps/playground` | Vite app for trying the library                               |
 
-Packages are published as `@midito-kitchen/core`, `@midito-kitchen/render` and
-`@midito-kitchen/editor`.
+Packages are published as `@miditor/core`, `@miditor/render` and
+`@miditor/editor`.
 
 ## Requirements
 

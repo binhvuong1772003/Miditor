@@ -1,4 +1,4 @@
-import { clampPageHeight, MAX_PAGE_HEIGHT, MIN_PAGE_HEIGHT } from "@midito-kitchen/core";
+import { clampPageHeight, MAX_PAGE_HEIGHT, MIN_PAGE_HEIGHT } from "@miditor/core";
 import { type KeyboardEvent, useEffect, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";

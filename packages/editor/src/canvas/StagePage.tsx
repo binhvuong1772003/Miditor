@@ -1,5 +1,5 @@
-import type { PageData } from "@midito-kitchen/core";
-import { Render, type Renderer } from "@midito-kitchen/render";
+import type { PageData } from "@miditor/core";
+import { Render, type Renderer } from "@miditor/render";
 import { type CSSProperties, Profiler, type RefObject } from "react";
 import styles from "../Editor.module.css";
 import { EmptyPage } from "../EmptyPage";

@@ -1,4 +1,4 @@
-import { emptyPage, type PageData } from "@midito-kitchen/core";
+import { emptyPage, type PageData } from "@miditor/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Render } from "./Render";

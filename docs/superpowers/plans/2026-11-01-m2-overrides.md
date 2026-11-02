@@ -50,7 +50,7 @@
   export function useContextMenuOverride(): Overrides["contextMenu"];
   ```
 
-  `ComponentOverrides` is the seven component places. `OverrideSlot` reads the context; without an override it returns `children`; with one it draws `<Boundary entry={override} name={name} fallback={children}><Override editor={useEditor()} {...props}>{children}</Override></Boundary>`. The boundary is a class component: `getDerivedStateFromError` sets `failed`, `componentDidCatch` logs `console.error("[midito] the override of <name> threw: …")` once per failure, and `failed` resets when `entry` changes. Fallback is rendered outside the boundary's try.
+  `ComponentOverrides` is the seven component places. `OverrideSlot` reads the context; without an override it returns `children`; with one it draws `<Boundary entry={override} name={name} fallback={children}><Override editor={useEditor()} {...props}>{children}</Override></Boundary>`. The boundary is a class component: `getDerivedStateFromError` sets `failed`, `componentDidCatch` logs `console.error("[miditor] the override of <name> threw: …")` once per failure, and `failed` resets when `entry` changes. Fallback is rendered outside the boundary's try.
 
 - [ ] **Step 1: Write failing tests** (use `renderToString` for output and a client-free boundary check through `react-dom/server`'s error behaviour where possible; the boundary's catch is covered in Task 6 e2e): `no override draws the default`, `a wrapper draws the default inside its own markup`, `an override that ignores children draws none of the default`, `the override receives editor and the props of the place`, `OverridesContext given a new object each render does not change the output`.
 - [ ] **Step 2: Run** `pnpm exec vitest run packages/editor/src/overrides.test.tsx`. Expected: FAIL.
@@ -128,7 +128,7 @@
 - Create: `apps/playground/src/OverridesDemo.tsx`, `e2e/overrides.spec.ts`; modify `apps/playground/src/App.tsx` (`?overrides`, `?overrides&throw`, `?overrides&two`)
 
 **Interfaces:**
-- Consumes: everything above, from `@midito-kitchen/editor`.
+- Consumes: everything above, from `@miditor/editor`.
 - Produces: a demo with a host bar around the header (Undo still works), a replaced rail, a wrapped panel, a menu line "Host: log" that runs, a `field` replaced for the button's link only, and a variant whose override throws.
 
 - [ ] **Step 1: Write failing e2e**: `the header is wrapped and Undo of the editor still works`, `a replaced rail changes the panel through pick`, `a wrapped panel shows the host's frame around it`, `a line the host adds to the menu is there and runs`, `the host's input replaces the link field and the other fields stay`, `an override that throws shows the default and logs one error`, `two editors keep their own overrides`; each under `E2E_STRICT=1` too.

@@ -1,4 +1,4 @@
-import { isImageUrl } from "@midito-kitchen/core";
+import { isImageUrl } from "@miditor/core";
 import type { MessageKey } from "./i18n/en";
 import { TranslatableError } from "./i18n/translatable-error";
 import type { Params, T } from "./i18n/translate";

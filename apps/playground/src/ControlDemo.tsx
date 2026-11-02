@@ -1,4 +1,4 @@
-import { useEditor } from "@midito-kitchen/editor";
+import { useEditor } from "@miditor/editor";
 
 /** Counts how often the Undo button is drawn, so a check can see it follows `canUndo` and nothing else. */
 function HostUndo() {

@@ -58,7 +58,7 @@
   ```
 
   `guard` returns the first refusal, or `null` when every change is allowed or `permissions` is `undefined`. It compares the two trees by node id and applies the sorting rules in Global Constraints. Answers for a node are cached in a `WeakMap` keyed by node object per permission function.
-  `TreeNode` and `PageData` come from `@midito-kitchen/core`; use the geometry helpers there (`boxFor`, etc.) to tell position from the rest of the styles.
+  `TreeNode` and `PageData` come from `@miditor/core`; use the geometry helpers there (`boxFor`, etc.) to tell position from the rest of the styles.
 
 - [ ] **Step 1: Write failing tests** with fast-check and fixed cases: `no permissions: null`, `a removed node asks canDelete of the subtree root only`, `an added subtree asks canAdd once for its root with the parent and kind`, `a moved node asks canDrag` (parent change; position change; rank change among survivors), `deleting a sibling moves no one`, `an edit of props asks canEdit and an edit of position asks canDrag`, `a style change touching position and colour asks both`, `a change of the parent's children is no edit of the parent`, `page settings, theme and fonts ask canEdit of the root`, `group and ungroup follow the rule`, `duplicate with an intent asks canDuplicate of each original and not canAdd`, `one refusal among several refuses`, `a boolean permission works as a function that returns it`, `the answers are cached per node object`.
 - [ ] **Step 2: Run** `pnpm exec vitest run packages/editor/src/store/permissions.test.ts`. Expected: FAIL.
@@ -136,7 +136,7 @@
 - Create: `apps/playground/src/PermissionsDemo.tsx`, `e2e/permissions.spec.ts`; modify `apps/playground/src/App.tsx` (`?permissions`, `?permissions&viewer`)
 
 **Interfaces:**
-- Consumes: everything above, from `@midito-kitchen/editor`.
+- Consumes: everything above, from `@miditor/editor`.
 - Produces: a demo where the page's footer block is locked by id (`canDelete`, `canDrag`, `canEdit` false for it) and a `?viewer` variant where everything is off; a host notice (`data-testid="denied"`) fed by `onDenied`; `hide` of `tool.themes` and `props.anchors`.
 
 - [ ] **Step 1: Write failing e2e**: `the Delete key, the menu line and editor.remove() all refuse the locked block`, `dragging and nudging the locked block change nothing and the host is told once`, `the locked block's fields are read-only`, `a viewer can select and look but nothing changes`, `hidden parts are absent`, `a refused action shows the host's notice`, `undo still works after other changes with the locked block present`; each also under `E2E_STRICT=1`.

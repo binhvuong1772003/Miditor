@@ -5,7 +5,7 @@ import {
   type Rect,
   resolveRect,
   withFreeBox,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 
 /**
  * A new block moved so that its middle is at `point`, in px from the padding box of the block it goes

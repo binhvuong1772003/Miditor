@@ -1,4 +1,4 @@
-import { isImageUrl, MAX_DESCRIPTION, MAX_TITLE, type PageMeta } from "@midito-kitchen/core";
+import { isImageUrl, MAX_DESCRIPTION, MAX_TITLE, type PageMeta } from "@miditor/core";
 import { type ChangeEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";

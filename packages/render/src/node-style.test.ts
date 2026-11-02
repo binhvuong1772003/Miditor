@@ -1,5 +1,5 @@
-import type { Axis, FlowNode, FreeNode, TreeNode } from "@midito-kitchen/core";
-import { cssFor, freeBoxOf } from "@midito-kitchen/core";
+import type { Axis, FlowNode, FreeNode, TreeNode } from "@miditor/core";
+import { cssFor, freeBoxOf } from "@miditor/core";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { isBuiltIn, nodeStyle } from "./node-style";

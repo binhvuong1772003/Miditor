@@ -23,7 +23,7 @@ export function copyNodes(root: TreeNode, ids: readonly string[]): TreeNode[] {
 
 /** What goes on the clipboard: the blocks as JSON, marked so that only this editor takes it. */
 export const clipboardText = (nodes: readonly TreeNode[]): string =>
-  JSON.stringify({ midito: "nodes", version: SCHEMA_VERSION, nodes });
+  JSON.stringify({ miditor: "nodes", version: SCHEMA_VERSION, nodes });
 
 /**
  * The blocks in a clipboard text, or `undefined` when it is not one this version made or holds
@@ -39,8 +39,8 @@ export function parseClipboard(text: string): TreeNode[] | undefined {
     return undefined;
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
-  const { midito, version, nodes } = value as Record<string, unknown>;
-  if (midito !== "nodes" || version !== SCHEMA_VERSION) return undefined;
+  const { miditor, version, nodes } = value as Record<string, unknown>;
+  if (miditor !== "nodes" || version !== SCHEMA_VERSION) return undefined;
   if (!Array.isArray(nodes) || nodes.length === 0) return undefined;
   const page = {
     schemaVersion: SCHEMA_VERSION,

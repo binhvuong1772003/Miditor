@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@midito-kitchen/editor": "workspace:*",
-    "@midito-kitchen/render": "workspace:*",
+    "@miditor/editor": "workspace:*",
+    "@miditor/render": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

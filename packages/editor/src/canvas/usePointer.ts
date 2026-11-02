@@ -5,7 +5,7 @@ import {
   parentOf,
   pickBlock,
   type Registry,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import { type MouseEvent, type PointerEvent, type RefObject, useState } from "react";
 import { isEditableTarget } from "../editable";
 import { nextLayer } from "../layers";
@@ -111,7 +111,7 @@ export function usePointer({
     let next: string | null = null;
     // Nothing is outlined while a button is down (a drag, a box) or over the selected block's handles.
     if (event.buttons === 0 && !editing && !isMoveableLayer(target)) {
-      const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+      const id = target.closest<HTMLElement>("[data-miditor-id]")?.dataset.miditorId;
       const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
       if (hit && hit.id !== data.root.id && hit.id !== selectedId && !picked.includes(hit.id)) {
         next = hit.id;
@@ -124,7 +124,7 @@ export function usePointer({
   const openMenu = (event: MouseEvent<HTMLElement>) => {
     const target = event.target as Element;
     const own = isMoveableLayer(target) ? selectedId : undefined;
-    const id = own ?? target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+    const id = own ?? target.closest<HTMLElement>("[data-miditor-id]")?.dataset.miditorId;
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
     // Off a block the browser's own menu stays.
     if (!hit || hit.id === data.root.id) return;
@@ -157,7 +157,7 @@ export function usePointer({
       for (const element of document.elementsFromPoint(event.clientX, event.clientY)) {
         if (!(element instanceof HTMLElement) || isMoveableLayer(element)) continue;
         if (!workspace?.contains(element)) continue;
-        const under = element.dataset.miditoId;
+        const under = element.dataset.miditorId;
         const pick = under === undefined ? undefined : pickBlock(data.root, scopeId, under);
         if (pick && !stack.some((item) => item.id === pick.id)) stack.push(pick);
       }
@@ -172,7 +172,7 @@ export function usePointer({
         return;
       }
     }
-    const id = target.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+    const id = target.closest<HTMLElement>("[data-miditor-id]")?.dataset.miditorId;
     // The outermost block of the scope that holds what was pressed, so a block in a group selects
     // the group. A press on the page or the grey around it selects nothing and starts again at the page.
     const hit = id === undefined ? undefined : pickBlock(data.root, scopeId, id);
@@ -259,8 +259,8 @@ export function usePointer({
     }
     const under = document
       .elementsFromPoint(event.clientX, event.clientY)
-      .find((element) => !isMoveableLayer(element) && element.closest("[data-midito-id]"));
-    const id = under?.closest<HTMLElement>("[data-midito-id]")?.dataset.miditoId;
+      .find((element) => !isMoveableLayer(element) && element.closest("[data-miditor-id]"));
+    const id = under?.closest<HTMLElement>("[data-miditor-id]")?.dataset.miditorId;
     const hit = id === undefined ? undefined : pickBlock(data.root, selectedId, id);
     if (!hit) return;
     selecting.selectInside(hit.id, hit.scopeId);

@@ -33,7 +33,7 @@ test.describe("a host part inside the editor", () => {
     await host(page, "Host add Text").click();
     await expect(blocks(page)).toHaveCount(before + 1);
     await expect(selection(page)).toHaveText("n1");
-    await expect(page.locator('[data-midito-id="n1"]').first()).toBeVisible();
+    await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
   });
 
   test("Host select first selects the first block", async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe("a host part inside the editor", () => {
     await size.click();
     await size.fill("40");
     await size.blur();
-    await expect(page.locator('[data-midito-id="n1"]').first()).toBeVisible();
+    await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
     await host(page, "Host select first").click();
     expect(await undoRenders(page)).toBe(afterAdd);
     // A change that flips it is drawn.
@@ -90,12 +90,12 @@ test.describe("two editors on one page", () => {
     const b = page.getByTestId("editor-b");
     const inA = (name: string) => a.getByRole("button", { name, exact: true });
     const inB = (name: string) => b.getByRole("button", { name, exact: true });
-    const blocksB = await b.locator("[data-midito-id]").count();
+    const blocksB = await b.locator("[data-miditor-id]").count();
     await inA("Host add Text").click();
     await expect(a.getByTestId("host-selection")).toHaveText("n1");
     await expect(b.getByTestId("host-selection")).toHaveText("none");
-    await expect(a.locator("[data-midito-id]")).toHaveCount(blocksB + 1);
-    await expect(b.locator("[data-midito-id]")).toHaveCount(blocksB);
+    await expect(a.locator("[data-miditor-id]")).toHaveCount(blocksB + 1);
+    await expect(b.locator("[data-miditor-id]")).toHaveCount(blocksB);
     await expect(inA("Host undo")).toBeEnabled();
     await expect(inB("Host undo")).toBeDisabled();
     await inB("Host add Text").click();
@@ -103,7 +103,7 @@ test.describe("two editors on one page", () => {
     await expect(b.getByTestId("host-selection")).toHaveText("n2");
     await expect(a.getByTestId("host-selection")).toHaveText("n1");
     await inA("Host undo").click();
-    await expect(a.locator("[data-midito-id]")).toHaveCount(blocksB);
-    await expect(b.locator("[data-midito-id]")).toHaveCount(blocksB + 2);
+    await expect(a.locator("[data-miditor-id]")).toHaveCount(blocksB);
+    await expect(b.locator("[data-miditor-id]")).toHaveCount(blocksB + 2);
   });
 });

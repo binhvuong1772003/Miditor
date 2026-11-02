@@ -1,4 +1,4 @@
-import { emptyPage } from "@midito-kitchen/core";
+import { emptyPage } from "@miditor/core";
 import type { EditorView } from "./control";
 import type { EditorApi } from "./control-api";
 import type { EditorState, EditorStore } from "./store";
@@ -37,7 +37,7 @@ export function createEditor(): EditorController {
   const warn = () => {
     if (record.warned) return;
     record.warned = true;
-    console.warn("[midito] an editor command was called with no editor attached: ignored");
+    console.warn("[miditor] an editor command was called with no editor attached: ignored");
   };
   // One command: handed to the attached editor, or the answer of "nothing to do".
   const to = <K extends keyof EditorApi>(name: K, none: ReturnType<EditorApi[K]>) =>
@@ -83,7 +83,7 @@ export function attachController(
   const record = recordOf(controller);
   if (record.attached) {
     console.error(
-      "[midito] this controller already belongs to another editor: the second editor is ignored",
+      "[miditor] this controller already belongs to another editor: the second editor is ignored",
     );
     return null;
   }

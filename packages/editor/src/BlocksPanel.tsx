@@ -1,4 +1,4 @@
-import { libraryOf, type Registry } from "@midito-kitchen/core";
+import { libraryOf, type Registry } from "@miditor/core";
 import { type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import styles from "./BlocksPanel.module.css";
 import { useT } from "./i18n/context";

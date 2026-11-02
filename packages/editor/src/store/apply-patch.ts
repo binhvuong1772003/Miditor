@@ -13,7 +13,7 @@ import {
   withPhoneBox,
   withPhoneProp,
   withStyle,
-} from "@midito-kitchen/core";
+} from "@miditor/core";
 import type { PanelPatch, StylePatch } from "../patch";
 import type { Draft } from "./state";
 

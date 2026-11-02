@@ -1,5 +1,5 @@
-import type { FreeNode, PageData, TreeNode } from "@midito-kitchen/core";
-import { emptyPage } from "@midito-kitchen/core";
+import type { FreeNode, PageData, TreeNode } from "@miditor/core";
+import { emptyPage } from "@miditor/core";
 import { describe, expect, it, vi } from "vitest";
 import { guard, type Permissions } from "./permissions";
 

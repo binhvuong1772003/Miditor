@@ -1,4 +1,4 @@
-import type { TreeNode } from "@midito-kitchen/core";
+import type { TreeNode } from "@miditor/core";
 import { createContext, type ReactNode, useContext } from "react";
 import { allowed, mayAdd, type Permissions } from "./store/permissions";
 

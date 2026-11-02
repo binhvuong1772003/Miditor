@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { openEditor, openTool } from "./helpers";
 
-const editor = (page: import("@playwright/test").Page) => page.locator("[data-midito-editor]");
+const editor = (page: import("@playwright/test").Page) => page.locator("[data-miditor-editor]");
 
 test("the Blocks panel is open at the start and pressing its tool shuts it", async ({ page }) => {
   await openEditor(page);

@@ -42,7 +42,7 @@ test("Outside add Text adds a block and the readout shows its id", async ({ page
   await bar(page, "Outside add Text").click();
   await expect(blocks(page)).toHaveCount(before + 1);
   await expect(selection(page)).toHaveText("n1");
-  await expect(page.locator('[data-midito-id="n1"]').first()).toBeVisible();
+  await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
 });
 
 test("Outside undo is off until there is a change, then undoes", async ({ page }) => {
@@ -78,14 +78,14 @@ test("a second editor given the same controller is ignored and the first keeps w
   await expect
     .poll(() => errors.some((text) => text.includes("already belongs to another editor")))
     .toBe(true);
-  const before = await a.locator("[data-midito-id]").count();
-  expect(await b.locator("[data-midito-id]").count()).toBe(before);
+  const before = await a.locator("[data-miditor-id]").count();
+  expect(await b.locator("[data-miditor-id]").count()).toBe(before);
   await bar(page, "Outside add Text").click();
-  await expect(a.locator("[data-midito-id]")).toHaveCount(before + 1);
-  await expect(b.locator("[data-midito-id]")).toHaveCount(before);
+  await expect(a.locator("[data-miditor-id]")).toHaveCount(before + 1);
+  await expect(b.locator("[data-miditor-id]")).toHaveCount(before);
   await expect(selection(page)).toHaveText("n1");
   await bar(page, "Outside undo").click();
-  await expect(a.locator("[data-midito-id]")).toHaveCount(before);
+  await expect(a.locator("[data-miditor-id]")).toHaveCount(before);
 });
 
 test("the readout goes idle when the editor is closed", async ({ page }) => {

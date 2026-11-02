@@ -1,4 +1,4 @@
-import { isPageMeta, type PageData, type PageMeta, tidyMeta } from "@midito-kitchen/core";
+import { isPageMeta, type PageData, type PageMeta, tidyMeta } from "@miditor/core";
 
 /**
  * The title, description and share picture of a page, for the host to put in its `<head>` (a

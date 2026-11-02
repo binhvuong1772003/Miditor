@@ -1,4 +1,4 @@
-# @midito-kitchen/editor
+# @miditor/editor
 
 `<Editor>` is an embeddable visual page editor for React. The host app mounts it on its own route,
 gives it a page, and stores what comes back. The editor keeps no files, no keys and no back end of
@@ -7,8 +7,8 @@ its own: data goes in through props and comes out through callbacks.
 ## Use it
 
 ```tsx
-import { Editor, type PageData } from "@midito-kitchen/editor";
-import "@midito-kitchen/editor/style.css";
+import { Editor, type PageData } from "@miditor/editor";
+import "@miditor/editor/style.css";
 
 export function EditPage({ page }: { page: PageData }) {
   return (
@@ -23,11 +23,11 @@ export function EditPage({ page }: { page: PageData }) {
 `data` is read once, when the editor mounts. Give the editor a new `key` to open another page.
 Without `data` it opens an empty page. A page of an older version is upgraded on opening.
 
-Show a stored page to visitors with `<Render>` from `@midito-kitchen/render`. Pass `responsive` to
+Show a stored page to visitors with `<Render>` from `@miditor/render`. Pass `responsive` to
 draw the desktop and the phone layouts at once, switched by CSS with no script:
 
 ```tsx
-import { Render } from "@midito-kitchen/render";
+import { Render } from "@miditor/render";
 
 <Render data={page} responsive={{}} />;
 ```
@@ -99,7 +99,7 @@ dark editor still shows the page as a visitor will see it.
 
 ```tsx
 import { Undo2, Redo2, Image } from "lucide-react";
-import { ICON_NAMES, type IconName } from "@midito-kitchen/editor";
+import { ICON_NAMES, type IconName } from "@miditor/editor";
 
 <Editor config={{ icons: { undo: Undo2, redo: Redo2, img: Image } }} />;
 // ICON_NAMES lists every name that can be replaced
@@ -108,33 +108,33 @@ import { ICON_NAMES, type IconName } from "@midito-kitchen/editor";
 A name you leave out keeps the editor's icon, and so does a name the editor does not have or a value
 that is not a component. Icons are decoration (the editor hides them from a screen reader and the
 button keeps its own name), so yours need no label. The stroke of the editor's own icons can be set
-with `--midito-icon-stroke` (1.4 by default); your icons draw their own. The kinds of block you add
+with `--miditor-icon-stroke` (1.4 by default); your icons draw their own. The kinds of block you add
 name an icon from the same list.
 
 The same can be done in CSS, on an ancestor of the editor or on its root class `className`, with the
 variables below. Set only the ones you want to change:
 
-| Variable                | Default               | What it is                                       |
-| ----------------------- | --------------------- | ------------------------------------------------ |
-| `--midito-chrome`       | `#ffffff`             | The header, rail and side panels                 |
-| `--midito-workspace`    | `#e4e4e7`             | The ground around the page                       |
-| `--midito-canvas`       | `#ffffff`             | Fields and cards                                 |
-| `--midito-soft`         | `#ececef`             | Hover and quiet fills                            |
-| `--midito-border`       | `#a9a9b2`             | Dividers                                         |
-| `--midito-border-input` | `#71717a`             | The edge of a field                              |
-| `--midito-text`         | `#09090b`             | Text                                             |
-| `--midito-muted`        | `#3f3f46`             | Quiet text                                       |
-| `--midito-focus`        | `#1d4ed8`             | Focus rings and selection                        |
-| `--midito-danger`       | `#b91c1c`             | Errors                                           |
-| `--midito-scrollbar`    | `#71717a`             | Scrollbars                                       |
-| `--midito-radius`       | `6px`                 | Fields and buttons                               |
-| `--midito-radius-card`  | `8px`                 | Cards                                            |
-| `--midito-control`      | `2.25rem`             | The height of a field or button                  |
-| `--midito-font`         | Inter, system-ui, ... | The font of the editor                           |
-| `--midito-icon-stroke`  | `1.4`                 | The line width of the editor's own icons         |
-| `--midito-paper`        | `#ffffff`             | The page itself (not changed by the dark scheme) |
-| `--midito-accent`       | the text colour       | The main button (Save)                           |
-| `--midito-on-accent`    | the canvas colour     | The text on the main button                      |
+| Variable                 | Default               | What it is                                       |
+| ------------------------ | --------------------- | ------------------------------------------------ |
+| `--miditor-chrome`       | `#ffffff`             | The header, rail and side panels                 |
+| `--miditor-workspace`    | `#e4e4e7`             | The ground around the page                       |
+| `--miditor-canvas`       | `#ffffff`             | Fields and cards                                 |
+| `--miditor-soft`         | `#ececef`             | Hover and quiet fills                            |
+| `--miditor-border`       | `#a9a9b2`             | Dividers                                         |
+| `--miditor-border-input` | `#71717a`             | The edge of a field                              |
+| `--miditor-text`         | `#09090b`             | Text                                             |
+| `--miditor-muted`        | `#3f3f46`             | Quiet text                                       |
+| `--miditor-focus`        | `#1d4ed8`             | Focus rings and selection                        |
+| `--miditor-danger`       | `#b91c1c`             | Errors                                           |
+| `--miditor-scrollbar`    | `#71717a`             | Scrollbars                                       |
+| `--miditor-radius`       | `6px`                 | Fields and buttons                               |
+| `--miditor-radius-card`  | `8px`                 | Cards                                            |
+| `--miditor-control`      | `2.25rem`             | The height of a field or button                  |
+| `--miditor-font`         | Inter, system-ui, ... | The font of the editor                           |
+| `--miditor-icon-stroke`  | `1.4`                 | The line width of the editor's own icons         |
+| `--miditor-paper`        | `#ffffff`             | The page itself (not changed by the dark scheme) |
+| `--miditor-accent`       | the text colour       | The main button (Save)                           |
+| `--miditor-on-accent`    | the canvas colour     | The text on the main button                      |
 
 The playground shows it: open `?host` to see the editor in a stand-in product with its own sidebar
 and navbar.
@@ -145,7 +145,7 @@ A part you draw inside the editor (`headerActions`, `headerStart`, `logo`) can r
 it commands with `useEditor`.
 
 ```tsx
-import { Editor, useEditor } from "@midito-kitchen/editor";
+import { Editor, useEditor } from "@miditor/editor";
 
 function PublishButton() {
   const editor = useEditor(); // the commands
@@ -211,7 +211,7 @@ For an app bar, a sidebar or a script that is not drawn by the editor, make a co
 the editor. `useCreateEditor()` makes it once for the part that calls it.
 
 ```tsx
-import { Editor, type EditorController, useCreateEditor, useEditor } from "@midito-kitchen/editor";
+import { Editor, type EditorController, useCreateEditor, useEditor } from "@miditor/editor";
 
 function App() {
   const editor = useCreateEditor();
@@ -276,7 +276,7 @@ call `useEditor(selector)`.
 Wrap a place:
 
 ```tsx
-import { Editor, type Overrides } from "@midito-kitchen/editor";
+import { Editor, type Overrides } from "@miditor/editor";
 
 const overrides: Overrides = {
   header: ({ children }) => <MyBar>{children}</MyBar>,
@@ -515,7 +515,7 @@ choice.
 picture is served from storage or a CDN, and the database stores only the address:
 
 ```tsx
-import { Editor, postImage } from "@midito-kitchen/editor";
+import { Editor, postImage } from "@miditor/editor";
 
 <Editor
   config={{
@@ -536,7 +536,7 @@ reason the upload failed. What the server checks, stores and cleans up is its ow
 **Keep it in the page**, for a host with no server, with `embedImage`:
 
 ```tsx
-import { embedImage } from "@midito-kitchen/editor";
+import { embedImage } from "@miditor/editor";
 
 <Editor config={{ uploadImage: embedImage() }} />;
 // embedImage({ maxWidth: 1200, quality: 0.8 })
@@ -697,7 +697,7 @@ the button falls back to its link. Inside the editor a button does nothing.
 The editor speaks English. Another language is a set of sentences passed in `i18n`:
 
 ```tsx
-import { vi } from "@midito-kitchen/editor/locales/vi";
+import { vi } from "@miditor/editor/locales/vi";
 
 <Editor i18n={{ locale: "vi", messages: vi }} />;
 ```
@@ -742,7 +742,7 @@ for the share picture your upload should answer with one (a `data:` address from
 fine to try things out but is not shown in a share). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
 
 ```tsx
-import { pageMeta } from "@midito-kitchen/render";
+import { pageMeta } from "@miditor/render";
 
 const { title, description, image } = pageMeta(page); // each may be undefined
 ```

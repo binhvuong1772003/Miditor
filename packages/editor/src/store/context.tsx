@@ -1,4 +1,4 @@
-import type { Registry } from "@midito-kitchen/core";
+import type { Registry } from "@miditor/core";
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef } from "react";
 import { useStore as useZustand } from "zustand";
 import { useShallow } from "zustand/react/shallow";

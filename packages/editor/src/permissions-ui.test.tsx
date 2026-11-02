@@ -1,4 +1,4 @@
-import { builtInRegistry, emptyPage, type FreeNode } from "@midito-kitchen/core";
+import { builtInRegistry, emptyPage, type FreeNode } from "@miditor/core";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";

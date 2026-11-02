@@ -1,4 +1,4 @@
-import { isFontStack } from "@midito-kitchen/core";
+import { isFontStack } from "@miditor/core";
 
 /** One font the host lets people choose: the name they read and the font stack that is stored. */
 export interface FontDef {
