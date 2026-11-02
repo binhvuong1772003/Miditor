@@ -27,6 +27,7 @@ export { en } from "./i18n/en";
 export type { I18n, Params } from "./i18n/translate";
 export { ICON_NAMES, type IconComponent, type IconName } from "./icons";
 export type { LibraryImage } from "./images";
+export type { ComponentOverrides, Overrides, RailTool } from "./overrides";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
 export type { HostTheme } from "./ThemesPanel";

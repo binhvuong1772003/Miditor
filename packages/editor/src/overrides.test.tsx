@@ -5,6 +5,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { createApi, type EditorApi } from "./control-api";
 import { ControlProvider } from "./control-context";
+import { Editor } from "./Editor";
 import { OverrideBoundary, OverrideSlot, type Overrides, OverridesContext } from "./overrides";
 import {
   createEditorStore,
@@ -13,7 +14,9 @@ import {
   initialHostState,
   initialSelectionState,
   initialViewState,
+  StoreProvider,
 } from "./store";
+import { Toolbar } from "./Toolbar";
 
 const store = createEditorStore<EditorState>({
   ...initialViewState({ narrow: false }),
@@ -164,5 +167,62 @@ describe("OverrideBoundary", () => {
     });
     boundary.state = { failed: true, entry };
     expect(boundary.render()).toBe(Default);
+  });
+});
+
+describe("overrides of the toolbar", () => {
+  const bar = (overrides?: Overrides) =>
+    renderToString(
+      <StoreProvider store={store}>
+        <ControlProvider api={api}>
+          <OverridesContext.Provider value={overrides}>
+            <Toolbar
+              logo={null}
+              headerStart={null}
+              headerActions={<em>host</em>}
+              status={undefined}
+              saving={false}
+              onSave={() => {}}
+              onFit={() => {}}
+              run={(() => true) as never}
+            />
+          </OverridesContext.Provider>
+        </ControlProvider>
+      </StoreProvider>,
+    );
+
+  it("wraps the bar in the host's markup", () => {
+    const html = bar({ header: ({ children }) => <section id="mine">{children}</section> });
+    expect(html.startsWith('<section id="mine"><header')).toBe(true);
+    expect(html).toContain("<em>host</em>");
+  });
+
+  it("replaces the host's actions and Save", () => {
+    const html = bar({ headerActions: () => <b>only mine</b> });
+    expect(html).toContain("<b>only mine</b>");
+    expect(html).not.toContain("<em>host</em>");
+    expect(html).not.toContain("Save");
+  });
+
+  it("wraps the actions and keeps Save", () => {
+    const html = bar({ headerActions: ({ children }) => <p>{children}</p> });
+    expect(html).toContain("<p><em>host</em><button");
+  });
+
+  it("draws the same bar with no overrides and with an empty object", () => {
+    expect(bar({})).toBe(bar(undefined));
+  });
+});
+
+describe("the overrides prop of the editor", () => {
+  it("draws the same editor with no overrides and with an empty object", () => {
+    expect(renderToString(<Editor overrides={{}} />)).toBe(renderToString(<Editor />));
+  });
+
+  it("draws the host's header around the bar", () => {
+    const html = renderToString(
+      <Editor overrides={{ header: ({ children }) => <div id="host-bar">{children}</div> }} />,
+    );
+    expect(html).toContain('<div id="host-bar"><header');
   });
 });
