@@ -138,8 +138,8 @@ Settled without the owner, after the builder check; each can be changed.
   reducer table; it is registered in the same list with the other commands that need the screen, and
   `before`/`after` run around the call.
 - **`addBlock(kind, overrides?)`** takes what `addBlockOf` takes. It lands where the editor's own
-  add does (inside the selected block if that kind can hold it, otherwise on the page). It returns
-  `false` on the phone frame, as the buttons are off there.
+  add does (inside the selected block if that kind can hold it, otherwise on the page). It returns the id of
+  the new block, or `null` on the phone frame, as the buttons are off there.
 - **Before the editor has mounted, or after it unmounted:** a command does nothing, returns `false`
   and warns once in development. The same rule serves tier 3.
 - **`select`, `clearSelection`, `setZoom`** are plain reducers and join `commandTable`; `fit`,
@@ -157,13 +157,14 @@ File and folder names, the internal shape of the context, how `@stable` is check
 - `useEditor()` in the tree and a controller are two doors to one object; a raw `dispatch` is not
   offered.
 
-## Open for the owner
+## Decided by the owner
 
-Questions the design cannot settle alone, in order of importance:
+Answered on 2026-11-01, as proposed:
 
-1. **Events back to the host** (`onEvent`, fed by `hooks.after`): in M1 or later?
-2. **A `ref` on `<Editor>`** as a third door: in M1 or left out because the controller covers it?
-3. **What `save()` does without `onSave`:** nothing, or still mark the page as saved?
-4. **`data` in the read side:** the page as stored (a pending colour draft left out) as proposed, or
-   with the draft?
-5. **`addBlock`** returns the new id, or nothing?
+1. **Events back to the host** (`onEvent` from `hooks.after`): not in M1. Later, as its own piece.
+2. **A `ref` on `<Editor>`**: left out; the controller of tier 3 covers it.
+3. **`save()` without `onSave`**: does nothing and resolves `false`.
+4. **`data` in the read side**: the page as stored, without a pending draft, as `onChange` gives it.
+   `save()` still stores a pending draft first; the docs say so.
+5. **`addBlock`** returns the id of the new block, or `null` when nothing was added (the phone
+   frame, or no editor attached).
