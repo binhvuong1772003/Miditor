@@ -2,6 +2,7 @@ import {
   Editor,
   type EditorController,
   embedImage,
+  type Overrides,
   type PageData,
   type SaveStatus,
   useCreateEditor,
@@ -16,6 +17,13 @@ import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { OutsideBar } from "./OutsideBar";
+import {
+  HostLogCount,
+  overrides,
+  overridesA,
+  overridesB,
+  throwingOverrides,
+} from "./OverridesDemo";
 import { Preview } from "./Preview";
 import { SentDataDialog } from "./SentDataDialog";
 import { loadPage, storePage } from "./storage";
@@ -52,6 +60,7 @@ export function App() {
       </HostDemo>
     );
   }
+  if (new URLSearchParams(window.location.search).has("overrides")) return <OverridesPage />;
   if (new URLSearchParams(window.location.search).has("control")) {
     if (new URLSearchParams(window.location.search).has("outside")) return <Outside />;
     // `?control&two` draws two editors on one page, each with its own host part.
@@ -70,6 +79,34 @@ export function App() {
     );
   }
   return <Playground />;
+}
+
+/**
+ * `?overrides` reshapes the editor through `overrides`; `&throw` has the header throw, `&two` draws two
+ * editors with an `overrides` of their own each.
+ */
+function OverridesPage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("two")) {
+    return (
+      <>
+        <section data-testid="editor-a" style={{ blockSize: "45vh" }}>
+          <Playground overrides={overridesA} />
+        </section>
+        <section data-testid="editor-b" style={{ blockSize: "45vh" }}>
+          <Playground overrides={overridesB} />
+        </section>
+      </>
+    );
+  }
+  return (
+    <>
+      <HostLogCount />
+      <section style={{ blockSize: "85vh" }}>
+        <Playground overrides={params.has("throw") ? throwingOverrides : overrides} />
+      </section>
+    </>
+  );
 }
 
 /**
@@ -106,10 +143,12 @@ function Playground({
   embedded = false,
   control = false,
   controller,
+  overrides: given,
 }: {
   embedded?: boolean;
   control?: boolean;
   controller?: EditorController;
+  overrides?: Overrides;
 }) {
   const [page] = useState(openPage);
   const plain = new URLSearchParams(window.location.search).has("plain");
@@ -162,6 +201,7 @@ function Playground({
           window.setTimeout(() => setStatus("saved"), 300);
         }}
         {...(controller ? { controller } : {})}
+        {...(given ? { overrides: given } : {})}
         onSave={(data) => setSent(JSON.stringify(data, null, 2))}
         // Inside a host that has its own navbar the editor shows no mark of its own.
         {...(embedded ? { logo: null } : {})}
