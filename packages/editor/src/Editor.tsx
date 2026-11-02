@@ -53,7 +53,6 @@ import { ControlProvider } from "./control-context";
 import { attachController, type EditorController } from "./controller";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
-import { EndPanel } from "./EndPanel";
 import { isEditableTarget } from "./editable";
 import type { FontDef } from "./fonts";
 import { GapLabels } from "./GapLabels";
@@ -70,12 +69,12 @@ import { isNudgeKey } from "./nudge";
 import { applyContextMenu, HostContexts, OverrideSlot, type Overrides } from "./overrides";
 import { PageEdge } from "./PageEdge";
 import { pageWidthVariables } from "./page-width";
+import { DefaultLayout } from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
 import { QuickActions, quickOffs } from "./QuickActions";
-import { Rail } from "./Rail";
-import { StartPanel } from "./StartPanel";
 import { resolveStatus, type SaveStatus } from "./save-status";
+import { type Shell, ShellContext } from "./shell";
 import {
   type CommandName,
   canRun,
@@ -102,7 +101,6 @@ import {
 } from "./store";
 import { allowed } from "./store/permissions";
 import type { HostTheme } from "./ThemesPanel";
-import { Toolbar } from "./Toolbar";
 import { stepSelection } from "./tab-order";
 import type { UploadImage } from "./upload-image";
 import { fitZoom } from "./zoom";
@@ -303,8 +301,15 @@ function openPage(data: PageData | undefined, theme?: Theme): PageData {
 /** How close together, in ms, arrow-key presses are one step of history. */
 const NUDGE_MERGE_MS = 500;
 
-/** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
-export function Editor(props: EditorProps) {
+/** What `<EditorProvider>` takes: the props of `<Editor>`, and the parts the host places. */
+export type EditorProviderProps = EditorProps & { children?: ReactNode };
+
+/**
+ * The editor's state and keys, with the parts placed by the host as its children (`<Editor.Header />`,
+ * `<Editor.Canvas />`...). Without children it draws the default layout, which is what `<Editor>` is.
+ * @experimental
+ */
+export function EditorProvider(props: EditorProviderProps) {
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
   // The page it opens with is made here, once, because the selection starts on its root.
   const [firstPage] = useState(() => openPage(props.data, props.config?.theme));
@@ -326,6 +331,11 @@ export function Editor(props: EditorProps) {
   );
 }
 
+/** The editor shell: toolbar, left panel, canvas with a page drawn from data, right panel. */
+export function Editor(props: EditorProps) {
+  return <EditorProvider {...props} />;
+}
+
 function EditorBody({
   className,
   onChange,
@@ -336,6 +346,7 @@ function EditorBody({
   logo,
   headerStart,
   controller,
+  children,
   overrides,
   hide,
   permissions,
@@ -344,7 +355,7 @@ function EditorBody({
   i18n,
   historyLimit,
   config,
-}: EditorProps) {
+}: EditorProviderProps) {
   useRenders("editor");
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
@@ -884,328 +895,320 @@ function EditorBody({
   // The distances to show, only with Alt held: those of a drag that is on, or else those to the block pointed at.
   const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
 
+  const canvas = (
+    <section
+      ref={setWorkspace}
+      className={styles.workspace}
+      aria-label={t("panel.canvas")}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
+      tabIndex={0}
+      onPointerDown={press}
+      onPointerMove={hover}
+      onContextMenu={hide?.includes("contextMenu") ? undefined : openMenu}
+      onPointerLeave={() => selecting.setHover(null)}
+      onDoubleClick={enter}
+    >
+      <StagePage
+        stage={stage}
+        stageBox={stageBox}
+        shown={shown}
+        renderers={config?.renderers}
+        empty={data.root.children.length === 0 && !editing}
+        onAddFirst={() => addBlockOf("Container")}
+      />
+      {marquee && <Marquee box={marquee} />}
+      {editing && editingElement && editingNode && (
+        <InlineEdit
+          element={editingElement}
+          value={String(editingNode.props[editing.prop] ?? "")}
+          multiline={editing.multiline}
+          maxLength={editingLimit}
+          rotation={turnOf(data.root, editing.id, frame)}
+          zoom={zoom}
+          onDone={(value) => {
+            selecting.setEditing(null);
+            if (editingNode.props[editing.prop] !== value) {
+              commitPatch(editing.id, { key: "prop", name: editing.prop, value });
+            }
+          }}
+          onCancel={() => selecting.setEditing(null)}
+        />
+      )}
+      {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
+      {menuAt && (
+        <ContextMenu
+          x={menuAt.x}
+          y={menuAt.y}
+          items={shownMenu ?? []}
+          onClose={() => {
+            setMenuAt(null);
+            // The keys of the editor work again where the pointer was.
+            editorRoot.current?.focus({ preventScroll: true });
+          }}
+        />
+      )}
+      {workspace && !editing && hoverId && hoverElement && hoverNode && (
+        <BlockLabel
+          target={hoverElement}
+          workspace={workspace}
+          text={shownRegistry[hoverNode.type]?.label ?? hoverNode.type}
+          tone="hover"
+        />
+      )}
+      {block &&
+        workspace &&
+        !editing &&
+        !groupInfo &&
+        selectedNode &&
+        selectedId !== data.root.id && (
+          <BlockLabel
+            target={block}
+            workspace={workspace}
+            text={shownDef?.label ?? selectedNode.type}
+            tone="selected"
+          />
+        )}
+      {block && workspace && !editing && !menuAt && selectedId && selectedId !== data.root.id && (
+        <OverrideSlot name="quickActions" props={{ disabled: onPhone }}>
+          <QuickActions
+            target={block}
+            workspace={workspace}
+            disabled={onPhone}
+            allow={quickOffs(canState)}
+            canGroup={picked.length > 0}
+            canUngroup={selectedNode?.type === "Group"}
+            onForward={() => run("block.reorder", "forward")}
+            onBackward={() => run("block.reorder", "backward")}
+            onDuplicate={() => run("block.duplicate")}
+            onDelete={() => run("block.delete")}
+            onGroup={() => run("block.group")}
+            onUngroup={() => run("block.ungroup")}
+            onFront={() => run("block.reorder", "front")}
+            onBack={() => run("block.reorder", "back")}
+          />
+        </OverrideSlot>
+      )}
+      {pageElement && workspace && !editing && (
+        <PageEdge
+          page={pageElement}
+          workspace={workspace}
+          zoom={zoom}
+          floor={pageHeight.floor}
+          onPreview={(height) => setDraft({ id: data.root.id, key: "minHeight", value: height })}
+          onCommit={(height) => commitPatch(data.root.id, { key: "minHeight", value: height })}
+          onCancel={() => setDraft(null)}
+        />
+      )}
+      {groupInfo && !editing && (
+        <div
+          ref={setFrameEl}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: groupInfo.box.left,
+            top: groupInfo.box.top,
+            width: groupInfo.box.width,
+            height: groupInfo.box.height,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      <SelectionBox
+        target={editing ? null : groupInfo ? frameEl : block}
+        container={workspace}
+        className={styles.selection}
+        locked={lockedBlocks}
+        controls={dragControls}
+        group={groupInfo !== null}
+        scale={groupInfo ? zoom : 1}
+        onRotatePreview={previewGroupTurn}
+        companions={
+          groupInfo
+            ? groupInfo.placed.flatMap((item) =>
+                workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
+              )
+            : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
+        }
+        lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
+        minSize={minSize(selectedNode?.styles)}
+        angle={
+          !groupInfo && selectedNode && isFreeNode(selectedNode)
+            ? boxFor(selectedNode, frame).rotation
+            : 0
+        }
+        onGestureStart={startGesture}
+        onDragEnd={endDrag}
+        onDragMove={dragMove}
+        onResizeEnd={endResize}
+        onRotateEnd={endRotate}
+      />
+    </section>
+  );
+
+  const shell: Shell = {
+    header: {
+      logo,
+      headerStart,
+      headerActions,
+      status: headerStatus,
+      saving: status === "saving",
+      onSave:
+        onSave &&
+        (() => {
+          void save();
+        }),
+      onFit: fit,
+      run,
+    },
+    rail: { run },
+    start: {
+      registry: shownRegistry,
+      config,
+      onAddBlock: addBlockOf,
+      onDragMove: dragFromLibrary,
+      onDrop: dropFromLibrary,
+      onApplyTheme: documents.putTheme,
+    },
+    end: { config, documents, selecting, parentSize, pageHeight, selectedRect, shownDef },
+    canvas,
+  };
+
   return (
     <ControlProvider api={api}>
       <HostContexts overrides={overrides} hide={hide}>
         <PermissionsContext.Provider value={permissions}>
           <TContext.Provider value={t}>
             <IconsContext.Provider value={icons}>
-              {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
-              <div
-                ref={editorRoot}
-                className={rootClass}
-                style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
-                data-scheme={schemeOf(appearance)}
-                lang={i18n?.locale}
-                data-miditor-editor=""
-                data-panel={panelOpen ? "open" : "closed"}
-                tabIndex={-1}
-                onCopy={copySelected}
-                onCut={cutSelected}
-                onPaste={pasteBlocks}
-                onKeyDown={(event) => {
-                  // A field keeps its own Esc and its own undo.
-                  if (isEditableTarget(event.target)) return;
-                  // Tab on the canvas goes from block to block of the level the person is working in; at the end
-                  // of the level it goes on to the next control, so the keyboard is never stuck on the page.
-                  if (
-                    event.key === "Tab" &&
-                    !event.ctrlKey &&
-                    !event.metaKey &&
-                    !event.altKey &&
-                    (event.target === event.currentTarget || event.target === workspace)
-                  ) {
-                    const level =
-                      (selectedId ? parentOf(data.root, selectedId) : undefined) ??
-                      findNode(data.root, scopeId) ??
-                      data.root;
-                    const next = stepSelection(
-                      level.children.map((child) => child.id),
-                      selectedId,
-                      event.shiftKey,
-                    );
-                    if (next) {
-                      event.preventDefault();
-                      selecting.selectOnly(next, level.id);
+              <ShellContext.Provider value={shell}>
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: shortcuts listen on the container for keys that bubble from the controls inside it */}
+                <div
+                  ref={editorRoot}
+                  className={rootClass}
+                  style={{ ...appearanceVariables(appearance), ...pageWidthVariables }}
+                  data-scheme={schemeOf(appearance)}
+                  lang={i18n?.locale}
+                  data-miditor-editor=""
+                  data-panel={panelOpen ? "open" : "closed"}
+                  data-layout={children === undefined ? "default" : undefined}
+                  tabIndex={-1}
+                  onCopy={copySelected}
+                  onCut={cutSelected}
+                  onPaste={pasteBlocks}
+                  onKeyDown={(event) => {
+                    // A field keeps its own Esc and its own undo.
+                    if (isEditableTarget(event.target)) return;
+                    // Tab on the canvas goes from block to block of the level the person is working in; at the end
+                    // of the level it goes on to the next control, so the keyboard is never stuck on the page.
+                    if (
+                      event.key === "Tab" &&
+                      !event.ctrlKey &&
+                      !event.metaKey &&
+                      !event.altKey &&
+                      (event.target === event.currentTarget || event.target === workspace)
+                    ) {
+                      const level =
+                        (selectedId ? parentOf(data.root, selectedId) : undefined) ??
+                        findNode(data.root, scopeId) ??
+                        data.root;
+                      const next = stepSelection(
+                        level.children.map((child) => child.id),
+                        selectedId,
+                        event.shiftKey,
+                      );
+                      if (next) {
+                        event.preventDefault();
+                        selecting.selectOnly(next, level.id);
+                        return;
+                      }
+                    }
+                    if (event.key === "Escape") {
+                      setDraft(null);
+                      // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
+                      const scope =
+                        scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
+                      if (selectedId && scope) {
+                        selecting.selectOnly(
+                          scope.id,
+                          parentOf(data.root, scope.id)?.id ?? data.root.id,
+                        );
+                      } else {
+                        selecting.clearSelection();
+                      }
                       return;
                     }
-                  }
-                  if (event.key === "Escape") {
-                    setDraft(null);
-                    // Inside a group, Esc selects the group and goes up a level; at the page it selects nothing.
-                    const scope =
-                      scopeId === data.root.id ? undefined : findNode(data.root, scopeId);
-                    if (selectedId && scope) {
-                      selecting.selectOnly(
-                        scope.id,
-                        parentOf(data.root, scope.id)?.id ?? data.root.id,
+                    if (gesture.current) return;
+                    if (
+                      event.key === "Enter" &&
+                      selectedId &&
+                      mayType &&
+                      selectedDef?.inlineText &&
+                      !event.ctrlKey &&
+                      !event.metaKey &&
+                      !event.altKey &&
+                      !event.shiftKey
+                    ) {
+                      // Enter on a block that has words goes into them, like a double press on the block does.
+                      event.preventDefault();
+                      documents.settleDraft();
+                      selecting.setEditing({
+                        id: selectedId,
+                        prop: selectedDef.inlineText.prop,
+                        multiline: selectedDef.inlineText.multiline === true,
+                      });
+                      return;
+                    }
+                    if (
+                      event.key === "Enter" &&
+                      selectedNode?.type === "Group" &&
+                      selectedNode.children[0] &&
+                      !event.ctrlKey &&
+                      !event.metaKey &&
+                      !event.altKey
+                    ) {
+                      // Enter on a group goes into it, as Esc goes back up.
+                      event.preventDefault();
+                      selecting.selectOnly(selectedNode.children[0].id, selectedNode.id);
+                      return;
+                    }
+                    if (
+                      isNudgeKey(event.key) &&
+                      selectedId &&
+                      !event.ctrlKey &&
+                      !event.metaKey &&
+                      !event.altKey
+                    ) {
+                      // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
+                      // on the same blocks, are one step to undo.
+                      event.preventDefault();
+                      const same = lastNudge.current.key === selectionKey;
+                      const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
+                      lastNudge.current = { key: selectionKey, at: event.timeStamp };
+                      documents.nudgeSelected({
+                        container: parentSize() ?? null,
+                        key: event.key,
+                        shift: event.shiftKey,
+                        merge,
+                      });
+                      return;
+                    }
+                    // The browser's own page zoom would scale the whole editor, and the keys of the editor are
+                    // not the browser's: a key that is ours is stopped even when the command has nothing to do.
+                    const given = matchKey(event, selectedId);
+                    if (given) {
+                      event.preventDefault();
+                      (run as (name: CommandName, args?: unknown) => boolean)(
+                        given.name,
+                        given.args,
                       );
-                    } else {
-                      selecting.clearSelection();
                     }
-                    return;
-                  }
-                  if (gesture.current) return;
-                  if (
-                    event.key === "Enter" &&
-                    selectedId &&
-                    mayType &&
-                    selectedDef?.inlineText &&
-                    !event.ctrlKey &&
-                    !event.metaKey &&
-                    !event.altKey &&
-                    !event.shiftKey
-                  ) {
-                    // Enter on a block that has words goes into them, like a double press on the block does.
-                    event.preventDefault();
-                    documents.settleDraft();
-                    selecting.setEditing({
-                      id: selectedId,
-                      prop: selectedDef.inlineText.prop,
-                      multiline: selectedDef.inlineText.multiline === true,
-                    });
-                    return;
-                  }
-                  if (
-                    event.key === "Enter" &&
-                    selectedNode?.type === "Group" &&
-                    selectedNode.children[0] &&
-                    !event.ctrlKey &&
-                    !event.metaKey &&
-                    !event.altKey
-                  ) {
-                    // Enter on a group goes into it, as Esc goes back up.
-                    event.preventDefault();
-                    selecting.selectOnly(selectedNode.children[0].id, selectedNode.id);
-                    return;
-                  }
-                  if (
-                    isNudgeKey(event.key) &&
-                    selectedId &&
-                    !event.ctrlKey &&
-                    !event.metaKey &&
-                    !event.altKey
-                  ) {
-                    // The arrows move the selected blocks, and do not scroll the canvas. Presses close together,
-                    // on the same blocks, are one step to undo.
-                    event.preventDefault();
-                    const same = lastNudge.current.key === selectionKey;
-                    const merge = same && event.timeStamp - lastNudge.current.at < NUDGE_MERGE_MS;
-                    lastNudge.current = { key: selectionKey, at: event.timeStamp };
-                    documents.nudgeSelected({
-                      container: parentSize() ?? null,
-                      key: event.key,
-                      shift: event.shiftKey,
-                      merge,
-                    });
-                    return;
-                  }
-                  // The browser's own page zoom would scale the whole editor, and the keys of the editor are
-                  // not the browser's: a key that is ours is stopped even when the command has nothing to do.
-                  const given = matchKey(event, selectedId);
-                  if (given) {
-                    event.preventDefault();
-                    (run as (name: CommandName, args?: unknown) => boolean)(given.name, given.args);
-                  }
-                }}
-              >
-                <div role="status" aria-live="polite" className={styles.visuallyHidden}>
-                  {announcement}
-                </div>
-                <Toolbar
-                  logo={logo}
-                  headerStart={headerStart}
-                  headerActions={headerActions}
-                  status={headerStatus}
-                  saving={status === "saving"}
-                  onSave={
-                    onSave &&
-                    (() => {
-                      void save();
-                    })
-                  }
-                  onFit={fit}
-                  run={run}
-                />
-                <Rail run={run} />
-                <StartPanel
-                  registry={shownRegistry}
-                  config={config}
-                  onAddBlock={addBlockOf}
-                  onDragMove={dragFromLibrary}
-                  onDrop={dropFromLibrary}
-                  onApplyTheme={documents.putTheme}
-                />
-                <section
-                  ref={setWorkspace}
-                  className={styles.workspace}
-                  aria-label={t("panel.canvas")}
-                  // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
-                  tabIndex={0}
-                  onPointerDown={press}
-                  onPointerMove={hover}
-                  onContextMenu={hide?.includes("contextMenu") ? undefined : openMenu}
-                  onPointerLeave={() => selecting.setHover(null)}
-                  onDoubleClick={enter}
+                  }}
                 >
-                  <StagePage
-                    stage={stage}
-                    stageBox={stageBox}
-                    shown={shown}
-                    renderers={config?.renderers}
-                    empty={data.root.children.length === 0 && !editing}
-                    onAddFirst={() => addBlockOf("Container")}
-                  />
-                  {marquee && <Marquee box={marquee} />}
-                  {editing && editingElement && editingNode && (
-                    <InlineEdit
-                      element={editingElement}
-                      value={String(editingNode.props[editing.prop] ?? "")}
-                      multiline={editing.multiline}
-                      maxLength={editingLimit}
-                      rotation={turnOf(data.root, editing.id, frame)}
-                      zoom={zoom}
-                      onDone={(value) => {
-                        selecting.setEditing(null);
-                        if (editingNode.props[editing.prop] !== value) {
-                          commitPatch(editing.id, { key: "prop", name: editing.prop, value });
-                        }
-                      }}
-                      onCancel={() => selecting.setEditing(null)}
-                    />
-                  )}
-                  {shownMeasure && (
-                    <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />
-                  )}
-                  {menuAt && (
-                    <ContextMenu
-                      x={menuAt.x}
-                      y={menuAt.y}
-                      items={shownMenu ?? []}
-                      onClose={() => {
-                        setMenuAt(null);
-                        // The keys of the editor work again where the pointer was.
-                        editorRoot.current?.focus({ preventScroll: true });
-                      }}
-                    />
-                  )}
-                  {workspace && !editing && hoverId && hoverElement && hoverNode && (
-                    <BlockLabel
-                      target={hoverElement}
-                      workspace={workspace}
-                      text={shownRegistry[hoverNode.type]?.label ?? hoverNode.type}
-                      tone="hover"
-                    />
-                  )}
-                  {block &&
-                    workspace &&
-                    !editing &&
-                    !groupInfo &&
-                    selectedNode &&
-                    selectedId !== data.root.id && (
-                      <BlockLabel
-                        target={block}
-                        workspace={workspace}
-                        text={shownDef?.label ?? selectedNode.type}
-                        tone="selected"
-                      />
-                    )}
-                  {block &&
-                    workspace &&
-                    !editing &&
-                    !menuAt &&
-                    selectedId &&
-                    selectedId !== data.root.id && (
-                      <OverrideSlot name="quickActions" props={{ disabled: onPhone }}>
-                        <QuickActions
-                          target={block}
-                          workspace={workspace}
-                          disabled={onPhone}
-                          allow={quickOffs(canState)}
-                          canGroup={picked.length > 0}
-                          canUngroup={selectedNode?.type === "Group"}
-                          onForward={() => run("block.reorder", "forward")}
-                          onBackward={() => run("block.reorder", "backward")}
-                          onDuplicate={() => run("block.duplicate")}
-                          onDelete={() => run("block.delete")}
-                          onGroup={() => run("block.group")}
-                          onUngroup={() => run("block.ungroup")}
-                          onFront={() => run("block.reorder", "front")}
-                          onBack={() => run("block.reorder", "back")}
-                        />
-                      </OverrideSlot>
-                    )}
-                  {pageElement && workspace && !editing && (
-                    <PageEdge
-                      page={pageElement}
-                      workspace={workspace}
-                      zoom={zoom}
-                      floor={pageHeight.floor}
-                      onPreview={(height) =>
-                        setDraft({ id: data.root.id, key: "minHeight", value: height })
-                      }
-                      onCommit={(height) =>
-                        commitPatch(data.root.id, { key: "minHeight", value: height })
-                      }
-                      onCancel={() => setDraft(null)}
-                    />
-                  )}
-                  {groupInfo && !editing && (
-                    <div
-                      ref={setFrameEl}
-                      aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        left: groupInfo.box.left,
-                        top: groupInfo.box.top,
-                        width: groupInfo.box.width,
-                        height: groupInfo.box.height,
-                        pointerEvents: "none",
-                      }}
-                    />
-                  )}
-                  <SelectionBox
-                    target={editing ? null : groupInfo ? frameEl : block}
-                    container={workspace}
-                    className={styles.selection}
-                    locked={lockedBlocks}
-                    controls={dragControls}
-                    group={groupInfo !== null}
-                    scale={groupInfo ? zoom : 1}
-                    onRotatePreview={previewGroupTurn}
-                    companions={
-                      groupInfo
-                        ? groupInfo.placed.flatMap((item) =>
-                            workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
-                          )
-                        : picked.flatMap((id) =>
-                            workspace ? (elementOf(workspace, id) ?? []) : [],
-                          )
-                    }
-                    lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
-                    minSize={minSize(selectedNode?.styles)}
-                    angle={
-                      !groupInfo && selectedNode && isFreeNode(selectedNode)
-                        ? boxFor(selectedNode, frame).rotation
-                        : 0
-                    }
-                    onGestureStart={startGesture}
-                    onDragEnd={endDrag}
-                    onDragMove={dragMove}
-                    onResizeEnd={endResize}
-                    onRotateEnd={endRotate}
-                  />
-                </section>
-                <EndPanel
-                  config={config}
-                  documents={documents}
-                  selecting={selecting}
-                  parentSize={parentSize}
-                  pageHeight={pageHeight}
-                  selectedRect={selectedRect}
-                  shownDef={shownDef}
-                />
-              </div>
+                  <div role="status" aria-live="polite" className={styles.visuallyHidden}>
+                    {announcement}
+                  </div>
+                  {children ?? <DefaultLayout />}
+                </div>
+              </ShellContext.Provider>
             </IconsContext.Provider>
           </TContext.Provider>
         </PermissionsContext.Provider>
