@@ -93,8 +93,8 @@ the host (`block-size: 100%` is left to the host; the docs say so).
 
 ## Performance
 
-`pnpm perf` numbers stay for `<Editor />` and for a custom layout that draws all parts. A part that reads the shell
-draws when the provider draws, as the parts do today inside `EditorBody`.
+No moment of `pnpm perf` may count more commits than today, for `<Editor />` or for a custom layout that draws all
+parts; a count may go down once the canvas keeps its own state (see "Settled after the builder check").
 
 ## Testing
 
@@ -121,6 +121,48 @@ the CSS split between the root and the default layout, and docs wording.
 - The CSS grid is bound to `data-layout="default"`.
 - Everything new is `@experimental` in the first release.
 
+## Settled after the builder check
+
+Questions a fresh reader asked; each is the designer's call and can be changed.
+
+- **What the other parts read of the canvas, and how.** The elements and measures that other parts need are
+  **state of the provider**, filled by the canvas: the workspace element (when the canvas mounts), the
+  selected block's element (when the selection or the render changes), and the stage measures. They are what
+  `EditorBody` holds as state today, and they change at the same moments, so the parts that read them draw
+  when they drew before. What only the canvas needs stays inside the canvas: dragging, the measure hints, the
+  drop hint, the marquee, the menu position, whether Alt is held, the labels. The few things another part
+  needs from that inner state are **registered by the canvas as functions** in a non-reactive part of the
+  handle, read on demand: `gesturing()` for the keys, and `setDropHint(id)` for the library drag. A value the
+  properties panel shows is derived from the stored page and the elements, not from a drag in progress, so it
+  does not update during a drag today and need not after. Consequence for the tests: a part may draw **less**
+  often than today (moves of a drag no longer redraw the provider's other parts) and **never more**; the perf
+  rule is "no moment's count rises".
+- **Hide and the panel being open.** A hidden tool is hidden everywhere: `hide: ["tool.layers"]` removes the
+  rail button and also `Editor.Layers` drawn on its own. `Editor.StartPanel` follows `panelOpen` only in the
+  default layout (the root keeps `data-panel`, and the grid CSS under `data-layout="default"` collapses it); a
+  panel placed by the host is drawn whatever `panelOpen` says. The four tool panels ignore `panelOpen`.
+- **Portals.** The appearance variables, `lang` and the key handlers are on the provider's root. React events
+  bubble through portals, so keys and copy/paste work in a portal; the variables and `lang` do not. The
+  provider offers `useEditorRoot(): HTMLElement | null` so a host can `createPortal(dialog, root)` and keep the
+  look. The README says to use it for dialogs.
+- **Keys and effects stay with the provider** (announcements, `note`, `heard`, the nudge memory, focus return to
+  the root). They read the handle. With no canvas, the keys that need a container (nudge, group, ungroup,
+  duplicate) do nothing, because the commands already refuse a missing container; Tab, Esc, Enter-to-edit and
+  undo work as they only need the store.
+- **Mounting and unmounting the canvas.** The handle is cleared when the canvas unmounts. "At most one" counts
+  the canvases that are mounted now, so a canvas in a closing dialog may be mounted again later and
+  StrictMode's mount, unmount, mount is fine.
+- **Dialogs that close.** The selection, the history and a pending draft are in the store, so closing a
+  properties dialog loses nothing; only the panel's own tab choice (Design or Advanced) starts again.
+
+## Order of work
+
+The change is large, so it goes in steps that each leave `<Editor />` as it was:
+1. Provider and shell, with the panel parts reading the shell (the canvas still draws from the provider).
+2. The canvas as a part reading the shell, the public names, the layout attribute and the CSS split.
+3. Moving the canvas-only state into the canvas part with the handle. This is the step that can change counts,
+   and the one with the render check.
+
 ## Open for the owner
 
-Nothing the design cannot settle alone is left. The builder check may add some.
+Nothing the design cannot settle alone is left.
