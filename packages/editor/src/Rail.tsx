@@ -1,4 +1,5 @@
 import styles from "./Editor.module.css";
+import { useHidden, useVisibleTool } from "./hide";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import { OverrideSlot, type RailTool } from "./overrides";
@@ -7,7 +8,13 @@ import { type Run, useEditorState } from "./store";
 /** The strip of tools down the side: pressing one shows its panel, or hides the panel if it is open. */
 export function Rail({ run }: { run: Run }) {
   const t = useT();
-  const tool = useEditorState((state) => state.tool);
+  const tool = useVisibleTool(useEditorState((state) => state.tool));
+  const hiddenTool = {
+    blocks: useHidden("tool.blocks"),
+    layers: useHidden("tool.layers"),
+    images: useHidden("tool.images"),
+    themes: useHidden("tool.themes"),
+  };
   const panelOpen = useEditorState((state) => state.panelOpen);
   const tools: RailTool[] = (
     [
@@ -16,13 +23,15 @@ export function Rail({ run }: { run: Run }) {
       ["images", t("rail.images"), "img"],
       ["themes", t("rail.themes"), "palette"],
     ] as const
-  ).map(([id, name, icon]) => ({
-    id,
-    name,
-    icon,
-    active: tool === id && panelOpen,
-    pick: () => run("tool.pick", id),
-  }));
+  )
+    .filter(([id]) => !hiddenTool[id])
+    .map(([id, name, icon]) => ({
+      id,
+      name,
+      icon,
+      active: tool === id && panelOpen,
+      pick: () => run("tool.pick", id),
+    }));
   return (
     <OverrideSlot name="rail" props={{ tools }}>
       <nav className={styles.rail} aria-label={t("rail.label")}>

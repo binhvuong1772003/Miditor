@@ -11,6 +11,7 @@ import {
 import type { ContextMenuItem } from "./ContextMenu";
 import type { EditorApi } from "./control-api";
 import { ApiContext } from "./control-context";
+import { type HideName, HideProvider, useHiddenName } from "./hide";
 import type { IconName } from "./icons";
 import type { Tool } from "./store";
 
@@ -125,6 +126,8 @@ export function OverrideSlot<N extends keyof ComponentOverrides>({
 }): ReactElement {
   const entry = useContext(OverridesContext)?.[name];
   const editor = useContext(ApiContext);
+  // A hidden place draws nothing, not even its override.
+  if (useHiddenName(name)) return <>{null}</>;
   if (!entry || !editor) return <>{children}</>;
   const Override = entry as ComponentType<Record<string, unknown>>;
   return (
@@ -163,4 +166,21 @@ export function applyContextMenu(
     console.error(`[midito] the override of "contextMenu" threw: ${String(error)}`);
   }
   return items;
+}
+
+/** What the host gave to hide and to replace, for every part below. */
+export function HostContexts({
+  overrides,
+  hide,
+  children,
+}: {
+  overrides: Overrides | undefined;
+  hide: readonly HideName[] | undefined;
+  children: ReactNode;
+}): ReactElement {
+  return (
+    <OverridesContext.Provider value={overrides}>
+      <HideProvider hide={hide}>{children}</HideProvider>
+    </OverridesContext.Provider>
+  );
 }

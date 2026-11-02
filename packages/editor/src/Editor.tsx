@@ -58,6 +58,7 @@ import { isEditableTarget } from "./editable";
 import type { FontDef } from "./fonts";
 import { GapLabels } from "./GapLabels";
 import { boundsOf, centreOf } from "./group-math";
+import type { HideName } from "./hide";
 import { InlineEdit } from "./InlineEdit";
 import { TContext } from "./i18n/context";
 import { localiseRegistry } from "./i18n/registry";
@@ -66,7 +67,7 @@ import { type IconComponent, IconsContext, usableIcons } from "./icons";
 import type { LibraryImage } from "./images";
 import { KEY_HINTS, matchKey } from "./keymap";
 import { isNudgeKey } from "./nudge";
-import { applyContextMenu, OverrideSlot, type Overrides, OverridesContext } from "./overrides";
+import { applyContextMenu, HostContexts, OverrideSlot, type Overrides } from "./overrides";
 import { PageEdge } from "./PageEdge";
 import { pageWidthVariables } from "./page-width";
 import { useRenders } from "./perf";
@@ -171,6 +172,16 @@ export interface EditorProps {
    * Experimental.
    */
   overrides?: Overrides;
+  /**
+   * Parts of the interface not to draw, by name: the places (`header`, `rail`, `panelStart`,
+   * `panelEnd`, `quickActions`, `contextMenu`), parts of the header (`header.undo`, `header.redo`,
+   * `header.frame`, `header.zoom`, `header.save`, `header.status`), tools (`tool.blocks`,
+   * `tool.layers`, `tool.images`, `tool.themes`) and parts of the block panel (`props.align`,
+   * `props.anchors`, `props.phone`). Hiding never stops a command; only `permissions` do. An unknown
+   * name is ignored with a warning.
+   * @experimental
+   */
+  hide?: readonly HideName[];
   /**
    * What people may do, each a boolean or a function of the block (`canEdit`, `canDelete`,
    * `canDuplicate`, `canDrag`, `canAdd`). A change that is refused is refused whatever way it was
@@ -326,6 +337,7 @@ function EditorBody({
   headerStart,
   controller,
   overrides,
+  hide,
   permissions,
   onDenied,
   appearance,
@@ -874,7 +886,7 @@ function EditorBody({
 
   return (
     <ControlProvider api={api}>
-      <OverridesContext.Provider value={overrides}>
+      <HostContexts overrides={overrides} hide={hide}>
         <PermissionsContext.Provider value={permissions}>
           <TContext.Provider value={t}>
             <IconsContext.Provider value={icons}>
@@ -1032,7 +1044,7 @@ function EditorBody({
                   tabIndex={0}
                   onPointerDown={press}
                   onPointerMove={hover}
-                  onContextMenu={openMenu}
+                  onContextMenu={hide?.includes("contextMenu") ? undefined : openMenu}
                   onPointerLeave={() => selecting.setHover(null)}
                   onDoubleClick={enter}
                 >
@@ -1197,7 +1209,7 @@ function EditorBody({
             </IconsContext.Provider>
           </TContext.Provider>
         </PermissionsContext.Provider>
-      </OverridesContext.Provider>
+      </HostContexts>
     </ControlProvider>
   );
 }

@@ -20,6 +20,7 @@ import type { ActionDef } from "./actions";
 import { BackgroundFields } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import type { FontDef } from "./fonts";
+import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
 import type { MessageKey } from "./i18n/en";
 import { Icon } from "./icons";
@@ -56,6 +57,8 @@ export interface PropertiesPanelProps {
   onAlign?: ((to: AlignTo) => void) | undefined;
   /** Spread three or more selected blocks so the gaps between them are equal. */
   onDistribute?: ((axis: "x" | "y") => void) | undefined;
+  /** The tab shown first (for tests). */
+  initialTab?: Tab | undefined;
   /** What a button can do, for its Action field. */
   actions?: readonly ActionDef[] | undefined;
   /** The fonts the host lets people choose, for a Font field. */
@@ -99,10 +102,14 @@ export function PropertiesPanel({
   onBackToPage,
   onAlign,
   onDistribute,
+  initialTab = "design",
 }: PropertiesPanelProps) {
   useRenders("properties");
   const t = useT();
-  const [tab, setTab] = useState<Tab>("design");
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const hideAlign = useHidden("props.align");
+  const hideAnchors = useHidden("props.anchors");
+  const hidePhone = useHidden("props.phone");
   // Whether the background is a colour or a picture; it starts as what the block has.
   const [fill, setFill] = useState<"color" | "image" | null>(null);
   const tabsId = useId();
@@ -118,7 +125,13 @@ export function PropertiesPanel({
           <h2 className={styles.title}>{t("props.manySelected", { n: selectedCount })}</h2>
           <p className={styles.meta}>{t("props.manyHint")}</p>
         </div>
-        <AlignSection selectedCount={selectedCount} onAlign={onAlign} onDistribute={onDistribute} />
+        {!hideAlign && (
+          <AlignSection
+            selectedCount={selectedCount}
+            onAlign={onAlign}
+            onDistribute={onDistribute}
+          />
+        )}
       </div>
     );
   }
@@ -302,7 +315,7 @@ export function PropertiesPanel({
             <Fragment key="advanced">
               {isFreeNode(node) && box && (
                 <>
-                  {onAlign && onDistribute && (
+                  {onAlign && onDistribute && !hideAlign && (
                     <AlignSection
                       selectedCount={selectedCount}
                       onAlign={onAlign}
@@ -335,50 +348,54 @@ export function PropertiesPanel({
                       {t("props.keepRatio")}
                     </button>
                   </Section>
-                  <Section
-                    id="props.anchors"
-                    title={t("props.anchors")}
-                    help={t("props.anchorsHelp")}
-                  >
-                    <AnchorSelect
-                      label={t("props.horizontal")}
-                      axis="x"
-                      value={box.x.anchor}
-                      onChange={(a) => onAnchor("x", a)}
-                    />
-                    <AnchorSelect
-                      label={t("props.vertical")}
-                      axis="y"
-                      value={box.y.anchor}
-                      onChange={(a) => onAnchor("y", a)}
-                    />
-                  </Section>
-                  <Section id="props.phone" title={t("props.phone")}>
-                    {device === "phone" ? (
-                      <div className={styles.row}>
-                        <span className={styles.status}>
-                          {byHand ? t("props.layoutByHand") : t("props.layoutAuto")}
-                        </span>
-                        {byHand ? (
-                          <button type="button" className={styles.reset} onClick={onResetPhone}>
-                            {t("props.resetAuto")}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className={styles.reset}
-                            onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
-                          >
-                            {t("props.editSeparately")}
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <p className={styles.hint}>
-                        {byHand ? t("props.layoutByHandHint") : t("props.layoutAutoHint")}
-                      </p>
-                    )}
-                  </Section>
+                  {!hideAnchors && (
+                    <Section
+                      id="props.anchors"
+                      title={t("props.anchors")}
+                      help={t("props.anchorsHelp")}
+                    >
+                      <AnchorSelect
+                        label={t("props.horizontal")}
+                        axis="x"
+                        value={box.x.anchor}
+                        onChange={(a) => onAnchor("x", a)}
+                      />
+                      <AnchorSelect
+                        label={t("props.vertical")}
+                        axis="y"
+                        value={box.y.anchor}
+                        onChange={(a) => onAnchor("y", a)}
+                      />
+                    </Section>
+                  )}
+                  {!hidePhone && (
+                    <Section id="props.phone" title={t("props.phone")}>
+                      {device === "phone" ? (
+                        <div className={styles.row}>
+                          <span className={styles.status}>
+                            {byHand ? t("props.layoutByHand") : t("props.layoutAuto")}
+                          </span>
+                          {byHand ? (
+                            <button type="button" className={styles.reset} onClick={onResetPhone}>
+                              {t("props.resetAuto")}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={styles.reset}
+                              onClick={() => onCommit({ key: "phoneLayout", value: "separate" })}
+                            >
+                              {t("props.editSeparately")}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className={styles.hint}>
+                          {byHand ? t("props.layoutByHandHint") : t("props.layoutAutoHint")}
+                        </p>
+                      )}
+                    </Section>
+                  )}
                 </>
               )}
               <Section id="props.developer" title={t("props.developer")} closed>

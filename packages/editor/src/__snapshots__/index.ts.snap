@@ -23,6 +23,7 @@ export { createEditor, type EditorController } from "./controller";
 export { Editor, type EditorProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
 export type { FontDef } from "./fonts";
+export type { HideName } from "./hide";
 export type { MessageKey, Messages } from "./i18n/en";
 export { en } from "./i18n/en";
 export type { I18n, Params } from "./i18n/translate";

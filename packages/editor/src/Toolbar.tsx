@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "./Editor.module.css";
+import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import { OverrideSlot } from "./overrides";
@@ -40,6 +41,14 @@ export function Toolbar({
   const selectedId = useEditorState((state) => state.selectedId);
   const picked = useEditorState((state) => state.picked);
   const history = useEditorState((state) => state.history);
+  const hide = {
+    undo: useHidden("header.undo"),
+    redo: useHidden("header.redo"),
+    frame: useHidden("header.frame"),
+    zoom: useHidden("header.zoom"),
+    save: useHidden("header.save"),
+    status: useHidden("header.status"),
+  };
   const canState = { frame, selectedId, picked, history, zoom };
   return (
     <OverrideSlot name="header" props={{}}>
@@ -53,96 +62,106 @@ export function Toolbar({
             logo
           )}
           {headerStart}
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-            aria-label={t("header.undo")}
-            disabled={!canRun(canState, "history.undo")}
-            title={t("header.undoTitle")}
-            onClick={() => run("history.undo")}
-          >
-            <Icon name="undo" size={18} />
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-            aria-label={t("header.redo")}
-            disabled={!canRun(canState, "history.redo")}
-            title={t("header.redoTitle")}
-            onClick={() => run("history.redo")}
-          >
-            <Icon name="redo" size={18} />
-          </button>
-          {status && (
+          {!hide.undo && (
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label={t("header.undo")}
+              disabled={!canRun(canState, "history.undo")}
+              title={t("header.undoTitle")}
+              onClick={() => run("history.undo")}
+            >
+              <Icon name="undo" size={18} />
+            </button>
+          )}
+          {!hide.redo && (
+            <button
+              type="button"
+              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+              aria-label={t("header.redo")}
+              disabled={!canRun(canState, "history.redo")}
+              title={t("header.redoTitle")}
+              onClick={() => run("history.redo")}
+            >
+              <Icon name="redo" size={18} />
+            </button>
+          )}
+          {status && !hide.status && (
             <span className={styles.status} role="status" data-state={status}>
               {t(STATUS_KEY[status])}
             </span>
           )}
         </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-        <div className={styles.segmented} role="group" aria-label={t("header.frame")}>
-          <button
-            type="button"
-            className={styles.segment}
-            aria-pressed={frame === "desktop"}
-            onClick={() => run("view.frame", "desktop")}
-          >
-            <Icon name="desk" />
-            {t("header.desktop")}
-          </button>
-          <button
-            type="button"
-            className={styles.segment}
-            aria-pressed={frame === "phone"}
-            onClick={() => run("view.frame", "phone")}
-          >
-            <Icon name="phone" />
-            {t("header.phone")}
-          </button>
-        </div>
-        <div className={styles.toolbarEnd}>
-          {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
-          <div className={styles.zoomBar} role="group" aria-label={t("header.zoom")}>
+        {hide.frame ? (
+          <div />
+        ) : (
+          // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+          <div className={styles.segmented} role="group" aria-label={t("header.frame")}>
             <button
               type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label={t("header.zoomOut")}
-              title={t("header.zoomOutTitle")}
-              disabled={!canRun(canState, "view.zoom", "out")}
-              onClick={() => run("view.zoom", "out")}
+              className={styles.segment}
+              aria-pressed={frame === "desktop"}
+              onClick={() => run("view.frame", "desktop")}
             >
-              −
+              <Icon name="desk" />
+              {t("header.desktop")}
             </button>
             <button
               type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
-              title={t("header.zoomResetTitle")}
-              onClick={() => run("view.zoom", "reset")}
+              className={styles.segment}
+              aria-pressed={frame === "phone"}
+              onClick={() => run("view.frame", "phone")}
             >
-              {zoomText(zoom)}
-            </button>
-            <button
-              type="button"
-              className={`${styles.button} ${styles.ghost} ${styles.icon}`}
-              aria-label={t("header.zoomIn")}
-              title={t("header.zoomInTitle")}
-              disabled={!canRun(canState, "view.zoom", "in")}
-              onClick={() => run("view.zoom", "in")}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              className={`${styles.button} ${styles.ghost}`}
-              title={t("header.fitTitle")}
-              onClick={onFit}
-            >
-              {t("header.fit")}
+              <Icon name="phone" />
+              {t("header.phone")}
             </button>
           </div>
+        )}
+        <div className={styles.toolbarEnd}>
+          {!hide.zoom && (
+            // biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing
+            <div className={styles.zoomBar} role="group" aria-label={t("header.zoom")}>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                aria-label={t("header.zoomOut")}
+                title={t("header.zoomOutTitle")}
+                disabled={!canRun(canState, "view.zoom", "out")}
+                onClick={() => run("view.zoom", "out")}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost} ${styles.zoomValue}`}
+                title={t("header.zoomResetTitle")}
+                onClick={() => run("view.zoom", "reset")}
+              >
+                {zoomText(zoom)}
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost} ${styles.icon}`}
+                aria-label={t("header.zoomIn")}
+                title={t("header.zoomInTitle")}
+                disabled={!canRun(canState, "view.zoom", "in")}
+                onClick={() => run("view.zoom", "in")}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.ghost}`}
+                title={t("header.fitTitle")}
+                onClick={onFit}
+              >
+                {t("header.fit")}
+              </button>
+            </div>
+          )}
           <OverrideSlot name="headerActions" props={{}}>
             {headerActions}
-            {onSave && (
+            {onSave && !hide.save && (
               <button
                 type="button"
                 className={`${styles.button} ${styles.primary}`}

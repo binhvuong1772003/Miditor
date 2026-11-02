@@ -99,3 +99,14 @@ export function applyContextMenu(
   editor: EditorApi,
   items: readonly ContextMenuItem[],
 ): readonly ContextMenuItem[];
+
+/** What the host gave to hide and to replace, for every part below. */
+export function HostContexts({
+  overrides,
+  hide,
+  children,
+}: {
+  overrides: Overrides | undefined;
+  hide: readonly HideName[] | undefined;
+  children: ReactNode;
+}): ReactElement;

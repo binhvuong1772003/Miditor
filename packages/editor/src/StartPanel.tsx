@@ -9,6 +9,7 @@ import { type ChangeEvent, useRef, useState } from "react";
 import { BlocksPanel } from "./BlocksPanel";
 import type { EditorProps } from "./Editor";
 import styles from "./Editor.module.css";
+import { useVisibleTool } from "./hide";
 import { ImagesPanel } from "./ImagesPanel";
 import { useT } from "./i18n/context";
 import { type LibraryImage, usableImages } from "./images";
@@ -46,7 +47,7 @@ export function StartPanel({
 }: StartPanelProps) {
   const t = useT();
   const selecting = useSelectionCommands();
-  const tool = useEditorState((state) => state.tool);
+  const tool = useVisibleTool(useEditorState((state) => state.tool));
   const data = useEditorState((state) => state.history.present);
   const selectedId = useEditorState((state) => state.selectedId);
   const picked = useEditorState((state) => state.picked);
