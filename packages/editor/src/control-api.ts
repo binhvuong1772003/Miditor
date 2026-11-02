@@ -1,5 +1,5 @@
 import type { NewNodeOverrides } from "@midito-kitchen/core";
-import type { EditorState, Run } from "./store";
+import { type ArgsOf, type CommandName, canRun, type EditorState, type Run } from "./store";
 
 /** The commands a host can give the editor from code. Each says whether it did something. */
 export interface EditorApi {
@@ -54,14 +54,18 @@ export function createApi(deps: ApiDeps): EditorApi {
     }
     return false;
   };
+  // A command that cannot do anything now (nothing to undo, no block selected) says `false`, like the
+  // button that would be off.
+  const go = <N extends CommandName>(name: N, ...args: ArgsOf<N>): boolean =>
+    live() && canRun(deps.getState(), name, ...args) && deps.run(name, ...args);
   return {
-    undo: () => live() && deps.run("history.undo"),
-    redo: () => live() && deps.run("history.redo"),
+    undo: () => go("history.undo"),
+    redo: () => go("history.redo"),
     save: async () => (live() ? await deps.save() : false),
-    select: (id) => live() && deps.run("selection.select", id),
-    clearSelection: () => live() && deps.run("selection.clear"),
-    setFrame: (frame) => live() && deps.run("view.frame", frame),
-    setZoom: (zoom) => live() && deps.run("view.zoomTo", zoom),
+    select: (id) => go("selection.select", id),
+    clearSelection: () => go("selection.clear"),
+    setFrame: (frame) => go("view.frame", frame),
+    setZoom: (zoom) => go("view.zoomTo", zoom),
     fit: () => {
       if (!live()) return false;
       deps.fit();
@@ -74,9 +78,9 @@ export function createApi(deps: ApiDeps): EditorApi {
       const after = deps.getState();
       return after.history.present !== before ? after.selectedId : null;
     },
-    remove: () => live() && deps.run("block.delete"),
-    duplicate: () => live() && deps.run("block.duplicate"),
-    group: () => live() && deps.run("block.group"),
-    ungroup: () => live() && deps.run("block.ungroup"),
+    remove: () => go("block.delete"),
+    duplicate: () => go("block.duplicate"),
+    group: () => go("block.group"),
+    ungroup: () => go("block.ungroup"),
   };
 }

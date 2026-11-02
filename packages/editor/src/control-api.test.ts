@@ -69,10 +69,10 @@ describe("createApi", () => {
     expect(a.store.getState()).not.toBe(viaApi);
   });
 
-  it("undo with nothing to undo returns the same state", () => {
+  it("undo with nothing to undo returns false and the same state", () => {
     const { api, store } = setup();
     const before = store.getState();
-    api.undo();
+    expect(api.undo()).toBe(false);
     expect(store.getState()).toBe(before);
   });
 
@@ -113,10 +113,15 @@ describe("createApi", () => {
     expect(await api.save()).toBe(true);
   });
 
-  it("select of an id not in the page returns the answer of the table and changes nothing", () => {
+  it("select of an id not in the page returns false and changes nothing", () => {
     const { api, store } = setup();
     const before = store.getState();
-    api.select("nope");
-    expect(store.getState().selectedId).toBe(before.selectedId);
+    expect(api.select("nope")).toBe(false);
+    expect(store.getState()).toBe(before);
+  });
+
+  it("remove with nothing selected returns false", () => {
+    const { api } = setup();
+    expect(api.remove()).toBe(false);
   });
 });
