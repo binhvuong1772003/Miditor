@@ -100,6 +100,9 @@ What the code of today shows, which shapes this:
 - `useEditor()` without an argument returns that object. `useEditor(selector)` reads
   `EditorView` through the store hook that exists (`useEditorState`), so a part redraws only when its
   selected value changes. `canUndo` and `canRedo` are derived with the `canRun` rules the buttons use.
+- `status` is not in the store today: `EditorBody` works it out from the `status` prop, the Save button
+  and the history. The builder decides how it reaches a selector (mirror it into the store, or
+  read it through the context) without making a part redraw more often than now.
 - Outside an editor, `useEditor` throws a clear error, as the store hooks already do.
 
 ## Made for tier 3 (M1b, designed now, built later)
