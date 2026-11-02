@@ -1,0 +1,520 @@
+import {
+  boxFor,
+  findNode,
+  isFreeNode,
+  keepsRatio,
+  lowestPageHeight,
+  minSize,
+  type NewNodeOverrides,
+  type PageData,
+  parentOf,
+  type Registry,
+  resolveRect,
+  turnOf,
+} from "@miditor/core";
+import type { Render } from "@miditor/render";
+import {
+  type MutableRefObject,
+  type RefObject,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
+import { BlockLabel } from "../BlockLabel";
+import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
+import type { EditorApi } from "../control-api";
+import styles from "../Editor.module.css";
+import { GapLabels } from "../GapLabels";
+import { boundsOf, centreOf } from "../group-math";
+import { useHidden } from "../hide";
+import { InlineEdit } from "../InlineEdit";
+import { useT } from "../i18n/context";
+import { KEY_HINTS } from "../keymap";
+import { applyContextMenu, OverrideSlot, OverridesContext } from "../overrides";
+import { PageEdge } from "../PageEdge";
+import { usePermissions } from "../permissions-context";
+import { QuickActions, quickOffs } from "../QuickActions";
+import type { Run } from "../store";
+import {
+  canRun,
+  type useDocumentCommands,
+  useEditorState,
+  type useSelectionCommands,
+  withDraft,
+} from "../store";
+import { allowed } from "../store/permissions";
+import { elementOf } from "./element-of";
+import { Marquee } from "./Marquee";
+import { SelectionBox } from "./SelectionBox";
+import { StagePage } from "./StagePage";
+import { useAltHeld } from "./useAltHeld";
+import { useBlockMarks } from "./useBlockMarks";
+import { useGestures } from "./useGestures";
+import { usePointer } from "./usePointer";
+
+export interface CanvasViewProps {
+  registry: Registry;
+  /** The kinds as the person reads them, in the language of the editor. */
+  shownRegistry: Registry;
+  documents: ReturnType<typeof useDocumentCommands>;
+  selecting: ReturnType<typeof useSelectionCommands>;
+  run: Run;
+  api: EditorApi;
+  renderers: Parameters<typeof Render>[0]["renderers"];
+  addBlockOf: (kind: string, overrides?: NewNodeOverrides) => void;
+  /** The editor's root element, which takes the focus back when the menu closes. */
+  editorRoot: MutableRefObject<HTMLDivElement | null>;
+  /** The scrolling canvas and the selected block's element: state of the provider, filled from here. */
+  workspace: HTMLElement | null;
+  setWorkspace: (element: HTMLElement | null) => void;
+  block: HTMLElement | null;
+  setBlock: (element: HTMLElement | null) => void;
+  stage: RefObject<HTMLDivElement | null>;
+  stageBox: { room: number; page: number; height: number };
+  /** Told by the canvas for the keys of the provider: whether a gesture is on. */
+  gesturing: MutableRefObject<(() => boolean) | null>;
+  /** Told by the canvas for the library drag of the provider: outline the block a card would land in. */
+  dropHint: MutableRefObject<((id: string | null) => void) | null>;
+}
+
+/** The page and everything drawn over it; it keeps the state only the canvas needs. */
+export function CanvasView({
+  registry,
+  shownRegistry,
+  documents,
+  selecting,
+  run,
+  api,
+  renderers,
+  addBlockOf,
+  editorRoot,
+  workspace,
+  setWorkspace,
+  block,
+  setBlock,
+  stage,
+  stageBox,
+  gesturing,
+  dropHint,
+}: CanvasViewProps) {
+  const t = useT();
+  const permissions = usePermissions();
+  const overrides = useContext(OverridesContext);
+  const hideContextMenu = useHidden("contextMenu");
+  const data = useEditorState((state) => state.history.present);
+  const history = useEditorState((state) => state.history);
+  const frame = useEditorState((state) => state.frame);
+  const zoom = useEditorState((state) => state.zoom);
+  const selectedId = useEditorState((state) => state.selectedId);
+  const picked = useEditorState((state) => state.picked);
+  const hoverId = useEditorState((state) => state.hoverId);
+  const editing = useEditorState((state) => state.editing);
+  const scopeId = useEditorState((state) => state.scopeId);
+  const draft = useEditorState((state) => state.draft);
+  const onPhone = frame === "phone";
+  const setDraft = documents.setDraft;
+  const altHeld = useAltHeld();
+  const [frameEl, setFrameEl] = useState<HTMLElement | null>(null);
+  const selectedNode = selectedId ? findNode(data.root, selectedId) : undefined;
+  const selectedDef =
+    selectedNode && Object.hasOwn(registry, selectedNode.type)
+      ? registry[selectedNode.type]
+      : undefined;
+  const shownDef =
+    selectedNode && Object.hasOwn(shownRegistry, selectedNode.type)
+      ? shownRegistry[selectedNode.type]
+      : undefined;
+  // Words cannot be typed on a block that `canEdit` refuses.
+  const mayType = !selectedNode || allowed(permissions?.canEdit, selectedNode);
+
+  /**
+   * With several free blocks of one parent selected, the frame that holds them all, in the page's own
+   * px and on the screen, so they can be moved and turned as one. Nothing for a parent that is turned
+   * (its px are not upright on the screen), for one block, or when the blocks have different parents.
+   */
+  const groupInfo = (() => {
+    if (picked.length === 0 || !selectedId || !block || !workspace) return null;
+    const parentElement = block.parentElement;
+    const parentNode = parentOf(data.root, selectedId);
+    if (!parentElement || !parentNode || turnOf(data.root, parentNode.id, frame) !== 0) return null;
+    const container = { w: parentElement.clientWidth, h: parentElement.clientHeight };
+    const nodes = [selectedId, ...picked].flatMap((id) => {
+      const node = findNode(data.root, id);
+      return node && isFreeNode(node) && parentOf(data.root, id)?.id === parentNode.id
+        ? [node]
+        : [];
+    });
+    if (nodes.length < 2) return null;
+    const placed = nodes.map((node) => ({
+      node,
+      rect: resolveRect(boxFor(node, frame), container),
+      rotation: boxFor(node, frame).rotation,
+    }));
+    const bounds = boundsOf(placed);
+    if (!bounds) return null;
+    const parentBox = parentElement.getBoundingClientRect();
+    const view = workspace.getBoundingClientRect();
+    return {
+      placed,
+      container,
+      bounds,
+      pivot: centreOf(bounds),
+      // In the scrolling canvas's own coordinates, so the frame scrolls with the page.
+      box: {
+        left:
+          parentBox.left +
+          (parentElement.clientLeft + bounds.x) * zoom -
+          view.left +
+          workspace.scrollLeft -
+          workspace.clientLeft,
+        top:
+          parentBox.top +
+          (parentElement.clientTop + bounds.y) * zoom -
+          view.top +
+          workspace.scrollTop -
+          workspace.clientTop,
+        width: bounds.w * zoom,
+        height: bounds.h * zoom,
+      },
+    };
+  })();
+  const {
+    dragging,
+    measure,
+    dropId,
+    setDropId,
+    gesture,
+    groupMoved,
+    pendingDrag,
+    dragControls,
+    startGesture,
+    dragMove,
+    previewGroupTurn,
+    endDrag,
+    endRotate,
+    endResize,
+    measureBetween,
+  } = useGestures({
+    workspace,
+    block,
+    groupInfo,
+    data,
+    registry,
+    frame,
+    zoom,
+    selectedId,
+    picked,
+    hoverId,
+    onPhone,
+    documents,
+  });
+
+  const shown = useMemo<PageData>(
+    () => (draft ? withDraft(data, draft, frame, registry) : data),
+    [data, draft, frame, registry],
+  );
+  useBlockMarks({ workspace, selectedId, picked, hoverId, dropId, dragging, shown });
+
+  // The block under the pointer, for its name tag. Its element comes from the last render.
+  const hoverNode = hoverId ? findNode(data.root, hoverId) : undefined;
+  const hoverElement = workspace && hoverId ? elementOf(workspace, hoverId) : null;
+
+  const { menuAt, setMenuAt, marquee, press, hover, openMenu, enter } = usePointer({
+    workspace,
+    editorRoot,
+    data,
+    selectedDef: mayType ? selectedDef : undefined,
+    selectedId,
+    picked,
+    scopeId,
+    editing,
+    groupInfo,
+    groupMoved,
+    pendingDrag,
+    dragControls,
+    documents,
+    selecting,
+  });
+
+  // `<Render>` owns the elements, so look up the one for the selected node after every render.
+  useLayoutEffect(() => {
+    setBlock(workspace && selectedId ? elementOf(workspace, selectedId) : null);
+  });
+
+  // The box has the block that was just pressed: the press, if it is still down, goes on to drag it.
+  useLayoutEffect(() => {
+    const pending = pendingDrag.current;
+    if (!pending || !block || block.dataset.miditorId !== selectedId) return;
+    pendingDrag.current = null;
+    if (!pending.up) dragControls.current?.dragStart(pending.press);
+  }, [block, selectedId, pendingDrag, dragControls]);
+
+  // The canvas tells the keys and the library drag what only it knows.
+  gesturing.current = () => gesture.current !== null;
+  dropHint.current = setDropId;
+  useEffect(() => {
+    return () => {
+      gesturing.current = null;
+      dropHint.current = null;
+    };
+  }, [gesturing, dropHint]);
+
+  /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
+  const menuItems = (): ContextMenuItem[] => [
+    {
+      label: t("quick.duplicate"),
+      hint: KEY_HINTS["block.duplicate"],
+      disabled: !canRun(canState, "block.duplicate"),
+      onSelect: () => run("block.duplicate"),
+    },
+    {
+      label: t("quick.delete"),
+      hint: KEY_HINTS["block.delete"],
+      disabled: !canRun(canState, "block.delete"),
+      danger: true,
+      onSelect: () => run("block.delete"),
+    },
+    "separator",
+    ...(
+      [
+        ["menu.forward", "forward"],
+        ["menu.backward", "backward"],
+        ["quick.front", "front"],
+        ["quick.back", "back"],
+      ] as const
+    ).map(([label, to]) => ({
+      label: t(label),
+      disabled: !canRun(canState, "block.reorder", to),
+      onSelect: () => run("block.reorder", to),
+    })),
+    "separator",
+    {
+      label: t("quick.group"),
+      hint: KEY_HINTS["block.group"],
+      disabled: !canRun(canState, "block.group"),
+      onSelect: () => run("block.group"),
+    },
+    {
+      label: t("quick.ungroup"),
+      hint: KEY_HINTS["block.ungroup"],
+      disabled: !canRun(canState, "block.ungroup"),
+      onSelect: () => run("block.ungroup"),
+    },
+  ];
+
+  /** Store one change on a node, once. The draft is over. */
+  const commitPatch = documents.commitPatch;
+
+  // The blocks that are selected cannot be moved if `canDrag` refuses any of them.
+  const lockedBlocks = [selectedId, ...picked].some((id) => {
+    const node = id ? findNode(data.root, id) : undefined;
+    return node !== undefined && !allowed(permissions?.canDrag, node);
+  });
+  const canState = { frame, selectedId, picked, history, zoom, permissions };
+
+  // The host's say on the menu is asked once each time it opens, not on every render while it is open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the lines are fixed for as long as the menu is open
+  const shownMenu = useMemo(
+    () => (menuAt ? applyContextMenu(overrides?.contextMenu, api, menuItems()) : undefined),
+    [menuAt],
+  );
+
+  // The block whose words are being typed, the element that draws it, and the limit of the field.
+  const editingNode = editing ? findNode(data.root, editing.id) : undefined;
+  const editingElement = editing && workspace ? elementOf(workspace, editing.id) : null;
+  const editingDef =
+    editingNode && Object.hasOwn(registry, editingNode.type)
+      ? registry[editingNode.type]
+      : undefined;
+  const editingField = editing && editingDef ? editingDef.fields[editing.prop] : undefined;
+  const editingLimit = editingField?.type === "text" ? editingField.maxLength : undefined;
+  // A block that is gone (undone, deleted) ends the edit: `reconcile` lets go of it with the page change.
+  // The words of the block are hidden while they are typed over it, so they are not seen twice.
+  useLayoutEffect(() => {
+    if (!editingElement) return;
+    const before = editingElement.style.color;
+    editingElement.style.color = "transparent";
+    return () => {
+      editingElement.style.color = before;
+    };
+  }, [editingElement]);
+
+  // The frame of a group is worked out from the size of the page as it is drawn, which only changes
+  // once the editor has drawn a new screen, zoom or page height. Draw once more then, or the frame
+  // would be the size of the page before.
+  const [, setLayoutTick] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: these are the triggers, the effect reads none of them
+  useLayoutEffect(
+    () => setLayoutTick((n) => n + 1),
+    [frame, zoom, stageBox, data.root.styles.minHeight],
+  );
+
+  // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
+  const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
+  const pageHeight = (() => {
+    if (!pageElement) return { drawn: 0, floor: 0 };
+    // The shortest page that still holds every block, worked out from how each one is placed.
+    const boxes = data.root.children.flatMap((child) =>
+      isFreeNode(child) ? [boxFor(child, frame)] : [],
+    );
+    return {
+      drawn: pageElement.offsetHeight,
+      floor: lowestPageHeight(boxes, pageElement.clientWidth),
+    };
+  })();
+
+  // The distances to show, only with Alt held: those of a drag that is on, or else those to the block pointed at.
+  const shownMeasure = altHeld ? (dragging ? measure : measureBetween()) : null;
+
+  return (
+    <section
+      ref={setWorkspace}
+      className={styles.workspace}
+      aria-label={t("panel.canvas")}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be reachable with the keyboard
+      tabIndex={0}
+      onPointerDown={press}
+      onPointerMove={hover}
+      onContextMenu={hideContextMenu ? undefined : openMenu}
+      onPointerLeave={() => selecting.setHover(null)}
+      onDoubleClick={enter}
+    >
+      <StagePage
+        stage={stage}
+        stageBox={stageBox}
+        shown={shown}
+        renderers={renderers}
+        empty={data.root.children.length === 0 && !editing}
+        onAddFirst={() => addBlockOf("Container")}
+      />
+      {marquee && <Marquee box={marquee} />}
+      {editing && editingElement && editingNode && (
+        <InlineEdit
+          element={editingElement}
+          value={String(editingNode.props[editing.prop] ?? "")}
+          multiline={editing.multiline}
+          maxLength={editingLimit}
+          rotation={turnOf(data.root, editing.id, frame)}
+          zoom={zoom}
+          onDone={(value) => {
+            selecting.setEditing(null);
+            if (editingNode.props[editing.prop] !== value) {
+              commitPatch(editing.id, { key: "prop", name: editing.prop, value });
+            }
+          }}
+          onCancel={() => selecting.setEditing(null)}
+        />
+      )}
+      {shownMeasure && <GapLabels gaps={shownMeasure.gaps} origin={shownMeasure.origin} />}
+      {menuAt && (
+        <ContextMenu
+          x={menuAt.x}
+          y={menuAt.y}
+          items={shownMenu ?? []}
+          onClose={() => {
+            setMenuAt(null);
+            // The keys of the editor work again where the pointer was.
+            editorRoot.current?.focus({ preventScroll: true });
+          }}
+        />
+      )}
+      {workspace && !editing && hoverId && hoverElement && hoverNode && (
+        <BlockLabel
+          target={hoverElement}
+          workspace={workspace}
+          text={shownRegistry[hoverNode.type]?.label ?? hoverNode.type}
+          tone="hover"
+        />
+      )}
+      {block &&
+        workspace &&
+        !editing &&
+        !groupInfo &&
+        selectedNode &&
+        selectedId !== data.root.id && (
+          <BlockLabel
+            target={block}
+            workspace={workspace}
+            text={shownDef?.label ?? selectedNode.type}
+            tone="selected"
+          />
+        )}
+      {block && workspace && !editing && !menuAt && selectedId && selectedId !== data.root.id && (
+        <OverrideSlot name="quickActions" props={{ disabled: onPhone }}>
+          <QuickActions
+            target={block}
+            workspace={workspace}
+            disabled={onPhone}
+            allow={quickOffs(canState)}
+            canGroup={picked.length > 0}
+            canUngroup={selectedNode?.type === "Group"}
+            onForward={() => run("block.reorder", "forward")}
+            onBackward={() => run("block.reorder", "backward")}
+            onDuplicate={() => run("block.duplicate")}
+            onDelete={() => run("block.delete")}
+            onGroup={() => run("block.group")}
+            onUngroup={() => run("block.ungroup")}
+            onFront={() => run("block.reorder", "front")}
+            onBack={() => run("block.reorder", "back")}
+          />
+        </OverrideSlot>
+      )}
+      {pageElement && workspace && !editing && (
+        <PageEdge
+          page={pageElement}
+          workspace={workspace}
+          zoom={zoom}
+          floor={pageHeight.floor}
+          onPreview={(height) => setDraft({ id: data.root.id, key: "minHeight", value: height })}
+          onCommit={(height) => commitPatch(data.root.id, { key: "minHeight", value: height })}
+          onCancel={() => setDraft(null)}
+        />
+      )}
+      {groupInfo && !editing && (
+        <div
+          ref={setFrameEl}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: groupInfo.box.left,
+            top: groupInfo.box.top,
+            width: groupInfo.box.width,
+            height: groupInfo.box.height,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      <SelectionBox
+        target={editing ? null : groupInfo ? frameEl : block}
+        container={workspace}
+        className={styles.selection}
+        locked={lockedBlocks}
+        controls={dragControls}
+        group={groupInfo !== null}
+        scale={groupInfo ? zoom : 1}
+        onRotatePreview={previewGroupTurn}
+        companions={
+          groupInfo
+            ? groupInfo.placed.flatMap((item) =>
+                workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
+              )
+            : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
+        }
+        lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
+        minSize={minSize(selectedNode?.styles)}
+        angle={
+          !groupInfo && selectedNode && isFreeNode(selectedNode)
+            ? boxFor(selectedNode, frame).rotation
+            : 0
+        }
+        onGestureStart={startGesture}
+        onDragEnd={endDrag}
+        onDragMove={dragMove}
+        onResizeEnd={endResize}
+        onRotateEnd={endRotate}
+      />
+    </section>
+  );
+}
