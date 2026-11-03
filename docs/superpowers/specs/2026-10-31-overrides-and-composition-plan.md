@@ -55,6 +55,7 @@ So no part can be replaced or recomposed without breaking another: they share st
 
 - **Need: required** for a navbar of the host, panels of the host, and every override.
 - **What:** two doors to the same thing.
+
   ```tsx
   const editor = useEditor();                  // inside the tree of <Editor>
   const canUndo = useEditor((s) => s.canUndo); // a selector: redraws only when this value changes
@@ -75,6 +76,7 @@ So no part can be replaced or recomposed without breaking another: they share st
 - **Need: high.** This is the navbar question.
 - **What:** an `overrides` prop. Each override gets a context and the default (`children`), so a host
   can wrap instead of rewriting:
+
   ```tsx
   <Editor overrides={{
     header: ({ children }) => <MyBar>{children}</MyBar>,
@@ -114,6 +116,7 @@ So no part can be replaced or recomposed without breaking another: they share st
 
 - **Need: should have;** after M0 to M2.
 - **What:** split `<Editor>` into parts that can be used inside `<EditorProvider>`:
+
   ```tsx
   <EditorProvider data={page} config={config}>
     <MyShell>
@@ -124,6 +127,7 @@ So no part can be replaced or recomposed without breaking another: they share st
     </MyShell>
   </EditorProvider>
   ```
+
   `<Editor>` with no children stays the default layout, **built from these same parts**.
 - **The hard part is `Canvas`:** it is tied to `react-moveable`, the measurements of the workspace,
   zoom and the overlays. Split the panels first and **the canvas last**, and only if needed: most

@@ -5,6 +5,11 @@ An embeddable visual page editor for React.
 The host app mounts `<Editor>` on its own route, owns persistence, and renders the saved
 JSON with `<Render>`. Data goes in through props and comes out through callbacks.
 
+## Start here
+
+[Getting started](docs/GETTING-STARTED.md) takes you from nothing to a page edited in your app, stored on
+your server and shown to visitors. The editor has its own [README](packages/editor/README.md).
+
 ## Packages
 
 | Package           | Purpose                                                       |
@@ -14,8 +19,8 @@ JSON with `<Render>`. Data goes in through props and comes out through callbacks
 | `packages/editor` | `<Editor>`: canvas, layers, properties, drag and drop         |
 | `apps/playground` | Vite app for trying the library                               |
 
-Packages are published as `@miditor/core`, `@miditor/render` and
-`@miditor/editor`.
+The packages are named `@miditor/core`, `@miditor/render` and `@miditor/editor`. They are not on npm yet:
+[Getting started](docs/GETTING-STARTED.md) shows how to install them from packed files.
 
 ## Requirements
 

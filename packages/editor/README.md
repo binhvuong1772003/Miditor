@@ -4,6 +4,8 @@
 gives it a page, and stores what comes back. The editor keeps no files, no keys and no back end of
 its own: data goes in through props and comes out through callbacks.
 
+New here? Start with [Getting started](../../docs/GETTING-STARTED.md); this file is the reference.
+
 ## Use it
 
 ```tsx
