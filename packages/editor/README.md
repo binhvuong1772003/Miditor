@@ -798,7 +798,12 @@ Every block has an **Effects** section in the Design tab: an opacity slider (0 t
 In the saved page they are two optional style keys, drawn the same on a phone and on a desktop, and `<Preview>` shows them too:
 
 ```json
-{ "styles": { "opacity": 40, "shadow": { "x": 0, "y": 4, "blur": 16, "spread": 0, "color": "#000000", "opacity": 22 } } }
+{
+  "styles": {
+    "opacity": 40,
+    "shadow": { "x": 0, "y": 4, "blur": 16, "spread": 0, "color": "#000000", "opacity": 22 }
+  }
+}
 ```
 
 `shadow.color` is a `#rrggbb` colour or a theme colour name. Changing either counts as an edit, so `canEdit: false` refuses it.
