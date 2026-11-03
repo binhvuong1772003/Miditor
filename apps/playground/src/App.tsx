@@ -62,8 +62,11 @@ function openPage(): PageData {
     window.history.replaceState(null, "", url);
   }
   const page = loadPage(window.localStorage, reset);
-  // `?landing` opens a landing page made for trying the editor, in place of the stored page.
-  return landing ? LANDING_PAGE : page;
+  // `?landing` opens a landing page made for trying the editor, in place of the stored page. It is
+  // stored too, since `?preview` draws the stored page and would show the old one until a first edit.
+  if (!landing) return page;
+  storePage(window.localStorage, LANDING_PAGE);
+  return LANDING_PAGE;
 }
 
 /**
