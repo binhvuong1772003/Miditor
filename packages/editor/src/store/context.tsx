@@ -19,6 +19,8 @@ import { type ViewCommands, viewCommands } from "./view";
 export type HostRules = {
   permissions?: Permissions | undefined;
   denied?: ((denial: Denial) => void) | undefined;
+  /** Where each free block is drawn now (see `Env.measurePhone`): given by the editor, not the host. */
+  measurePhone?: Env["measurePhone"];
 };
 
 const StoreContext = createContext<EditorStore<never> | null>(null);
@@ -93,6 +95,7 @@ export function useDocumentCommands(
   env.current.registry = registry;
   env.current.permissions = rules?.permissions;
   env.current.denied = rules?.denied;
+  env.current.measurePhone = rules?.measurePhone;
   return useMemo(
     () => ({
       ...documentCommands(store, env.current),
@@ -122,6 +125,7 @@ export function useRun(
   live.current.env.registry = registry;
   live.current.env.permissions = rules?.permissions;
   live.current.env.denied = rules?.denied;
+  live.current.env.measurePhone = rules?.measurePhone;
   live.current.context = context;
   live.current.hooks = hooks;
   return useMemo(

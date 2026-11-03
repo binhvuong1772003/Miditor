@@ -139,6 +139,7 @@ export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
 export {
   COMPACT_HEIGHT,
   COMPACT_WIDTH,
+  drawsPhoneFlow,
   type FlowItem,
   type FlowSide,
   isPhoneAuto,

@@ -19,6 +19,7 @@ import {
   resolveRect,
   type SavedTheme,
   type Theme,
+  type TreeNode,
   turnOf,
   validatePage,
   validateRegistry,
@@ -74,6 +75,7 @@ import {
 } from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
+import { measureRoot } from "./phone-freeze";
 import { applyPlugins, type EditorPlugin } from "./plugins";
 import { resolveStatus, type SaveStatus } from "./save-status";
 import { RootContext, type Shell, ShellContext } from "./shell";
@@ -410,7 +412,14 @@ function EditorBody({
   const selecting = useSelectionCommands();
   const components = config?.components;
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
-  const rules = useHostRules(permissions, onDenied, viewing.announce, t("a11y.denied"));
+  // The element the page is drawn in, for the measures of a phone that draws the page as a flow.
+  const workspaceRef = useRef<HTMLElement | null>(null);
+  const hostRules = useHostRules(permissions, onDenied, viewing.announce, t("a11y.denied"));
+  const rules = {
+    ...hostRules,
+    measurePhone: (root: TreeNode) =>
+      workspaceRef.current ? measureRoot(workspaceRef.current, root) : null,
+  };
   const documents = useDocumentCommands(historyLimit, registry, rules);
   const history = useEditorState((state) => state.history);
   const data = history.present;
@@ -473,6 +482,7 @@ function EditorBody({
   const selectionKey = `${selectedId ?? ""}|${picked.join()}`;
   // Elements as state, not refs: moveable needs them on the render after they mount.
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
+  workspaceRef.current = workspace;
   const { stage, stageBox } = useStageSize(workspace);
   const [block, setBlock] = useState<HTMLElement | null>(null);
 

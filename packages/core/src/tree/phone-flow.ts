@@ -35,6 +35,13 @@ export function isPhoneAuto(root: TreeNode): boolean {
   return root.children.every(isPhoneAuto);
 }
 
+/** Whether any block in the tree is placed freely: a page of the flow alone has nothing to lay out for a phone. */
+const hasFreeNode = (node: TreeNode): boolean =>
+  node.children.some((child) => isFreeNode(child) || hasFreeNode(child));
+
+/** Whether a phone draws this page as a flow: it has free blocks, and none is placed by hand for the phone. */
+export const drawsPhoneFlow = (root: TreeNode): boolean => isPhoneAuto(root) && hasFreeNode(root);
+
 /** The size a text gets on a phone when the page is a flow: as it is up to 20 px, half the rest above. */
 export function phoneTextSize(size: number): number {
   return size <= 20 ? size : Math.round(20 + (size - 20) / 2);

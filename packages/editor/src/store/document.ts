@@ -1,5 +1,6 @@
-import type { PageData, Registry } from "@miditor/core";
+import type { PageData, Registry, TreeNode } from "@miditor/core";
 import { amend, commit, createHistory, type History } from "../history";
+import type { Measured } from "../phone-freeze";
 import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import { type Denial, guard, type Intent, type Permissions } from "./permissions";
@@ -17,6 +18,11 @@ export type Env = {
   permissions?: Permissions | undefined;
   /** Told when a change is refused. */
   denied?: ((denial: Denial) => void) | undefined;
+  /**
+   * Where each free block is drawn now, by id, when a phone draws the page as a flow: the editor gives
+   * it so that the first change of the phone layout can place every block where it is drawn.
+   */
+  measurePhone?: ((root: TreeNode) => ReadonlyMap<string, Measured> | null) | undefined;
   /** Set while a command runs when a change was refused, so the command can be given up whole. */
   refusal?: { endsDraft: boolean } | null | undefined;
 };

@@ -4,6 +4,7 @@ import {
   alignRects,
   boxFor,
   distributeRects,
+  drawsPhoneFlow,
   type Frame,
   type FreeNode,
   findNode,
@@ -23,8 +24,11 @@ import {
   withPhoneProp,
   withRect,
 } from "@miditor/core";
+import type { History } from "../history";
 import { nudgeRect } from "../nudge";
+import { freezeRoot } from "../phone-freeze";
 import { withBoxFor } from "./apply-patch";
+import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import { type Env, edit, editInLastStep, runner } from "./document";
 import { type Size, type State, settle } from "./structure";
@@ -298,9 +302,47 @@ export function moveToParent<S extends State>(
   );
 }
 
+/**
+ * The state with the page placed for the phone where it is drawn, when the phone draws it as a flow:
+ * from then on every block has a place of its own. No step of history; see `runFrozen`.
+ */
+export function freezePhone<S extends State>(state: S, env: Env): S {
+  if (state.frame !== "phone" || !env.measurePhone) return state;
+  const page = state.history.present;
+  if (!drawsPhoneFlow(page.root)) return state;
+  const measured = env.measurePhone(page.root);
+  if (!measured || measured.size === 0) return state;
+  const root = freezeRoot(page.root, measured);
+  if (root === page.root) return state;
+  const history: History<PageData> = { ...state.history, present: { ...page, root } };
+  return change(state, { history } as Partial<S>);
+}
+
+/**
+ * A command that puts blocks somewhere, run on a page that is first placed for the phone if the phone
+ * drew it as a flow. The placing and the command are one step of history, so one undo goes back to the
+ * flow; a command that changed nothing leaves the page a flow; and a command that was refused is given
+ * up whole by `runner`, which brings back the state from before.
+ */
+export function runFrozen<S extends State>(state: S, env: Env, command: (state: S) => S): S {
+  const frozen = freezePhone(state, env);
+  if (frozen === state) return command(state);
+  const next = command(frozen);
+  if (next.history.present === frozen.history.present) return state;
+  const { past } = next.history;
+  const added = past.length === frozen.history.past.length + 1;
+  if (!added || past[past.length - 1] !== frozen.history.present) return next;
+  const history: History<PageData> = {
+    ...next.history,
+    past: [...past.slice(0, -1), state.history.present],
+  };
+  return change(next, { history } as Partial<S>);
+}
+
 /** The commands tied to a store. */
 export function geometryCommands<S extends State>(store: EditorStore<S>, env: Env) {
-  const run = runner(store, env);
+  const runOnce = runner(store, env);
+  const run = (command: (state: S) => S) => runOnce((state) => runFrozen(state, env, command));
   return {
     alignSelected: (container: Size | null, to: AlignTo) =>
       run((state) => alignSelected(state, { container, to }, env)),

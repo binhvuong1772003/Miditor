@@ -2,11 +2,11 @@ import {
   DEFAULT_PAGE_HEIGHT,
   DEVICE_WIDTH,
   type Device,
+  drawsPhoneFlow,
   type FlowItem,
   freeBoxOf,
   isFreeNode,
   isPageHeight,
-  isPhoneAuto,
   type JsonValue,
   type PageData,
   type Payload,
@@ -283,10 +283,6 @@ function RenderNode(all: NodeProps) {
   );
 }
 
-/** Whether any block in the tree is placed freely: a page of the flow alone has nothing to lay out for a phone. */
-const hasFreeNode = (node: TreeNode): boolean =>
-  node.children.some((child) => isFreeNode(child) || hasFreeNode(child));
-
 const kids = ({ node, screen, renderers, theme, inert, onAction, auto, size }: NodeProps) => {
   const flow = auto ? phoneFlowOf(node, size) : undefined;
   return node.children.map((child) => (
@@ -345,7 +341,7 @@ export function Render({
         theme={data.theme}
         inert={links === "inert"}
         onAction={onAction}
-        auto={screen !== "desktop" && isPhoneAuto(data.root) && hasFreeNode(data.root)}
+        auto={screen !== "desktop" && drawsPhoneFlow(data.root)}
         size={{
           w: DEVICE_WIDTH.desktop,
           h: isPageHeight(data.root.styles?.minHeight)
