@@ -1,9 +1,19 @@
 import {
+  DEFAULT_PAGE_HEIGHT,
+  DEVICE_WIDTH,
   type Device,
+  type FlowItem,
+  freeBoxOf,
+  isFreeNode,
+  isPageHeight,
+  isPhoneAuto,
   type JsonValue,
   type PageData,
   type Payload,
+  phoneFlowOf,
+  phoneTextSize,
   propsFor,
+  resolveRect,
   type Theme,
   type TreeNode,
 } from "@miditor/core";
@@ -20,7 +30,7 @@ import {
   textOf,
   textStyle,
 } from "./kind-style";
-import { isBuiltIn, nodeStyle } from "./node-style";
+import { isBuiltIn, nodeStyle, type PhoneFlow } from "./node-style";
 import { PHONE_VAR, type ResponsiveOptions, responsiveCss, splitStyles } from "./responsive";
 
 /** What a host's drawing function is given for one block of its own kind. */
@@ -95,19 +105,34 @@ interface NodeProps {
   theme: Theme | undefined;
   inert: boolean;
   onAction: RenderProps["onAction"];
+  /** The page is drawn as a flow on a phone: no block in it is placed by hand for the phone. */
+  auto: boolean;
+  /** How big this node is on the desktop, in px, for the flow of the blocks inside it. */
+  size: { w: number; h: number };
+  /** The place of this node among its siblings in that flow, when it is a free block. */
+  item?: FlowItem | undefined;
 }
 
 /** The inline style of a node on one screen. */
-function styleOn(node: TreeNode, isRoot: boolean, device: Device, theme: Theme | undefined) {
+function styleOn(
+  node: TreeNode,
+  isRoot: boolean,
+  device: Device,
+  theme: Theme | undefined,
+  flow?: PhoneFlow,
+) {
   const props = propsFor(node, device);
+  const ownSize = node.phoneProps && Object.hasOwn(node.phoneProps, "size");
   // A text size that a person set for the phone is the size, with no shrinking by the page ratio.
-  const sizeDevice =
-    device === "phone" && node.phoneProps && Object.hasOwn(node.phoneProps, "size")
-      ? "desktop"
-      : device;
-  const base = nodeStyle(node, isRoot, device, theme);
+  // Drawn as a flow, a text has its own rule (`phoneTextSize`) and a button keeps its size.
+  const sizeDevice = device === "phone" && (ownSize || flow) ? "desktop" : device;
+  const base = nodeStyle(node, isRoot, device, theme, flow);
+  const textProps =
+    flow && !ownSize && typeof props.size === "number"
+      ? { ...props, size: phoneTextSize(props.size) }
+      : props;
   return node.type === "Text"
-    ? { ...base, ...textStyle(props, sizeDevice, theme) }
+    ? { ...base, ...textStyle(textProps, sizeDevice, theme) }
     : node.type === "Button"
       ? buttonLabelLook(base, buttonStyle(props, sizeDevice, theme))
       : base;
@@ -158,6 +183,10 @@ function onlyOn(style: CSSProperties, screen: Device): CSSProperties {
 
 function RenderNode(all: NodeProps) {
   const { node, isRoot, screen, only, renderers, theme, inert, onAction } = all;
+  const flowOn = (side: Device): PhoneFlow | undefined =>
+    all.auto && side === "phone"
+      ? { item: all.item, flowKids: node.children.some(isFreeNode) }
+      : undefined;
   const responsive = screen === "responsive";
   if (responsive && !only && differsInside(node)) {
     return (
@@ -177,13 +206,13 @@ function RenderNode(all: NodeProps) {
     ...(only ? { "data-miditor-screen": only } : {}),
     style: {
       ...(only
-        ? onlyOn(styleOn(node, isRoot, only, theme), only)
+        ? onlyOn(styleOn(node, isRoot, only, theme, flowOn(only)), only)
         : responsive
           ? splitStyles(
               styleOn(node, isRoot, "desktop", theme),
-              styleOn(node, isRoot, "phone", theme),
+              styleOn(node, isRoot, "phone", theme, flowOn("phone")),
             )
-          : styleOn(node, isRoot, device, theme)),
+          : styleOn(node, isRoot, device, theme, flowOn(device))),
     },
   };
   // A type nobody registered stays an empty box in the same place, so the layout around it holds.
@@ -198,7 +227,7 @@ function RenderNode(all: NodeProps) {
           device,
           responsive,
           theme,
-          children: kids(node, screen, renderers, theme, inert, onAction),
+          children: kids(all),
         })}
       </div>
     );
@@ -249,20 +278,18 @@ function RenderNode(all: NodeProps) {
   return (
     <div {...common}>
       {node.type === "Shape" && <div aria-hidden="true" style={shapeLayerStyle(props, theme)} />}
-      {kids(node, screen, renderers, theme, inert, onAction)}
+      {kids(all)}
     </div>
   );
 }
 
-const kids = (
-  node: TreeNode,
-  screen: Screen,
-  renderers: NodeProps["renderers"],
-  theme: Theme | undefined,
-  inert: boolean,
-  onAction: RenderProps["onAction"],
-) =>
-  node.children.map((child) => (
+/** Whether any block in the tree is placed freely: a page of the flow alone has nothing to lay out for a phone. */
+const hasFreeNode = (node: TreeNode): boolean =>
+  node.children.some((child) => isFreeNode(child) || hasFreeNode(child));
+
+const kids = ({ node, screen, renderers, theme, inert, onAction, auto, size }: NodeProps) => {
+  const flow = auto ? phoneFlowOf(node, size) : undefined;
+  return node.children.map((child) => (
     <RenderNode
       key={child.id}
       onAction={onAction}
@@ -272,8 +299,16 @@ const kids = (
       renderers={renderers}
       theme={theme}
       inert={inert}
+      auto={auto}
+      size={
+        auto && isFreeNode(child)
+          ? (({ w, h }) => ({ w, h }))(resolveRect(freeBoxOf(child), size))
+          : size
+      }
+      item={flow?.get(child.id)}
     />
   ));
+};
 
 /**
  * Draws a page from its data. Read-only and safe to render on the server: it touches neither
@@ -310,6 +345,13 @@ export function Render({
         theme={data.theme}
         inert={links === "inert"}
         onAction={onAction}
+        auto={screen !== "desktop" && isPhoneAuto(data.root) && hasFreeNode(data.root)}
+        size={{
+          w: DEVICE_WIDTH.desktop,
+          h: isPageHeight(data.root.styles?.minHeight)
+            ? data.root.styles.minHeight
+            : DEFAULT_PAGE_HEIGHT,
+        }}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import { isPageHeight } from "../styles/page-height";
 import type { Device } from "./device";
 import { boxFor, DEVICE_WIDTH } from "./device";
 import { isFreeNode } from "./free-box";
+import { isPhoneAuto } from "./phone-flow";
 import type { TreeNode } from "./types";
 
 /** The gap, in px, between the lowest block and the bottom of a page that fits its blocks. */
@@ -34,5 +35,7 @@ export function pageHeightOn(root: TreeNode, device: Device): number | undefined
   if (isPageHeight(root.styles?.phoneMinHeight)) return root.styles.phoneMinHeight;
   // A page of blocks in the flow is as tall as they are, on any screen: there is nothing to fit.
   if (!root.children.some(isFreeNode)) return own(root.styles?.minHeight);
+  // Drawn as a flow, the page is as tall as what is in it, and no shorter than a phone screen.
+  if (isPhoneAuto(root)) return PHONE_PAGE_MIN_HEIGHT;
   return phonePageHeight(root);
 }

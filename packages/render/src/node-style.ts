@@ -2,6 +2,7 @@ import {
   boxFor,
   cssFor,
   type Device,
+  type FlowItem,
   isBackgroundPosition,
   isBackgroundRepeat,
   isBackgroundSize,
@@ -144,6 +145,7 @@ export function nodeStyle(
   isRoot: boolean,
   device: Device = "desktop",
   theme?: Theme,
+  flow?: PhoneFlow,
 ): CSSProperties {
   const style: CSSProperties = {
     all: isRoot ? "initial" : "revert",
@@ -157,7 +159,62 @@ export function nodeStyle(
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it, on this screen.
+  if (flow) {
+    return {
+      ...style,
+      ...(flow.flowKids ? flowOfKids(isRoot) : {}),
+      ...flowPlacement(node, flow.item),
+    };
+  }
   return isFreeNode(node)
     ? { ...style, ...cssFor(boxFor(node, device)) }
     : { ...style, position: "relative" };
+}
+
+/**
+ * What a phone that draws the page as a flow needs from a node: its place among its siblings, when it
+ * is a free block (`undefined` for the page and for a block of the flow), and whether its own free
+ * blocks are laid out in a flow too.
+ */
+export interface PhoneFlow {
+  item: FlowItem | undefined;
+  flowKids: boolean;
+}
+
+/** The blocks inside a page or a box, in a wrapping row: a full width block takes a row, a small one shares it. */
+const flowOfKids = (isRoot: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "row",
+  flexWrap: "wrap",
+  alignContent: "flex-start",
+  alignItems: "flex-start",
+  gap: isRoot ? "16px" : "12px",
+  padding: "16px",
+});
+
+const px2 = (n: number) => `${Math.round(n * 100) / 100}px`;
+
+/** A free block in the flow of its parent: where it comes, how wide, and how tall. */
+function flowPlacement(node: TreeNode, item: FlowItem | undefined): CSSProperties {
+  if (!isFreeNode(node) || !item) return { position: "relative" };
+  const style: CSSProperties = {
+    position: "relative",
+    order: item.order,
+    flex: "0 0 auto",
+    maxWidth: "100%",
+    width: item.compact ? px2(item.width) : "100%",
+  };
+  if (item.compact) {
+    // A small block sits on the side it was on, with the room of the row on the other side.
+    if (item.side === "start") style.marginRight = "auto";
+    else if (item.side === "end") style.marginLeft = "auto";
+    else style.margin = "0 auto";
+  }
+  if (node.type === "Text" || node.children.length > 0) style.height = "auto";
+  else if (!item.compact && (node.type === "Shape" || node.type === "Image")) {
+    style.height = "auto";
+    style.aspectRatio = String(item.ratio);
+  } else style.height = px2(item.height);
+  if (node.rotation !== 0) style.rotate = `${node.rotation}deg`;
+  return style;
 }

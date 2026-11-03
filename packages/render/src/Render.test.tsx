@@ -837,7 +837,8 @@ describe("<Render> responsive", () => {
   });
 
   it("shrinks a block that nobody placed for the phone, like a phone does", () => {
-    const tag = tagOf(draw(page(flow("root", "Page", [free("a")]))), "a");
+    // One block placed by hand for the phone: the page is not drawn as a flow, and the other is shrunk.
+    const tag = tagOf(draw(page(flow("root", "Page", [free("a"), withPhone()]))), "a");
     expect(tag).toContain("--m-right-d:20px");
     expect(tag).toContain("--m-right-p:var(--miditor-phone) 7.81px");
     expect(tag).toContain("--m-top-p:var(--miditor-phone) 15.63px");

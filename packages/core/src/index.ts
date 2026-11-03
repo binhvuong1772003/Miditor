@@ -137,6 +137,15 @@ export {
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
 export {
+  COMPACT_HEIGHT,
+  COMPACT_WIDTH,
+  type FlowItem,
+  type FlowSide,
+  isPhoneAuto,
+  phoneFlowOf,
+  phoneTextSize,
+} from "./tree/phone-flow";
+export {
   PHONE_PAGE_MIN_HEIGHT,
   PHONE_PAGE_PADDING,
   pageHeightOn,
