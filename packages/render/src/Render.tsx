@@ -14,6 +14,7 @@ import {
   phoneFlowOf,
   phoneTextSize,
   propsFor,
+  ROW_GAP,
   resolveRect,
   type Theme,
   type TreeNode,
@@ -306,23 +307,58 @@ const kids = (all: NodeProps) => {
       item={layout?.items.get(child.id)}
     />
   );
+  // Blocks that overlap are one piece on a phone: a box that holds them, drawn where the first is.
+  const pieces = (children: readonly TreeNode[]) =>
+    children.flatMap((child) => {
+      const joined = layout?.items.get(child.id)?.cluster;
+      if (!layout || !joined) return [draw(child)];
+      const cluster = layout.clusters.get(joined);
+      if (!cluster || cluster.id !== child.id) return [];
+      return [
+        <div
+          key={`cluster-${cluster.id}`}
+          data-miditor-cluster=""
+          style={clusterStyle(cluster, screen === "responsive")}
+        >
+          {node.children.filter((member) => cluster.members.includes(member.id)).map(draw)}
+        </div>,
+      ];
+    });
+  const done = new Set<string>();
   return node.children.flatMap((child) => {
-    const joined = layout?.items.get(child.id)?.cluster;
-    if (!layout || !joined) return [draw(child)];
-    // Blocks that overlap are one piece on a phone: a box that holds them, drawn where the first is.
-    const cluster = layout.clusters.get(joined);
-    if (!cluster || cluster.id !== child.id) return [];
+    const bandId = layout?.items.get(child.id)?.band;
+    const band = bandId ? layout?.bands.get(bandId) : undefined;
+    if (!layout || !band) return pieces([child]);
+    // Blocks that sit side by side are one row, so that a block of another row cannot take their room.
+    if (done.has(band.id)) return [];
+    done.add(band.id);
+    const row = node.children.filter((member) => layout.items.get(member.id)?.band === band.id);
     return [
       <div
-        key={`cluster-${cluster.id}`}
-        data-miditor-cluster=""
-        style={clusterStyle(cluster, screen === "responsive")}
+        key={`band-${band.id}`}
+        data-miditor-band=""
+        style={bandStyle(band.order, screen === "responsive")}
       >
-        {node.children.filter((member) => cluster.members.includes(member.id)).map(draw)}
+        {pieces(row)}
       </div>,
     ];
   });
 };
+
+/** The box of a row: it takes no part on a desktop (`contents`), and on a phone it is a wrapping row. */
+function bandStyle(order: number, responsive: boolean): CSSProperties {
+  return {
+    ...(responsive
+      ? { display: "var(--m-band, contents)", ["--m-band" as string]: `var(${PHONE_VAR}) flex` }
+      : { display: "flex" }),
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    gap: `${ROW_GAP}px`,
+    order,
+    flex: "0 0 100%",
+    width: "100%",
+  };
+}
 
 /**
  * The box of a cluster: it takes no part on a desktop (`contents`), and on a phone it is as wide as the

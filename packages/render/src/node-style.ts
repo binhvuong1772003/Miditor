@@ -216,7 +216,11 @@ function flowPlacement(node: TreeNode, item: FlowItem | undefined): CSSPropertie
     order: item.order,
     flex: "0 0 auto",
     maxWidth: "100%",
-    width: item.compact ? px2(item.width) : "100%",
+    width: item.share
+      ? `calc((100% - ${px2(item.share.gaps)}) * ${round4(item.share.part)})`
+      : item.compact
+        ? px2(item.width)
+        : "100%",
   };
   if (item.compact) {
     // A small block sits on the side it was on, with the room of the row on the other side.

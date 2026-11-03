@@ -268,7 +268,7 @@ export const COFFEE_PAGE: PageData = {
           href: "",
           action: "",
           payload: {},
-          fill: "#fef3c7",
+          fill: "#ffffff",
           textColor: "#92400e",
           shape: "pill",
           size: 16,

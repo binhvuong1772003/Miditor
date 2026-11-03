@@ -177,3 +177,39 @@ describe("blocks that overlap on a phone drawn as a flow", () => {
     expect(wrapper(markup)).toContain("--m-cluster:var(--miditor-phone) block");
   });
 });
+
+describe("blocks that sit side by side on a phone drawn as a flow", () => {
+  const nav = page(
+    at("logo", "Text", 48, 24, 200, 32),
+    at("go", "Button", 788, 22, 124, 40),
+    at("head", "Text", 100, 160, 760, 140),
+  );
+  const band = (markup: string) => /<div[^>]*data-miditor-band[^>]*>/.exec(markup)?.[0] ?? "";
+
+  it("are a row of their own, and a block alone is not", () => {
+    const markup = phone(nav);
+    expect(band(markup)).toContain("display:flex");
+    expect(band(markup)).toContain("flex-wrap:wrap");
+    expect(band(markup)).toContain("flex:0 0 100%");
+    expect(markup.match(/data-miditor-band/g)).toHaveLength(1);
+    expect(markup.indexOf('data-miditor-band=""')).toBeLessThan(
+      markup.indexOf('data-miditor-id="logo"'),
+    );
+    expect(markup.indexOf('data-miditor-id="go"')).toBeLessThan(
+      markup.indexOf('data-miditor-id="head"'),
+    );
+  });
+
+  it("share the room of the row when they would not fit side by side", () => {
+    const markup = phone(nav);
+    expect(tagOf(markup, "logo")).toContain("width:calc((100% - 12px) * 0.6173)");
+    expect(tagOf(markup, "go")).toContain("width:calc((100% - 12px) * 0.3827)");
+  });
+
+  it("take no part on a desktop, and are out of the way where a responsive page is not on a phone", () => {
+    expect(band(renderToStaticMarkup(<Render data={nav} />))).toBe("");
+    const markup = renderToStaticMarkup(<Render data={nav} responsive={{}} />);
+    expect(band(markup)).toContain("display:var(--m-band, contents)");
+    expect(band(markup)).toContain("--m-band:var(--miditor-phone) flex");
+  });
+});

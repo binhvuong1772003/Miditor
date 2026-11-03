@@ -813,13 +813,14 @@ In the saved page they are two optional style keys, drawn the same on a phone an
 A page you only edit on the desktop still gets a phone page. While **no block has a place of its own for the
 phone**, the phone draws the page as a flow, not as a shrunk copy of the desktop:
 
-- Blocks come in reading order, top to bottom and left to right (blocks that sit side by side stay in a row
-  when they fit).
-- A big block takes the width of the phone. A small one (a button, a logo, an icon) keeps its own width and
-  sits on the side it was on.
+- Blocks come in reading order, top to bottom and left to right. Blocks that sit side by side on the desktop
+  are a row of their own, and small ones that would not fit side by side share the width of the row.
+- A big block takes the width of the phone. A small one (up to 300 by 64 px: a button, a logo, an icon) keeps
+  its own width and sits on the side it was on; a text sits on the side its words are aligned to.
 - A text grows with what it says, and its size is `20 px` or less as it is, and half of what is over `20`
   above that. A box with blocks inside lays them out the same way.
-- Blocks that overlap (a cup made of ellipses) stay one piece with their shape.
+- Blocks that overlap, and shapes or pictures within 48 px of each other (a cup made of ellipses, with beans
+  around it), stay one piece with their shape.
 - The page is at least 812 px tall (`styles.phoneMinHeight` sets it), and as tall as its blocks above that.
 
 The first change you make to the phone layout (a drag, a resize, a turn, an arrow key, a typed place, Align)

@@ -5,7 +5,7 @@ import { freeBoxOf, isFreeNode } from "./free-box";
 import type { TreeNode } from "./types";
 
 /** A block no wider than this and no taller than `COMPACT_HEIGHT`, in desktop px, keeps its own width on a phone. */
-export const COMPACT_WIDTH = 230;
+export const COMPACT_WIDTH = 300;
 export const COMPACT_HEIGHT = 64;
 
 /** The side of its parent a block sits on, on the desktop: where its auto margins push it on a phone. */
@@ -26,6 +26,17 @@ export interface FlowItem {
   /** When it overlaps a sibling: the cluster it is drawn in, and its place in it, in percent of the cluster. */
   cluster?: string;
   place?: { left: number; top: number; width: number; height: number };
+  /** When it shares a row with others: the row it is in (see `FlowBand`). */
+  band?: string;
+  /** Small blocks of a row that would not fit side by side share its width: this one's part of it, and the gaps to take off. */
+  share?: { part: number; gaps: number };
+}
+
+/** Blocks that sit side by side on the desktop: a row of their own, so another row cannot take their room. */
+export interface FlowBand {
+  /** The id of the first block of the row in the tree, which stands for it. */
+  id: string;
+  order: number;
 }
 
 /** Blocks that overlap one another, drawn as one piece that keeps its shape (a cup made of ellipses). */
@@ -44,7 +55,15 @@ export interface FlowCluster {
 export interface PhoneLayout {
   items: Map<string, FlowItem>;
   clusters: Map<string, FlowCluster>;
+  bands: Map<string, FlowBand>;
 }
+
+/** Shapes and pictures this close (px) belong together, like the beans around a cup. */
+export const NEAR = 48;
+/** The room a row of small blocks has, in px, below which they share it instead of wrapping. */
+export const ROW_ROOM = 330;
+/** The gap between blocks of a row, in px; the same one the render draws. */
+export const ROW_GAP = 12;
 
 /**
  * Whether the page is drawn as a flow on a phone: no node in it has a placement of its own for the
@@ -68,10 +87,30 @@ export function phoneTextSize(size: number): number {
   return size <= 20 ? size : Math.round(20 + (size - 20) / 2);
 }
 
-type Placed = { id: string; rect: { x: number; y: number; w: number; h: number } };
+type Placed = {
+  id: string;
+  type: string;
+  rect: { x: number; y: number; w: number; h: number };
+  /** The side a text says its words sit on, which the block sits on too. */
+  align?: FlowSide;
+};
 
 const overlap = (a: Placed["rect"], b: Placed["rect"]) =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+const near = (a: Placed["rect"], b: Placed["rect"]) =>
+  Math.max(0, a.x - (b.x + b.w), b.x - (a.x + a.w)) <= NEAR &&
+  Math.max(0, a.y - (b.y + b.h), b.y - (a.y + a.h)) <= NEAR;
+
+/** A text keeps its words on the side it says: its block sits there on a phone, not where its box happens to be. */
+const alignOf = (node: TreeNode): { align?: FlowSide } => {
+  const align = node.type === "Text" ? node.props.align : undefined;
+  if (align === "left") return { align: "start" };
+  if (align === "right") return { align: "end" };
+  return align === "center" ? { align: "center" } : {};
+};
+
+const drawing = (type: string) => type === "Shape" || type === "Image";
 
 const sideOf = (rect: Placed["rect"], width: number): FlowSide => {
   const middle = (rect.x + rect.w / 2) / (width || DEVICE_WIDTH.desktop);
@@ -86,7 +125,16 @@ const sideOf = (rect: Placed["rect"], width: number): FlowSide => {
  */
 export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
   const placed: Placed[] = parent.children.flatMap((child) =>
-    isFreeNode(child) ? [{ id: child.id, rect: resolveRect(freeBoxOf(child), size) }] : [],
+    isFreeNode(child)
+      ? [
+          {
+            id: child.id,
+            type: child.type,
+            rect: resolveRect(freeBoxOf(child), size),
+            ...alignOf(child),
+          },
+        ]
+      : [],
   );
   // Overlapping blocks are joined into groups; a block as wide as the page joins nothing.
   const group = new Map(placed.map((item) => [item.id, item.id]));
@@ -100,7 +148,10 @@ export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
     for (let j = i + 1; j < joinable.length; j++) {
       const a = joinable[i] as Placed;
       const b = joinable[j] as Placed;
-      if (overlap(a.rect, b.rect)) group.set(find(a.id), find(b.id));
+      // Overlapping blocks are one piece; so are shapes and pictures that are close (the beans of a cup).
+      if (overlap(a.rect, b.rect) || (drawing(a.type) && drawing(b.type) && near(a.rect, b.rect))) {
+        group.set(find(a.id), find(b.id));
+      }
     }
   }
   const members = new Map<string, Placed[]>();
@@ -130,9 +181,32 @@ export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
   }
   const items = new Map<string, FlowItem>();
   const clusters = new Map<string, FlowCluster>();
+  const bandsOut = new Map<string, FlowBand>();
+  const index = new Map(parent.children.map((child, i) => [child.id, i]));
   let order = 0;
   for (const band of bands) {
     band.sort((a, b) => a.rect.x - b.rect.x);
+    // A row is a box of its own when it has two or more pieces, or one that does not fill the width: a
+    // small block or a cluster would otherwise share a line with a small block of the next row.
+    const [only] = band;
+    const shared =
+      band.length > 1 ||
+      (only !== undefined &&
+        (only.group.length > 1 || (only.rect.w <= COMPACT_WIDTH && only.rect.h <= COMPACT_HEIGHT)));
+    const bandId = shared
+      ? (parent.children[
+          Math.min(...band.flatMap((piece) => piece.group.map((m) => index.get(m.id) ?? 0)))
+        ]?.id ?? "")
+      : "";
+    if (shared) bandsOut.set(bandId, { id: bandId, order });
+    // Small blocks that would not fit side by side share the room of the row.
+    const smalls = band.every(
+      (piece) =>
+        piece.group.length === 1 && piece.rect.w <= COMPACT_WIDTH && piece.rect.h <= COMPACT_HEIGHT,
+    );
+    const total = band.reduce((sum, piece) => sum + piece.rect.w, 0);
+    const gaps = (band.length - 1) * ROW_GAP;
+    const squeeze = shared && smalls && total + gaps > ROW_ROOM && total > 0;
     for (const { group, rect } of band) {
       const side = sideOf(rect, size.w);
       const first = parent.children.find((child) => group.some((m) => m.id === child.id));
@@ -146,15 +220,17 @@ export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
           height: rect.h,
         });
       }
-      for (const { id, rect: own } of group) {
+      for (const { id, rect: own, align } of group) {
         const inCluster = group.length > 1 && rect.w > 0 && rect.h > 0;
         items.set(id, {
           order: inCluster ? -1 : order++,
           compact: own.w <= COMPACT_WIDTH && own.h <= COMPACT_HEIGHT,
-          side: sideOf(own, size.w),
+          side: align ?? sideOf(own, size.w),
           ratio: own.h > 0 ? own.w / own.h : 1,
           width: own.w,
           height: own.h,
+          ...(shared ? { band: bandId } : {}),
+          ...(squeeze ? { share: { part: own.w / total, gaps } } : {}),
           ...(inCluster && first
             ? {
                 cluster: first.id,
@@ -170,5 +246,5 @@ export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
       }
     }
   }
-  return { items, clusters };
+  return { items, clusters, bands: bandsOut };
 }

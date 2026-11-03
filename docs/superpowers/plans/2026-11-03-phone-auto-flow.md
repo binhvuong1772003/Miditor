@@ -15,7 +15,7 @@
 - Phone side only. The desktop is untouched.
 - Flow rules for a free child of the page or of a container, from its desktop box:
   - Order: bands of vertically overlapping blocks, by y; inside a band, by x.
-  - **Compact** block (desktop width at most 230 px and height at most 64 px: buttons, logos, small labels, icons): its own width, sharing a row when it fits, with auto margins from its desktop side. Everything else is full width.
+  - **Compact** block (desktop width at most 300 px and height at most 64 px: buttons, logos, small labels, icons): its own width, sharing a row when it fits, with auto margins from its desktop side. Everything else is full width.
   - Text and a container with children: `height: auto`. A shape or image without children keeps its aspect ratio. A box without children keeps its height in px.
   - Text size: up to 20 px as is, above that `20 + (size - 20) / 2`.
   - A container with children gets padding of 16 px and a gap of 12 px.

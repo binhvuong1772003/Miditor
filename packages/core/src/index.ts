@@ -140,6 +140,7 @@ export {
   COMPACT_HEIGHT,
   COMPACT_WIDTH,
   drawsPhoneFlow,
+  type FlowBand,
   type FlowCluster,
   type FlowItem,
   type FlowSide,
@@ -147,6 +148,7 @@ export {
   type PhoneLayout,
   phoneFlowOf,
   phoneTextSize,
+  ROW_GAP,
 } from "./tree/phone-flow";
 export {
   PHONE_PAGE_MIN_HEIGHT,
