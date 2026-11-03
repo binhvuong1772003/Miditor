@@ -114,6 +114,8 @@ export function CanvasView({
   const scopeId = useEditorState((state) => state.scopeId);
   const draft = useEditorState((state) => state.draft);
   const onPhone = frame === "phone";
+  // The page has a height for each screen; the edge of the page changes the one being shown.
+  const heightKey = onPhone ? "phoneMinHeight" : "minHeight";
   const setDraft = documents.setDraft;
   const altHeld = useAltHeld();
   const [frameEl, setFrameEl] = useState<HTMLElement | null>(null);
@@ -348,7 +350,7 @@ export function CanvasView({
   // biome-ignore lint/correctness/useExhaustiveDependencies: these are the triggers, the effect reads none of them
   useLayoutEffect(
     () => setLayoutTick((n) => n + 1),
-    [frame, zoom, stageBox, data.root.styles.minHeight],
+    [frame, zoom, stageBox, data.root.styles.minHeight, data.root.styles.phoneMinHeight],
   );
 
   // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
@@ -467,8 +469,8 @@ export function CanvasView({
           workspace={workspace}
           zoom={zoom}
           floor={pageHeight.floor}
-          onPreview={(height) => setDraft({ id: data.root.id, key: "minHeight", value: height })}
-          onCommit={(height) => commitPatch(data.root.id, { key: "minHeight", value: height })}
+          onPreview={(height) => setDraft({ id: data.root.id, key: heightKey, value: height })}
+          onCommit={(height) => commitPatch(data.root.id, { key: heightKey, value: height })}
           onCancel={() => setDraft(null)}
         />
       )}

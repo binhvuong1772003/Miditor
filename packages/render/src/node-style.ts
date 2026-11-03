@@ -8,11 +8,10 @@ import {
   isFreeNode,
   isImageUrl,
   isOpacity,
-  isPageHeight,
   isPixelLength,
-  phonePageHeight,
   isShadow,
   type NodeStyles,
+  pageHeightOn,
   resolveColor,
   type Shadow,
   type Theme,
@@ -58,18 +57,12 @@ const BY_TYPE: Record<string, CSSProperties> = {
 };
 
 /**
- * The height of the root on a screen. A desktop page is as tall as it was set, or fills its box. A
- * phone page is as tall as it was set for the phone, and when nobody did, as its blocks need: the
- * desktop height does not carry over, since the blocks on a phone are smaller than on a desktop.
+ * The height of the root on a screen (see `pageHeightOn`): as tall as it is set, and no taller, so it
+ * stops filling the box the host gives it; or, with none, it fills it.
  */
 function pageHeight(root: TreeNode, device: Device): CSSProperties {
-  const own = (height: unknown): CSSProperties =>
-    isPageHeight(height) ? { minHeight: `${height}px`, flexGrow: 0 } : {};
-  if (device === "desktop") return own(root.styles?.minHeight);
-  if (isPageHeight(root.styles?.phoneMinHeight)) return own(root.styles.phoneMinHeight);
-  // A page of blocks in the flow is as tall as they are, on any screen: there is nothing to fit.
-  if (!root.children.some(isFreeNode)) return own(root.styles?.minHeight);
-  return own(phonePageHeight(root));
+  const height = pageHeightOn(root, device);
+  return height === undefined ? {} : { minHeight: `${height}px`, flexGrow: 0 };
 }
 
 /** Typography the whole page inherits, written out so the host's inherited styles do not leak in. */

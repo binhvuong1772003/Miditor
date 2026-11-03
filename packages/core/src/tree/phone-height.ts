@@ -1,4 +1,6 @@
 import { lowestPageHeight } from "../position/page-floor";
+import { isPageHeight } from "../styles/page-height";
+import type { Device } from "./device";
 import { boxFor, DEVICE_WIDTH } from "./device";
 import { isFreeNode } from "./free-box";
 import type { TreeNode } from "./types";
@@ -16,4 +18,17 @@ export function phonePageHeight(root: TreeNode): number {
   );
   if (boxes.length === 0) return lowestPageHeight([], DEVICE_WIDTH.phone);
   return lowestPageHeight(boxes, DEVICE_WIDTH.phone) + PHONE_PAGE_PADDING;
+}
+
+/**
+ * The height, in px, the page has on a screen when it is not left to fill its box: the one set for the
+ * screen, or on a phone with free blocks the one they need. `undefined` when the page fills its box.
+ */
+export function pageHeightOn(root: TreeNode, device: Device): number | undefined {
+  const own = (height: unknown) => (isPageHeight(height) ? height : undefined);
+  if (device === "desktop") return own(root.styles?.minHeight);
+  if (isPageHeight(root.styles?.phoneMinHeight)) return root.styles.phoneMinHeight;
+  // A page of blocks in the flow is as tall as they are, on any screen: there is nothing to fit.
+  if (!root.children.some(isFreeNode)) return own(root.styles?.minHeight);
+  return phonePageHeight(root);
 }

@@ -21,6 +21,8 @@ export interface PageInspectorProps {
   /** How tall the page is now in px, as drawn, and the lowest edge of what is on it. */
   pageHeight: { drawn: number; floor: number };
   onPageHeight: (height: number | undefined) => void;
+  /** Whether the page is shown for a phone: it then has a height of its own. */
+  onPhone: boolean;
   /** The host's way to upload a picture, for the background picture of the page. */
   uploadImage?: UploadImage | undefined;
   /** A colour of the background is being picked: show it, but do not store it yet. */
@@ -46,6 +48,7 @@ export function PageInspector({
   onMeta,
   pageHeight,
   onPageHeight,
+  onPhone,
   uploadImage,
   onPreview,
   onCommit,
@@ -66,7 +69,7 @@ export function PageInspector({
       </Section>
       <Section id="page.size" title={t("common.size")} help={t("size.help")}>
         <PageHeightField
-          stored={page.styles.minHeight}
+          stored={onPhone ? page.styles.phoneMinHeight : page.styles.minHeight}
           drawn={pageHeight.drawn}
           floor={pageHeight.floor}
           onChange={onPageHeight}

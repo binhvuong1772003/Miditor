@@ -1,4 +1,4 @@
-import type { PageData } from "@miditor/core";
+import { type PageData, pageHeightOn } from "@miditor/core";
 import { Render, type Renderer } from "@miditor/render";
 import { type CSSProperties, Profiler, type RefObject } from "react";
 import styles from "../Editor.module.css";
@@ -66,7 +66,14 @@ export function StagePage({
             device={frame}
             links="inert"
             renderers={renderers}
-            className={frame === "phone" ? `${styles.page} ${styles.phone}` : styles.page}
+            className={[
+              styles.page,
+              frame === "phone" && styles.phone,
+              // A page with a height of its own is the sheet as tall as that, not as the room there is.
+              pageHeightOn(shown.root, frame) !== undefined && styles.pageFit,
+            ]
+              .filter(Boolean)
+              .join(" ")}
           />
         </Profiler>
       </div>

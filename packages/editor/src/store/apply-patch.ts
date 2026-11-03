@@ -31,6 +31,7 @@ const withStylePatch = (node: TreeNode, patch: StylePatch): TreeNode => {
     case "borderWidth":
     case "borderRadius":
     case "minHeight":
+    case "phoneMinHeight":
       return withStyle(node, patch.key, patch.value);
     case "opacity":
       // 100 is what no key means, so it goes back to no key; a value that is not an opacity changes nothing.

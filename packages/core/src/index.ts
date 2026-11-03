@@ -109,7 +109,6 @@ export {
 } from "./tree/clipboard";
 export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { duplicateNode } from "./tree/duplicate";
-export { PHONE_PAGE_PADDING, phonePageHeight } from "./tree/phone-height";
 export {
   freeBoxOf,
   isFreeNode,
@@ -137,6 +136,7 @@ export {
   updateNode,
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
+export { PHONE_PAGE_PADDING, pageHeightOn, phonePageHeight } from "./tree/phone-height";
 export { propsFor, withPhoneProp } from "./tree/phone-props";
 export { type Pick, pickBlock } from "./tree/pick";
 export { type Reorder, reorderNode } from "./tree/reorder";

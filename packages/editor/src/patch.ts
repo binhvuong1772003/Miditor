@@ -16,7 +16,10 @@ export type BackgroundPatch =
 /** One style of one node, and the value it should have. `undefined` removes the style. */
 export type StylePatch =
   | { key: "background" | "borderColor"; value: string | undefined }
-  | { key: "borderWidth" | "borderRadius" | "minHeight"; value: number | undefined }
+  | {
+      key: "borderWidth" | "borderRadius" | "minHeight" | "phoneMinHeight";
+      value: number | undefined;
+    }
   | EffectPatch
   | BackgroundPatch;
 

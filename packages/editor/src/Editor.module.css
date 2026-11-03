@@ -297,6 +297,12 @@
   max-inline-size: var(--_page-phone);
 }
 
+/* The sheet is as tall as the page, which has a height of its own, and no taller. */
+.pageFit {
+  flex: 0 0 auto;
+  min-block-size: 0;
+}
+
 /* Forced colors drop backgrounds and shadows, so draw the page edge with a border. */
 @media (forced-colors: active) {
   .page {

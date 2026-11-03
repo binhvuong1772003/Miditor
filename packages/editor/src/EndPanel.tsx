@@ -54,8 +54,12 @@ export function EndPanel({
             meta={data.meta}
             onMeta={documents.changeMeta}
             pageHeight={pageHeight}
+            onPhone={frame === "phone"}
             onPageHeight={(height) =>
-              documents.commitPatch(data.root.id, { key: "minHeight", value: height })
+              documents.commitPatch(data.root.id, {
+                key: frame === "phone" ? "phoneMinHeight" : "minHeight",
+                value: height,
+              })
             }
             uploadImage={config?.uploadImage}
             onPreview={(patch) => documents.setDraft({ id: data.root.id, ...patch })}
