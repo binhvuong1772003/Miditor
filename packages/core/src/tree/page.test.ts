@@ -240,6 +240,17 @@ describe("isPageData", () => {
       }
     });
 
+    it("accepts an opacity and a shadow, and refuses the ones that are out of range", () => {
+      const shadow = { x: 0, y: 4, blur: 16, spread: 0, color: "#000000", opacity: 22 };
+      expect(isPageData(broken((p) => (a(p).styles = { opacity: 50, shadow })))).toBe(true);
+      for (const opacity of [-1, 101, Number.NaN, "50", null]) {
+        expect(isPageData(broken((p) => (a(p).styles = { opacity })))).toBe(false);
+      }
+      for (const bad of [{ ...shadow, blur: -1 }, { ...shadow, color: "red" }, "x", null, {}]) {
+        expect(isPageData(broken((p) => (a(p).styles = { shadow: bad })))).toBe(false);
+      }
+    });
+
     it("refuses a style it does not know, and styles that are missing or not an object", () => {
       expect(isPageData(broken((p) => (a(p).styles = { color: "#000000" })))).toBe(false);
       expect(isPageData(broken((p) => (a(p).styles = { toString: "x" })))).toBe(false);

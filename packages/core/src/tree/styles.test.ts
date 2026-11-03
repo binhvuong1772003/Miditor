@@ -185,3 +185,14 @@ describe("withStyle, properties", () => {
     );
   });
 });
+
+describe("withStyle, opacity and shadow", () => {
+  it("sets and removes them like any style", () => {
+    const shadow = { x: 0, y: 4, blur: 16, spread: 0, color: "#000000", opacity: 22 };
+    const set = withStyle(withStyle(free, "opacity", 40), "shadow", shadow);
+    expect(set.styles).toEqual({ background: "#d5dae3", opacity: 40, shadow });
+    const gone = withStyle(withStyle(set, "opacity", undefined), "shadow", undefined);
+    expect(gone.styles).toEqual({ background: "#d5dae3" });
+    expect(withStyle(free, "opacity", undefined)).toBe(free);
+  });
+});

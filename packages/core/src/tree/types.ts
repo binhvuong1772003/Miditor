@@ -1,5 +1,6 @@
 import type { Axis, FreeBox, Size } from "../position/types";
 import type { BackgroundPosition, BackgroundRepeat, BackgroundSize } from "../styles/background";
+import type { Shadow } from "../styles/effects";
 import type { PageMeta } from "../styles/page-meta";
 import type { Theme } from "../styles/theme";
 
@@ -42,6 +43,10 @@ export interface NodeStyles {
   backgroundPosition?: BackgroundPosition;
   /** Whether the background picture is tiled. Without it, `no-repeat`. */
   backgroundRepeat?: BackgroundRepeat;
+  /** How much of the block shows, in percent, from 0 to 100. Without it, 100 (see `isOpacity`). */
+  opacity?: number;
+  /** One shadow behind the block, see `isShadow`. Without it, none. */
+  shadow?: Shadow;
 }
 
 /** What every node has, whatever the way it is placed. */

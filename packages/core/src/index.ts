@@ -59,6 +59,7 @@ export {
   isBackgroundSize,
 } from "./styles/background";
 export { parseCoordinate } from "./styles/coordinate";
+export { isOpacity, isShadow, MAX_SHADOW_REACH, type Shadow } from "./styles/effects";
 export { isHexColor, parseHexColor } from "./styles/hex-color";
 export { isImageUrl } from "./styles/image-url";
 export { isLinkUrl } from "./styles/link-url";

@@ -1,6 +1,7 @@
 import { MAX_COORDINATE } from "../position/limits";
 import type { Axis, Size } from "../position/types";
 import { isBackgroundPosition, isBackgroundRepeat, isBackgroundSize } from "../styles/background";
+import { isOpacity, isShadow } from "../styles/effects";
 import { isImageUrl } from "../styles/image-url";
 import { isPageHeight } from "../styles/page-height";
 import { isPageMeta } from "../styles/page-meta";
@@ -105,6 +106,8 @@ const STYLE_CHECKS: Record<string, (value: unknown) => boolean> = {
   backgroundSize: isBackgroundSize,
   backgroundPosition: isBackgroundPosition,
   backgroundRepeat: isBackgroundRepeat,
+  opacity: isOpacity,
+  shadow: isShadow,
 };
 
 function isStyles(value: unknown): boolean {
