@@ -74,6 +74,7 @@ import {
 } from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
+import { applyPlugins, type EditorPlugin } from "./plugins";
 import { resolveStatus, type SaveStatus } from "./save-status";
 import { RootContext, type Shell, ShellContext } from "./shell";
 import {
@@ -170,6 +171,13 @@ export interface EditorProps {
    * Experimental.
    */
   overrides?: Overrides;
+  /**
+   * Bundles of overrides, tools, hidden parts, permissions, looks, words and config, applied in order,
+   * with your own props last (they win). A later plugin wraps the overrides of the earlier ones; hidden
+   * parts are joined; permissions are the AND of all; the rest merges by key, the later one winning.
+   * Keep the array stable (a constant or `useMemo`). Experimental.
+   */
+  plugins?: readonly EditorPlugin[];
   /**
    * Parts of the interface not to draw, by name: the places (`header`, `rail`, `panelStart`,
    * `panelEnd`, `quickActions`, `contextMenu`), parts of the header (`header.undo`, `header.redo`,
@@ -328,7 +336,9 @@ export type EditorProviderProps = EditorProps & { children?: ReactNode };
  * `<Editor.Canvas />`...). Without children it draws the default layout, which is what `<Editor>` is.
  * @experimental
  */
-export function EditorProvider(props: EditorProviderProps) {
+export function EditorProvider(given: EditorProviderProps) {
+  // The plugins applied; without any, the very props that were given.
+  const props = applyPlugins(given);
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
   // The page it opens with is made here, once, because the selection starts on its root.
   const [firstPage] = useState(() => openPage(props.data, props.config?.theme));

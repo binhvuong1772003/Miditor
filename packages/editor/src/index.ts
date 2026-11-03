@@ -45,6 +45,7 @@ export {
   EditorThemes,
   EditorTool,
 } from "./parts";
+export { definePlugin, type EditorPlugin, PLUGIN_API_VERSION } from "./plugins";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
 export { useEditorRoot } from "./shell";
