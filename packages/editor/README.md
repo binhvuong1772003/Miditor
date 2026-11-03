@@ -808,9 +808,34 @@ In the saved page they are two optional style keys, drawn the same on a phone an
 
 `shadow.color` is a `#rrggbb` colour or a theme colour name. Changing either counts as an edit, so `canEdit: false` refuses it.
 
-## Page height on a phone
+## The phone layout
 
-A page has a height for each screen. On a desktop it is the one set in the Size section (`styles.minHeight` on the page), or it fills the room the editor and your host give it. On a phone it is `styles.phoneMinHeight` when someone set it, and otherwise **a phone screen, 812 px**, or taller when the blocks need it (the lowest one and a small gap under it). The desktop height does not carry over, because the blocks are smaller on a phone. A page with only blocks in the flow is as tall as they are on every screen. In the editor, the Height field and the handle at the bottom of the page change the height of the screen being shown, and Auto goes back to fitting the blocks.
+A page you only edit on the desktop still gets a phone page. While **no block has a place of its own for the
+phone**, the phone draws the page as a flow, not as a shrunk copy of the desktop:
+
+- Blocks come in reading order, top to bottom and left to right (blocks that sit side by side stay in a row
+  when they fit).
+- A big block takes the width of the phone. A small one (a button, a logo, an icon) keeps its own width and
+  sits on the side it was on.
+- A text grows with what it says, and its size is `20 px` or less as it is, and half of what is over `20`
+  above that. A box with blocks inside lays them out the same way.
+- Blocks that overlap (a cup made of ellipses) stay one piece with their shape.
+- The page is at least 812 px tall (`styles.phoneMinHeight` sets it), and as tall as its blocks above that.
+
+The first change you make to the phone layout (a drag, a resize, a turn, an arrow key, a typed place, Align)
+**places every block where it is drawn** and then makes your change, in one step: one undo goes back to the
+flow. From then on the page is placed by hand for the phone, and a change on the desktop no longer moves the
+phone. A block you add to such a page goes at the bottom of the phone layout.
+
+**Arrange for phone** (in the panel of the page, on the phone, after a question) takes back every place and
+text size set for the phone, and the phone follows the desktop again. A page with only blocks in the flow, and
+a render with `device="phone"` of a page that has any block placed for the phone, are drawn as they were: shrunk
+by `375 / 960`, with texts that do not go under 12 px. `<Render responsive>` has both layouts in one page, so a
+published page matches the editor.
+
+The height of the page is one number for each screen: `styles.minHeight` on the desktop, `styles.phoneMinHeight`
+on the phone. In the editor the Height field and the handle at the bottom of the page change the screen being
+shown, and Auto takes the height back.
 
 ## Button actions
 

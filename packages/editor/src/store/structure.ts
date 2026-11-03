@@ -1,9 +1,13 @@
 import {
+  boxFor,
   canInsert,
+  DEVICE_WIDTH,
   duplicateNode,
   findNode,
   groupNodes,
   insertNode,
+  isFreeNode,
+  isPhoneAuto,
   type NewNodeOverrides,
   newNode,
   nextId,
@@ -12,8 +16,10 @@ import {
   type Reorder,
   removeNode,
   reorderNode,
+  resolveRect,
   type TreeNode,
   ungroupNode,
+  withPhoneBox,
 } from "@miditor/core";
 import { placeAt } from "../drop-place";
 import { patchChange } from "./apply-patch";
@@ -54,6 +60,31 @@ const selection = (state: SelectionState): string[] =>
   state.selectedId === null ? [] : [state.selectedId, ...state.picked];
 
 /**
+ * A block added to a page that has places of its own for the phone goes at the bottom of the phone
+ * layout, so it does not land on the blocks that are there. A page that is a flow needs nothing: the
+ * flow puts the new block where it belongs.
+ */
+export function atBottomOfPhone(tree: TreeNode, parentId: string, node: TreeNode): TreeNode {
+  if (parentId !== tree.id || !isFreeNode(node) || isPhoneAuto(tree)) return node;
+  const phone = { w: DEVICE_WIDTH.phone, h: 0 };
+  const bottom = tree.children.reduce((lowest, child) => {
+    if (!isFreeNode(child)) return lowest;
+    const rect = resolveRect(boxFor(child, "phone"), phone);
+    return Math.max(lowest, rect.y + rect.h);
+  }, 0);
+  const desktop = boxFor(node, "desktop");
+  const size = (own: typeof desktop.w, fallback: number) => (own.kind === "px" ? own.v : fallback);
+  const margin = 16;
+  return withPhoneBox(node, {
+    x: { anchor: "start", offset: margin },
+    y: { anchor: "start", offset: Math.round(bottom + margin) },
+    w: { kind: "px", v: Math.min(size(desktop.w, 120), phone.w - 2 * margin) },
+    h: { kind: "px", v: size(desktop.h, 60) },
+    rotation: 0,
+  });
+}
+
+/**
  * A new block of `kind`, selected. It goes inside the selected block when that kind lets blocks in
  * (`inside` is the size of the selected block), and on the page otherwise, in the middle of it
  * (`page` is the size of the page as drawn).
@@ -80,7 +111,7 @@ export function addBlock<S extends State>(
   return selectOnly(
     edit(
       settled,
-      withRoot((tree) => insertNode(tree, parentId, node)),
+      withRoot((tree) => insertNode(tree, parentId, atBottomOfPhone(tree, parentId, node))),
       env,
     ),
     id,
@@ -107,7 +138,9 @@ export function dropBlock<S extends State>(
   return selectOnly(
     edit(
       settled,
-      withRoot((tree) => insertNode(tree, args.parentId, node)),
+      withRoot((tree) =>
+        insertNode(tree, args.parentId, atBottomOfPhone(tree, args.parentId, node)),
+      ),
       env,
     ),
     id,

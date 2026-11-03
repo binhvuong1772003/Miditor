@@ -16,6 +16,7 @@ import { initialHostState } from "./host";
 import type { Permissions } from "./permissions";
 import { initialSelectionState, selectionCommands } from "./selection";
 import type { EditorState } from "./state";
+import { structureCommands } from "./structure";
 import { initialViewState, viewCommands } from "./view";
 
 const SIZE = { w: 375, h: 812 };
@@ -47,7 +48,12 @@ function setup(
   documentCommands(store, env);
   viewCommands(store).setFrame(options.frame ?? "phone");
   selectionCommands(store).selectMany(["t1"], "root");
-  return { store, geometry: geometryCommands(store, env) };
+  return {
+    store,
+    geometry: geometryCommands(store, env),
+    structure: structureCommands(store, env),
+    view: viewCommands(store),
+  };
 }
 
 const phoneBoxes = (state: EditorState) =>
@@ -125,5 +131,32 @@ describe("arranging for the phone again", () => {
     const s = setup();
     s.geometry.arrangePhone();
     expect(s.store.getState().history.past).toHaveLength(0);
+  });
+});
+
+describe("a block added to a page that has places of its own for the phone", () => {
+  const added = (state: EditorState) => state.history.present.root.children.at(-1) as FreeNode;
+  const add = (s: ReturnType<typeof setup>) => {
+    s.view.setFrame("desktop");
+    s.structure.addBlock({ kind: "Text", inside: SIZE, page: { w: 960, h: 640 } });
+  };
+
+  it("goes under the blocks that are there on the phone, as wide as on the desktop up to the phone", () => {
+    const s = setup();
+    move(s);
+    add(s);
+    expect(added(s.store.getState()).phone).toEqual({
+      x: { anchor: "start", offset: 16 },
+      y: { anchor: "start", offset: 168 },
+      w: { kind: "px", v: 240 },
+      h: { kind: "px", v: 60 },
+      rotation: 0,
+    });
+  });
+
+  it("is left to the flow on a page that is one", () => {
+    const s = setup();
+    add(s);
+    expect(added(s.store.getState()).phone).toBeUndefined();
   });
 });
