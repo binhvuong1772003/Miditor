@@ -187,6 +187,23 @@ export function resetPhone<S extends State>(state: S, env: Env): S {
   );
 }
 
+/** The node, and the nodes in it, with no placement and no text size of their own for the phone. */
+function withoutPhone(node: TreeNode): TreeNode {
+  const children = node.children.map(withoutPhone);
+  const same = children.every((child, i) => child === node.children[i]);
+  let next: TreeNode = same ? node : { ...node, children };
+  if (isFreeNode(next)) next = withPhoneBox(next, undefined);
+  return withPhoneProp(next, "size", undefined);
+}
+
+/**
+ * Every block gives back what it was set for the phone, so no block has a place of its own there and
+ * a phone that draws the page as a flow draws this one as a flow again. One step of history.
+ */
+export function arrangePhone<S extends State>(state: S, env: Env): S {
+  return edit(state, withRoot(withoutPhone), env);
+}
+
 /**
  * A number of the rect of the selected block was typed: x, y, width or height. `withRect` works out the
  * placement for this screen, with the proportions kept when the block keeps them, and one that changes
@@ -353,6 +370,7 @@ export function geometryCommands<S extends State>(store: EditorStore<S>, env: En
     changeAnchor: (args: Parameters<typeof changeAnchor>[1]) =>
       run((state) => changeAnchor(state, args, env)),
     resetPhone: () => run((state) => resetPhone(state, env)),
+    arrangePhone: () => runOnce((state) => arrangePhone(state, env)),
     setRect: (args: Parameters<typeof setRect>[1]) => run((state) => setRect(state, args, env)),
     placeBoxes: (args: Parameters<typeof placeBoxes>[1]) =>
       run((state) => placeBoxes(state, args, env)),

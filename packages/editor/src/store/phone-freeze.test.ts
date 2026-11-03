@@ -108,3 +108,22 @@ describe("the first change of the phone layout of a page drawn as a flow", () =>
     expect(phoneBoxes(s.store.getState())).toEqual([undefined, undefined]);
   });
 });
+
+describe("arranging for the phone again", () => {
+  it("takes back every place and text size set for the phone, in one step", () => {
+    const s = setup();
+    move(s);
+    const before = s.store.getState().history.past.length;
+    s.geometry.arrangePhone();
+    const state = s.store.getState();
+    expect(phoneBoxes(state)).toEqual([undefined, undefined]);
+    expect(state.history.past).toHaveLength(before + 1);
+    expect(state.history.present.root.children.every((c) => c.phoneProps === undefined)).toBe(true);
+  });
+
+  it("is no step for a page that has nothing set for the phone", () => {
+    const s = setup();
+    s.geometry.arrangePhone();
+    expect(s.store.getState().history.past).toHaveLength(0);
+  });
+});

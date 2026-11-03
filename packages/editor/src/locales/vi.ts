@@ -83,6 +83,10 @@ export const vi: Messages = {
   "size.help": "Chiều cao của trang. Cũng có thể kéo cạnh dưới của trang để đổi.",
   "height.label": "Chiều cao",
   "height.hint": "Từ {min} đến {max} px, và không thấp hơn khối ở dưới cùng.",
+  "phone.arrange": "Xếp lại cho điện thoại",
+  "phone.arrangeHint": "Bỏ mọi vị trí đã đặt cho điện thoại, để điện thoại lại theo máy tính",
+  "phone.arrangeConfirm":
+    "Xếp lại mọi khối cho điện thoại? Vị trí và cỡ chữ bạn đã đặt cho điện thoại sẽ bị thay.",
   "height.auto": "Tự động",
   "height.autoTitle": "Trả về chiều cao mà trang có khi không đặt",
   "background.title": "Nền",

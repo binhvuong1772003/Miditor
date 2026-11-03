@@ -55,6 +55,7 @@ export function EndPanel({
             onMeta={documents.changeMeta}
             pageHeight={pageHeight}
             onPhone={frame === "phone"}
+            onArrangePhone={documents.arrangePhone}
             onPageHeight={(height) =>
               documents.commitPatch(data.root.id, {
                 key: frame === "phone" ? "phoneMinHeight" : "minHeight",

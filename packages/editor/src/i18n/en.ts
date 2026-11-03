@@ -84,6 +84,11 @@ export const en = {
   "size.help": "How tall the page is. Drag the bottom edge of the page to change it as well.",
   "height.label": "Height",
   "height.hint": "From {min} to {max} px, and not under the lowest block.",
+  "phone.arrange": "Arrange for phone",
+  "phone.arrangeHint":
+    "Take back every place set for the phone, so the phone follows the desktop again",
+  "phone.arrangeConfirm":
+    "Arrange every block for the phone again? The places and text sizes you set for the phone are replaced.",
   "height.auto": "Auto",
   "height.autoTitle": "Take back the height the page has without one",
   "background.title": "Background",

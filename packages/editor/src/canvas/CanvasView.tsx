@@ -1,5 +1,6 @@
 import {
   boxFor,
+  drawsPhoneFlow,
   findNode,
   isFreeNode,
   keepsRatio,
@@ -35,6 +36,7 @@ import { KEY_HINTS } from "../keymap";
 import { applyContextMenu, OverrideSlot, OverridesContext } from "../overrides";
 import { PageEdge } from "../PageEdge";
 import { usePermissions } from "../permissions-context";
+import { drawnBox } from "../phone-freeze";
 import { QuickActions, quickOffs } from "../QuickActions";
 import type { Run } from "../store";
 import {
@@ -149,9 +151,14 @@ export function CanvasView({
         : [];
     });
     if (nodes.length < 2) return null;
+    // A phone that draws the page as a flow shows a block where the flow puts it, not where its data say.
+    const flowing = frame === "phone" && drawsPhoneFlow(data.root);
     const placed = nodes.map((node) => ({
       node,
-      rect: resolveRect(boxFor(node, frame), container),
+      rect: (() => {
+        const element = flowing ? elementOf(workspace, node.id) : null;
+        return element ? drawnBox(element) : resolveRect(boxFor(node, frame), container);
+      })(),
       rotation: boxFor(node, frame).rotation,
     }));
     const bounds = boundsOf(placed);

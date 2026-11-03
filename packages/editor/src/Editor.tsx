@@ -4,6 +4,7 @@ import {
   canInsert,
   clipboardText,
   copyNodes,
+  drawsPhoneFlow,
   emptyPage,
   findNode,
   isFreeNode,
@@ -75,7 +76,7 @@ import {
 } from "./parts";
 import { useRenders } from "./perf";
 import { PermissionsContext } from "./permissions-context";
-import { measureRoot } from "./phone-freeze";
+import { drawnBox, measureRoot } from "./phone-freeze";
 import { applyPlugins, type EditorPlugin } from "./plugins";
 import { resolveStatus, type SaveStatus } from "./save-status";
 import { RootContext, type Shell, ShellContext } from "./shell";
@@ -726,9 +727,16 @@ function EditorBody({
 
   // Where the selected block is on this screen, in its parent's px: what the number fields show.
   const parentOfSelected = parentSize();
+  // A phone that draws the page as a flow shows a block where the flow puts it: read from the page.
+  const drawnSelected =
+    selectedNode && workspace && frame === "phone" && drawsPhoneFlow(data.root)
+      ? elementOf(workspace, selectedNode.id)
+      : null;
   const selectedRect =
     selectedNode && isFreeNode(selectedNode) && parentOfSelected
-      ? resolveRect(boxFor(selectedNode, frame), parentOfSelected)
+      ? drawnSelected
+        ? drawnBox(drawnSelected)
+        : resolveRect(boxFor(selectedNode, frame), parentOfSelected)
       : undefined;
 
   // The frame of a group is worked out from the size of the page as it is drawn, which only changes

@@ -2,6 +2,7 @@ import {
   boxFor,
   type Container,
   canMove,
+  drawsPhoneFlow,
   type Frame,
   type FreeNode,
   findNode,
@@ -18,6 +19,7 @@ import {
 import { useRef, useState } from "react";
 import { type Gap, gapsAround } from "../gaps";
 import { centreOf, rectAt, turnGroup } from "../group-math";
+import { drawnBox, freezeRoot } from "../phone-freeze";
 import type { useDocumentCommands } from "../store";
 import { elementOf } from "./element-of";
 import type { ResizeResult, SelectionControls } from "./SelectionBox";
@@ -101,6 +103,21 @@ export function useGestures({
     others: { before: FreeNode; start: Rect }[];
   } | null>(null);
 
+  // A phone that draws the page as a flow puts a block where the flow does, not where its data say:
+  // what a gesture starts from is then what is drawn, read from the element.
+  const flowing = frame === "phone" && drawsPhoneFlow(data.root) && workspace !== null;
+  const drawnRect = (node: FreeNode): Rect | null => {
+    const element = flowing && workspace ? elementOf(workspace, node.id) : null;
+    return element ? drawnBox(element) : null;
+  };
+  const rectOf = (node: FreeNode, container: Container): Rect =>
+    drawnRect(node) ?? resolveRect(boxFor(node, frame), container);
+  /** The block as a gesture sees it before it begins: placed where it is drawn, when the page is a flow. */
+  const placedBefore = (node: FreeNode): FreeNode => {
+    const rect = drawnRect(node);
+    return rect ? (freezeRoot(node, new Map([[node.id, rect]])) as FreeNode) : node;
+  };
+
   /** A drag or a resize begins: remember the rect it starts from and the box it is measured in. */
   const startGesture = () => {
     if (groupInfo && workspace) {
@@ -137,14 +154,14 @@ export function useGestures({
     // The padding box of the node's real parent, which is what the position maths measure from.
     const container = { w: parent.clientWidth, h: parent.clientHeight };
     gesture.current = {
-      before: node,
-      start: resolveRect(boxFor(node, frame), container),
+      before: placedBefore(node),
+      start: rectOf(node, container),
       container,
       screen: block?.getBoundingClientRect() ?? new DOMRect(),
       others: picked.flatMap((id) => {
         const other = findNode(data.root, id);
         return other && isFreeNode(other)
-          ? [{ before: other, start: resolveRect(boxFor(other, frame), container) }]
+          ? [{ before: placedBefore(other), start: rectOf(other, container) }]
           : [];
       }),
     };
@@ -208,9 +225,7 @@ export function useGestures({
     if (turnOf(data.root, parentNode.id, frame) !== 0) return null;
     const moving = moveRect(g.start, dist, boxFor(g.before, frame).rotation);
     const others = parentNode.children.flatMap((child) =>
-      child.id !== g.before.id && isFreeNode(child)
-        ? [resolveRect(boxFor(child, frame), g.container)]
-        : [],
+      child.id !== g.before.id && isFreeNode(child) ? [rectOf(child, g.container)] : [],
     );
     const box = parentElement.getBoundingClientRect();
     return {
@@ -242,11 +257,12 @@ export function useGestures({
     const container = { w: parentElement.clientWidth, h: parentElement.clientHeight };
     const box = parentElement.getBoundingClientRect();
     return {
-      gaps: gapsAround(
-        resolveRect(boxFor(own, frame), container),
-        [resolveRect(boxFor(other, frame), container)],
-        { x: 0, y: 0, w: container.w, h: container.h },
-      ),
+      gaps: gapsAround(rectOf(own, container), [rectOf(other, container)], {
+        x: 0,
+        y: 0,
+        w: container.w,
+        h: container.h,
+      }),
       origin: {
         left: box.left + parentElement.clientLeft * zoom,
         top: box.top + parentElement.clientTop * zoom,

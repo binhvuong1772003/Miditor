@@ -41,6 +41,14 @@ export function freezeRoot(root: TreeNode, measured: ReadonlyMap<string, Measure
   return node;
 }
 
+/** Where an element is drawn inside its offset parent: layout px, which a zoom or a turn does not change. */
+export const drawnBox = (element: HTMLElement): Measured => ({
+  x: element.offsetLeft,
+  y: element.offsetTop,
+  w: element.offsetWidth,
+  h: element.offsetHeight,
+});
+
 /** The free blocks of the tree as they are drawn now, from their elements in `scope`. */
 export function measureRoot(scope: HTMLElement, root: TreeNode): Map<string, Measured> {
   const measured = new Map<string, Measured>();
@@ -48,13 +56,7 @@ export function measureRoot(scope: HTMLElement, root: TreeNode): Map<string, Mea
     if (isFreeNode(node)) {
       const element = elementOf(scope, node.id);
       if (element) {
-        // Layout px of the element inside its offset parent: a zoom or a turn does not change them.
-        measured.set(node.id, {
-          x: element.offsetLeft,
-          y: element.offsetTop,
-          w: element.offsetWidth,
-          h: element.offsetHeight,
-        });
+        measured.set(node.id, drawnBox(element));
       }
     }
     node.children.forEach(visit);

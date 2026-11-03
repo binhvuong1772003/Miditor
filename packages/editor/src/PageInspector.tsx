@@ -1,4 +1,4 @@
-import type { PageMeta, Theme, TreeNode } from "@miditor/core";
+import { drawsPhoneFlow, type PageMeta, type Theme, type TreeNode } from "@miditor/core";
 import { BackgroundFields, type BackgroundPatch } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import { FontSelect } from "./FontSelect";
@@ -23,6 +23,8 @@ export interface PageInspectorProps {
   onPageHeight: (height: number | undefined) => void;
   /** Whether the page is shown for a phone: it then has a height of its own. */
   onPhone: boolean;
+  /** Every place set for the phone is taken back, so the phone follows the desktop again. */
+  onArrangePhone: () => void;
   /** The host's way to upload a picture, for the background picture of the page. */
   uploadImage?: UploadImage | undefined;
   /** A colour of the background is being picked: show it, but do not store it yet. */
@@ -49,6 +51,7 @@ export function PageInspector({
   pageHeight,
   onPageHeight,
   onPhone,
+  onArrangePhone,
   uploadImage,
   onPreview,
   onCommit,
@@ -74,6 +77,18 @@ export function PageInspector({
           floor={pageHeight.floor}
           onChange={onPageHeight}
         />
+        {onPhone && !drawsPhoneFlow(page) && (
+          <button
+            type="button"
+            className={fieldStyles.chip}
+            title={t("phone.arrangeHint")}
+            onClick={() => {
+              if (window.confirm(t("phone.arrangeConfirm"))) onArrangePhone();
+            }}
+          >
+            {t("phone.arrange")}
+          </button>
+        )}
       </Section>
       <Section id="page.background" title={t("background.title")} help={t("background.help")}>
         <div className={fieldStyles.row}>
