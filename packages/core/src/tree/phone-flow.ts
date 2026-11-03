@@ -23,6 +23,27 @@ export interface FlowItem {
   /** Its own width and height on the desktop, in px. */
   width: number;
   height: number;
+  /** When it overlaps a sibling: the cluster it is drawn in, and its place in it, in percent of the cluster. */
+  cluster?: string;
+  place?: { left: number; top: number; width: number; height: number };
+}
+
+/** Blocks that overlap one another, drawn as one piece that keeps its shape (a cup made of ellipses). */
+export interface FlowCluster {
+  /** The id of its first member in the tree, which stands for it. */
+  id: string;
+  members: string[];
+  order: number;
+  side: FlowSide;
+  /** Its width and height on the desktop, in px. */
+  width: number;
+  height: number;
+}
+
+/** What `phoneFlowOf` works out for the free children of one parent. */
+export interface PhoneLayout {
+  items: Map<string, FlowItem>;
+  clusters: Map<string, FlowCluster>;
 }
 
 /**
@@ -47,43 +68,107 @@ export function phoneTextSize(size: number): number {
   return size <= 20 ? size : Math.round(20 + (size - 20) / 2);
 }
 
+type Placed = { id: string; rect: { x: number; y: number; w: number; h: number } };
+
+const overlap = (a: Placed["rect"], b: Placed["rect"]) =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+const sideOf = (rect: Placed["rect"], width: number): FlowSide => {
+  const middle = (rect.x + rect.w / 2) / (width || DEVICE_WIDTH.desktop);
+  return middle < 0.4 ? "start" : middle > 0.6 ? "end" : "center";
+};
+
 /**
  * The flow of the free children of a parent, worked out from their desktop boxes in a parent of this
- * size: bands from the top down (a block that starts above the bottom of the band before is in it),
- * and by x inside a band.
+ * size: blocks that overlap are one cluster (unless one spans the page, like a background), clusters
+ * and the other blocks come in bands from the top down (one that starts above the bottom of the band
+ * before is in it), and by x inside a band.
  */
-export function phoneFlowOf(parent: TreeNode, size: Container): Map<string, FlowItem> {
-  const items = parent.children.flatMap((child) => {
-    if (!isFreeNode(child)) return [];
-    return [{ id: child.id, rect: resolveRect(freeBoxOf(child), size) }];
-  });
-  items.sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x);
-  const bands: (typeof items)[] = [];
-  let bottom = Number.NEGATIVE_INFINITY;
-  for (const item of items) {
-    if (bands.length > 0 && item.rect.y < bottom) {
-      bands[bands.length - 1]?.push(item);
-      bottom = Math.max(bottom, item.rect.y + item.rect.h);
-    } else {
-      bands.push([item]);
-      bottom = item.rect.y + item.rect.h;
+export function phoneFlowOf(parent: TreeNode, size: Container): PhoneLayout {
+  const placed: Placed[] = parent.children.flatMap((child) =>
+    isFreeNode(child) ? [{ id: child.id, rect: resolveRect(freeBoxOf(child), size) }] : [],
+  );
+  // Overlapping blocks are joined into groups; a block as wide as the page joins nothing.
+  const group = new Map(placed.map((item) => [item.id, item.id]));
+  const find = (id: string): string => {
+    let at = id;
+    while (group.get(at) !== at) at = group.get(at) as string;
+    return at;
+  };
+  const joinable = placed.filter((item) => item.rect.w < size.w * 0.9);
+  for (let i = 0; i < joinable.length; i++) {
+    for (let j = i + 1; j < joinable.length; j++) {
+      const a = joinable[i] as Placed;
+      const b = joinable[j] as Placed;
+      if (overlap(a.rect, b.rect)) group.set(find(a.id), find(b.id));
     }
   }
-  const flow = new Map<string, FlowItem>();
+  const members = new Map<string, Placed[]>();
+  for (const item of placed) {
+    const key = find(item.id);
+    members.set(key, [...(members.get(key) ?? []), item]);
+  }
+  // Each group is one piece with a box: the block itself, or the box that holds a cluster.
+  const pieces = [...members.values()].map((group) => {
+    const x = Math.min(...group.map((m) => m.rect.x));
+    const y = Math.min(...group.map((m) => m.rect.y));
+    const right = Math.max(...group.map((m) => m.rect.x + m.rect.w));
+    const bottom = Math.max(...group.map((m) => m.rect.y + m.rect.h));
+    return { group, rect: { x, y, w: right - x, h: bottom - y } };
+  });
+  pieces.sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x);
+  const bands: (typeof pieces)[] = [];
+  let bottom = Number.NEGATIVE_INFINITY;
+  for (const piece of pieces) {
+    if (bands.length > 0 && piece.rect.y < bottom) {
+      bands[bands.length - 1]?.push(piece);
+      bottom = Math.max(bottom, piece.rect.y + piece.rect.h);
+    } else {
+      bands.push([piece]);
+      bottom = piece.rect.y + piece.rect.h;
+    }
+  }
+  const items = new Map<string, FlowItem>();
+  const clusters = new Map<string, FlowCluster>();
   let order = 0;
   for (const band of bands) {
     band.sort((a, b) => a.rect.x - b.rect.x);
-    for (const { id, rect } of band) {
-      const middle = (rect.x + rect.w / 2) / (size.w || DEVICE_WIDTH.desktop);
-      flow.set(id, {
-        order: order++,
-        compact: rect.w <= COMPACT_WIDTH && rect.h <= COMPACT_HEIGHT,
-        side: middle < 0.4 ? "start" : middle > 0.6 ? "end" : "center",
-        ratio: rect.h > 0 ? rect.w / rect.h : 1,
-        width: rect.w,
-        height: rect.h,
-      });
+    for (const { group, rect } of band) {
+      const side = sideOf(rect, size.w);
+      const first = parent.children.find((child) => group.some((m) => m.id === child.id));
+      if (group.length > 1 && first) {
+        clusters.set(first.id, {
+          id: first.id,
+          members: group.map((m) => m.id),
+          order: order++,
+          side,
+          width: rect.w,
+          height: rect.h,
+        });
+      }
+      for (const { id, rect: own } of group) {
+        const inCluster = group.length > 1 && rect.w > 0 && rect.h > 0;
+        items.set(id, {
+          order: inCluster ? -1 : order++,
+          compact: own.w <= COMPACT_WIDTH && own.h <= COMPACT_HEIGHT,
+          side: sideOf(own, size.w),
+          ratio: own.h > 0 ? own.w / own.h : 1,
+          width: own.w,
+          height: own.h,
+          ...(inCluster && first
+            ? {
+                cluster: first.id,
+                place: {
+                  left: ((own.x - rect.x) / rect.w) * 100,
+                  top: ((own.y - rect.y) / rect.h) * 100,
+                  width: (own.w / rect.w) * 100,
+                  height: (own.h / rect.h) * 100,
+                },
+              }
+            : {}),
+        });
+      }
     }
   }
-  return flow;
+  return { items, clusters };
 }

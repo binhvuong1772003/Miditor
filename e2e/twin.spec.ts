@@ -18,11 +18,10 @@ test("zooming one editor leaves the other at its own zoom", async ({ page }) => 
 });
 
 test("the frame of one editor is not the frame of the other", async ({ page }) => {
-  await side(page, "right").getByRole("button", { name: "Phone" }).click();
-  await expect(side(page, "right").getByRole("button", { name: "Phone" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await side(page, "right").getByRole("button", { name: "Phone", exact: true }).click();
+  await expect(
+    side(page, "right").getByRole("button", { name: "Phone", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(side(page, "left").getByRole("button", { name: "Desktop" })).toHaveAttribute(
     "aria-pressed",
     "true",

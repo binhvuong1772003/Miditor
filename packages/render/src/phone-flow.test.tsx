@@ -77,7 +77,7 @@ describe("a phone page with no placement of its own", () => {
     expect(tagOf(markup, "head")).toContain("width:100%");
     expect(tagOf(markup, "head")).toContain("height:auto");
     expect(tagOf(markup, "nav-button")).toContain("width:124px");
-    expect(tagOf(markup, "nav-button")).toContain("margin-left:auto");
+    expect(tagOf(markup, "nav-button")).toContain("margin:0 0 0 auto");
     expect(tagOf(markup, "nav-button")).toContain("position:relative");
   });
 
@@ -137,5 +137,43 @@ describe("a phone page with a block placed by hand", () => {
     expect(tagOf(markup, "hand")).toContain("left:5px");
     expect(tagOf(markup, "other")).toContain("position:absolute");
     expect(tagOf(markup, "other")).toContain("font-size:15.63px");
+  });
+});
+
+describe("blocks that overlap on a phone drawn as a flow", () => {
+  const cup = page(
+    at("ring", "Shape", 360, 520, 240, 240),
+    at("coffee", "Shape", 410, 570, 140, 140),
+    at("after", "Text", 100, 800, 760, 60),
+  );
+  const wrapper = (markup: string) => /<div[^>]*data-miditor-cluster[^>]*>/.exec(markup)?.[0] ?? "";
+
+  it("are one box with the shape they had, and their places in it in percent", () => {
+    const markup = phone(cup);
+    expect(wrapper(markup)).toContain("display:block");
+    expect(wrapper(markup)).toContain("aspect-ratio:240 / 240");
+    expect(wrapper(markup)).toContain("width:min(100%, 240px)");
+    expect(tagOf(markup, "coffee")).toContain("position:absolute");
+    expect(tagOf(markup, "coffee")).toContain("left:20.8333%");
+    expect(tagOf(markup, "coffee")).toContain("width:58.3333%");
+  });
+
+  it("hold their blocks, and the next piece comes after the box", () => {
+    const markup = phone(cup);
+    expect(markup.indexOf('data-miditor-cluster=""')).toBeLessThan(
+      markup.indexOf('data-miditor-id="ring"'),
+    );
+    const order = (id: string) => /[";\s]order:(\d+)/.exec(tagOf(markup, id))?.[1];
+    expect(order("after")).toBe("1");
+  });
+
+  it("take no part on a desktop, which has no box for them at all", () => {
+    expect(wrapper(renderToStaticMarkup(<Render data={cup} />))).toBe("");
+  });
+
+  it("are out of the way where a responsive page is not on a phone", () => {
+    const markup = renderToStaticMarkup(<Render data={cup} responsive={{}} />);
+    expect(wrapper(markup)).toContain("display:var(--m-cluster, contents)");
+    expect(wrapper(markup)).toContain("--m-cluster:var(--miditor-phone) block");
   });
 });

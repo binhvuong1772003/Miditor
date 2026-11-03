@@ -140,9 +140,11 @@ export {
   COMPACT_HEIGHT,
   COMPACT_WIDTH,
   drawsPhoneFlow,
+  type FlowCluster,
   type FlowItem,
   type FlowSide,
   isPhoneAuto,
+  type PhoneLayout,
   phoneFlowOf,
   phoneTextSize,
 } from "./tree/phone-flow";

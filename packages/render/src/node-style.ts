@@ -192,11 +192,25 @@ const flowOfKids = (isRoot: boolean): CSSProperties => ({
   padding: "16px",
 });
 
+const round4 = (n: number) => Math.round(n * 1e4) / 1e4;
+
 const px2 = (n: number) => `${Math.round(n * 100) / 100}px`;
 
 /** A free block in the flow of its parent: where it comes, how wide, and how tall. */
 function flowPlacement(node: TreeNode, item: FlowItem | undefined): CSSProperties {
   if (!isFreeNode(node) || !item) return { position: "relative" };
+  if (item.place) {
+    // Inside a cluster, a block keeps its place in the box of the cluster, whatever size that box has.
+    const { left, top, width, height } = item.place;
+    return {
+      position: "absolute",
+      left: `${round4(left)}%`,
+      top: `${round4(top)}%`,
+      width: `${round4(width)}%`,
+      height: `${round4(height)}%`,
+      ...(node.rotation !== 0 ? { rotate: `${node.rotation}deg` } : {}),
+    };
+  }
   const style: CSSProperties = {
     position: "relative",
     order: item.order,
@@ -206,9 +220,8 @@ function flowPlacement(node: TreeNode, item: FlowItem | undefined): CSSPropertie
   };
   if (item.compact) {
     // A small block sits on the side it was on, with the room of the row on the other side.
-    if (item.side === "start") style.marginRight = "auto";
-    else if (item.side === "end") style.marginLeft = "auto";
-    else style.margin = "0 auto";
+    style.margin =
+      item.side === "start" ? "0 auto 0 0" : item.side === "end" ? "0 0 0 auto" : "0 auto";
   }
   if (node.type === "Text" || node.children.length > 0) style.height = "auto";
   else if (!item.compact && (node.type === "Shape" || node.type === "Image")) {

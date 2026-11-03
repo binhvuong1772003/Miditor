@@ -3,6 +3,7 @@ import {
   DEVICE_WIDTH,
   type Device,
   drawsPhoneFlow,
+  type FlowCluster,
   type FlowItem,
   freeBoxOf,
   isFreeNode,
@@ -283,9 +284,10 @@ function RenderNode(all: NodeProps) {
   );
 }
 
-const kids = ({ node, screen, renderers, theme, inert, onAction, auto, size }: NodeProps) => {
-  const flow = auto ? phoneFlowOf(node, size) : undefined;
-  return node.children.map((child) => (
+const kids = (all: NodeProps) => {
+  const { node, screen, renderers, theme, inert, onAction, auto, size } = all;
+  const layout = auto ? phoneFlowOf(node, size) : undefined;
+  const draw = (child: TreeNode) => (
     <RenderNode
       key={child.id}
       onAction={onAction}
@@ -301,10 +303,52 @@ const kids = ({ node, screen, renderers, theme, inert, onAction, auto, size }: N
           ? (({ w, h }) => ({ w, h }))(resolveRect(freeBoxOf(child), size))
           : size
       }
-      item={flow?.get(child.id)}
+      item={layout?.items.get(child.id)}
     />
-  ));
+  );
+  return node.children.flatMap((child) => {
+    const joined = layout?.items.get(child.id)?.cluster;
+    if (!layout || !joined) return [draw(child)];
+    // Blocks that overlap are one piece on a phone: a box that holds them, drawn where the first is.
+    const cluster = layout.clusters.get(joined);
+    if (!cluster || cluster.id !== child.id) return [];
+    return [
+      <div
+        key={`cluster-${cluster.id}`}
+        data-miditor-cluster=""
+        style={clusterStyle(cluster, screen === "responsive")}
+      >
+        {node.children.filter((member) => cluster.members.includes(member.id)).map(draw)}
+      </div>,
+    ];
+  });
 };
+
+/**
+ * The box of a cluster: it takes no part on a desktop (`contents`), and on a phone it is as wide as the
+ * cluster was, or the page when that is less, with the shape it had, so its blocks keep theirs.
+ */
+function clusterStyle(cluster: FlowCluster, responsive: boolean): CSSProperties {
+  // One `margin`, never the sides on their own: a rule of the host page cannot beat it and React cannot mix them.
+  const margin =
+    cluster.side === "start" ? "0 auto 0 0" : cluster.side === "end" ? "0 0 0 auto" : "0 auto";
+  return {
+    // One screen is drawn for one device, so the box is there or it is not drawn; a responsive page has
+    // both, and the box is taken out of the way (`contents`) where the phone variable is not set.
+    ...(responsive
+      ? {
+          display: "var(--m-cluster, contents)",
+          ["--m-cluster" as string]: `var(${PHONE_VAR}) block`,
+        }
+      : { display: "block" }),
+    position: "relative",
+    order: cluster.order,
+    flex: "0 0 auto",
+    width: `min(100%, ${Math.round(cluster.width * 100) / 100}px)`,
+    aspectRatio: `${cluster.width} / ${cluster.height}`,
+    margin,
+  };
+}
 
 /**
  * Draws a page from its data. Read-only and safe to render on the server: it touches neither

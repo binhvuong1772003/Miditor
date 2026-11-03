@@ -74,7 +74,9 @@ describe("phoneFlowOf", () => {
       ),
       size,
     );
-    const order = [...flow.entries()].sort((a, b) => a[1].order - b[1].order).map(([id]) => id);
+    const order = [...flow.items.entries()]
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([id]) => id);
     expect(order).toEqual(["title", "card1", "card2", "card3"]);
   });
 
@@ -83,8 +85,8 @@ describe("phoneFlowOf", () => {
       page(at("right", 700, 20, 124, 40), at("left", 48, 24, 200, 32)),
       size,
     );
-    expect(flow.get("left")?.order).toBe(0);
-    expect(flow.get("right")?.order).toBe(1);
+    expect(flow.items.get("left")?.order).toBe(0);
+    expect(flow.items.get("right")?.order).toBe(1);
   });
 
   it("calls a small block compact and anything else full width", () => {
@@ -96,9 +98,9 @@ describe("phoneFlowOf", () => {
       ),
       size,
     );
-    expect(flow.get("button")?.compact).toBe(true);
-    expect(flow.get("card")?.compact).toBe(false);
-    expect(flow.get("bar")?.compact).toBe(false);
+    expect(flow.items.get("button")?.compact).toBe(true);
+    expect(flow.items.get("card")?.compact).toBe(false);
+    expect(flow.items.get("bar")?.compact).toBe(false);
   });
 
   it("says which side a block sits on", () => {
@@ -106,13 +108,51 @@ describe("phoneFlowOf", () => {
       page(at("l", 48, 0, 100, 40), at("c", 430, 100, 100, 40), at("r", 800, 200, 100, 40)),
       size,
     );
-    expect(flow.get("l")?.side).toBe("start");
-    expect(flow.get("c")?.side).toBe("center");
-    expect(flow.get("r")?.side).toBe("end");
+    expect(flow.items.get("l")?.side).toBe("start");
+    expect(flow.items.get("c")?.side).toBe("center");
+    expect(flow.items.get("r")?.side).toBe("end");
   });
 
   it("leaves blocks that are not free out", () => {
     const flowing = { ...at("f", 0, 0, 10, 10), position: { mode: "flow" } } as unknown as TreeNode;
-    expect(phoneFlowOf(page(flowing), size).size).toBe(0);
+    expect(phoneFlowOf(page(flowing), size).items.size).toBe(0);
+  });
+});
+
+describe("phoneFlowOf clusters", () => {
+  const cup = [
+    at("ring", 360, 520, 240, 240),
+    at("milk", 390, 550, 180, 180),
+    at("coffee", 410, 570, 140, 140),
+    at("bean", 300, 560, 28, 46),
+  ];
+
+  it("joins blocks that overlap into one cluster, and leaves the ones that do not", () => {
+    const layout = phoneFlowOf(page(...cup, at("far", 48, 900, 272, 100)), size);
+    expect(layout.clusters.size).toBe(1);
+    const cluster = layout.clusters.get("ring");
+    expect(cluster?.members).toEqual(["ring", "milk", "coffee"]);
+    expect(layout.items.get("far")?.cluster).toBeUndefined();
+    expect(layout.items.get("bean")?.cluster).toBeUndefined();
+  });
+
+  it("puts each member in the box of the cluster, in percent", () => {
+    const layout = phoneFlowOf(page(...cup), size);
+    const cluster = layout.clusters.get("ring");
+    expect(cluster?.width).toBe(240);
+    expect(cluster?.height).toBe(240);
+    const milk = layout.items.get("milk")?.place;
+    expect(milk).toEqual({ left: 12.5, top: 12.5, width: 75, height: 75 });
+  });
+
+  it("orders the cluster among the other pieces by where its box is", () => {
+    const layout = phoneFlowOf(page(...cup, at("title", 48, 100, 864, 48)), size);
+    expect(layout.items.get("title")?.order).toBe(0);
+    expect(layout.clusters.get("ring")?.order).toBeGreaterThan(0);
+  });
+
+  it("does not join a block as wide as the page, such as a background", () => {
+    const layout = phoneFlowOf(page(at("back", 0, 0, 960, 600), at("a", 100, 100, 100, 100)), size);
+    expect(layout.clusters.size).toBe(0);
   });
 });
