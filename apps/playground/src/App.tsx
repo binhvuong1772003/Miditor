@@ -22,6 +22,7 @@ import { demoPlugin } from "./demo-plugin";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
+import { COFFEE_PAGE } from "./landing-coffee";
 import { LANDING_PAGE } from "./landing-page";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { OutsideBar } from "./OutsideBar";
@@ -54,7 +55,8 @@ import { suggestedThemes } from "./themes";
 /** `?reset` in the address drops the stored page; it is taken out of the address so a reload keeps the page. */
 function openPage(): PageData {
   const url = new URL(window.location.href);
-  const landing = url.searchParams.has("landing");
+  const landingName = url.searchParams.get("landing");
+  const landing = landingName !== null;
   const reset = url.searchParams.has("reset") || landing;
   if (reset) {
     url.searchParams.delete("reset");
@@ -62,11 +64,12 @@ function openPage(): PageData {
     window.history.replaceState(null, "", url);
   }
   const page = loadPage(window.localStorage, reset);
-  // `?landing` opens a landing page made for trying the editor, in place of the stored page. It is
+  // `?landing` (or `?landing=coffee`, with no phone layout) opens a landing page made for trying the editor, in place of the stored page. It is
   // stored too, since `?preview` draws the stored page and would show the old one until a first edit.
   if (!landing) return page;
-  storePage(window.localStorage, LANDING_PAGE);
-  return LANDING_PAGE;
+  const chosen = landingName === "coffee" ? COFFEE_PAGE : LANDING_PAGE;
+  storePage(window.localStorage, chosen);
+  return chosen;
 }
 
 /**
