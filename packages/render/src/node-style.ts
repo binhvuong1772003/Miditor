@@ -7,10 +7,13 @@ import {
   isBackgroundSize,
   isFreeNode,
   isImageUrl,
+  isOpacity,
   isPageHeight,
   isPixelLength,
+  isShadow,
   type NodeStyles,
   resolveColor,
+  type Shadow,
   type Theme,
   type TreeNode,
 } from "@miditor/core";
@@ -64,6 +67,16 @@ const pageText = (theme?: Theme): CSSProperties => ({
 /** A length as CSS, rounded to 0.01, or 0 when it is not a usable length. */
 const drawn = (value: unknown) => (isPixelLength(value) ? Math.round(value * 100) / 100 : 0);
 
+/** A length of a shadow as CSS, rounded to 0.01. */
+const reach = (value: number) => `${Math.round(value * 100) / 100}px`;
+
+/** One shadow as CSS: its colour, resolved against the theme, mixed to its own opacity. */
+function shadowOf(shadow: Shadow, theme?: Theme): string {
+  const color = resolveColor(shadow.color, theme) ?? "#000000";
+  const mix = Math.round(shadow.opacity * 100) / 100;
+  return `${reach(shadow.x)} ${reach(shadow.y)} ${reach(shadow.blur)} ${reach(shadow.spread)} color-mix(in srgb, ${color} ${mix}%, transparent)`;
+}
+
 /**
  * The look of a node, from its styles. Every key is written for every node, with an explicit default,
  * so that an edit changes a value and never removes a key: a removed inline key would be left to the
@@ -82,6 +95,8 @@ function lookOf(styles: NodeStyles | undefined, theme?: Theme): CSSProperties {
     backgroundSize,
     backgroundPosition,
     backgroundRepeat,
+    opacity,
+    shadow,
   } = styles ?? {};
   const width = drawn(borderWidth);
   const radius = drawn(borderRadius);
@@ -96,6 +111,8 @@ function lookOf(styles: NodeStyles | undefined, theme?: Theme): CSSProperties {
     backgroundRepeat: isBackgroundRepeat(backgroundRepeat) ? backgroundRepeat : "no-repeat",
     border: width > 0 ? `${width}px solid ${color}` : "0",
     borderRadius: radius > 0 ? `${radius}px` : "0",
+    opacity: isOpacity(opacity) ? Math.round(opacity) / 100 : 1,
+    boxShadow: isShadow(shadow) ? shadowOf(shadow, theme) : "none",
   };
 }
 

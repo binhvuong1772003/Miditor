@@ -505,3 +505,52 @@ describe("nodeStyle, the background picture", () => {
     ).toBe('url("/a.png")');
   });
 });
+
+describe("nodeStyle, opacity and shadow", () => {
+  const styled = (styles: Record<string, unknown>) =>
+    ({ ...flow("Container"), styles }) as TreeNode;
+  const look = (styles: Record<string, unknown>, theme?: Parameters<typeof nodeStyle>[3]) =>
+    nodeStyle(styled(styles), false, "desktop", theme);
+  const shadow = { x: 0, y: 4, blur: 16, spread: -2, color: "#112233", opacity: 22 };
+
+  it("writes the defaults for every node, so an edit changes a value and removes no key", () => {
+    expect(look({}).opacity).toBe(1);
+    expect(look({}).boxShadow).toBe("none");
+  });
+
+  it("draws an opacity as a fraction, rounded to 0.01", () => {
+    expect(look({ opacity: 50 }).opacity).toBe(0.5);
+    expect(look({ opacity: 0 }).opacity).toBe(0);
+    expect(look({ opacity: 33.333 }).opacity).toBe(0.33);
+  });
+
+  it("draws a shadow with its colour mixed to its opacity", () => {
+    expect(look({ shadow }).boxShadow).toBe(
+      "0px 4px 16px -2px color-mix(in srgb, #112233 22%, transparent)",
+    );
+  });
+
+  it("resolves a theme colour", () => {
+    const theme = { colors: { primary: "#0e7490" } } as never;
+    expect(look({ shadow: { ...shadow, color: "@primary" } }, theme).boxShadow).toContain(
+      "#0e7490",
+    );
+  });
+
+  it("takes a value that is not good for the default", () => {
+    for (const bad of [-1, 101, Number.NaN, "50", null]) {
+      expect(look({ opacity: bad }).opacity).toBe(1);
+    }
+    for (const bad of [{ ...shadow, blur: -1 }, { ...shadow, color: "red; x" }, "x", {}]) {
+      expect(look({ shadow: bad }).boxShadow).toBe("none");
+    }
+  });
+
+  it("keeps the other looks as they were", () => {
+    const plain = look({ background: "#ffffff" });
+    const effects = look({ background: "#ffffff", opacity: 50, shadow });
+    const { opacity: _o, boxShadow: _b, ...rest } = effects;
+    const { opacity: _o2, boxShadow: _b2, ...base } = plain;
+    expect(rest).toEqual(base);
+  });
+});
