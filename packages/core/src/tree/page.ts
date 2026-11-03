@@ -99,6 +99,7 @@ function isSize(value: unknown): value is Size {
 const STYLE_CHECKS: Record<string, (value: unknown) => boolean> = {
   background: isColorValue,
   minHeight: isPageHeight,
+  phoneMinHeight: isPageHeight,
   borderWidth: isPixelLength,
   borderColor: isColorValue,
   borderRadius: isPixelLength,

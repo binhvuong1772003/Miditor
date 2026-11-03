@@ -240,6 +240,13 @@ describe("isPageData", () => {
       }
     });
 
+    it("accepts a phone page height and refuses one out of range or not whole", () => {
+      expect(isPageData(broken((p) => (a(p).styles = { phoneMinHeight: 812 })))).toBe(true);
+      for (const height of [199, 20001, 640.5, "812", null]) {
+        expect(isPageData(broken((p) => (a(p).styles = { phoneMinHeight: height })))).toBe(false);
+      }
+    });
+
     it("accepts an opacity and a shadow, and refuses the ones that are out of range", () => {
       const shadow = { x: 0, y: 4, blur: 16, spread: 0, color: "#000000", opacity: 22 };
       expect(isPageData(broken((p) => (a(p).styles = { opacity: 50, shadow })))).toBe(true);

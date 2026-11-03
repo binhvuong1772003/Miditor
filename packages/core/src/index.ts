@@ -109,6 +109,7 @@ export {
 } from "./tree/clipboard";
 export { boxFor, DEVICE_WIDTH, type Device, PHONE_RATIO } from "./tree/device";
 export { duplicateNode } from "./tree/duplicate";
+export { PHONE_PAGE_PADDING, phonePageHeight } from "./tree/phone-height";
 export {
   freeBoxOf,
   isFreeNode,
