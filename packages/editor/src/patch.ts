@@ -3,6 +3,7 @@ import type {
   BackgroundRepeat,
   BackgroundSize,
   JsonValue,
+  Shadow,
 } from "@miditor/core";
 
 /** One change to the background picture of a block, made by a field below. `undefined` removes it. */
@@ -16,7 +17,13 @@ export type BackgroundPatch =
 export type StylePatch =
   | { key: "background" | "borderColor"; value: string | undefined }
   | { key: "borderWidth" | "borderRadius" | "minHeight"; value: number | undefined }
+  | EffectPatch
   | BackgroundPatch;
+
+/** One change to the opacity or the shadow of a block. `undefined` removes it; an opacity of 100 is none. */
+export type EffectPatch =
+  | { key: "opacity"; value: number | undefined }
+  | { key: "shadow"; value: Shadow | undefined };
 
 /** What the panel changes besides styles: the rotation, which every free node has and never loses. */
 export type RotationPatch = { key: "rotation"; value: number };

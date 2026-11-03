@@ -132,6 +132,20 @@ const paths: Path[] = [
     call: (s) => s.content.commitPatch("t1", { key: "prop", name: "text", value: "changed" }),
   },
   {
+    name: "an opacity",
+    off: { canEdit: false },
+    call: (s) => s.content.commitPatch("t1", { key: "opacity", value: 40 }),
+  },
+  {
+    name: "a shadow",
+    off: { canEdit: false },
+    call: (s) =>
+      s.content.commitPatch("t1", {
+        key: "shadow",
+        value: { x: 0, y: 4, blur: 16, spread: 0, color: "#000000", opacity: 22 },
+      }),
+  },
+  {
     name: "page info",
     off: { canEdit: false },
     call: (s) => s.content.changeMeta({ title: "New" }),

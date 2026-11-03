@@ -4,6 +4,8 @@ import {
   type FreeBox,
   type FreeNode,
   isFreeNode,
+  isOpacity,
+  isShadow,
   type PageData,
   type Registry,
   type TreeNode,
@@ -30,6 +32,13 @@ const withStylePatch = (node: TreeNode, patch: StylePatch): TreeNode => {
     case "borderRadius":
     case "minHeight":
       return withStyle(node, patch.key, patch.value);
+    case "opacity":
+      // 100 is what no key means, so it goes back to no key; a value that is not an opacity changes nothing.
+      if (patch.value !== undefined && !isOpacity(patch.value)) return node;
+      return withStyle(node, "opacity", patch.value === 100 ? undefined : patch.value);
+    case "shadow":
+      if (patch.value !== undefined && !isShadow(patch.value)) return node;
+      return withStyle(node, "shadow", patch.value);
     case "backgroundImage":
       return withStyle(node, "backgroundImage", patch.value);
     case "backgroundSize":
