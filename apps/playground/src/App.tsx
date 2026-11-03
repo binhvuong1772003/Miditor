@@ -18,6 +18,7 @@ import { actions } from "./actions";
 import { BareLayout, CanvasAndLayers, ComposeLayout, NoCanvasLayout } from "./ComposeDemo";
 import { ControlDemo } from "./ControlDemo";
 import { demoIcons } from "./demo-icons";
+import { demoPlugin } from "./demo-plugin";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
@@ -298,6 +299,8 @@ function Playground({
       window.setTimeout(() => setStatus("saved"), 300);
     },
     ...(controller ? { controller } : {}),
+    // `?plugin` gives the editor a plugin: a bundle of overrides, hidden parts and a tool.
+    ...(new URLSearchParams(window.location.search).has("plugin") ? { plugins: [demoPlugin] } : {}),
     ...(given ? { overrides: given } : {}),
     ...(permissions ? { permissions } : {}),
     ...(hide ? { hide } : {}),

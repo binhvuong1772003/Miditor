@@ -36,6 +36,7 @@ canvas.
 | M4, composition                    | 320.74 kB | 84.25 kB |
 | M5a, custom field                  | 322.06 kB | 84.58 kB |
 | M5b to M5d, tools, lists, external | 335.57 kB | 87.48 kB |
+| M6, plugins                        | 341.52 kB | 89.26 kB |
 
 ## Lines of `Editor.tsx`
 
@@ -149,3 +150,7 @@ moments.
 
 Tools of the host, array and object fields and external fields add no state to the store and no render to a
 host that does not use them. `pnpm perf` gives the same numbers as after M4 in all six moments.
+
+## M6: renders
+
+Plugins add no state and no render to an editor given none: `applyPlugins` returns the very props it was given.

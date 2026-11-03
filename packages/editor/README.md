@@ -559,6 +559,44 @@ If the open tool is hidden, the first tool left opens. Hiding `panelEnd` hides t
 people can still select blocks. **Hiding does not stop a command**: with `header.undo` hidden, Ctrl+Z and
 `editor.undo()` still work. Only `permissions` refuse.
 
+## Plugins
+
+> Experimental.
+
+A plugin is a bundle of changes you write once and give to any editor:
+
+```tsx
+import { definePlugin } from "@miditor/editor";
+
+const analytics = definePlugin({
+  name: "analytics",
+  apiVersion: 1,
+  overrides: { headerActions: ({ children }) => <><ReportButton />{children}</> },
+  hide: ["tool.themes"],
+  config: { tools: [reportsTool] },
+});
+
+<Editor plugins={[analytics, branding]} overrides={...} />;
+```
+
+A plugin can carry `overrides`, `hide`, `permissions`, `appearance`, `i18n` and `config` (`components`,
+`renderers`, `tools`, `customFields`, `sources`, `actions`, `fonts`, `images`, `icons`). Plugins are applied in
+array order and then your own props, which always win:
+
+| What                                                          | Rule                                                                                                                                                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `overrides`                                                   | A later plugin wraps the earlier ones: your own is outermost, then the last plugin, down to the first. `contextMenu` functions run in order, each given the lines the one before gave back. |
+| `hide`                                                        | The union of all.                                                                                                                                                                           |
+| `permissions`                                                 | Every key is the AND of all that give it, so a plugin can only take away, never give back.                                                                                                  |
+| `appearance`, `i18n`                                          | The later wins field by field; `colors` and `messages` are merged by name.                                                                                                                  |
+| `components`, `renderers`, `customFields`, `sources`, `icons` | Merged by key, the later one wins, and one warning names the key.                                                                                                                           |
+| `tools`, `actions`, `fonts`, `images`                         | Joined in order (a repeated tool id keeps the first).                                                                                                                                       |
+- `name` tells a plugin apart in warnings and must be unique; a plugin with no name or a repeated one is left
+  out with a warning.
+- `apiVersion` says which shape of plugin it was written for (`PLUGIN_API_VERSION`, now 1). A plugin that needs
+  a newer one than the editor has is left out with a warning; without it, 1 is assumed.
+- Keep the `plugins` array stable (a constant or `useMemo`). With no plugins nothing changes.
+
 ## Saving
 
 The editor never sends anything by itself. What leaves it is the **whole page as JSON**, and only
