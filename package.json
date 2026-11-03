@@ -14,6 +14,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "perf": "node e2e/measure-renders.mjs",
+    "size": "node scripts/check-size.mjs",
     "dev": "pnpm --filter playground dev"
   },
   "devDependencies": {

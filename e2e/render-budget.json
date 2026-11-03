@@ -1,0 +1,11 @@
+{
+  "note": "The most commits each part may make in each moment of e2e/measure-renders.mjs. A part not listed may make none. Raise a number only in a pull request, with the reason.",
+  "moments": {
+    "add Text": { "canvas": 2, "blocks": 2, "selection": 2, "properties": 2, "editor": 2 },
+    "type 5 chars": { "canvas": 2, "blocks": 2, "selection": 2, "properties": 2, "editor": 2 },
+    "drag 100px": { "canvas": 15, "blocks": 3, "selection": 15, "properties": 3, "editor": 3 },
+    "select none": { "canvas": 4, "blocks": 4, "selection": 4, "page": 4, "editor": 4 },
+    "hover block": { "canvas": 3, "selection": 3 },
+    "select block": { "canvas": 4, "blocks": 2, "selection": 4, "properties": 2, "editor": 2 }
+  }
+}

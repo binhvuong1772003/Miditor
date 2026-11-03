@@ -1,6 +1,12 @@
 // Prints how many times each part of the editor commits for a few actions. Start the playground
 // on port 5199 first (`pnpm --filter playground exec vite --port 5199`), then `pnpm perf`.
+import { readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
+
+const { moments } = JSON.parse(
+  readFileSync(new URL("./render-budget.json", import.meta.url), "utf8"),
+);
+let failed = false;
 
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
@@ -14,7 +20,17 @@ const step = async (label, fn) => {
   await reset();
   await fn();
   await p.waitForTimeout(600);
-  console.log(label.padEnd(14), JSON.stringify(await read()));
+  const counts = await read();
+  const allowed = moments[label] ?? {};
+  const over = Object.entries(counts).filter(([part, n]) => n > (allowed[part] ?? 0));
+  if (over.length > 0) failed = true;
+  console.log(
+    label.padEnd(14),
+    JSON.stringify(counts),
+    over.length > 0
+      ? `OVER BUDGET: ${over.map(([part, n]) => `${part} ${n}>${allowed[part] ?? 0}`).join(", ")}`
+      : "",
+  );
 };
 
 await step("add Text", () => p.getByRole("button", { name: "Text", exact: true }).first().click());
@@ -41,3 +57,7 @@ await step("select block", () =>
   p.mouse.click(moved.x + moved.width / 2, moved.y + moved.height / 2),
 );
 await b.close();
+if (failed) {
+  console.error("A part committed more often than e2e/render-budget.json allows.");
+  process.exit(1);
+}

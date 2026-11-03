@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      # The unit tests also check the public surface snapshots and docs/reference.md.
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm size
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - run: E2E_STRICT=1 pnpm e2e
+      - name: Render counts
+        run: |
+          pnpm --filter playground exec vite --port 5199 --strictPort &
+          until curl -sf http://localhost:5199 > /dev/null; do sleep 1; done
+          pnpm perf

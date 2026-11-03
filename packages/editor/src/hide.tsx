@@ -5,28 +5,7 @@ import type { BuiltInTool, Tool } from "./store";
  * The parts of the interface a host can hide, by name. Hiding only stops a part being drawn; it never
  * stops a command (only `permissions` do). Experimental.
  */
-export type HideName =
-  | "header"
-  | "rail"
-  | "panelStart"
-  | "panelEnd"
-  | "quickActions"
-  | "contextMenu"
-  | "header.undo"
-  | "header.redo"
-  | "header.frame"
-  | "header.zoom"
-  | "header.save"
-  | "header.status"
-  | "tool.blocks"
-  | "tool.layers"
-  | "tool.images"
-  | "tool.themes"
-  | "props.align"
-  | "props.anchors"
-  | "props.phone";
-
-const NAMES: ReadonlySet<string> = new Set<HideName>([
+export const HIDE_NAMES = [
   "header",
   "rail",
   "panelStart",
@@ -46,7 +25,11 @@ const NAMES: ReadonlySet<string> = new Set<HideName>([
   "props.align",
   "props.anchors",
   "props.phone",
-]);
+] as const;
+
+export type HideName = (typeof HIDE_NAMES)[number];
+
+const NAMES: ReadonlySet<string> = new Set<string>(HIDE_NAMES);
 
 const TOOLS: readonly BuiltInTool[] = ["blocks", "layers", "images", "themes"];
 

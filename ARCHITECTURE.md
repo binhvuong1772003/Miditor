@@ -171,10 +171,14 @@ A host can place the parts itself (`parts.tsx`, `shell.tsx`; the types are in th
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm test
+pnpm build
+pnpm test                # also checks the surface snapshots and docs/reference.md
+pnpm size                # bundles against budgets.json
 pnpm e2e                 # E2E_STRICT=1 pnpm e2e also runs it in React StrictMode
 cd apps/playground && pnpm exec vite --port 5199 --strictPort   # in another terminal
-pnpm perf                # how many times the parts draw while typing and dragging
+pnpm perf                # commits per part against e2e/render-budget.json
 ```
 
-`docs/superpowers/specs/2026-10-31-m0-render-baseline.md` has the numbers to keep.
+The same steps run in `.github/workflows/ci.yml`. `docs/reference.md` lists the names a host can use and is
+written from the code; `docs/VERSIONING.md` says what is stable; `docs/PLAYGROUND.md` lists the modes of the
+playground and the test for each. `docs/superpowers/specs/2026-10-31-m0-render-baseline.md` has the numbers.

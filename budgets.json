@@ -1,0 +1,8 @@
+{
+  "note": "The most a built bundle may weigh, in bytes. Raise a number only in a pull request, with the reason.",
+  "bundles": {
+    "packages/core/dist/index.mjs": { "raw": 130000, "gzip": 38000 },
+    "packages/render/dist/index.mjs": { "raw": 30000, "gzip": 10000 },
+    "packages/editor/dist/index.mjs": { "raw": 360000, "gzip": 96000 }
+  }
+}
