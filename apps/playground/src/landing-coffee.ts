@@ -601,115 +601,116 @@ export const COFFEE_PAGE: PageData = {
           },
         },
         rotation: 0,
-        children: [],
-      },
-      {
-        id: "s17",
-        type: "Shape",
-        props: {
-          shape: "ellipse",
-          fill: "#b45309",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 72,
+        children: [
+          {
+            id: "s17",
+            type: "Shape",
+            props: {
+              shape: "ellipse",
+              fill: "#b45309",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 24,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 36,
+              },
+              h: {
+                kind: "px",
+                v: 36,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          y: {
-            anchor: "start",
-            offset: 934,
+          {
+            id: "t18",
+            type: "Text",
+            props: {
+              text: "Roasted to order",
+              size: 20,
+              color: "#78350f",
+              bold: true,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "'Playfair Display', Georgia, serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 78,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 30,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 36,
+          {
+            id: "t19",
+            type: "Text",
+            props: {
+              text: "We roast on Monday and ship on Tuesday, so the beans reach you at their peak.",
+              size: 14,
+              color: "#475569",
+              bold: false,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "Inter, system-ui, sans-serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 116,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 80,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          h: {
-            kind: "px",
-            v: 36,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t18",
-        type: "Text",
-        props: {
-          text: "Roasted to order",
-          size: 20,
-          color: "#78350f",
-          bold: true,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "'Playfair Display', Georgia, serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 72,
-          },
-          y: {
-            anchor: "start",
-            offset: 988,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 30,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t19",
-        type: "Text",
-        props: {
-          text: "We roast on Monday and ship on Tuesday, so the beans reach you at their peak.",
-          size: 14,
-          color: "#475569",
-          bold: false,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "Inter, system-ui, sans-serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 72,
-          },
-          y: {
-            anchor: "start",
-            offset: 1026,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 80,
-          },
-        },
-        rotation: 0,
-        children: [],
+        ],
       },
       {
         id: "c20",
@@ -751,115 +752,116 @@ export const COFFEE_PAGE: PageData = {
           },
         },
         rotation: 0,
-        children: [],
-      },
-      {
-        id: "s21",
-        type: "Shape",
-        props: {
-          shape: "ellipse",
-          fill: "#b45309",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 368,
+        children: [
+          {
+            id: "s21",
+            type: "Shape",
+            props: {
+              shape: "ellipse",
+              fill: "#b45309",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 24,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 36,
+              },
+              h: {
+                kind: "px",
+                v: 36,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          y: {
-            anchor: "start",
-            offset: 934,
+          {
+            id: "t22",
+            type: "Text",
+            props: {
+              text: "Sourced with care",
+              size: 20,
+              color: "#78350f",
+              bold: true,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "'Playfair Display', Georgia, serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 78,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 30,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 36,
+          {
+            id: "t23",
+            type: "Text",
+            props: {
+              text: "Every bean comes from a farm we have visited, paid above fair-trade prices.",
+              size: 14,
+              color: "#475569",
+              bold: false,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "Inter, system-ui, sans-serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 116,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 80,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          h: {
-            kind: "px",
-            v: 36,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t22",
-        type: "Text",
-        props: {
-          text: "Sourced with care",
-          size: 20,
-          color: "#78350f",
-          bold: true,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "'Playfair Display', Georgia, serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 368,
-          },
-          y: {
-            anchor: "start",
-            offset: 988,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 30,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t23",
-        type: "Text",
-        props: {
-          text: "Every bean comes from a farm we have visited, paid above fair-trade prices.",
-          size: 14,
-          color: "#475569",
-          bold: false,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "Inter, system-ui, sans-serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 368,
-          },
-          y: {
-            anchor: "start",
-            offset: 1026,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 80,
-          },
-        },
-        rotation: 0,
-        children: [],
+        ],
       },
       {
         id: "c24",
@@ -901,115 +903,116 @@ export const COFFEE_PAGE: PageData = {
           },
         },
         rotation: 0,
-        children: [],
-      },
-      {
-        id: "s25",
-        type: "Shape",
-        props: {
-          shape: "ellipse",
-          fill: "#b45309",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 664,
+        children: [
+          {
+            id: "s25",
+            type: "Shape",
+            props: {
+              shape: "ellipse",
+              fill: "#b45309",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 24,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 36,
+              },
+              h: {
+                kind: "px",
+                v: 36,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          y: {
-            anchor: "start",
-            offset: 934,
+          {
+            id: "t26",
+            type: "Text",
+            props: {
+              text: "Fresh in 48 hours",
+              size: 20,
+              color: "#78350f",
+              bold: true,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "'Playfair Display', Georgia, serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 78,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 30,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 36,
+          {
+            id: "t27",
+            type: "Text",
+            props: {
+              text: "Packed in resealable bags with a roast date you can read, not a best-before guess.",
+              size: 14,
+              color: "#475569",
+              bold: false,
+              italic: false,
+              underline: false,
+              align: "left",
+              font: "Inter, system-ui, sans-serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 24,
+              },
+              y: {
+                anchor: "start",
+                offset: 116,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 224,
+              },
+              h: {
+                kind: "px",
+                v: 80,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          h: {
-            kind: "px",
-            v: 36,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t26",
-        type: "Text",
-        props: {
-          text: "Fresh in 48 hours",
-          size: 20,
-          color: "#78350f",
-          bold: true,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "'Playfair Display', Georgia, serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 664,
-          },
-          y: {
-            anchor: "start",
-            offset: 988,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 30,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t27",
-        type: "Text",
-        props: {
-          text: "Packed in resealable bags with a roast date you can read, not a best-before guess.",
-          size: 14,
-          color: "#475569",
-          bold: false,
-          italic: false,
-          underline: false,
-          align: "left",
-          font: "Inter, system-ui, sans-serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 664,
-          },
-          y: {
-            anchor: "start",
-            offset: 1026,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 224,
-          },
-          h: {
-            kind: "px",
-            v: 80,
-          },
-        },
-        rotation: 0,
-        children: [],
+        ],
       },
       {
         id: "c28",
@@ -1051,83 +1054,84 @@ export const COFFEE_PAGE: PageData = {
           },
         },
         rotation: 0,
-        children: [],
-      },
-      {
-        id: "t29",
-        type: "Text",
-        props: {
-          text: "“The best cup I have had at home, and it arrives while the roast is still young.”",
-          size: 22,
-          color: "#78350f",
-          bold: false,
-          italic: true,
-          underline: false,
-          align: "center",
-          font: "'Playfair Display', Georgia, serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 184,
+        children: [
+          {
+            id: "t29",
+            type: "Text",
+            props: {
+              text: "“The best cup I have had at home, and it arrives while the roast is still young.”",
+              size: 22,
+              color: "#78350f",
+              bold: false,
+              italic: true,
+              underline: false,
+              align: "center",
+              font: "'Playfair Display', Georgia, serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 40,
+              },
+              y: {
+                anchor: "start",
+                offset: 32,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 592,
+              },
+              h: {
+                kind: "px",
+                v: 80,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-          y: {
-            anchor: "start",
-            offset: 1222,
+          {
+            id: "t30",
+            type: "Text",
+            props: {
+              text: "Linh T., subscriber since 2024",
+              size: 14,
+              color: "#b45309",
+              bold: true,
+              italic: false,
+              underline: false,
+              align: "center",
+              font: "Inter, system-ui, sans-serif",
+            },
+            styles: {},
+            position: {
+              mode: "free",
+              x: {
+                anchor: "start",
+                offset: 40,
+              },
+              y: {
+                anchor: "start",
+                offset: 128,
+              },
+            },
+            size: {
+              w: {
+                kind: "px",
+                v: 592,
+              },
+              h: {
+                kind: "px",
+                v: 24,
+              },
+            },
+            rotation: 0,
+            children: [],
           },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 592,
-          },
-          h: {
-            kind: "px",
-            v: 80,
-          },
-        },
-        rotation: 0,
-        children: [],
-      },
-      {
-        id: "t30",
-        type: "Text",
-        props: {
-          text: "Linh T., subscriber since 2024",
-          size: 14,
-          color: "#b45309",
-          bold: true,
-          italic: false,
-          underline: false,
-          align: "center",
-          font: "Inter, system-ui, sans-serif",
-        },
-        styles: {},
-        position: {
-          mode: "free",
-          x: {
-            anchor: "start",
-            offset: 184,
-          },
-          y: {
-            anchor: "start",
-            offset: 1318,
-          },
-        },
-        size: {
-          w: {
-            kind: "px",
-            v: 592,
-          },
-          h: {
-            kind: "px",
-            v: 24,
-          },
-        },
-        rotation: 0,
-        children: [],
+        ],
       },
       {
         id: "t31",
@@ -1248,7 +1252,7 @@ export const COFFEE_PAGE: PageData = {
         id: "t34",
         type: "Text",
         props: {
-          text: "Ember Coffee · a throwaway page made with Miditor, with no phone layout set",
+          text: "Ember Coffee · a throwaway page made with Miditor, with the cards made as a person would, blocks dropped into boxes",
           size: 13,
           color: "#475569",
           bold: false,
