@@ -41,10 +41,10 @@ describe("the height of a page on a phone", () => {
     return { ...base, root: { ...base.root, styles: styles as never, children: [box] } };
   };
 
-  it("fits the blocks as they are on the phone, whatever the desktop page height is", () => {
-    // 600 px of desktop is 234.38 on a phone: the page is 235 and the gap of 16 px.
+  it("is a phone screen when the blocks fit in one, whatever the desktop page height is", () => {
+    // 600 px of desktop is 234.38 on a phone: well inside a phone screen of 812.
     const markup = renderToStaticMarkup(<Render data={free({ minHeight: 1200 })} device="phone" />);
-    expect(markup).toContain("min-height:251px");
+    expect(markup).toContain("min-height:812px");
     expect(markup).not.toContain("min-height:1200px");
   });
 
@@ -65,6 +65,6 @@ describe("the height of a page on a phone", () => {
       <Render data={free({ minHeight: 1200 })} responsive={{}} />,
     );
     expect(markup).toContain("1200px");
-    expect(markup).toContain("251px");
+    expect(markup).toContain("812px");
   });
 });

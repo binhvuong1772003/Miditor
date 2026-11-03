@@ -136,7 +136,12 @@ export {
   updateNode,
 } from "./tree/nodes";
 export { emptyPage, isPageData, SCHEMA_VERSION } from "./tree/page";
-export { PHONE_PAGE_PADDING, pageHeightOn, phonePageHeight } from "./tree/phone-height";
+export {
+  PHONE_PAGE_MIN_HEIGHT,
+  PHONE_PAGE_PADDING,
+  pageHeightOn,
+  phonePageHeight,
+} from "./tree/phone-height";
 export { propsFor, withPhoneProp } from "./tree/phone-props";
 export { type Pick, pickBlock } from "./tree/pick";
 export { type Reorder, reorderNode } from "./tree/reorder";

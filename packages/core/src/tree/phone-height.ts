@@ -8,16 +8,20 @@ import type { TreeNode } from "./types";
 /** The gap, in px, between the lowest block and the bottom of a page that fits its blocks. */
 export const PHONE_PAGE_PADDING = 16;
 
+/** The shortest a phone page is when nobody has set it: a common phone screen (375 by 812). */
+export const PHONE_PAGE_MIN_HEIGHT = 812;
+
 /**
- * How tall the page is on a phone when nobody has set it: just tall enough for every block as it is
- * placed on the phone, and a little more so that none touches the edge. Never under the shortest page.
+ * How tall the page is on a phone when nobody has set it: as tall as every block needs, as it is placed
+ * on the phone, with a little more so that none touches the edge, and no shorter than a phone screen.
  */
 export function phonePageHeight(root: TreeNode): number {
   const boxes = root.children.flatMap((child) =>
     isFreeNode(child) ? [boxFor(child, "phone")] : [],
   );
-  if (boxes.length === 0) return lowestPageHeight([], DEVICE_WIDTH.phone);
-  return lowestPageHeight(boxes, DEVICE_WIDTH.phone) + PHONE_PAGE_PADDING;
+  const needed =
+    boxes.length === 0 ? 0 : lowestPageHeight(boxes, DEVICE_WIDTH.phone) + PHONE_PAGE_PADDING;
+  return Math.max(PHONE_PAGE_MIN_HEIGHT, needed);
 }
 
 /**
