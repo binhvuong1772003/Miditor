@@ -10,6 +10,7 @@ import {
   isOpacity,
   isPageHeight,
   isPixelLength,
+  phonePageHeight,
   isShadow,
   type NodeStyles,
   resolveColor,
@@ -55,6 +56,21 @@ const BY_TYPE: Record<string, CSSProperties> = {
   // A group has no look of its own: it is only the box that holds its blocks.
   Group: { display: "block" },
 };
+
+/**
+ * The height of the root on a screen. A desktop page is as tall as it was set, or fills its box. A
+ * phone page is as tall as it was set for the phone, and when nobody did, as its blocks need: the
+ * desktop height does not carry over, since the blocks on a phone are smaller than on a desktop.
+ */
+function pageHeight(root: TreeNode, device: Device): CSSProperties {
+  const own = (height: unknown): CSSProperties =>
+    isPageHeight(height) ? { minHeight: `${height}px`, flexGrow: 0 } : {};
+  if (device === "desktop") return own(root.styles?.minHeight);
+  if (isPageHeight(root.styles?.phoneMinHeight)) return own(root.styles.phoneMinHeight);
+  // A page of blocks in the flow is as tall as they are, on any screen: there is nothing to fit.
+  if (!root.children.some(isFreeNode)) return own(root.styles?.minHeight);
+  return own(phonePageHeight(root));
+}
 
 /** Typography the whole page inherits, written out so the host's inherited styles do not leak in. */
 const pageText = (theme?: Theme): CSSProperties => ({
@@ -144,9 +160,7 @@ export function nodeStyle(
     ...lookOf(node.styles, theme),
     // The height of the page, when it was set: only the root has one, and it is a whole px in range.
     // It then is that tall and no taller, so it stops filling the box the host gives it.
-    ...(isRoot && isPageHeight(node.styles?.minHeight)
-      ? { minHeight: `${node.styles.minHeight}px`, flexGrow: 0 }
-      : {}),
+    ...(isRoot ? pageHeight(node, device) : {}),
   };
   // A flow node is `relative` so that every sibling is positioned and the order in the tree is the
   // order of painting. A free node sits where its anchors put it, on this screen.

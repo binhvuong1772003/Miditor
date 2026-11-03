@@ -44,7 +44,11 @@ describe("phonePageHeight", () => {
 
   it("holds a block that hangs from the bottom edge", () => {
     const hanging = block("a", {
-      position: { mode: "free", x: { anchor: "start", offset: 0 }, y: { anchor: "end", offset: 20 } },
+      position: {
+        mode: "free",
+        x: { anchor: "start", offset: 0 },
+        y: { anchor: "end", offset: 20 },
+      },
     });
     // 100 px of height shrinks to 39.06, 20 px of offset to 7.81: the page needs 46.87, so the shortest page.
     expect(phonePageHeight(pageWith(hanging))).toBe(MIN_PAGE_HEIGHT + PHONE_PAGE_PADDING);
