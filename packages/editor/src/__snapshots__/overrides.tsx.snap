@@ -64,6 +64,24 @@ export interface Overrides extends Partial<ComponentOverrides> {
   }) => readonly ContextMenuItem[];
 }
 
+/** The places a host can override, by name: the one list the docs and the checks read. */
+export const OVERRIDE_PLACES = [
+  "header",
+  "headerActions",
+  "field",
+  "rail",
+  "panelStart",
+  "panelEnd",
+  "quickActions",
+  "contextMenu",
+] as const satisfies readonly (keyof Overrides)[];
+
+// Fails to compile when a place is added to `Overrides` and not to the list above.
+const _allPlacesListed: Exclude<keyof Overrides, (typeof OVERRIDE_PLACES)[number]> extends never
+  ? true
+  : never = true;
+void _allPlacesListed;
+
 export const OverridesContext = createContext<Overrides | undefined>(undefined);
 
 type State = { failed: boolean; entry: unknown };

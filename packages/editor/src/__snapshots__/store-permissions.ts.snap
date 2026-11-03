@@ -17,6 +17,15 @@ export interface Permissions {
   canAdd?: boolean | ((parent: TreeNode, kind: string) => boolean);
 }
 
+/** The permissions a host can give, by name. */
+export const PERMISSION_KEYS = [
+  "canEdit",
+  "canDelete",
+  "canDuplicate",
+  "canDrag",
+  "canAdd",
+] as const satisfies readonly (keyof Permissions)[];
+
 export type Action = "edit" | "delete" | "duplicate" | "drag" | "add";
 
 /** What was refused: the kind of change and the block it concerned (the parent, for an add). */
