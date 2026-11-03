@@ -11,6 +11,7 @@ import {
   parsePixelLength,
   propsFor,
   type Rect,
+  type Shadow,
   type Theme,
   type TreeNode,
 } from "@miditor/core";
@@ -320,6 +321,13 @@ export function PropertiesPanel({
                   </div>
                 </div>
               </Section>
+              <EffectsSection
+                node={node}
+                theme={theme}
+                onPreview={onPreview}
+                onCommit={onCommit}
+                onDiscard={onDiscard}
+              />
             </Fragment>
           ) : (
             <Fragment key="advanced">
@@ -708,5 +716,192 @@ function BackToPage({ onClick }: { onClick: (() => void) | undefined }) {
       <Icon name="chevronRight" size={12} />
       {t("page.title")}
     </button>
+  );
+}
+
+/** A percent typed as `50` or `50%`: nothing typed is "no opacity", which is a block that is fully shown. */
+const readPercent = (text: string): Reading<number> => {
+  const trimmed = text.trim().replace(/%$/, "").trim();
+  if (trimmed === "") return undefined;
+  const value = Number(trimmed.replace(",", "."));
+  return Number.isFinite(value) && value >= 0 && value <= 100
+    ? Math.round(value * 100) / 100
+    : null;
+};
+
+/** A number from `min` to `max`; nothing typed is 0. */
+const readRange =
+  (min: number, max: number) =>
+  (text: string): Reading<number> => {
+    const trimmed = text.trim();
+    if (trimmed === "") return 0;
+    const value = Number(trimmed.replace(",", "."));
+    return Number.isFinite(value) && value >= min && value <= max
+      ? Math.round(value * 100) / 100
+      : null;
+  };
+
+/** The three shadows to start from; each can be changed with the fields below them. */
+const SHADOW_PRESETS = [
+  ["shadowSoft", { x: 0, y: 2, blur: 8, spread: 0, color: "#000000", opacity: 15 }],
+  ["shadowMedium", { x: 0, y: 4, blur: 16, spread: 0, color: "#000000", opacity: 22 }],
+  ["shadowStrong", { x: 0, y: 8, blur: 28, spread: 0, color: "#000000", opacity: 32 }],
+] as const satisfies readonly (readonly [string, Shadow])[];
+
+const sameShadow = (a: Shadow | undefined, b: Shadow | undefined) =>
+  a === b || (a !== undefined && b !== undefined && JSON.stringify(a) === JSON.stringify(b));
+
+/** How much of the block shows, and one shadow behind it. */
+function EffectsSection({
+  node,
+  theme,
+  onPreview,
+  onCommit,
+  onDiscard,
+}: {
+  node: TreeNode;
+  theme: Theme | undefined;
+  onPreview: (patch: PanelPatch) => void;
+  onCommit: (patch: PanelPatch) => void;
+  onDiscard: () => void;
+}) {
+  const t = useT();
+  const shadow = node.styles.shadow;
+  const opacity = node.styles.opacity ?? 100;
+  const percent = t("props.errorPercent");
+  /** A field of the shadow: a new number for one member, the rest kept. */
+  const member = (key: "x" | "y" | "blur" | "spread" | "opacity") => ({
+    stored: shadow?.[key],
+    onPreview: (value: number | undefined) =>
+      shadow && onPreview({ key: "shadow", value: { ...shadow, [key]: value ?? 0 } }),
+    onCommit: (value: number | undefined) =>
+      shadow && onCommit({ key: "shadow", value: { ...shadow, [key]: value ?? 0 } }),
+    onDiscard,
+  });
+  const reach = (min: number, max: number) =>
+    t("props.errorRange", { min: String(min), max: String(max) });
+  return (
+    <Section id="props.effects" title={t("props.effects")}>
+      <div className={styles.stack}>
+        <div className={styles.row}>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={opacity}
+            aria-label={t("props.opacity")}
+            onChange={(event) => onPreview({ key: "opacity", value: Number(event.target.value) })}
+            onPointerUp={(event) =>
+              onCommit({ key: "opacity", value: Number(event.currentTarget.value) })
+            }
+            onKeyUp={(event) =>
+              onCommit({ key: "opacity", value: Number(event.currentTarget.value) })
+            }
+          />
+          <NumberField
+            label={t("props.opacity")}
+            hint={t("props.opacityHint")}
+            unit="%"
+            placeholder="100"
+            error={percent}
+            read={readPercent}
+            stored={node.styles.opacity}
+            onPreview={(value) => onPreview({ key: "opacity", value })}
+            onCommit={(value) => onCommit({ key: "opacity", value })}
+            onDiscard={onDiscard}
+          />
+        </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would bring its own border and spacing */}
+        <div role="group" aria-label={t("props.shadow")} className={styles.seg}>
+          <button
+            type="button"
+            className={styles.segButton}
+            aria-pressed={shadow === undefined}
+            onClick={() => onCommit({ key: "shadow", value: undefined })}
+          >
+            {t("props.shadowNone")}
+          </button>
+          {SHADOW_PRESETS.map(([name, preset]) => (
+            <button
+              key={name}
+              type="button"
+              className={styles.segButton}
+              aria-pressed={sameShadow(shadow, preset)}
+              onClick={() => onCommit({ key: "shadow", value: preset })}
+            >
+              {t(`props.${name}`)}
+            </button>
+          ))}
+        </div>
+        {shadow && (
+          <div className={styles.grid2}>
+            <NumberField
+              label="X"
+              name={t("props.shadowX")}
+              hint=""
+              unit="px"
+              placeholder="0"
+              error={reach(-200, 200)}
+              read={readRange(-200, 200)}
+              {...member("x")}
+            />
+            <NumberField
+              label="Y"
+              name={t("props.shadowY")}
+              hint=""
+              unit="px"
+              placeholder="0"
+              error={reach(-200, 200)}
+              read={readRange(-200, 200)}
+              {...member("y")}
+            />
+            <NumberField
+              label={t("props.shadowBlur")}
+              hint=""
+              unit="px"
+              placeholder="0"
+              error={reach(0, 200)}
+              read={readRange(0, 200)}
+              {...member("blur")}
+            />
+            <NumberField
+              label={t("props.shadowSpread")}
+              hint=""
+              unit="px"
+              placeholder="0"
+              error={reach(-200, 200)}
+              read={readRange(-200, 200)}
+              {...member("spread")}
+            />
+            <NumberField
+              label={t("props.shadowStrength")}
+              hint=""
+              unit="%"
+              placeholder="0"
+              error={percent}
+              read={readRange(0, 100)}
+              {...member("opacity")}
+            />
+            <div className={styles.span2}>
+              <ColourField
+                label={t("props.shadowColour")}
+                noneLabel={t("props.shadowColourBlack")}
+                hint=""
+                theme={theme}
+                stored={shadow.color}
+                onPreview={(value) =>
+                  onPreview({ key: "shadow", value: { ...shadow, color: value ?? "#000000" } })
+                }
+                onCommit={(value) =>
+                  onCommit({ key: "shadow", value: { ...shadow, color: value ?? "#000000" } })
+                }
+                onDiscard={onDiscard}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </Section>
   );
 }
