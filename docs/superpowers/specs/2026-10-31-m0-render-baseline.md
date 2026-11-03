@@ -37,6 +37,7 @@ canvas.
 | M5a, custom field                  | 322.06 kB | 84.58 kB |
 | M5b to M5d, tools, lists, external | 335.57 kB | 87.48 kB |
 | M6, plugins                        | 341.52 kB | 89.26 kB |
+| M-effects, opacity and shadow      | 348.68 kB | 90.71 kB |
 
 ## Lines of `Editor.tsx`
 

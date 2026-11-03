@@ -791,6 +791,18 @@ with each other, and Across and Down (three or more blocks) make the gaps betwee
 one block selected it lines up with its parent. Blocks that are turned are lined up by the box they
 would have without the turn.
 
+## Opacity and shadow
+
+Every block has an **Effects** section in the Design tab: an opacity slider (0 to 100, where 100 is the default and stores nothing) and a shadow with the presets None, Soft, Medium and Strong. Under a shadow you can set X, Y, Blur, Spread, Strength and the colour. Turning a block is the Rotation field in the Advanced tab, or the handle on the canvas.
+
+In the saved page they are two optional style keys, drawn the same on a phone and on a desktop, and `<Preview>` shows them too:
+
+```json
+{ "styles": { "opacity": 40, "shadow": { "x": 0, "y": 4, "blur": 16, "spread": 0, "color": "#000000", "opacity": 22 } } }
+```
+
+`shadow.color` is a `#rrggbb` colour or a theme colour name. Changing either counts as an edit, so `canEdit: false` refuses it.
+
 ## Button actions
 
 A button can do something on your page when it is pressed. The page data holds only a name and a few
