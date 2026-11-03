@@ -808,6 +808,10 @@ In the saved page they are two optional style keys, drawn the same on a phone an
 
 `shadow.color` is a `#rrggbb` colour or a theme colour name. Changing either counts as an edit, so `canEdit: false` refuses it.
 
+## Page height on a phone
+
+A page has a height for each screen. On a desktop it is the one set in the Size section (`styles.minHeight` on the page), or it fills the room the editor and your host give it. On a phone it is `styles.phoneMinHeight` when someone set it, and otherwise **as tall as its blocks need**, with a small gap under the lowest one. The desktop height does not carry over, because the blocks are smaller on a phone. A page with only blocks in the flow is as tall as they are on every screen. In the editor, the Height field and the handle at the bottom of the page change the height of the screen being shown, and Auto goes back to fitting the blocks.
+
 ## Button actions
 
 A button can do something on your page when it is pressed. The page data holds only a name and a few

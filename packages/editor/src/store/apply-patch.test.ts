@@ -40,3 +40,13 @@ describe("applyPatch, shadow", () => {
     expect(apply(plain, { key: "shadow", value: { ...shadow, color: "red" } })).toBe(plain);
   });
 });
+
+describe("applyPatch, phone page height", () => {
+  it("is kept apart from the desktop height", () => {
+    const both = apply(node({ minHeight: 900 }), { key: "phoneMinHeight", value: 812 });
+    expect(both.styles).toEqual({ minHeight: 900, phoneMinHeight: 812 });
+    expect(apply(both, { key: "phoneMinHeight", value: undefined }).styles).toEqual({
+      minHeight: 900,
+    });
+  });
+});
