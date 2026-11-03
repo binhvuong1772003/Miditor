@@ -22,6 +22,7 @@ import { demoPlugin } from "./demo-plugin";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { components, renderers } from "./kinds";
+import { LANDING_PAGE } from "./landing-page";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { OutsideBar } from "./OutsideBar";
 import {
@@ -53,12 +54,16 @@ import { suggestedThemes } from "./themes";
 /** `?reset` in the address drops the stored page; it is taken out of the address so a reload keeps the page. */
 function openPage(): PageData {
   const url = new URL(window.location.href);
-  const reset = url.searchParams.has("reset");
+  const landing = url.searchParams.has("landing");
+  const reset = url.searchParams.has("reset") || landing;
   if (reset) {
     url.searchParams.delete("reset");
+    url.searchParams.delete("landing");
     window.history.replaceState(null, "", url);
   }
-  return loadPage(window.localStorage, reset);
+  const page = loadPage(window.localStorage, reset);
+  // `?landing` opens a landing page made for trying the editor, in place of the stored page.
+  return landing ? LANDING_PAGE : page;
 }
 
 /**
