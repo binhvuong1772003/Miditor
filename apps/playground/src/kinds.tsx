@@ -35,6 +35,18 @@ export const components: Registry = {
     defaultProps: { item: null },
     fields: { item: { type: "external", label: "Item", source: "items" } },
   },
+  // A kind that keeps only a reference to the item picked from the host's shop: the page holds `{ id, label }`
+  // and the data comes from the source, in the editor and, through `resolveSources`, where the page is drawn.
+  LiveItem: {
+    label: "Live item",
+    category: "From your website",
+    icon: "box",
+    keywords: ["product", "shop", "reference", "demo"],
+    size: { w: 240, h: 64 },
+    canContain: false,
+    defaultProps: { item: null },
+    fields: { item: { type: "external", label: "Item", source: "items", store: "reference" } },
+  },
   // A kind with a list of objects: the entries of a menu, each a label and a link.
   Menu: {
     label: "Menu",
@@ -85,6 +97,20 @@ export const renderers: Record<string, Renderer> = {
     return (
       <div data-testid="related-page" style={{ padding: 8 }}>
         Related: {label}
+      </div>
+    );
+  },
+  LiveItem: ({ props }) => {
+    const item = props.item;
+    const data =
+      typeof item === "object" && item !== null && !Array.isArray(item) ? item.data : undefined;
+    const shown =
+      typeof data === "object" && data !== null && !Array.isArray(data)
+        ? `${String(data.title)} · ${String(data.price)}`
+        : "none";
+    return (
+      <div data-testid="live-item" style={{ padding: 8 }}>
+        {shown}
       </div>
     );
   },

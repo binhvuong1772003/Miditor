@@ -155,4 +155,30 @@ test.describe("an external field", () => {
     expect(calls.answered).toBe(1);
     expect(calls.ids.at(-1)?.sort()).toEqual(["beans", "mug"]);
   });
+
+  test("a reference keeps only the id in the page, and the canvas and the preview show the live data", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    await addFromBlocks(page, "Live item");
+    await pickItem(page, "Coffee beans");
+    const card = page.getByTestId("live-item");
+    await expect(card).toContainText("199");
+    const saved = await storedPage(page, (stored) =>
+      JSON.stringify(stored).includes('"item":{"id":"beans"'),
+    );
+    const text = JSON.stringify(saved);
+    expect(text).toContain('"item":{"id":"beans","label":"Coffee beans"}');
+    expect(text).not.toContain('"data"');
+
+    // The source has moved on: the canvas shows it with no banner, and nothing is written.
+    await page.goto("/?items-changed");
+    await expect(page.getByTestId("live-item")).toContainText("249");
+    await expect(newer(page)).toHaveCount(0);
+    expect(JSON.stringify(await storedPage(page))).not.toContain('"data"');
+
+    // A visitor's page: the host fills the data in with `resolveSources` before it draws.
+    await page.goto("/?preview&items-changed");
+    await expect(page.getByTestId("live-item")).toContainText("249");
+  });
 });

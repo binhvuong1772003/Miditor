@@ -1011,6 +1011,22 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
   `getMany` is not checked. Have `get`, `getMany` and `search` answer the same `data` for an item, and an item whose `id` is
   the one asked for and whose `label` is a string: any other answer counts as "could not check". A call that rejects (even with
   an `AbortError` of your own) is "could not check", never "gone".
+- **A snapshot or a reference.** A field says what the page keeps of the chosen item: `store: "snapshot"` (the
+  default) the item's `data` as above, so the page draws with no call; `store: "reference"` only `{ id, label }`,
+  never `data` or `at`. For a value that must be right when the page is looked at (a price, stock). In the editor
+  the canvas draws a reference with the data its source gave (read through `getMany` or `get` when the page opens,
+  and from the item picked in the search); that data is never written into the page, never reaches `onChange`, and
+  the "newer data" message and Update leave references alone. A reference whose source has neither `get` nor
+  `getMany` shows a note in its panel and the block is drawn with `data` missing. The renderer of the kind reads
+  `props.<field>.data` for both, so it must cope with it being missing.
+- **Filling the data where the page is drawn.** `<Render>` never calls the network. For a page whose fields keep
+  references, call `resolveSources(page, registry, sources, { signal, metadata })` (from `@miditor/editor`, or
+  `@miditor/core`) where you like (when you build the page, on your server, in the browser) and give `page` of the
+  answer to `<Render>`. It asks each source once for all the ids (see above), fills `data` of every `external`
+  value, snapshots included, and never throws for a source: it also returns `failed`, a list of
+  `{ nodeId, source, id }` for items that are gone or could not be loaded, which stay as they were.
+  Switching a field from snapshot to reference leaves old `data` in stored pages, ignored; the other way, the page
+  shows the "newer data" message until Update.
 - A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list
   or a group too.
 

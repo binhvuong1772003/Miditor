@@ -1,6 +1,7 @@
 export {
   type ComponentDef,
   emptyPage,
+  type FailedItem,
   type Field,
   isPageData,
   type MigrateResult,
@@ -8,6 +9,7 @@ export {
   type PageData,
   type Registry,
   resolveColor,
+  resolveSources,
   type SavedTheme,
   SCHEMA_VERSION,
   type Theme,

@@ -1,6 +1,8 @@
+import { resolveSources } from "@miditor/editor";
 import { pageMeta, Render } from "@miditor/render";
 import { useEffect, useState } from "react";
-import { renderers } from "./kinds";
+import { itemsSource } from "./items-source";
+import { components, renderers } from "./kinds";
 import { loadPage } from "./storage";
 
 const WIDTHS = [
@@ -14,7 +16,19 @@ const WIDTHS = [
  * sets, to see the phone layout take over as the box gets narrow. Nothing here is the editor.
  */
 export function Preview() {
-  const [page] = useState(() => loadPage(window.localStorage));
+  const [stored] = useState(() => loadPage(window.localStorage));
+  // A page whose fields keep references has no data for them: the host fills it in before it draws, here
+  // with `resolveSources`. Until the answer is in the page is drawn as it was stored.
+  const [page, setPage] = useState(stored);
+  useEffect(() => {
+    let current = true;
+    void resolveSources(stored, components, { items: itemsSource }).then((resolved) => {
+      if (current) setPage(resolved.page);
+    });
+    return () => {
+      current = false;
+    };
+  }, [stored]);
   // The host puts the title of the page in its tab; the description and picture go in the head the same way.
   useEffect(() => {
     const { title } = pageMeta(page);
