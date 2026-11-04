@@ -9,8 +9,10 @@ import {
   DEFAULT_HISTORY_LIMIT,
   type History,
   historyLimit,
+  jumpTo,
   redo,
   undo,
+  withSteps,
 } from "./history";
 
 /** A history that went through the values in order. */
@@ -232,5 +234,66 @@ describe("history, properties", () => {
         return commit(h, value, 100).future.length === 0;
       }),
     );
+  });
+});
+
+describe("jumpTo", () => {
+  /** [0..4] with 2 as the present: past [0,1], future [3,4]. */
+  const middle = (): History<number> => ({ past: [0, 1], present: 2, future: [3, 4] });
+
+  it("goes to a step in one move, keeping the order of every step", () => {
+    expect(jumpTo(middle(), 0)).toEqual({ past: [], present: 0, future: [1, 2, 3, 4] });
+    expect(jumpTo(middle(), 4)).toEqual({ past: [0, 1, 2, 3], present: 4, future: [] });
+    expect(jumpTo(middle(), 3)).toEqual({ past: [0, 1, 2], present: 3, future: [4] });
+  });
+
+  it("gives back the very history for the step it is at, or for one that is not there", () => {
+    const h = middle();
+    for (const index of [2, -1, 5, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(jumpTo(h, index)).toBe(h);
+    }
+  });
+
+  it("leaves undo and redo one step each way from where it landed", () => {
+    const landed = jumpTo(middle(), 1);
+    expect(undo(landed).present).toBe(0);
+    expect(redo(landed).present).toBe(2);
+  });
+
+  it("keeps the list of steps the same, for any history and any step", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer(), { maxLength: 30 }),
+        fc.integer(),
+        fc.array(fc.integer(), { maxLength: 30 }),
+        fc.nat(70),
+        (past, present, future, at) => {
+          const h: History<number> = { past, present, future };
+          const all = [...past, present, ...future];
+          const next = jumpTo(h, at);
+          expect([...next.past, next.present, ...next.future]).toEqual(all);
+          if (at < all.length) expect(next.present).toBe(all[at]);
+          expect(next.past.length).toBe(at < all.length ? at : past.length);
+        },
+      ),
+    );
+  });
+});
+
+describe("withSteps", () => {
+  it("replaces what came before and after, and keeps the present", () => {
+    const h = through([1, 2, 3]);
+    expect(withSteps(h, [7, 8], [9], 100)).toEqual({ past: [7, 8], present: 3, future: [9] });
+  });
+
+  it("keeps the newest steps of the past and the nearest of the future when there are more than the limit", () => {
+    const next = withSteps(createHistory(0), [1, 2, 3, 4, 5], [6, 7, 8, 9], 3);
+    expect(next.past).toEqual([3, 4, 5]);
+    expect(next.future).toEqual([6, 7, 8]);
+  });
+
+  it("takes the default limit for a limit that is not a limit", () => {
+    const many = Array.from({ length: DEFAULT_HISTORY_LIMIT + 5 }, (_, i) => i);
+    expect(withSteps(createHistory(0), many, [], "no").past).toHaveLength(DEFAULT_HISTORY_LIMIT);
   });
 });

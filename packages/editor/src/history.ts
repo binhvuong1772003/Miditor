@@ -78,3 +78,34 @@ export function redo<T>(history: History<T>): History<T> {
     future: rest,
   };
 }
+
+/**
+ * Goes to the step at `index` of all the steps in order, `[...past, present, ...future]`, in one move:
+ * nothing is drawn in between. The step the history is at is `past.length`. For an index that is not a
+ * step, or the one it is at, the same history comes back.
+ */
+export function jumpTo<T>(history: History<T>, index: number): History<T> {
+  const at = history.past.length;
+  const total = at + 1 + history.future.length;
+  if (!Number.isInteger(index) || index < 0 || index >= total || index === at) return history;
+  const all = [...history.past, history.present, ...history.future];
+  return { past: all.slice(0, index), present: all[index] as T, future: all.slice(index + 1) };
+}
+
+/**
+ * The same present with other steps before and after it: the newest `limit` of `past` and the nearest
+ * `limit` of `future`. For what a host kept of an earlier session.
+ */
+export function withSteps<T>(
+  history: History<T>,
+  past: readonly T[],
+  future: readonly T[],
+  limit: unknown,
+): History<T> {
+  const kept = historyLimit(limit);
+  return {
+    past: past.length > kept ? past.slice(past.length - kept) : past,
+    present: history.present,
+    future: future.length > kept ? future.slice(0, kept) : future,
+  };
+}
