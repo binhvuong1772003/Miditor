@@ -22,6 +22,7 @@ export {
   useOptionalStore,
   useRun,
   useSelectionCommands,
+  useSourceAnswers,
   useStore,
   useStoreApi,
   useStoreShallow,
@@ -39,9 +40,11 @@ export {
   canCheck,
   checkPage,
   initialSourcesState,
+  metadataKey,
   type SourceReport,
   type SourcesCommands,
   sourceReport,
+  withoutAnswer,
 } from "./sources";
 export type {
   BuiltInTool,

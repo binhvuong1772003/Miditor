@@ -42,9 +42,13 @@ export async function checkPage(
   sources: Readonly<Record<string, ExternalSource>> | undefined,
   signal: AbortSignal,
   ctx: SourceContext,
+  permissions?: Permissions,
 ): Promise<ReadonlyMap<string, Answer>> {
   const wanted = new Map<string, string[]>();
   for (const ref of externalRefs(registry, page)) {
+    // A block the person may not edit is not asked about, and so has nothing to say in its panel.
+    const owner = findNode(page.root, ref.nodeId);
+    if (!owner || !allowed(permissions?.canEdit, owner)) continue;
     const source = sources && Object.hasOwn(sources, ref.source) ? sources[ref.source] : undefined;
     if (!canCheck(source)) continue;
     const ids = wanted.get(ref.source) ?? [];
@@ -64,6 +68,31 @@ export async function checkPage(
     }),
   );
   return answers;
+}
+
+/**
+ * What tells a check that its question is not the one asked before: the `metadata`, as text. Metadata
+ * that cannot be written as JSON (a cycle, a BigInt) gives an empty key rather than an error.
+ */
+export function metadataKey(metadata: unknown): string {
+  try {
+    return JSON.stringify(metadata) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** The answers without the one for this id of this source (the person has picked it again since). */
+export function withoutAnswer(
+  answers: ReadonlyMap<string, Answer>,
+  source: string,
+  id: string,
+): ReadonlyMap<string, Answer> {
+  const key = answerKey(source, id);
+  if (!answers.has(key)) return answers;
+  const next = new Map(answers);
+  next.delete(key);
+  return next;
 }
 
 /** The stored items of the page, by what the last check said of each. */
@@ -123,6 +152,7 @@ export function refreshSources<S extends DocumentState & SourcesState>(
     return [
       {
         nodeId: ref.nodeId,
+        layer: ref.layer,
         path: ref.path,
         value: updateValue(ref.value, answer.item, args.now),
       },
@@ -132,6 +162,20 @@ export function refreshSources<S extends DocumentState & SourcesState>(
   return edit(state, (page) => withExternalValues(page, changes), env);
 }
 
+/** The commands on the answers of the last check, which need no more than the store. */
+export function answerCommands<S extends SourcesState>(store: EditorStore<S>) {
+  return {
+    setSourceAnswers: (answers: ReadonlyMap<string, Answer>) => {
+      store.setState({ sourceAnswers: answers } as Partial<S>);
+    },
+    forgetSourceAnswer: (source: string, id: string) => {
+      const answers = store.getState().sourceAnswers;
+      const next = withoutAnswer(answers, source, id);
+      if (next !== answers) store.setState({ sourceAnswers: next } as Partial<S>);
+    },
+  };
+}
+
 /** The commands tied to a store. */
 export function sourcesCommands<S extends DocumentState & SourcesState>(
   store: EditorStore<S>,
@@ -139,9 +183,7 @@ export function sourcesCommands<S extends DocumentState & SourcesState>(
 ) {
   const run = runner(store, env);
   return {
-    setSourceAnswers: (answers: ReadonlyMap<string, Answer>) => {
-      store.setState({ sourceAnswers: answers } as Partial<S>);
-    },
+    ...answerCommands(store),
     refreshSources: (checked: (source: string) => boolean) =>
       run((state) => refreshSources(state, { checked, now: new Date() }, env)),
   };

@@ -1007,7 +1007,10 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
   newer data into every such block as one step of history (Undo brings the old data back and the message with it).
   An item the source says is gone (`null`) is not touched: its field says "No longer in the source" and the block keeps
   what it had. An id the answer leaves out, a call that fails or one that is too slow is "could not check", never "gone".
-  Only blocks the person may edit (`permissions.canEdit`) are updated. A source with neither `get` nor `getMany` is not checked.
+  Only blocks the person may edit (`permissions.canEdit`) are asked about and updated. A source with neither `get` nor
+  `getMany` is not checked. Have `get`, `getMany` and `search` answer the same `data` for an item, and an item whose `id` is
+  the one asked for and whose `label` is a string: any other answer counts as "could not check". A call that rejects (even with
+  an `AbortError` of your own) is "could not check", never "gone".
 - A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list
   or a group too.
 

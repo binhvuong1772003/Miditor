@@ -11,7 +11,7 @@ import { type GeometryCommands, geometryCommands } from "./geometry";
 import { setHost } from "./host";
 import { coalesced, type Denial, type Permissions } from "./permissions";
 import { type SelectionCommands, selectionCommands } from "./selection";
-import { type SourcesCommands, sourcesCommands } from "./sources";
+import { answerCommands, type SourcesCommands, sourcesCommands } from "./sources";
 import type { EditorState } from "./state";
 import { type StructureCommands, structureCommands } from "./structure";
 import { type ViewCommands, viewCommands } from "./view";
@@ -73,6 +73,12 @@ export const useEditorState = <R,>(select: (state: EditorState) => R): R =>
 export function useViewCommands(): ViewCommands {
   const store = useStoreApi<EditorState>();
   return useMemo(() => viewCommands(store), [store]);
+}
+
+/** The commands on the answers of the last check of stored items. They stay the same for the life of the editor. */
+export function useSourceAnswers() {
+  const store = useStoreApi<EditorState>();
+  return useMemo(() => answerCommands(store), [store]);
 }
 
 /** The commands on the selection. They stay the same for the life of the editor. */

@@ -94,6 +94,7 @@ import {
   initialSelectionState,
   initialSourcesState,
   initialViewState,
+  metadataKey,
   type Permissions,
   StoreProvider,
   sourceReport,
@@ -697,6 +698,7 @@ function EditorBody({
         config?.sources,
         controller.signal,
         { metadata: metadataNow.current },
+        permissions,
       );
       if (!controller.signal.aborted) documents.setSourceAnswers(answers);
     } catch {
@@ -715,12 +717,12 @@ function EditorBody({
     () => sourceReport(data, sourceAnswers, registry, checkedSource, permissions),
     [data, sourceAnswers, registry, checkedSource, permissions],
   );
-  const metadataKey = JSON.stringify(metadata) ?? "";
+  const metadataText = metadataKey(metadata);
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs for the metadata the host gave, read through a ref
   useEffect(() => {
     void latest.current.checkSources?.();
     return () => checking.current?.abort();
-  }, [metadataKey]);
+  }, [metadataText]);
   const [api] = useState(() =>
     createApi({
       run,

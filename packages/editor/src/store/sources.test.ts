@@ -7,9 +7,11 @@ import {
   answerKey,
   canCheck,
   checkPage,
+  metadataKey,
   refreshSources,
   type SourcesState,
   sourceReport,
+  withoutAnswer,
 } from "./sources";
 import type { DocumentState, SelectionState } from "./state";
 
@@ -181,5 +183,50 @@ describe("checking the page against its sources", () => {
       metadata: { shop: 1 },
     });
     expect(getMany).toHaveBeenCalledWith(["a"], expect.anything(), { metadata: { shop: 1 } });
+  });
+});
+
+describe("the check leaves out blocks the person may not edit", () => {
+  it("asks only for the ids of blocks that may be edited", async () => {
+    const getMany = vi.fn(async (ids: readonly string[]) =>
+      Object.fromEntries(ids.map((id) => [id, { id, label: id }])),
+    );
+    const page = pageOf(
+      node("c", { item: { id: "a", label: "A" } }),
+      node("d", { item: { id: "locked", label: "L" } }),
+    );
+    await checkPage(
+      page,
+      registry,
+      { items: { search: async () => [], getMany } },
+      new AbortController().signal,
+      { metadata: undefined },
+      { canEdit: (target) => target.id !== "d" },
+    );
+    expect(getMany.mock.calls[0]?.[0]).toEqual(["a"]);
+  });
+});
+
+describe("the key that says the metadata changed", () => {
+  it("is the same for equal metadata, and never throws for metadata that is not JSON", () => {
+    expect(metadataKey({ a: 1, b: [2] })).toBe(metadataKey({ a: 1, b: [2] }));
+    expect(metadataKey({ a: 1 })).not.toBe(metadataKey({ a: 2 }));
+    expect(metadataKey(undefined)).toBe("");
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    expect(() => metadataKey(cycle as never)).not.toThrow();
+    expect(() => metadataKey(10n as never)).not.toThrow();
+  });
+});
+
+describe("an answer is dropped when its item is picked again", () => {
+  it("removes the answer of that source and id, and only that one", () => {
+    const answers = answersOf([
+      ["a", { status: "gone" }],
+      ["b", { status: "gone" }],
+    ]);
+    const next = withoutAnswer(answers, "items", "a");
+    expect([...next.keys()]).toEqual([answerKey("items", "b")]);
+    expect(withoutAnswer(next, "items", "zzz")).toBe(next);
   });
 });

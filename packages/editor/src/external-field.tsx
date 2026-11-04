@@ -9,7 +9,7 @@ import {
 import { useEffect, useId, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
-import { answerKey, useEditorState } from "./store";
+import { answerKey, useEditorState, useSourceAnswers } from "./store";
 
 export type { ExternalItem, ExternalSource, SourceContext } from "@miditor/core";
 
@@ -113,6 +113,7 @@ export function ExternalField({
   const [state, setState] = useState<State>({ status: "loading" });
   const [tooBig, setTooBig] = useState<string | null>(null);
   const current = chosen(value);
+  const answers = useSourceAnswers();
   const answer = useEditorState((state) =>
     current ? state.sourceAnswers.get(answerKey(source, current.id)) : undefined,
   );
@@ -216,6 +217,8 @@ export function ExternalField({
                       }
                       setTooBig(null);
                       onChange(value);
+                      // What the last check said of this item is about what was stored before the pick.
+                      answers.forgetSourceAnswer(source, item.id);
                       setOpen(false);
                     }}
                   >
