@@ -997,7 +997,17 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
   stays valid.
 - `metadata` on `<Editor>` is plain JSON about your side (a language, a shop, who is editing). It is not stored
   in the page; each `search` gets it as `ctx.metadata`. A `search` that takes only `(query, signal)` still works.
-- The stored `data` is a snapshot: it is not refreshed on its own. Checking and updating it comes later.
+- The stored `data` is a snapshot. To tell when it is out of date, give the source a `getMany(ids, signal, ctx)`
+  (one call for the page; it answers `{ [id]: item | null }`, `null` for an item that is gone) or a
+  `get(id, signal, ctx)`. When a page opens, when `metadata` changes and when you call
+  `controller.checkSources()`, the editor asks for the items the page holds (each id once, `getMany` in chunks of 100,
+  `get` five at a time, 15 seconds at most for a call) and compares the answer with what is stored: label and
+  `data`, not the time `at`. If some blocks have newer data the header says "N blocks have newer data" with an
+  **Update** button. **Nothing changes in the page, and `onChange` is not called, until Update is pressed**; Update takes the
+  newer data into every such block as one step of history (Undo brings the old data back and the message with it).
+  An item the source says is gone (`null`) is not touched: its field says "No longer in the source" and the block keeps
+  what it had. An id the answer leaves out, a call that fails or one that is too slow is "could not check", never "gone".
+  Only blocks the person may edit (`permissions.canEdit`) are updated. A source with neither `get` nor `getMany` is not checked.
 - A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list
   or a group too.
 
