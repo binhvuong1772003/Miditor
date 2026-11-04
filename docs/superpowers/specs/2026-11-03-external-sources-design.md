@@ -88,8 +88,9 @@ A prop `metadata?: JsonValue` on `<Editor>` and on `<Render>`. Not stored in the
 
 ## Constraints
 
-- Editor bundle: 356.55 of 360 kB raw today. The new code (check, banner, preview list) goes in the
-  smallest place that fits; if it cannot, the budget is raised on purpose, in its own commit, not hit by accident.
+- Editor bundle: the owner chose working and complete over small for now; size will be tuned in a later
+  clean-up of the whole project. The budget in `budgets.json` (editor raw 360 kB, gzip 96 kB) is raised
+  as far as this work needs, in its own commit with the new numbers in the message; no code-splitting for it.
 - `resolveSources` is in `core` or `render`, not in `editor`, so a host that only renders does not
   carry the editor.
 - Everything the person does goes through the store's `runner`: permissions, undo and `onChange` apply
@@ -148,5 +149,4 @@ Each step is its own branch of small commits and can be merged alone.
 
 ## Still the owner's to decide
 
-- The editor bundle budget (see Constraints). Options: raise 360 kB on purpose, or put the check and
-  the preview list in a chunk that loads only when a page has an `external` field.
+Nothing open.
