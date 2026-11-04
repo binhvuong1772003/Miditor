@@ -1,13 +1,13 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { EditorProvider } from "./Editor";
-import { ExternalField, type ExternalSource, ItemRow, pickValue } from "./external-field";
+import { type AskedSource, ExternalField, ItemRow, pickValue } from "./external-field";
 
-const sources: Record<string, ExternalSource> = { pages: { search: async () => [] } };
+const sources: Record<string, AskedSource> = { pages: { search: async () => [] } };
 
 const draw = (
   value: unknown,
-  list: Record<string, ExternalSource> | undefined = sources,
+  list: Record<string, AskedSource> | undefined = sources,
   source = "pages",
 ) =>
   renderToString(

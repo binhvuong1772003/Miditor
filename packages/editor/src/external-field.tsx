@@ -62,13 +62,37 @@ export function ItemRow({ item }: { item: ExternalItem }) {
   );
 }
 
+/** What the editor tells a source about the page it is asked for: the `metadata` of the `<Editor>`. @experimental */
+export interface SourceContext {
+  metadata: JsonValue | undefined;
+}
+
 /**
  * A list the host keeps and the editor searches (`config.sources`, by the `source` of an `external` field):
  * products, articles, pages. `search` is asked for what the person typed (an empty text at first) and may
- * be asked again before it answers, so it should stop when `signal` is aborted. @experimental
+ * be asked again before it answers, so it should stop when `signal` is aborted. `ctx` carries the
+ * `metadata` of the editor (a language, a shop, who is editing). @experimental
  */
 export interface ExternalSource {
+  search(query: string, signal: AbortSignal, ctx: SourceContext): Promise<readonly ExternalItem[]>;
+}
+
+/** A source as the field asks it: the editor has already put its `metadata` in. */
+export interface AskedSource {
   search(query: string, signal: AbortSignal): Promise<readonly ExternalItem[]>;
+}
+
+/** The sources, each asking the host's `search` with the editor's `metadata` as `ctx`. */
+export function withMetadata(
+  sources: Readonly<Record<string, ExternalSource>> | undefined,
+  metadata: JsonValue | undefined,
+): Readonly<Record<string, AskedSource>> | undefined {
+  if (!sources) return undefined;
+  const out: Record<string, AskedSource> = {};
+  for (const [name, source] of Object.entries(sources)) {
+    out[name] = { search: (query, signal) => source.search(query, signal, { metadata }) };
+  }
+  return out;
 }
 
 const DELAY_MS = 250;
@@ -100,7 +124,7 @@ export function ExternalField({
   source: string;
   value: JsonValue | undefined;
   onChange: (value: JsonValue) => void;
-  sources: Readonly<Record<string, ExternalSource>> | undefined;
+  sources: Readonly<Record<string, AskedSource>> | undefined;
 }) {
   const t = useT();
   const id = useId();

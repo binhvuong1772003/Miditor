@@ -21,7 +21,7 @@ import type { ActionDef } from "./actions";
 import { BackgroundFields } from "./BackgroundFields";
 import { ColourPopover } from "./ColourPopover";
 import type { CustomFieldInput } from "./custom-field";
-import type { ExternalSource } from "./external-field";
+import type { AskedSource } from "./external-field";
 import type { FontDef } from "./fonts";
 import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
@@ -67,7 +67,7 @@ export interface PropertiesPanelProps {
   /** The inputs the host draws for its `custom` fields, by kind. */
   customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
   /** The lists the host searches for its `external` fields, by source. */
-  sources?: Readonly<Record<string, ExternalSource>> | undefined;
+  sources?: Readonly<Record<string, AskedSource>> | undefined;
   /** The fonts the host lets people choose, for a Font field. */
   fonts?: readonly FontDef[] | undefined;
   /** Drop the preview and show what is stored. */

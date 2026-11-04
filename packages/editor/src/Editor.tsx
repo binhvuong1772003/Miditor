@@ -9,6 +9,7 @@ import {
   findNode,
   isFreeNode,
   isTheme,
+  type JsonValue,
   lowestPageHeight,
   migratePage,
   type NewNodeOverrides,
@@ -48,7 +49,7 @@ import type { CustomFieldInput } from "./custom-field";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
-import type { ExternalSource } from "./external-field";
+import { type ExternalSource, withMetadata } from "./external-field";
 import type { FontDef } from "./fonts";
 import type { HideName } from "./hide";
 import { type HostTool, usableTools } from "./host-tool";
@@ -132,6 +133,12 @@ export interface EditorProps {
    * an object to also set `maxWait`: the longest a change may wait while more keep coming.
    */
   onChangeDebounce?: number | { wait: number; maxWait?: number };
+  /**
+   * Anything about the host's side that its sources need to answer (a language, a shop, who is editing),
+   * as plain JSON. It is given to the `search` of every source as `ctx.metadata`, and is not stored in the
+   * page. Experimental.
+   */
+  metadata?: JsonValue;
   /**
    * How the host is storing the page, for the header to say so: "saved", "unsaved", "saving" or
    * "error". Without it the header follows the Save button (and shows nothing when there is none).
@@ -389,6 +396,7 @@ function EditorBody({
   className,
   onChange,
   onChangeDebounce,
+  metadata,
   status,
   onSave,
   headerActions,
@@ -412,6 +420,11 @@ function EditorBody({
   const viewing = useViewCommands();
   const selecting = useSelectionCommands();
   const components = config?.components;
+  // The panels ask the sources through here, each `search` with the editor's `metadata`.
+  const sources = useMemo(
+    () => withMetadata(config?.sources, metadata),
+    [config?.sources, metadata],
+  );
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   // The element the page is drawn in, for the measures of a phone that draws the page as a flow.
   const workspaceRef = useRef<HTMLElement | null>(null);
@@ -787,7 +800,16 @@ function EditorBody({
       onDrop: dropFromLibrary,
       onApplyTheme: documents.putTheme,
     },
-    end: { config, documents, selecting, parentSize, pageHeight, selectedRect, shownDef },
+    end: {
+      config,
+      sources,
+      documents,
+      selecting,
+      parentSize,
+      pageHeight,
+      selectedRect,
+      shownDef,
+    },
     canvas: (
       <CanvasView
         registry={registry}

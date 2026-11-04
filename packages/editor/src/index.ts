@@ -23,7 +23,7 @@ export { createEditor, type EditorController } from "./controller";
 export type { CustomFieldInput, CustomFieldProps } from "./custom-field";
 export { Editor, type EditorProps, EditorProvider, type EditorProviderProps } from "./Editor";
 export { type EmbedImageOptions, embedImage } from "./embed-image";
-export type { ExternalItem, ExternalSource } from "./external-field";
+export type { ExternalItem, ExternalSource, SourceContext } from "./external-field";
 export type { FontDef } from "./fonts";
 export type { HideName } from "./hide";
 export type { HostTool, HostToolPanelProps } from "./host-tool";

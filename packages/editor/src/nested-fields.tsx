@@ -7,13 +7,13 @@ import {
 } from "@miditor/core";
 import { useState } from "react";
 import { CustomField, type CustomFieldInput } from "./custom-field";
-import { ExternalField, type ExternalSource } from "./external-field";
+import { type AskedSource, ExternalField } from "./external-field";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./PropertiesPanel.module.css";
 
 type Inputs = Readonly<Record<string, CustomFieldInput>> | undefined;
-type Sources = Readonly<Record<string, ExternalSource>> | undefined;
+type Sources = Readonly<Record<string, AskedSource>> | undefined;
 
 const isObject = (value: unknown): value is { [key: string]: JsonValue } =>
   typeof value === "object" && value !== null && !Array.isArray(value);

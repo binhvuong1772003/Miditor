@@ -11,6 +11,8 @@ import { type useDocumentCommands, useEditorState, type useSelectionCommands } f
 
 export interface EndPanelProps {
   config: EditorProps["config"];
+  /** The sources of the host, each already asking with the editor's `metadata`. */
+  sources?: ComponentProps<typeof PropertiesPanel>["sources"];
   documents: ReturnType<typeof useDocumentCommands>;
   selecting: ReturnType<typeof useSelectionCommands>;
   /** The size of the parent of the selected block on the screen, which the number fields measure in. */
@@ -26,6 +28,7 @@ export interface EndPanelProps {
 /** The panel on the right: the page's own settings, or the properties of the selected block. */
 export function EndPanel({
   config,
+  sources,
   documents,
   selecting,
   parentSize,
@@ -89,7 +92,7 @@ export function EndPanel({
             onDistribute={(axis) => documents.distributeSelected(parentSize() ?? null, axis)}
             actions={config?.actions}
             customFields={config?.customFields}
-            sources={config?.sources}
+            sources={sources}
             fonts={fonts}
             def={shownDef}
             onPreview={(patch) =>

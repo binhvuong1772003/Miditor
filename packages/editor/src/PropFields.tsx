@@ -12,7 +12,7 @@ import { type CSSProperties, type KeyboardEvent, useEffect, useState } from "rea
 import type { ActionDef, ActionParam } from "./actions";
 import { ColourPopover } from "./ColourPopover";
 import { CustomField, type CustomFieldInput } from "./custom-field";
-import type { ExternalSource } from "./external-field";
+import type { AskedSource } from "./external-field";
 import { FontSelect } from "./FontSelect";
 import { type FontDef, listedFont } from "./fonts";
 import { useT } from "./i18n/context";
@@ -37,7 +37,7 @@ export interface PropFieldsProps {
   /** The inputs the host draws for its `custom` fields, by kind. */
   customFields?: Readonly<Record<string, CustomFieldInput>> | undefined;
   /** The lists the host searches for its `external` fields, by source. */
-  sources?: Readonly<Record<string, ExternalSource>> | undefined;
+  sources?: Readonly<Record<string, AskedSource>> | undefined;
   /** The selected block, which a host's `field` override is told. */
   nodeId: string;
 }
