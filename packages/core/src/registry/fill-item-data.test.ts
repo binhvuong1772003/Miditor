@@ -78,9 +78,30 @@ describe("filling the data of stored items into a page", () => {
     expect(filled.root.children[0]?.props.live).toHaveProperty("data");
   });
 
-  it("skips an item whose data cannot be kept in a page", () => {
+  it("draws data the page could not store (it is never stored), but not data that is not plain JSON", () => {
     const page = pageOf(node("a", { live: { id: "1", label: "One" } }));
     const big: ExternalItem = { id: "1", label: "Big", data: { s: "x".repeat(9000) } };
-    expect(fillItemData(page, registry, () => big)).toBe(page);
+    expect(fillItemData(page, registry, () => big).root.children[0]?.props.live).toMatchObject({
+      data: { s: "x".repeat(9000) },
+    });
+    const odd: ExternalItem = { id: "1", label: "Odd", data: new Date() as never };
+    expect(fillItemData(page, registry, () => odd).root.children[0]?.props.live).toEqual({
+      id: "1",
+      label: "Odd",
+    });
+  });
+
+  it("takes the old data and time out of a reference that no item was found for", () => {
+    const old = { id: "9", label: "Nine", data: { price: 1 }, at: "2026-01-01T00:00:00.000Z" };
+    const page = pageOf(node("a", { live: old, snap: old }));
+    const drawn = fillItemData(page, registry, () => undefined, "reference");
+    expect(drawn.root.children[0]?.props.live).toEqual({ id: "9", label: "Nine" });
+    expect(drawn.root.children[0]?.props.snap).toBe(old);
+    expect(page.root.children[0]?.props.live).toBe(old);
+  });
+
+  it("gives back the very page when a reference holds no data to take out", () => {
+    const page = pageOf(node("a", { live: { id: "9", label: "Nine" } }));
+    expect(fillItemData(page, registry, () => undefined, "reference")).toBe(page);
   });
 });

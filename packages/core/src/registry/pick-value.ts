@@ -24,6 +24,21 @@ const nestsDeeper = (value: unknown, limit: number): boolean =>
   (limit <= 0 || Object.values(value).some((inner) => nestsDeeper(inner, limit - 1)));
 
 /**
+ * A copy of `data` when it is plain JSON (what survives a round trip), with no limit on its size: for data
+ * that is drawn and never stored. `undefined` for anything else.
+ */
+export function plainJsonCopy(data: unknown): JsonValue | undefined {
+  try {
+    const text = JSON.stringify(data);
+    if (text === undefined) return undefined;
+    const copy = JSON.parse(text) as JsonValue;
+    return sameJson(copy, data) ? copy : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * A copy of `data` when it is plain JSON that fits the page (what survives a round trip, in at most 8000
  * bytes and 16 levels), else `undefined`: the page keeps the copy, never the host's own object.
  */

@@ -13,17 +13,17 @@ export interface FailedItem {
 }
 
 /**
- * Fills the `data` of every `external` value of the page from the host's sources, for the host to draw a
- * page whose fields keep references: the page it gives to `<Render>`. Each id is asked once, a source with
+ * Fills the `data` of the `external` values that keep a reference from the host's sources, for the host to
+ * draw a page whose fields keep references: the page it gives to `<Render>`. Each id is asked once, a source with
  * `getMany` in chunks (see `loadItems`). It does not throw for a source: an item that is gone, or that
  * could not be loaded (a rejected or slow call, an id left out), stays as it was and is listed in `failed`.
- * Snapshots are refreshed too. Rejects only with an `AbortError` when `options.signal` aborts.
+ * Snapshots are left as the page holds them unless `options.snapshots` is true. Rejects only with an `AbortError` when `options.signal` aborts.
  */
 export async function resolveSources(
   page: PageData,
   registry: Registry,
   sources: Readonly<Record<string, ExternalSource>> | undefined,
-  options: { signal?: AbortSignal; metadata?: JsonValue } = {},
+  options: { signal?: AbortSignal; metadata?: JsonValue; snapshots?: boolean } = {},
 ): Promise<{ page: PageData; failed: FailedItem[] }> {
   const answers = await loadPageItems(
     page,
@@ -33,12 +33,19 @@ export async function resolveSources(
     { metadata: options.metadata },
   );
   const answerOf = (source: string, id: string) => answers.get(answerKey(source, id));
-  const filled = fillItemData(page, registry, (ref) => {
-    const answer = answerOf(ref.source, ref.value.id);
-    return answer?.status === "found" ? answer.item : undefined;
-  });
+  const only = options.snapshots ? undefined : "reference";
+  const filled = fillItemData(
+    page,
+    registry,
+    (ref) => {
+      const answer = answerOf(ref.source, ref.value.id);
+      return answer?.status === "found" ? answer.item : undefined;
+    },
+    only,
+  );
   const failed: FailedItem[] = [];
   for (const ref of externalRefs(registry, page)) {
+    if (only && ref.store !== only) continue;
     const source = sources && Object.hasOwn(sources, ref.source) ? sources[ref.source] : undefined;
     if (!canCheckSource(source)) continue;
     if (answerOf(ref.source, ref.value.id)?.status !== "found") {

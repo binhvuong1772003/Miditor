@@ -38,7 +38,7 @@ export {
 } from "./registry/load-items";
 export { answerKey, canCheckSource, loadPageItems } from "./registry/load-page-items";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
-export { pickValue } from "./registry/pick-value";
+export { pickValue, plainJsonCopy } from "./registry/pick-value";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export { type FailedItem, resolveSources } from "./registry/resolve-sources";
 export {

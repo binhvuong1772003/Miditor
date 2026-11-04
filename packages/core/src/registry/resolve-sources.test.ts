@@ -45,12 +45,35 @@ describe("resolving the sources of a page", () => {
     expect(page.root.children[0]?.props.item as object).not.toHaveProperty("data");
   });
 
-  it("also refreshes the snapshot fields of the page", async () => {
+  it("leaves the snapshot fields of the page alone, unless asked to refresh them", async () => {
     const page = pageOf(node("a", { other: { id: "y", label: "y", data: { price: 1 } } }));
-    const { page: filled } = await resolveSources(page, registry, {
-      others: { search: async () => [], getMany: getManyOf({ price: 5 }) },
+    const sources = { others: { search: async () => [], getMany: getManyOf({ price: 5 }) } };
+    const plain = await resolveSources(page, registry, sources);
+    expect(plain.page.root.children[0]?.props.other).toMatchObject({ data: { price: 1 } });
+    const all = await resolveSources(page, registry, sources, { snapshots: true });
+    expect(all.page.root.children[0]?.props.other).toMatchObject({ data: { price: 5 } });
+  });
+
+  it("takes stale data out of a reference whose item is gone", async () => {
+    const stale = { id: "x", label: "x", data: { price: 1 }, at: "2026-01-01T00:00:00.000Z" };
+    const page = pageOf(node("a", { item: stale }));
+    const { page: filled, failed } = await resolveSources(page, registry, {
+      items: { search: async () => [], getMany: async () => ({ x: null }) },
     });
-    expect(filled.root.children[0]?.props.other).toMatchObject({ data: { price: 5 } });
+    expect(filled.root.children[0]?.props.item).toEqual({ id: "x", label: "x" });
+    expect(failed).toHaveLength(1);
+  });
+
+  it("fills data of more than 8 kB: it is drawn, never stored", async () => {
+    const page = pageOf(node("a", { item: { id: "x", label: "x" } }));
+    const big = { s: "x".repeat(9000) } as never;
+    const { page: filled } = await resolveSources(page, registry, {
+      items: {
+        search: async () => [],
+        getMany: async () => ({ x: { id: "x", label: "x", data: big } }),
+      },
+    });
+    expect(filled.root.children[0]?.props.item).toMatchObject({ data: big });
   });
 
   it("lists what could not be loaded and still fills the other sources, never throwing", async () => {
@@ -63,10 +86,12 @@ describe("resolving the sources of a page", () => {
         throw new Error("down");
       },
     };
-    const { page: filled, failed } = await resolveSources(page, registry, {
-      items: broken,
-      others: { search: async () => [], getMany: getManyOf() },
-    });
+    const { page: filled, failed } = await resolveSources(
+      page,
+      registry,
+      { items: broken, others: { search: async () => [], getMany: getManyOf() } },
+      { snapshots: true },
+    );
     expect(failed).toEqual([{ nodeId: "a", source: "items", id: "x" }]);
     expect(filled.root.children[0]?.props.item).not.toHaveProperty("data");
     expect(filled.root.children[0]?.props.other).toHaveProperty("data");
