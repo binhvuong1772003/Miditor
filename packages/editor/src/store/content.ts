@@ -154,7 +154,13 @@ export function contentCommands<S extends State>(store: EditorStore<S>, env: Env
   return {
     commitPatch: (id: string, patch: PanelPatch) =>
       run((state) => commitPatch(state, { id, patch }, env), { type: "block.edit", ids: [id] }),
-    save: () => run((state) => saveDraft(state, env)),
+    save: () => {
+      const pending = store.getState().draft;
+      return run((state) => saveDraft(state, env), {
+        type: "block.edit",
+        ids: pending ? [pending.id] : [],
+      });
+    },
     changeMeta: (patch: Parameters<typeof changeMeta>[1]) =>
       run((state) => changeMeta(state, patch, env), { type: "page.info", ids: [] }),
     setThemeColor: (name: string, color: string) =>

@@ -63,6 +63,11 @@ export type Env = {
   measurePhone?: ((root: TreeNode) => ReadonlyMap<string, Measured> | null) | undefined;
   /** Told after a command that changed the page was kept, with the page after it and the page before it. */
   onAction?: ((action: EditorAction, page: PageData, prevPage: PageData) => void) | undefined;
+  /**
+   * Set while a command runs when it first stored a change that was pending in a panel (see `settle`): which
+   * block, and the page right after that, so the runner tells it as a change of its own.
+   */
+  settled?: { id: string; page: PageData } | null | undefined;
   /** Set while a command runs when a change was refused, so the command can be given up whole. */
   refusal?: { endsDraft: boolean } | null | undefined;
 };
@@ -198,7 +203,8 @@ export type DocumentCommands = ReturnType<typeof documentCommands<DocumentState 
  * that was refused), so nothing that follows an edit (selecting what was added, clearing what was
  * deleted) happens for an edit that did not. Says whether the command was refused. A command that
  * changed the page and was kept is told to `env.onAction`, after the state is set, with `action` (or the
- * plain `"edit"`) and the blocks it was about.
+ * plain `"edit"`) and the blocks it was about. A change that was pending in a panel and was stored first
+ * by the command is told on its own, as an edit of its block, before the command.
  */
 export function runner<S extends DocumentState>(store: EditorStore<S>, env: Env) {
   return (
@@ -206,21 +212,33 @@ export function runner<S extends DocumentState>(store: EditorStore<S>, env: Env)
     action?: { type: EditorActionType; ids?: readonly string[] },
   ): boolean => {
     let refused = false;
-    let told: { action: EditorAction; page: PageData; prev: PageData } | null = null;
+    const told: { action: EditorAction; page: PageData; prev: PageData }[] = [];
     store.setState((state) => {
       env.refusal = null;
+      env.settled = null;
+      told.length = 0;
       const next = command(state);
       const refusal = takeRefusal(env);
+      const settled = takeSettled(env);
       if (!refusal) {
-        if (next.history.present !== state.history.present) {
-          told = {
+        let from = state.history.present;
+        if (settled) {
+          told.push({
+            action: { type: "block.edit", ids: [settled.id] },
+            page: settled.page,
+            prev: from,
+          });
+          from = settled.page;
+        }
+        if (next.history.present !== from) {
+          told.push({
             action: {
               type: action?.type ?? "edit",
               ids: action?.ids ?? idsOf(state, next, action?.type),
             },
             page: next.history.present,
-            prev: state.history.present,
-          };
+            prev: from,
+          });
         }
         return next;
       }
@@ -229,8 +247,7 @@ export function runner<S extends DocumentState>(store: EditorStore<S>, env: Env)
         ? change(state, { draft: null } as Partial<S>)
         : state;
     });
-    const done = told as { action: EditorAction; page: PageData; prev: PageData } | null;
-    if (done && !refused) env.onAction?.(done.action, done.page, done.prev);
+    if (!refused) for (const done of told) env.onAction?.(done.action, done.page, done.prev);
     return refused;
   };
 }
@@ -244,6 +261,13 @@ function idsOf(before: DocumentState, after: DocumentState, type: EditorActionTy
   }
   const { selectedId, picked } = at(before);
   return selectedId ? [selectedId, ...(picked ?? [])] : [];
+}
+
+/** The change that was pending in a panel and that the command that just ran stored first, if any; and forget it. */
+function takeSettled(env: Env) {
+  const settled = env.settled;
+  env.settled = null;
+  return settled;
 }
 
 /** What the command that just ran was refused for, if it was; and forget it. */

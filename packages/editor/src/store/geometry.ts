@@ -372,8 +372,9 @@ export function geometryCommands<S extends State>(store: EditorStore<S>, env: En
       run((state) => nudgeSelected(state, args, env), { type: "block.nudge" }),
     changeAnchor: (args: Parameters<typeof changeAnchor>[1]) =>
       run((state) => changeAnchor(state, args, env), { type: "block.anchor" }),
-    resetPhone: () => run((state) => resetPhone(state, env), { type: "phone.reset" }),
-    arrangePhone: () => runOnce((state) => arrangePhone(state, env), { type: "phone.arrange" }),
+    resetPhone: () => run((state) => resetPhone(state, env), { type: "phone.reset", ids: [] }),
+    arrangePhone: () =>
+      runOnce((state) => arrangePhone(state, env), { type: "phone.arrange", ids: [] }),
     setRect: (args: Parameters<typeof setRect>[1]) =>
       run((state) => setRect(state, args, env), { type: "block.rect" }),
     placeBoxes: (args: Parameters<typeof placeBoxes>[1]) =>

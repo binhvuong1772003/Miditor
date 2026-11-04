@@ -102,3 +102,41 @@ describe("onAction", () => {
     ).not.toThrow();
   });
 });
+
+describe("onAction and a change that was pending in a panel", () => {
+  const draft = { id: "t1", key: "prop", name: "text", value: "typing" } as const;
+
+  it("tells the pending edit as its own change when a command that did nothing settled it", () => {
+    const { store, documents, onAction } = setup();
+    documents.setDraft(draft);
+    documents.addBlock({ kind: "Nope", inside: SIZE, page: SIZE });
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction.mock.calls[0]?.[0]).toEqual({ type: "block.edit", ids: ["t1"] });
+    expect(store.getState().history.present.root.children[0]?.props.text).toBe("typing");
+  });
+
+  it("tells the pending edit first and the command after it, each with the pages around it", () => {
+    const { store, documents, onAction } = setup();
+    const before = store.getState().history.present;
+    documents.setDraft(draft);
+    documents.addBlock({ kind: "Text", inside: SIZE, page: SIZE });
+    expect(onAction).toHaveBeenCalledTimes(2);
+    const [first, second] = onAction.mock.calls;
+    expect(first?.[0]).toEqual({ type: "block.edit", ids: ["t1"] });
+    expect(first?.[2]).toBe(before);
+    expect(second?.[0].type).toBe("block.add");
+    expect(second?.[2]).toBe(first?.[1]);
+    expect(second?.[1]).toBe(store.getState().history.present);
+  });
+
+  it("calls settling a pending edit a block edit of that block, and saving too", () => {
+    const { documents, onAction } = setup();
+    documents.setDraft(draft);
+    documents.settleDraft();
+    expect(onAction.mock.calls[0]?.[0]).toEqual({ type: "block.edit", ids: ["t1"] });
+    onAction.mockClear();
+    documents.setDraft({ ...draft, value: "more" });
+    documents.save();
+    expect(onAction.mock.calls[0]?.[0]).toEqual({ type: "block.edit", ids: ["t1"] });
+  });
+});

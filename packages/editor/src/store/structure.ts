@@ -44,7 +44,16 @@ export type Point = { x: number; y: number };
 export function settle<S extends State>(state: S, env: Env): S {
   const pending = state.draft;
   if (!pending) return state;
-  return editAndEndDraft(state, patchChange(pending.id, pending, state.frame, env.registry), env);
+  const stored = editAndEndDraft(
+    state,
+    patchChange(pending.id, pending, state.frame, env.registry),
+    env,
+  );
+  // Tell the runner, so the host hears of this edit on its own and not folded into the command that follows.
+  if (stored.history.present !== state.history.present) {
+    env.settled = { id: pending.id, page: stored.history.present };
+  }
+  return stored;
 }
 
 const rootOf = (state: DocumentState) => state.history.present.root;

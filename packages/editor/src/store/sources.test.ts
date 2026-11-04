@@ -1,7 +1,9 @@
 import type { Answer, ExternalItem, ExternalSource, PageData, Registry } from "@miditor/core";
 import { describe, expect, it, vi } from "vitest";
 import { undo } from "../history";
+import { createEditorStore } from "./create-editor-store";
 import { type Env, initialDocumentState, step } from "./document";
+import { initialHostState } from "./host";
 import { initialSelectionState } from "./selection";
 import {
   answerKey,
@@ -14,10 +16,12 @@ import {
   type SourcesState,
   seedAnswer,
   sourceReport,
+  sourcesCommands,
   unansweredKey,
   withoutAnswer,
 } from "./sources";
-import type { DocumentState, SelectionState } from "./state";
+import type { DocumentState, EditorState, SelectionState } from "./state";
+import { initialViewState } from "./view";
 
 const registry = {
   Card: {
@@ -366,5 +370,22 @@ describe("the items the page holds that nobody has been asked about", () => {
       "",
     );
     expect(unansweredKey(page, registry, new Map(), undefined)).toBe("");
+  });
+});
+
+describe("telling an update of the sources", () => {
+  it("is a change of the page, whichever block happens to be selected", () => {
+    const onAction = vi.fn();
+    const store = createEditorStore<EditorState>({
+      ...initialViewState({ narrow: false }),
+      ...initialSelectionState("root"),
+      ...initialDocumentState(pageOf(node("c", { item: old }))),
+      ...initialHostState({ hostStatus: undefined, hasSave: false }),
+      sourceAnswers: answersOf([["a", found(fresh)]]),
+    });
+    store.setState({ selectedId: "c" });
+    sourcesCommands(store, { ...env, onAction }).refreshSources(checked);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onAction.mock.calls[0]?.[0]).toEqual({ type: "sources.update", ids: [] });
   });
 });
