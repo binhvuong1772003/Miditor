@@ -1,5 +1,6 @@
 import { clampPageHeight } from "@miditor/core";
 import { type PointerEvent, useLayoutEffect, useRef, useState } from "react";
+import { clientRect } from "./canvas/client-rect";
 import { useT } from "./i18n/context";
 import styles from "./PageEdge.module.css";
 
@@ -41,7 +42,7 @@ export function PageEdge({
   const start = useRef<{ y: number; height: number } | null>(null);
 
   useLayoutEffect(() => {
-    const box = page.getBoundingClientRect();
+    const box = clientRect(page);
     const view = workspace.getBoundingClientRect();
     const left = box.left + box.width / 2 - view.left + workspace.scrollLeft - workspace.clientLeft;
     const top = box.bottom - view.top + workspace.scrollTop - workspace.clientTop;

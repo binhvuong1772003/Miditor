@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { clientRect } from "./canvas/client-rect";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import styles from "./QuickActions.module.css";
@@ -57,7 +58,7 @@ export function QuickActions(props: QuickActionsProps) {
 
   /** Work out where the toolbar goes from where the block is now. */
   const place_ = () => {
-    const box = target.getBoundingClientRect();
+    const box = clientRect(target);
     const view = workspace.getBoundingClientRect();
     const half = (bar.current?.offsetWidth ?? 180) / 2;
     const height = bar.current?.offsetHeight ?? 44;

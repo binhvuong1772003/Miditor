@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks, openEditor, properties } from "./helpers";
+import { blocks, openEditor, properties, surface } from "./helpers";
 
 // A host part drawn in `headerActions` drives the editor through `useEditor` (`?control`). `?control&two`
 // draws two editors on one page, each with its own part.
@@ -33,7 +33,7 @@ test.describe("a host part inside the editor", () => {
     await host(page, "Host add Text").click();
     await expect(blocks(page)).toHaveCount(before + 1);
     await expect(selection(page)).toHaveText("n1");
-    await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
+    await expect(surface(page).locator('[data-miditor-id="n1"]').first()).toBeVisible();
   });
 
   test("Host select first selects the first block", async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe("a host part inside the editor", () => {
     await size.click();
     await size.fill("40");
     await size.blur();
-    await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
+    await expect(surface(page).locator('[data-miditor-id="n1"]').first()).toBeVisible();
     await host(page, "Host select first").click();
     expect(await undoRenders(page)).toBe(afterAdd);
     // A change that flips it is drawn.

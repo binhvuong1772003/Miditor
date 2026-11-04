@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { blocks, nodeIn, openEditor, openTool, storedPage } from "./helpers";
+import { blocks, nodeIn, openEditor, openTool, storedPage, surface } from "./helpers";
 
 // A 1 x 1 picture, so the upload has something real to read.
 const PNG = Buffer.from(
@@ -17,7 +17,7 @@ test("a picture of the library is added as an Image block that shows it, and Und
 }) => {
   const before = await blocks(page).count();
   await page.getByRole("button", { name: /Add River valley/ }).click();
-  await expect(page.locator('[data-miditor-type="Image"]')).toHaveCount(1);
+  await expect(surface(page).locator('[data-miditor-type="Image"]')).toHaveCount(1);
   await expect(blocks(page)).toHaveCount(before + 1);
 
   const saved = await storedPage(page, (stored) => nodeIn(stored.root, "n1") !== undefined);
@@ -26,19 +26,19 @@ test("a picture of the library is added as an Image block that shows it, and Und
   expect(image?.props.alt).toBe("River valley");
 
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.locator('[data-miditor-type="Image"]')).toHaveCount(0);
+  await expect(surface(page).locator('[data-miditor-type="Image"]')).toHaveCount(0);
 });
 
 test("a second picture goes on the page when the selected block does not take blocks", async ({
   page,
 }) => {
   await page.getByRole("button", { name: /Add River valley/ }).click();
-  await expect(page.locator('[data-miditor-type="Image"]')).toHaveCount(1);
+  await expect(surface(page).locator('[data-miditor-type="Image"]')).toHaveCount(1);
   await page.getByRole("button", { name: /Add Pug/ }).click();
-  await expect(page.locator('[data-miditor-type="Image"]')).toHaveCount(2);
-  await expect(page.locator('[data-miditor-type="Image"] [data-miditor-type="Image"]')).toHaveCount(
-    0,
-  );
+  await expect(surface(page).locator('[data-miditor-type="Image"]')).toHaveCount(2);
+  await expect(
+    surface(page).locator('[data-miditor-type="Image"] [data-miditor-type="Image"]'),
+  ).toHaveCount(0);
 });
 
 test("a picture uploaded from a file is added as an Image block", async ({ page }) => {
@@ -47,7 +47,7 @@ test("a picture uploaded from a file is added as an Image block", async ({ page 
     page.getByRole("button", { name: "Upload image" }).click(),
   ]);
   await chooser.setFiles({ name: "dot.png", mimeType: "image/png", buffer: PNG });
-  await expect(page.locator('[data-miditor-type="Image"]')).toHaveCount(1);
+  await expect(surface(page).locator('[data-miditor-type="Image"]')).toHaveCount(1);
   const saved = await storedPage(page, (stored) => nodeIn(stored.root, "n1") !== undefined);
   expect(String(nodeIn(saved.root, "n1")?.props.src)).toMatch(/^data:image\//);
 });

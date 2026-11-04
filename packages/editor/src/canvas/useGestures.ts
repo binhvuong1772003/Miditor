@@ -17,10 +17,12 @@ import {
   turnOf,
 } from "@miditor/core";
 import { useRef, useState } from "react";
+import { isHtmlElement } from "../dom";
 import { type Gap, gapsAround } from "../gaps";
 import { centreOf, rectAt, turnGroup } from "../group-math";
 import { drawnBox, freezeRoot } from "../phone-freeze";
 import type { useDocumentCommands } from "../store";
+import { onWindows } from "./client-rect";
 import { elementOf } from "./element-of";
 import type { ResizeResult, SelectionControls } from "./SelectionBox";
 
@@ -141,11 +143,11 @@ export function useGestures({
         gesture.current = null;
         groupGesture.current = null;
       }, 0);
-      window.removeEventListener("pointerup", over);
-      window.removeEventListener("pointercancel", over);
+      stopUp();
+      stopCancel();
     };
-    window.addEventListener("pointerup", over);
-    window.addEventListener("pointercancel", over);
+    const stopUp = onWindows(workspace, "pointerup", over);
+    const stopCancel = onWindows(workspace, "pointercancel", over);
     // A group has its own gesture, above; nothing of a single block's is made for it.
     if (groupGesture.current) return;
     const node = selectedId ? findNode(data.root, selectedId) : undefined;
@@ -189,9 +191,7 @@ export function useGestures({
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
     const under = block.ownerDocument
       .elementsFromPoint(x, y)
-      .filter(
-        (el): el is HTMLElement => el instanceof HTMLElement && el.dataset.miditorId !== undefined,
-      );
+      .filter((el): el is HTMLElement => isHtmlElement(el) && el.dataset.miditorId !== undefined);
     const hit = under.find((el) =>
       canMove(registry, data.root, g.before.id, el.dataset.miditorId as string),
     );

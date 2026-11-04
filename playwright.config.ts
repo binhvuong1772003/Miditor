@@ -9,7 +9,7 @@ export default defineConfig({
   use: { baseURL: "http://localhost:5199", viewport: { width: 1440, height: 900 } },
   webServer: {
     // E2E_STRICT=1 runs the playground in React's StrictMode.
-    command: `${process.env.E2E_STRICT ? "VITE_STRICT=1 " : ""}pnpm --filter playground exec vite --port 5199 --strictPort`,
+    command: `${process.env.E2E_STRICT ? "VITE_STRICT=1 " : ""}${process.env.E2E_IFRAME ? "VITE_IFRAME=1 " : ""}pnpm --filter playground exec vite --port 5199 --strictPort`,
     url: "http://localhost:5199",
     reuseExistingServer: true,
   },

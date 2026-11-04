@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, openEditor, properties, storedPage } from "./helpers";
+import { addFromBlocks, openEditor, properties, storedPage, surface } from "./helpers";
 
 // A field that chooses from a list the host keeps (`config.sources`), searched as the person types.
 
-const related = (page: Page) => page.getByTestId("related-page");
+const related = (page: Page) => surface(page).getByTestId("related-page");
 
 test.describe("an external field", () => {
   test("searches the host's list, stores the pick and undo brings the old one back", async ({
@@ -60,7 +60,7 @@ test.describe("an external field", () => {
   }) => {
     await openEditor(page);
     await addFromBlocks(page, "Item card");
-    const card = page.getByTestId("item-card");
+    const card = surface(page).getByTestId("item-card");
     await expect(card).toContainText("none");
 
     const panel = properties(page);
@@ -109,18 +109,18 @@ test.describe("an external field", () => {
 
     await page.goto("/?items-changed");
     await expect(newer(page)).toContainText("1 block has newer data");
-    await expect(page.getByTestId("item-card")).toContainText("199");
+    await expect(surface(page).getByTestId("item-card")).toContainText("199");
     // Nothing was written by the check.
     expect(JSON.stringify(await storedPage(page))).toContain("199");
 
     await page.getByRole("button", { name: "Update" }).click();
-    await expect(page.getByTestId("item-card")).toContainText("249");
+    await expect(surface(page).getByTestId("item-card")).toContainText("249");
     await expect(newer(page)).toHaveCount(0);
     const after = await storedPage(page, (stored) => JSON.stringify(stored).includes("249"));
     expect(JSON.stringify(after)).not.toContain(`"at":"${oldAt}"`);
 
     await page.getByRole("button", { name: "Undo" }).click();
-    await expect(page.getByTestId("item-card")).toContainText("199");
+    await expect(surface(page).getByTestId("item-card")).toContainText("199");
     await expect(newer(page)).toContainText("1 block has newer data");
   });
 
@@ -132,9 +132,9 @@ test.describe("an external field", () => {
 
     await page.goto("/?items-lost");
     await expect(newer(page)).toHaveCount(0);
-    await page.getByTestId("item-card").click();
+    await surface(page).getByTestId("item-card").click();
     await expect(properties(page).getByRole("note")).toContainText("No longer in the source");
-    await expect(page.getByTestId("item-card")).toContainText("459");
+    await expect(surface(page).getByTestId("item-card")).toContainText("459");
   });
 
   test("asks the source once for all the ids of the page", async ({ page }) => {
@@ -162,7 +162,7 @@ test.describe("an external field", () => {
     await openEditor(page);
     await addFromBlocks(page, "Live item");
     await pickItem(page, "Coffee beans");
-    const card = page.getByTestId("live-item");
+    const card = surface(page).getByTestId("live-item");
     await expect(card).toContainText("199");
     // The renderer of the kind is given the metadata of the host.
     await expect(card).toHaveAttribute("data-lang", "en");
@@ -175,13 +175,13 @@ test.describe("an external field", () => {
 
     // The source has moved on: the canvas shows it with no banner, and nothing is written.
     await page.goto("/?items-changed");
-    await expect(page.getByTestId("live-item")).toContainText("249");
+    await expect(surface(page).getByTestId("live-item")).toContainText("249");
     await expect(newer(page)).toHaveCount(0);
     expect(JSON.stringify(await storedPage(page))).not.toContain('"data"');
 
     // A visitor's page: the host fills the data in with `resolveSources` before it draws.
     await page.goto("/?preview&items-changed");
-    await expect(page.getByTestId("live-item")).toContainText("249");
-    await expect(page.getByTestId("live-item")).toHaveAttribute("data-lang", "en");
+    await expect(surface(page).getByTestId("live-item")).toContainText("249");
+    await expect(surface(page).getByTestId("live-item")).toHaveAttribute("data-lang", "en");
   });
 });

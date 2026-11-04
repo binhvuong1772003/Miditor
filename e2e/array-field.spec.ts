@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, openEditor, properties } from "./helpers";
+import { addFromBlocks, openEditor, properties, surface } from "./helpers";
 
 // An array of objects (a menu of entries, each a label and a link) edited in the panel.
 
-const entries = (page: Page) => page.getByTestId("menu-entries").locator("li");
+const entries = (page: Page) => surface(page).getByTestId("menu-entries").locator("li");
 const entry = (page: Page, n: number) =>
   properties(page).getByRole("group", { name: `Entry ${n}` });
 

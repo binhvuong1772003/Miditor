@@ -10,6 +10,7 @@ import {
   pressBlock,
   properties,
   storedPage,
+  surface,
 } from "./helpers";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
@@ -40,7 +41,7 @@ test.describe("the clipboard", () => {
 
 test.describe("the order of the layers", () => {
   const order = async (page: import("@playwright/test").Page) =>
-    page
+    surface(page)
       .locator("[data-miditor-id]")
       .evaluateAll((elements) =>
         elements.map((element) => element.getAttribute("data-miditor-id")),

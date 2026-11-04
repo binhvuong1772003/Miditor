@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { openEditor, properties } from "./helpers";
+import { openEditor, properties, surface } from "./helpers";
 
 // The page has a height for the phone of its own: a phone screen (812) or as tall as its blocks need, until one is set.
 
-const root = (page: Page) => page.locator('[data-miditor-id="root"]').first();
+const root = (page: Page) => surface(page).locator('[data-miditor-id="root"]').first();
 const height = async (page: Page) => Math.round((await root(page).boundingBox())?.height ?? 0);
 const field = (page: Page) => properties(page).locator('input[type="number"][min="200"]');
 

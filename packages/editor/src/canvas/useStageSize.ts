@@ -64,7 +64,10 @@ export function useStageSize(workspace: HTMLElement | null): {
       const look = getComputedStyle(workspace);
       const room =
         workspace.clientWidth - parseFloat(look.paddingLeft) - parseFloat(look.paddingRight);
-      const page = box.querySelector<HTMLElement>("[data-miditor-render]");
+      // The page (or the frame it is drawn in, which carries the classes of the sheet).
+      const page =
+        box.querySelector<HTMLElement>("[data-miditor-render]") ??
+        box.querySelector<HTMLElement>("iframe[title='Page']");
       const widest = page ? Number.parseFloat(getComputedStyle(page).maxWidth) : Number.NaN;
       setStageBox((prev) => {
         const next = {

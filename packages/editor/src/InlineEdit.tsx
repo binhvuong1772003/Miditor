@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { clientRect } from "./canvas/client-rect";
 import { cleanEditedText } from "./edited-text";
 import { useT } from "./i18n/context";
 
@@ -52,8 +53,8 @@ export function InlineEdit({
   const t = useT();
   const field = useRef<HTMLDivElement>(null);
   const finished = useRef(false);
-  const look = getComputedStyle(element);
-  const box = element.getBoundingClientRect();
+  const look = (element.ownerDocument.defaultView ?? window).getComputedStyle(element);
+  const box = clientRect(element);
 
   // Start with the words in it, all of them selected, and the keyboard in it.
   useLayoutEffect(() => {

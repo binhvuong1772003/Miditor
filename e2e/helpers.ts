@@ -2,12 +2,17 @@ import { expect, type Page } from "@playwright/test";
 
 /** A fresh playground: `?reset` drops the stored page so every test starts from the same one. */
 export async function openEditor(page: Page, query = ""): Promise<void> {
-  await page.goto(`/?reset${query}`);
+  // `E2E_IFRAME=1` runs the whole suite with the page drawn in a frame of its own.
+  await page.goto(`/?reset${process.env.E2E_IFRAME ? "&iframe" : ""}${query}`);
   await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
 }
 
+/** Where the blocks are: the page, or the frame the page is drawn in when `E2E_IFRAME=1`. */
+export const surface = (page: Page) =>
+  process.env.E2E_IFRAME ? page.frameLocator('iframe[title="Page"]') : page;
+
 /** The blocks drawn on the page, the page itself included. */
-export const blocks = (page: Page) => page.locator("[data-miditor-id]");
+export const blocks = (page: Page) => surface(page).locator("[data-miditor-id]");
 
 export const saveState = (page: Page) => page.locator("[data-state]").first();
 
@@ -28,7 +33,7 @@ export async function openTool(page: Page, name: "Blocks" | "Layers" | "Images" 
 type Where = { x: number; y: number; width: number; height: number };
 
 export async function boxOf(page: Page, id: string): Promise<Where> {
-  const box = await page.locator(`[data-miditor-id="${id}"]`).boundingBox();
+  const box = await surface(page).locator(`[data-miditor-id="${id}"]`).boundingBox();
   if (!box) throw new Error(`block ${id} is not on the page`);
   return box;
 }
@@ -46,7 +51,7 @@ export async function dragBy(page: Page, id: string, dx: number, dy: number): Pr
 
 /** Drags a resize handle of the selected block (`se`, `n`, `w`...) by a distance. */
 export async function resizeBy(page: Page, handle: string, dx: number, dy: number): Promise<void> {
-  const box = await page.locator(`.moveable-${handle}`).first().boundingBox();
+  const box = await surface(page).locator(`.moveable-${handle}`).first().boundingBox();
   if (!box) throw new Error(`no ${handle} handle: is a block selected?`);
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -73,7 +78,7 @@ export async function addTwoTexts(page: Page): Promise<void> {
 
 /** The words of a block, as the page draws them (not the box being typed in). */
 export const wordsOf = (page: Page, id: string) =>
-  page.locator(`[data-miditor-id="${id}"]`).first();
+  surface(page).locator(`[data-miditor-id="${id}"]`).first();
 
 /** Double-clicks in the middle of a block, which opens its words for typing. */
 export async function openWords(page: Page, id: string): Promise<void> {

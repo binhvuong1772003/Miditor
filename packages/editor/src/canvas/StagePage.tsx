@@ -6,6 +6,7 @@ import { EmptyPage } from "../EmptyPage";
 import { countCommit } from "../perf";
 import { useEditorState, useViewCommands } from "../store";
 import { stageWidth } from "../zoom";
+import { FrameStage, frameMode } from "./FrameStage";
 
 export interface StagePageProps {
   /** The element the page is drawn in, which the wheel zoom and the size measure look at. */
@@ -17,6 +18,13 @@ export interface StagePageProps {
   metadata: JsonValue | undefined;
   /** The page has no blocks yet: a hint to add the first one is drawn over it. */
   empty: boolean;
+  /** Draw the page in a frame of its own instead of in place (experimental). */
+  /** Told the document of the frame when the page is drawn in one. */
+  onFrame?: (doc: Document | null) => void;
+  /** Told the keys pressed in the frame (see `FrameStage`). */
+  onFrameKey?: (event: KeyboardEvent) => boolean;
+  /** Told the wheel turned with Ctrl or Cmd over the frame (see `FrameStage`). */
+  onFrameWheel?: (event: WheelEvent, at: { x: number; y: number }) => boolean;
   onAddFirst: () => void;
 }
 
@@ -28,11 +36,25 @@ export function StagePage({
   renderers,
   metadata,
   empty,
+  onFrame,
+  onFrameKey,
+  onFrameWheel,
   onAddFirst,
 }: StagePageProps) {
   const zoom = useEditorState((state) => state.zoom);
   const frame = useEditorState((state) => state.frame);
   const viewing = useViewCommands();
+  // Experimental spike: `?iframe` draws the page in a frame of its own.
+  const inFrame =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("iframe");
+  const pageClass = [
+    styles.page,
+    frame === "phone" && styles.phone,
+    // A page with a height of its own is the sheet as tall as that, not as the room there is.
+    pageHeightOn(shown.root, frame) !== undefined && styles.pageFit,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div
       className={`${styles.zoomOuter} ${styles.stageBox}`}
@@ -63,21 +85,32 @@ export function StagePage({
         }
       >
         <Profiler id="canvas" onRender={() => countCommit("canvas")}>
-          <Render
-            data={shown}
-            device={frame}
-            links="inert"
-            renderers={renderers}
-            metadata={metadata}
-            className={[
-              styles.page,
-              frame === "phone" && styles.phone,
-              // A page with a height of its own is the sheet as tall as that, not as the room there is.
-              pageHeightOn(shown.root, frame) !== undefined && styles.pageFit,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          />
+          {inFrame ? (
+            <FrameStage
+              className={pageClass}
+              onDocument={onFrame}
+              onKey={onFrameKey}
+              onWheel={onFrameWheel}
+              minHeight={pageHeightOn(shown.root, frame) === undefined ? "40rem" : undefined}
+            >
+              <Render
+                data={shown}
+                device={frame}
+                links="inert"
+                renderers={renderers}
+                metadata={metadata}
+              />
+            </FrameStage>
+          ) : (
+            <Render
+              data={shown}
+              device={frame}
+              links="inert"
+              renderers={renderers}
+              metadata={metadata}
+              className={pageClass}
+            />
+          )}
         </Profiler>
       </div>
       {empty && (

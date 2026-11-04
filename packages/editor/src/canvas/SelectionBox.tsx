@@ -12,6 +12,7 @@ import Moveable, {
   type OnRotateEnd,
   type OnRotateStart,
 } from "react-moveable";
+import { isHtmlElement } from "../dom";
 import { useRenders } from "../perf";
 
 // The only file that knows react-moveable, so the library can be swapped for hand-written handles.
@@ -296,7 +297,7 @@ export function SelectionBox({
           target.parentElement,
           ...[...target.parentElement.children].filter(
             (el): el is HTMLElement =>
-              el !== target && el instanceof HTMLElement && el.dataset.miditorId !== undefined,
+              el !== target && isHtmlElement(el) && el.dataset.miditorId !== undefined,
           ),
         ]
       : [];

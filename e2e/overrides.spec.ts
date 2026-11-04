@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, boxOf, openEditor, properties } from "./helpers";
+import { addFromBlocks, blocks, boxOf, openEditor, properties, surface } from "./helpers";
 
 // A host reshapes the editor through `overrides` (`?overrides`): it wraps the bar and the panels,
 // replaces the rail and one input, and adds a line to the right-click menu.
@@ -93,11 +93,11 @@ test.describe("a host reshapes the editor through overrides", () => {
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
     await label.fill("Go");
     await label.blur();
-    await expect(page.locator('[data-miditor-id="n1"]').first()).toContainText("Go");
+    await expect(surface(page).locator('[data-miditor-id="n1"]').first()).toContainText("Go");
     // The link survived the other change, and Undo of the label leaves it.
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
     await page.getByTestId("host-bar").getByRole("button", { name: "Undo" }).click();
-    await expect(page.locator('[data-miditor-id="n1"]').first()).toContainText("Button");
+    await expect(surface(page).locator('[data-miditor-id="n1"]').first()).toContainText("Button");
     await expect(panel.getByTestId("host-href")).toHaveValue("https://example.com/");
   });
 

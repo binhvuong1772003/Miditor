@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, openEditor, properties } from "./helpers";
+import { addFromBlocks, blocks, openEditor, properties, surface } from "./helpers";
 
 // A host draws the input of a `custom` field (`config.customFields`): a product picker for a Product block.
 
-const product = (page: Page) => page.locator('[data-miditor-type="Product"]');
+const product = (page: Page) => surface(page).locator('[data-miditor-type="Product"]');
 
 test.describe("a field the host draws the input of", () => {
   test("the host's input edits the block and undo brings the value back", async ({ page }) => {

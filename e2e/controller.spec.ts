@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks } from "./helpers";
+import { blocks, surface } from "./helpers";
 
 // A bar drawn outside `<Editor>` drives it through a controller from `useCreateEditor()`
 // (`?control&outside`). `&closed` starts with the editor closed; `&two` gives the controller to two editors.
@@ -42,7 +42,7 @@ test("Outside add Text adds a block and the readout shows its id", async ({ page
   await bar(page, "Outside add Text").click();
   await expect(blocks(page)).toHaveCount(before + 1);
   await expect(selection(page)).toHaveText("n1");
-  await expect(page.locator('[data-miditor-id="n1"]').first()).toBeVisible();
+  await expect(surface(page).locator('[data-miditor-id="n1"]').first()).toBeVisible();
 });
 
 test("Outside undo is off until there is a change, then undoes", async ({ page }) => {

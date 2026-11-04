@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { addFromBlocks, boxOf, openEditor, openWords, wordsOf } from "./helpers";
+import { addFromBlocks, boxOf, openEditor, openWords, surface, wordsOf } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await openEditor(page);
@@ -66,5 +66,5 @@ test("Undo of the block being typed on ends the typing and leaves no box behind"
   await openWords(page, "n1");
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(field(page)).toHaveCount(0);
-  await expect(page.locator('[data-miditor-id="n1"]')).toHaveCount(0);
+  await expect(surface(page).locator('[data-miditor-id="n1"]')).toHaveCount(0);
 });

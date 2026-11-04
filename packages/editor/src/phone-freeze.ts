@@ -6,6 +6,7 @@ import {
   withPhoneProp,
 } from "@miditor/core";
 import { elementOf } from "./canvas/element-of";
+import { isHtmlElement } from "./dom";
 
 /** Where a block is drawn inside its parent, in px, measured from the padding box of the parent. */
 export interface Measured {
@@ -45,7 +46,7 @@ export function freezeRoot(root: TreeNode, measured: ReadonlyMap<string, Measure
 export const drawnBox = (element: HTMLElement): Measured => {
   // A block inside a cluster is placed in the box of the cluster, which is not its parent in the page.
   const holder = element.offsetParent;
-  const inCluster = holder instanceof HTMLElement && holder.hasAttribute("data-miditor-cluster");
+  const inCluster = isHtmlElement(holder) && holder.hasAttribute("data-miditor-cluster");
   return {
     x: element.offsetLeft + (inCluster ? holder.offsetLeft : 0),
     y: element.offsetTop + (inCluster ? holder.offsetTop : 0),

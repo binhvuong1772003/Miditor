@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { addFromBlocks, announcement, blocks, openEditor, openTool, properties } from "./helpers";
+import {
+  addFromBlocks,
+  announcement,
+  blocks,
+  openEditor,
+  openTool,
+  properties,
+  surface,
+} from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await openEditor(page);
@@ -15,7 +23,7 @@ test("a block added to the page is the one selected", async ({ page }) => {
 test("pressing a block selects it and pressing the empty page selects nothing", async ({
   page,
 }) => {
-  const box = page.locator('[data-miditor-type="Container"]').last();
+  const box = surface(page).locator('[data-miditor-type="Container"]').last();
   await box.click({ position: { x: 4, y: 4 } });
   await expect(properties(page)).toContainText("Box");
 
@@ -33,7 +41,7 @@ test("Tab goes from block to block on the level and Shift+Tab goes back", async 
     return (await rows.evaluateAll((l) => l.map((e) => e.getAttribute("data-layer")))).indexOf(id);
   };
 
-  await page
+  await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });
@@ -46,7 +54,7 @@ test("Tab goes from block to block on the level and Shift+Tab goes back", async 
 });
 
 test("Escape lets go of the selection", async ({ page }) => {
-  await page
+  await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });
@@ -65,7 +73,7 @@ test("the Layers tool lists the blocks and selecting a row selects the block", a
 
 test("selecting on the canvas shows in the Layers tool", async ({ page }) => {
   await openTool(page, "Layers");
-  await page
+  await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
     .click({ position: { x: 4, y: 4 } });

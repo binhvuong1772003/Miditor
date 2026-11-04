@@ -1,5 +1,14 @@
 import { expect, type Page, test } from "@playwright/test";
-import { announcement, blocks, boxOf, dragBy, openEditor, pressBlock, properties } from "./helpers";
+import {
+  announcement,
+  blocks,
+  boxOf,
+  dragBy,
+  openEditor,
+  pressBlock,
+  properties,
+  surface,
+} from "./helpers";
 
 // A host locks blocks and hides parts through `permissions` and `hide` (`?permissions`): the block
 // `footer` cannot be deleted, dragged, edited or duplicated, every other block is free. With `&viewer`
@@ -45,7 +54,7 @@ test.describe("a host locks blocks through permissions", () => {
     await expect(page.getByTestId("host-remove-result")).toHaveText("false");
     await expect(count(page)).toHaveText("2");
     await expect(blocks(page)).toHaveCount(before);
-    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
+    await expect(surface(page).locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
   });
 
   test("editor.remove() takes a free block away", async ({ page }) => {
@@ -83,10 +92,10 @@ test.describe("a host locks blocks through permissions", () => {
   }) => {
     await open(page);
     await pressBlock(page, "sample");
-    await expect(page.locator(".moveable-se")).toHaveCount(1);
+    await expect(surface(page).locator(".moveable-se")).toHaveCount(1);
     await pressBlock(page, FOOTER);
-    await expect(page.locator(".moveable-se")).toHaveCount(0);
-    await expect(page.locator(".moveable-rotation")).toHaveCount(0);
+    await expect(surface(page).locator(".moveable-se")).toHaveCount(0);
+    await expect(surface(page).locator(".moveable-rotation")).toHaveCount(0);
     const fields = properties(page).locator("input, textarea, select");
     expect(await fields.count()).toBeGreaterThan(0);
     await expect(properties(page).locator("input:enabled, textarea:enabled")).toHaveCount(0);
@@ -119,7 +128,7 @@ test.describe("a host locks blocks through permissions", () => {
     const back = await boxOf(page, "sample");
     expect(Math.round(back.x)).toBe(Math.round(first.x));
     expect(Math.round(back.y)).toBe(Math.round(first.y));
-    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
+    await expect(surface(page).locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
     // Redo brings the free block back to where it was put, and still the footer is there.
     await page.getByRole("button", { name: "Redo" }).click();
@@ -138,7 +147,7 @@ test.describe("a host locks blocks through permissions", () => {
     await pastTheSecond(page);
     await page.keyboard.press("Control+x");
     await expect(blocks(page)).toHaveCount(before);
-    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
+    await expect(surface(page).locator(`[data-miditor-id="${FOOTER}"]`)).toBeVisible();
 
     // Grouping a locked block with a free one is refused whole: no group, nothing moved.
     await pastTheSecond(page);
@@ -178,7 +187,7 @@ test.describe("a viewer can look but not change", () => {
     const before = await blocks(page).count();
     await pressBlock(page, "sample");
     await expect(page.locator('aside[aria-label="Properties"]')).toBeVisible();
-    await expect(page.locator(".moveable-se")).toHaveCount(0);
+    await expect(surface(page).locator(".moveable-se")).toHaveCount(0);
 
     // Typing into the words of a Text block does not open them.
     await boxOf(page, FOOTER);
@@ -186,7 +195,9 @@ test.describe("a viewer can look but not change", () => {
     await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
     await expect(page.getByRole("textbox", { name: "Edit the text of the block" })).toHaveCount(0);
     await page.keyboard.type("abc");
-    await expect(page.locator(`[data-miditor-id="${FOOTER}"]`)).toContainText("Footer, kept");
+    await expect(surface(page).locator(`[data-miditor-id="${FOOTER}"]`)).toContainText(
+      "Footer, kept",
+    );
 
     // Delete, a nudge and a drag of a free block change nothing.
     await pressBlock(page, "sample");

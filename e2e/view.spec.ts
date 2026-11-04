@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { addFromBlocks, openEditor } from "./helpers";
+import { addFromBlocks, openEditor, surface } from "./helpers";
 
 const percent = (page: import("@playwright/test").Page) =>
   page.getByRole("button", { name: /^\d+%$/ });
 const pageWidth = async (page: import("@playwright/test").Page) =>
-  (await page.locator("[data-miditor-render]").first().boundingBox())?.width ?? 0;
+  (await surface(page).locator("[data-miditor-render]").first().boundingBox())?.width ?? 0;
 
 test.describe("zoom", () => {
   test.beforeEach(async ({ page }) => {
@@ -90,10 +90,10 @@ test.describe("frame", () => {
 
   test("the frame does not change what the page holds", async ({ page }) => {
     await addFromBlocks(page, "Text");
-    const count = await page.locator("[data-miditor-id]").count();
+    const count = await surface(page).locator("[data-miditor-id]").count();
     await page.getByRole("button", { name: "Phone" }).click();
     await page.getByRole("button", { name: "Desktop" }).click();
-    await expect(page.locator("[data-miditor-id]")).toHaveCount(count);
+    await expect(surface(page).locator("[data-miditor-id]")).toHaveCount(count);
   });
 });
 

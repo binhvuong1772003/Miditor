@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import styles from "./BlockLabel.module.css";
+import { clientRect } from "./canvas/client-rect";
 
 export interface BlockLabelProps {
   /** The element of the block, which the label sits on the top left corner of. */
@@ -26,7 +27,7 @@ export function BlockLabel({ target, workspace, text, tone }: BlockLabelProps) {
   const [dragging, setDragging] = useState(false);
 
   const locate = () => {
-    const box = target.getBoundingClientRect();
+    const box = clientRect(target);
     const view = workspace.getBoundingClientRect();
     const x = Math.min(Math.max(box.left, view.left + 4), view.right - 60);
     const above = box.top - ABOVE;

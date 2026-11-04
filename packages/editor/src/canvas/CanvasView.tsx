@@ -48,7 +48,9 @@ import {
   withDraft,
 } from "../store";
 import { allowed } from "../store/permissions";
+import { clientRect } from "./client-rect";
 import { elementOf } from "./element-of";
+import { InFrame } from "./FrameStage";
 import { Marquee } from "./Marquee";
 import { SelectionBox } from "./SelectionBox";
 import { StagePage } from "./StagePage";
@@ -106,6 +108,10 @@ export function CanvasView({
   dropHint,
 }: CanvasViewProps) {
   const t = useT();
+  // When the page is drawn in a frame of its own, its blocks are in the document of that frame: that is
+  // where they are looked for. The workspace around the frame stays where the panels and menus measure.
+  const [frameDoc, setFrameDoc] = useState<Document | null>(null);
+  const scope: HTMLElement | null = frameDoc ? frameDoc.body : workspace;
   const permissions = usePermissions();
   const overrides = useContext(OverridesContext);
   const hideContextMenu = useHidden("contextMenu");
@@ -160,14 +166,14 @@ export function CanvasView({
     const placed = nodes.map((node) => ({
       node,
       rect: (() => {
-        const element = flowing ? elementOf(workspace, node.id) : null;
+        const element = flowing && scope ? elementOf(scope, node.id) : null;
         return element ? drawnBox(element) : resolveRect(boxFor(node, frame), container);
       })(),
       rotation: boxFor(node, frame).rotation,
     }));
     const bounds = boundsOf(placed);
     if (!bounds) return null;
-    const parentBox = parentElement.getBoundingClientRect();
+    const parentBox = clientRect(parentElement);
     const view = workspace.getBoundingClientRect();
     return {
       placed,
@@ -210,7 +216,7 @@ export function CanvasView({
     endResize,
     measureBetween,
   } = useGestures({
-    workspace,
+    workspace: scope,
     block,
     groupInfo,
     data,
@@ -231,14 +237,15 @@ export function CanvasView({
       drawnPage(draft ? withDraft(data, draft, frame, registry) : data, registry, sourceAnswers),
     [data, draft, frame, registry, sourceAnswers],
   );
-  useBlockMarks({ workspace, selectedId, picked, hoverId, dropId, dragging, shown });
+  useBlockMarks({ workspace: scope, selectedId, picked, hoverId, dropId, dragging, shown });
 
   // The block under the pointer, for its name tag. Its element comes from the last render.
   const hoverNode = hoverId ? findNode(data.root, hoverId) : undefined;
-  const hoverElement = workspace && hoverId ? elementOf(workspace, hoverId) : null;
+  const hoverElement = scope && hoverId ? elementOf(scope, hoverId) : null;
 
   const { menuAt, setMenuAt, marquee, press, hover, openMenu, enter } = usePointer({
     workspace,
+    scope,
     editorRoot,
     data,
     selectedDef: mayType ? selectedDef : undefined,
@@ -256,7 +263,7 @@ export function CanvasView({
 
   // `<Render>` owns the elements, so look up the one for the selected node after every render.
   useLayoutEffect(() => {
-    setBlock(workspace && selectedId ? elementOf(workspace, selectedId) : null);
+    setBlock(scope && selectedId ? elementOf(scope, selectedId) : null);
   });
 
   // The box has the block that was just pressed: the press, if it is still down, goes on to drag it.
@@ -339,7 +346,7 @@ export function CanvasView({
 
   // The block whose words are being typed, the element that draws it, and the limit of the field.
   const editingNode = editing ? findNode(data.root, editing.id) : undefined;
-  const editingElement = editing && workspace ? elementOf(workspace, editing.id) : null;
+  const editingElement = editing && scope ? elementOf(scope, editing.id) : null;
   const editingDef =
     editingNode && Object.hasOwn(registry, editingNode.type)
       ? registry[editingNode.type]
@@ -368,7 +375,7 @@ export function CanvasView({
   );
 
   // The page as it is drawn: its element, how tall it is and the bottom of the lowest block on it.
-  const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
+  const pageElement = scope ? elementOf(scope, data.root.id) : null;
   const pageHeight = (() => {
     if (!pageElement) return { drawn: 0, floor: 0 };
     // The shortest page that still holds every block, worked out from how each one is placed.
@@ -403,6 +410,44 @@ export function CanvasView({
         shown={shown}
         renderers={renderers}
         metadata={metadata}
+        onFrame={setFrameDoc}
+        onFrameWheel={(event, at) => {
+          // The workspace zooms on this wheel; it did not hear of it, since it was over the frame.
+          if (!workspace) return false;
+          const copy = new WheelEvent("wheel", {
+            clientX: at.x,
+            clientY: at.y,
+            deltaX: event.deltaX,
+            deltaY: event.deltaY,
+            deltaMode: event.deltaMode,
+            ctrlKey: event.ctrlKey,
+            metaKey: event.metaKey,
+            bubbles: true,
+            cancelable: true,
+          });
+          workspace.dispatchEvent(copy);
+          return copy.defaultPrevented;
+        }}
+        onFrameKey={(event) => {
+          // Typing on a block (in the frame) keeps its keys. Any other key is the editor's: it is given to
+          // its root as if it was pressed there, and what the root does with it (a shortcut) is kept.
+          const root = editorRoot.current;
+          if (editing || !root) return false;
+          const copy = new KeyboardEvent(event.type, {
+            key: event.key,
+            code: event.code,
+            location: event.location,
+            repeat: event.repeat,
+            ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey,
+            altKey: event.altKey,
+            metaKey: event.metaKey,
+            bubbles: true,
+            cancelable: true,
+          });
+          root.dispatchEvent(copy);
+          return copy.defaultPrevented;
+        }}
         empty={data.root.children.length === 0 && !editing}
         onAddFirst={() => addBlockOf("Container")}
       />
@@ -503,35 +548,37 @@ export function CanvasView({
           }}
         />
       )}
-      <SelectionBox
-        target={editing ? null : groupInfo ? frameEl : block}
-        container={workspace}
-        className={styles.selection}
-        locked={lockedBlocks}
-        controls={dragControls}
-        group={groupInfo !== null}
-        scale={groupInfo ? zoom : 1}
-        onRotatePreview={previewGroupTurn}
-        companions={
-          groupInfo
-            ? groupInfo.placed.flatMap((item) =>
-                workspace ? (elementOf(workspace, item.node.id) ?? []) : [],
-              )
-            : picked.flatMap((id) => (workspace ? (elementOf(workspace, id) ?? []) : []))
-        }
-        lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
-        minSize={minSize(selectedNode?.styles)}
-        angle={
-          !groupInfo && selectedNode && isFreeNode(selectedNode)
-            ? boxFor(selectedNode, frame).rotation
-            : 0
-        }
-        onGestureStart={startGesture}
-        onDragEnd={endDrag}
-        onDragMove={dragMove}
-        onResizeEnd={endResize}
-        onRotateEnd={endRotate}
-      />
+      <InFrame doc={frameDoc}>
+        <SelectionBox
+          target={editing ? null : groupInfo ? frameEl : block}
+          container={scope}
+          className={styles.selection}
+          locked={lockedBlocks}
+          controls={dragControls}
+          group={groupInfo !== null}
+          scale={groupInfo ? zoom : 1}
+          onRotatePreview={previewGroupTurn}
+          companions={
+            groupInfo
+              ? groupInfo.placed.flatMap((item) =>
+                  scope ? (elementOf(scope, item.node.id) ?? []) : [],
+                )
+              : picked.flatMap((id) => (scope ? (elementOf(scope, id) ?? []) : []))
+          }
+          lockRatio={selectedNode ? keepsRatio(selectedNode, selectedDef) : false}
+          minSize={minSize(selectedNode?.styles)}
+          angle={
+            !groupInfo && selectedNode && isFreeNode(selectedNode)
+              ? boxFor(selectedNode, frame).rotation
+              : 0
+          }
+          onGestureStart={startGesture}
+          onDragEnd={endDrag}
+          onDragMove={dragMove}
+          onResizeEnd={endResize}
+          onRotateEnd={endRotate}
+        />
+      </InFrame>
     </section>
   );
 }

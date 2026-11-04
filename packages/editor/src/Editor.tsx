@@ -40,12 +40,14 @@ import {
 import type { ActionDef } from "./actions";
 import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { CanvasView } from "./canvas/CanvasView";
+import { clientRect, elementsAtClient, frameDocumentOf } from "./canvas/client-rect";
 import { elementOf } from "./canvas/element-of";
 import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
 import { ControlProvider } from "./control-context";
 import { attachController, type EditorController } from "./controller";
 import type { CustomFieldInput } from "./custom-field";
+import { isHtmlElement } from "./dom";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -618,8 +620,12 @@ function EditorBody({
   const landingFor = (kind: string, point: { x: number; y: number }) => {
     const probe = newNode(registry, kind, "probe", { w: 1, h: 1 });
     if (!probe || onPhone || !workspace) return undefined;
-    for (const element of document.elementsFromPoint(point.x, point.y)) {
-      if (!(element instanceof HTMLElement) || !workspace.contains(element)) continue;
+    // The blocks are in the frame the page is drawn in, when there is one.
+    const surface = frameDocumentOf(workspace);
+    for (const element of elementsAtClient(surface ?? document, point.x, point.y)) {
+      if (!isHtmlElement(element) || !(surface ? surface.body : workspace).contains(element)) {
+        continue;
+      }
       const id = element.dataset.miditorId;
       if (id !== undefined && canInsert(registry, data.root, id, probe)) return { id, element };
     }
@@ -638,7 +644,7 @@ function EditorBody({
     if (!landing) return;
     const { id: parentId, element } = landing;
     const container = { w: element.clientWidth, h: element.clientHeight };
-    const rect = element.getBoundingClientRect();
+    const rect = clientRect(element);
     // A parent that is turned has no simple map from the screen: the block goes in its middle.
     const at =
       turnOf(data.root, parentId, frame) === 0

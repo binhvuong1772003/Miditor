@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { addFromBlocks, openEditor, properties } from "./helpers";
+import { addFromBlocks, openEditor, properties, surface } from "./helpers";
 
 // Opacity and shadow: set in the Effects section, drawn on the page, undone with the toolbar.
 
 const block = (page: import("@playwright/test").Page) =>
-  page.locator('[data-miditor-id="n1"]').first();
+  surface(page).locator('[data-miditor-id="n1"]').first();
 const css = (page: import("@playwright/test").Page, prop: string) =>
   block(page).evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
 
