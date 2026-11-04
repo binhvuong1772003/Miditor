@@ -24,8 +24,32 @@ export const PHONE_VAR = "--miditor-phone";
 
 const kebab = (name: string) => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
-/** What a property is on the screen that does not set it: its own initial value. */
-const ABSENT = "initial";
+/**
+ * What a property is on the screen that does not set it: its own initial value. The keyword `initial`
+ * cannot stand for it inside a variable: after `var()` has put it in, the browser reads it as the
+ * keyword of the variable itself, which empties the variable, so the other screen's value would show
+ * through. The layout properties a screen leaves out are therefore spelled out; any other property
+ * is left to the keyword.
+ */
+const ABSENT: Record<string, string> = {
+  left: "auto",
+  right: "auto",
+  top: "auto",
+  bottom: "auto",
+  width: "auto",
+  height: "auto",
+  maxWidth: "none",
+  maxHeight: "none",
+  minWidth: "0",
+  minHeight: "0",
+  margin: "0",
+  padding: "0",
+  order: "0",
+  flex: "0 1 auto",
+  position: "static",
+  transform: "none",
+};
+const absent = (key: string) => ABSENT[key] ?? "initial";
 
 /**
  * One inline style that gives `desktop` on a desktop and `phone` on a phone, so that one page can
@@ -51,8 +75,8 @@ export function splitStyles(desktop: CSSProperties, phone: CSSProperties): CSSPr
     }
     const name = `--m-${kebab(key)}`;
     out[key] = `var(${name}-p, var(${name}-d))`;
-    extra[`${name}-d`] = d === undefined ? ABSENT : String(d);
-    extra[`${name}-p`] = `var(${PHONE_VAR}) ${p === undefined ? ABSENT : String(p)}`;
+    extra[`${name}-d`] = d === undefined ? absent(key) : String(d);
+    extra[`${name}-p`] = `var(${PHONE_VAR}) ${p === undefined ? absent(key) : String(p)}`;
   }
   return { ...out, ...extra } as CSSProperties;
 }

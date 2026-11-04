@@ -33,13 +33,13 @@ describe("splitStyles", () => {
     });
   });
 
-  it("gives the initial value on the screen that does not set a property", () => {
+  it("gives the initial value, spelled out, on the screen that does not set a layout property", () => {
     expect(splitStyles({ left: "10px" }, { right: "4px" })).toEqual({
       left: "var(--m-left-p, var(--m-left-d))",
       right: "var(--m-right-p, var(--m-right-d))",
       "--m-left-d": "10px",
-      "--m-left-p": `var(${PHONE_VAR}) initial`,
-      "--m-right-d": "initial",
+      "--m-left-p": `var(${PHONE_VAR}) auto`,
+      "--m-right-d": "auto",
       "--m-right-p": `var(${PHONE_VAR}) 4px`,
     });
   });
@@ -122,7 +122,9 @@ describe("splitStyles", () => {
               side[key] === undefined
                 ? other[key] === undefined
                   ? ""
-                  : "initial"
+                  : key === "fontSize" || key === "color" || key === "fontWeight"
+                    ? "initial"
+                    : "auto"
                 : String(side[key]),
             ]),
           );
