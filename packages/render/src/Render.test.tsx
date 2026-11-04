@@ -532,6 +532,27 @@ describe("<Render> theme", () => {
   });
 });
 
+describe("<Render> metadata", () => {
+  const withHeart: PageData = page(
+    flow("root", "Page", [{ ...flow("g", "Container", [flow("h", "Heart")]) }]),
+  );
+  const Show: Renderer = ({ metadata }) => <i data-m={JSON.stringify(metadata ?? "none")} />;
+
+  it("gives the function of a host the metadata of the page, for a block at any depth", () => {
+    const markup = renderToStaticMarkup(
+      <Render data={withHeart} renderers={{ Heart: Show }} metadata={{ currency: "VND" }} />,
+    );
+    expect(markup).toContain('data-m="{&quot;currency&quot;:&quot;VND&quot;}"');
+  });
+
+  it("is undefined when the host gave none, and is never written into the markup of built-in blocks", () => {
+    const markup = renderToStaticMarkup(<Render data={withHeart} renderers={{ Heart: Show }} />);
+    expect(markup).toContain('data-m="&quot;none&quot;"');
+    const withMeta = renderToStaticMarkup(<Render data={withHeart} metadata={{ secret: "x" }} />);
+    expect(withMeta).not.toContain("secret");
+  });
+});
+
 describe("<Render> Button", () => {
   const button = (props: Record<string, JsonValue>, phoneProps?: Record<string, JsonValue>) =>
     page(

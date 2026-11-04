@@ -45,6 +45,11 @@ export interface RendererContext {
   responsive: boolean;
   /** The theme of the page, for a function that draws a colour or a font of its own (see `resolveColor`). */
   theme: Theme | undefined;
+  /**
+   * The `metadata` the host gave `<Render>` (a language, a currency, who is looking): the same for every
+   * block, not part of the page. `undefined` when there is none.
+   */
+  metadata: JsonValue | undefined;
   /** The blocks inside this one, already drawn. A function that leaves them out hides them. */
   children: ReactNode;
 }
@@ -70,6 +75,12 @@ export interface RenderProps {
    * type with no entry here stays an empty box.
    */
   renderers?: Readonly<Record<string, Renderer>> | undefined;
+  /**
+   * Anything about the host's side that its renderers need (a language, a currency, who is looking), as plain
+   * JSON. Every renderer of a kind gets it as `context.metadata`. It is not part of the page and the blocks
+   * the library draws ignore it.
+   */
+  metadata?: JsonValue | undefined;
   /**
    * What a link does: `"live"` (the default) draws a button's link as a real one, `"inert"` draws the
    * same button with no address, so pressing it in an editor goes nowhere.
@@ -104,6 +115,7 @@ interface NodeProps {
   /** Set when a block that looks different on the two screens is drawn once for each: which one this is. */
   only?: Device;
   renderers: Readonly<Record<string, Renderer>> | undefined;
+  metadata: JsonValue | undefined;
   theme: Theme | undefined;
   inert: boolean;
   onAction: RenderProps["onAction"];
@@ -184,7 +196,7 @@ function onlyOn(style: CSSProperties, screen: Device): CSSProperties {
 }
 
 function RenderNode(all: NodeProps) {
-  const { node, isRoot, screen, only, renderers, theme, inert, onAction } = all;
+  const { node, isRoot, screen, only, renderers, metadata, theme, inert, onAction } = all;
   const flowOn = (side: Device): PhoneFlow | undefined =>
     all.auto && side === "phone"
       ? { item: all.item, flowKids: node.children.some(isFreeNode) }
@@ -229,6 +241,7 @@ function RenderNode(all: NodeProps) {
           device,
           responsive,
           theme,
+          metadata,
           children: kids(all),
         })}
       </div>
@@ -286,7 +299,7 @@ function RenderNode(all: NodeProps) {
 }
 
 const kids = (all: NodeProps) => {
-  const { node, screen, renderers, theme, inert, onAction, auto, size } = all;
+  const { node, screen, renderers, metadata, theme, inert, onAction, auto, size } = all;
   const layout = auto ? phoneFlowOf(node, size) : undefined;
   const draw = (child: TreeNode) => (
     <RenderNode
@@ -296,6 +309,7 @@ const kids = (all: NodeProps) => {
       isRoot={false}
       screen={screen}
       renderers={renderers}
+      metadata={metadata}
       theme={theme}
       inert={inert}
       auto={auto}
@@ -395,6 +409,7 @@ export function Render({
   className,
   device,
   renderers,
+  metadata,
   links,
   responsive,
   onAction,
@@ -418,6 +433,7 @@ export function Render({
         isRoot
         screen={screen}
         renderers={renderers}
+        metadata={metadata}
         theme={data.theme}
         inert={links === "inert"}
         onAction={onAction}
