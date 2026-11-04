@@ -18,6 +18,7 @@ export { canMove } from "./registry/can-move";
 export { defaultValueOf } from "./registry/default-value";
 export { type ExternalRef, externalRefs, withExternalValues } from "./registry/external-refs";
 export type { ExternalItem, ExternalSource, SourceContext } from "./registry/external-source";
+export { judge, updateValue, type Verdict } from "./registry/judge-sources";
 export { keepsRatio } from "./registry/keeps-ratio";
 export {
   BASIC_CATEGORY,
@@ -35,6 +36,7 @@ export {
   SOURCE_TIMEOUT_MS,
 } from "./registry/load-items";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
+export { pickValue } from "./registry/pick-value";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export {
   type ComponentDef,
