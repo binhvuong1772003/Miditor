@@ -9,7 +9,7 @@ import {
 } from "@miditor/core";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Render, type Renderer } from "./Render";
+import { Render, type Renderer, type RendererContext } from "./Render";
 
 const flow = (id: string, type: string, children: (FlowNode | FreeNode)[] = []): FlowNode => ({
   id,
@@ -535,6 +535,17 @@ describe("<Render> theme", () => {
 const Show: Renderer = ({ metadata }) => <i data-m={JSON.stringify(metadata ?? "none")} />;
 
 describe("<Render> metadata", () => {
+  it("is optional in the context, so a host that builds one by hand (in its tests) still compiles", () => {
+    const context: RendererContext = {
+      props: {},
+      device: "desktop",
+      responsive: false,
+      theme: undefined,
+      children: null,
+    };
+    expect(Show(context)).toBeTruthy();
+  });
+
   const withHeart: PageData = page(
     flow("root", "Page", [{ ...flow("g", "Container", [flow("h", "Heart")]) }]),
   );

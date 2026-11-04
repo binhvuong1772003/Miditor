@@ -49,7 +49,7 @@ export interface RendererContext {
    * The `metadata` the host gave `<Render>` (a language, a currency, who is looking): the same for every
    * block, not part of the page. `undefined` when there is none.
    */
-  metadata: JsonValue | undefined;
+  metadata?: JsonValue | undefined;
   /** The blocks inside this one, already drawn. A function that leaves them out hides them. */
   children: ReactNode;
 }
@@ -115,7 +115,7 @@ interface NodeProps {
   /** Set when a block that looks different on the two screens is drawn once for each: which one this is. */
   only?: Device;
   renderers: Readonly<Record<string, Renderer>> | undefined;
-  metadata: JsonValue | undefined;
+  metadata?: JsonValue | undefined;
   theme: Theme | undefined;
   inert: boolean;
   onAction: RenderProps["onAction"];
