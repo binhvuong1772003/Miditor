@@ -78,6 +78,12 @@ export function storeHistory(
       }),
     );
   } catch {
-    // A full quota or a private window: the page is still kept, only the steps are not.
+    // A full quota or a private window: the page is still kept, but the steps kept before are of an
+    // earlier moment, so they go, and the page is opened with none.
+    try {
+      storage.removeItem(HISTORY_KEY);
+    } catch {
+      // Nothing more to do.
+    }
   }
 }

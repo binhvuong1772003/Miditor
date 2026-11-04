@@ -187,6 +187,16 @@ describe("createApi", () => {
       expect(h.future).toHaveLength(0);
     });
 
+    it("setHistory leaves a change that is pending in a panel as it is", () => {
+      const a = setup();
+      a.api.addBlock("Text");
+      const draft = { id: "t1", key: "prop", name: "text", value: "typing" } as const;
+      a.store.setState({ draft });
+      const earlier = a.store.getState().history.past[0] as never;
+      expect(a.api.setHistory({ past: [earlier], future: [] })).toBe(true);
+      expect(a.store.getState().draft).toEqual(draft);
+    });
+
     it("setHistory says false, and changes nothing, for steps that are not pages", () => {
       const a = setup();
       a.api.addBlock("Text");

@@ -156,7 +156,7 @@ export const setDraft = <S extends DocumentState>(state: S, draft: Draft | null)
 /**
  * One step back or forward. What is pending is dropped, and the selection stays if its block does
  * (see `afterStep`). It is all one change, so nothing is drawn with the page of one and the selection
- * of the other. Never refused: it only walks back through changes that were allowed.
+ * of the other. Never refused: it only walks back through changes that were allowed in the session, but not through steps a host gave (`initialHistory`, `setHistory`), which are not checked against the permissions.
  */
 export function step<S extends DocumentState & SelectionState>(
   state: S,

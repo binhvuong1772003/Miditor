@@ -1,7 +1,15 @@
 import { emptyPage, type PageData } from "@miditor/editor";
 import { describe, expect, it, vi } from "vitest";
 import { SAMPLE_PAGE } from "./sample-page";
-import { loadPage, type PageStorage, STORAGE_KEY, storePage } from "./storage";
+import {
+  HISTORY_KEY,
+  loadHistory,
+  loadPage,
+  type PageStorage,
+  STORAGE_KEY,
+  storeHistory,
+  storePage,
+} from "./storage";
 
 /** A stand-in for localStorage that remembers what it was given. */
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -119,5 +127,24 @@ describe("storePage", () => {
     };
     expect(storePage(storage, SAMPLE_PAGE)).toBe(false);
     warn.mockRestore();
+  });
+});
+
+describe("storeHistory", () => {
+  const steps = { past: [emptyPage(), emptyPage()], future: [] };
+
+  it("keeps the steps, and loadHistory gives them back", () => {
+    const storage = fakeStorage();
+    storeHistory(storage, steps);
+    expect(loadHistory(storage)?.past).toHaveLength(2);
+  });
+
+  it("drops the steps it kept before when the browser refuses the new ones, so a page is never opened with the steps of an earlier moment", () => {
+    const storage = fakeStorage({ [HISTORY_KEY]: JSON.stringify(steps) });
+    storage.setItem = () => {
+      throw new Error("quota");
+    };
+    storeHistory(storage, steps);
+    expect(storage.getItem(HISTORY_KEY)).toBeNull();
   });
 });

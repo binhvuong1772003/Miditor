@@ -71,6 +71,45 @@ describe("parseHistory", () => {
   });
 });
 
+describe("parseHistory, sharing and checking", () => {
+  const present = pageWith(block("a", "A"), block("b", "B"), block("c", "C"));
+
+  it("shares the blocks that did not change by their id, also after a block was taken out near the top", () => {
+    // The step before had one more block at the top: every block after it moved one place.
+    const past = [
+      json(pageWith(block("z", "Z"), block("a", "A"), block("b", "B"), block("c", "C"))),
+    ];
+    const got = parseHistory({ past }, present, 100);
+    const kids = got?.past[0]?.root.children ?? [];
+    expect(kids.map((k) => k.id)).toEqual(["z", "a", "b", "c"]);
+    expect(kids[1]).toBe(present.root.children[0]);
+    expect(kids[2]).toBe(present.root.children[1]);
+    expect(kids[3]).toBe(present.root.children[2]);
+  });
+
+  it("keeps a key called __proto__ as the key it is, and does not change the prototype of anything", () => {
+    const hostile = JSON.parse(
+      '{"id":"b","type":"Text","props":{"text":"B","__proto__":{"x":1}},"styles":{},"children":[]}',
+    );
+    const node = block("b", "B");
+    const step = json(pageWith(block("a", "A"), { ...node, props: hostile.props }));
+    const got = parseHistory({ past: [step] }, present, 100);
+    const props = got?.past[0]?.root.children[1]?.props as object;
+    expect(Object.hasOwn(props, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(props)).toBe(Object.prototype);
+    expect(JSON.stringify(props)).toBe(JSON.stringify(hostile.props));
+    expect(({} as { x?: number }).x).toBeUndefined();
+  });
+
+  it("does not check the steps that are cut off by the limit", () => {
+    const good = (t: string) => pageWith(block("a", t));
+    const got = parseHistory({ past: [{ nope: 1 }, good("v1"), good("v2")] }, present, 2);
+    expect(got?.past.map((p) => p.root.children[0]?.props.text)).toEqual(["v1", "v2"]);
+    const future = parseHistory({ future: [good("f1"), good("f2"), { nope: 1 }] }, present, 2);
+    expect(future?.future).toHaveLength(2);
+  });
+});
+
 describe("openSteps", () => {
   const present = pageWith(block("a", "now"));
 

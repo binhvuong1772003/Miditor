@@ -4,10 +4,33 @@ import { historyLimit } from "./history";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const hasId = (value: unknown): value is { id: string } =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  typeof (value as { id?: unknown }).id === "string";
+
+/** A property of `value` that it has itself, and not one it takes from its prototype. */
+const own = (value: unknown, key: string): unknown =>
+  typeof value === "object" && value !== null && Object.hasOwn(value, key)
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
+
+/** `out[key] = part` that also holds for the key `__proto__`, which is a key like any other in JSON. */
+function put(out: Record<string, unknown>, key: string, part: unknown): void {
+  Object.defineProperty(out, key, {
+    value: part,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
 /**
  * `next` with every part that is the same as in `known` taken from `known`, so the two share those objects:
  * what the steps of a session do on their own, and what a load from JSON loses (each page comes out with
- * objects of its own, many times the memory).
+ * objects of its own, many times the memory). The items of a list of blocks (which have an `id`) are matched
+ * by that id, so a block taken out or put in does not make the ones after it lose what they share.
  */
 function share<T>(known: T, next: T): T {
   if (known === next) return next;
@@ -15,13 +38,24 @@ function share<T>(known: T, next: T): T {
     return next;
   }
   if (Array.isArray(known) !== Array.isArray(next)) return next;
+  if (Array.isArray(next)) {
+    const before = known as unknown[];
+    const byId = new Map<string, unknown>();
+    for (const item of before) if (hasId(item)) byId.set(item.id, item);
+    const out = next.map((item, at) => {
+      const match = hasId(item) && byId.has(item.id) ? byId.get(item.id) : before[at];
+      return share(match, item);
+    });
+    const whole = out.length === before.length && out.every((item, at) => item === before[at]);
+    return (whole ? known : out) as T;
+  }
   const keys = Object.keys(next);
   let whole = keys.length === Object.keys(known).length;
-  const out: Record<string, unknown> = Array.isArray(next) ? ([] as never) : {};
+  const out: Record<string, unknown> = {};
   for (const key of keys) {
-    const part = share((known as never)[key], (next as never)[key]);
-    out[key] = part;
-    if (part !== (known as never)[key]) whole = false;
+    const part = share(own(known, key), (next as Record<string, unknown>)[key]);
+    put(out, key, part);
+    if (part !== own(known, key)) whole = false;
   }
   return whole ? known : (out as T);
 }
@@ -52,12 +86,15 @@ export function parseHistory(
   limit: unknown,
 ): { past: PageData[]; future: PageData[] } | null {
   if (!isObject(raw)) return null;
-  const past = pagesOf(raw.past);
-  const future = pagesOf(raw.future);
-  if (!past || !future) return null;
   const kept = historyLimit(limit);
-  const newest = past.length > kept ? past.slice(past.length - kept) : past;
-  const nearest = future.length > kept ? future.slice(0, kept) : future;
+  // The steps the limit cuts off are not looked at: one that is not a page does not spoil the ones kept.
+  const cut = (list: unknown, newest: boolean): unknown => {
+    if (!Array.isArray(list) || list.length <= kept) return list;
+    return newest ? list.slice(list.length - kept) : list.slice(0, kept);
+  };
+  const newest = pagesOf(cut(raw.past, true));
+  const nearest = pagesOf(cut(raw.future, false));
+  if (!newest || !nearest) return null;
   // From the present outwards, each page takes what is the same from the one before it.
   let known = present;
   const sharedPast: PageData[] = [];

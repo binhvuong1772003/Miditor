@@ -109,7 +109,6 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
     run: (state, steps, env) =>
       change(state, {
         history: withSteps(state.history, steps.past, steps.future, env.limit),
-        draft: null,
       }),
     can: () => true,
   },
