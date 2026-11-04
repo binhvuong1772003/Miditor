@@ -654,14 +654,22 @@ server, or sending only a part of the page, pass `onAction`:
   onAction={(action, page, prevPage) => {
     // action.type: "block.add", "block.edit", "block.delete", "block.rect", "history.undo", "sources.update"...
     // action.ids:  the blocks it was about: the one that was edited, the ones selected when it ran,
-    //              or the block an add made. Empty for a change of the page itself (`page.info`, `page.theme`).
+    //              or the block an add made. Empty for a change of the whole page (`page.info`, `page.theme`,
+    //              `sources.update`, `phone.reset`, `phone.arrange`). The height and background of the page
+    //              are edits of its root block, so `block.edit` with the id of the root.
     log(action.type, action.ids);
   }}
 />;
 ```
 
 - It is called once for each command that changed the page and was kept, right after the change, with the
-  page after it and the page before it (the very objects the history holds, so nothing is copied).
+  page after it and the page before it (nothing is copied). A change that was still pending in a panel (a colour
+  being picked) and is stored by the command that follows is told first, on its own, as a `block.edit` of its block.
+- The ids are the blocks the command worked on: for `block.duplicate` and `block.group` the blocks that were
+  duplicated or grouped, not the copies or the new group (look for them in `page`). For `history.undo` and
+  `history.redo` they are the blocks selected before the step, not what was undone: compare the pages for that.
+- Keys held down are merged by the editor into one step of history (a run of arrow keys), but each key is still a
+  call, and from the second on `prevPage` is the page after the key before, not a page of the history.
 - It is **not** gathered over time like `onChange`: a run of arrow keys is a run of calls. Use `onChange` (with
   `onChangeDebounce`) to store the page and `onAction` to know what happened; a host can use both.
 - It is not called for something that is only being typed or dragged, for a change that was refused by
