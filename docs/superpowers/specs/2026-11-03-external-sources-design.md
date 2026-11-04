@@ -112,3 +112,41 @@ call when a page has hundreds (the host may refuse a long list: split it, in chu
 4. `metadata` on `<Render>` and the renderers (the editor's half is in step 1).
 
 Each step is its own branch of small commits and can be merged alone.
+
+## Decided after the builder check (the author's calls, to be checked in the review)
+
+1. **What a block reads.** The renderer of a kind reads the field's whole value, `props.<field> =
+   { id, label, data?, at? }`; `data` is any JSON. The canvas and `<Render>` share the renderer. For a
+   `reference` field `data` is put into a copy of the value before the renderer sees it, so the
+   renderer always reads `props.<field>.data`. `data` and `at` are optional, so a stored `{ id, label }`
+   stays valid.
+2. **Changed.** A deep JSON compare of `{ label, data }` between what is stored and what the source
+   returns; `at` is left out (it is the ISO time of the fetch that gave `data`). Missing `data` counts as
+   changed. Update writes `label`, `data` and `at`. An item the source says is gone (`null`) is not
+   updated: the field shows "no longer in the source" and keeps what it had.
+3. **`reference` in the editor.** One loader and one session cache for the check and for the canvas, with
+   the same limits and merging. Items from `search` seed the cache. With neither `get` nor `getMany`
+   the block is drawn with `data` missing, with a note in the panel; it is never hidden. Moving a field
+   from `snapshot` to `reference` leaves old `data` in the page, ignored and overwritten at view time;
+   moving the other way shows the banner (missing `data` counts as changed).
+4. **Scope.** The current page (one page per editor), every `external` field including those inside
+   `array` and `object` values. Hidden fields, and fields the person may not edit, are skipped; a change
+   of permissions does not trigger a new check.
+5. **When it runs.** On opening, on `controller.checkSources()`, and when `metadata` changes (deep
+   compare). The banner is worked out by comparing the last answers with the page as it is now, so Update,
+   undo and later edits keep it right with no extra bookkeeping, and an old answer cannot overwrite a
+   newer edit. A new check or unmounting aborts the earlier calls with their `signal`.
+6. **`getMany` rules.** A key present with `null` is "gone"; a key missing from the answer is "could
+   not check". Chunks of 100; the chunks that answered count even if another failed. 15 s timeout per call,
+   no retry.
+7. **`resolveSources`.** In `@miditor/core`, with the loader (batching, merging, limits) the editor also
+   uses, so `ExternalSource` and `ExternalItem` move to core as types. It walks nested values. It never
+   throws for a source: it returns `{ page, failed }`, where `failed` lists the ids it could not load, and
+   leaves `data` missing for them.
+8. **Size.** The 8 kB limit is checked when an item is picked: if `data` is larger, the pick is refused
+   with a message. A `reference` field stores no `data`, so it never reaches the limit.
+
+## Still the owner's to decide
+
+- The editor bundle budget (see Constraints). Options: raise 360 kB on purpose, or put the check and
+  the preview list in a chunk that loads only when a page has an `external` field.
