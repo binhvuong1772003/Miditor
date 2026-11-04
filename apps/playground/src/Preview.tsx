@@ -2,7 +2,7 @@ import { resolveSources } from "@miditor/editor";
 import { pageMeta, Render } from "@miditor/render";
 import { useEffect, useState } from "react";
 import { itemsSource } from "./items-source";
-import { components, renderers } from "./kinds";
+import { components, metadata, renderers } from "./kinds";
 import { loadPage } from "./storage";
 
 const WIDTHS = [
@@ -22,9 +22,11 @@ export function Preview() {
   const [page, setPage] = useState(stored);
   useEffect(() => {
     let current = true;
-    void resolveSources(stored, components, { items: itemsSource }).then((resolved) => {
-      if (current) setPage(resolved.page);
-    });
+    void resolveSources(stored, components, { items: itemsSource }, { metadata }).then(
+      (resolved) => {
+        if (current) setPage(resolved.page);
+      },
+    );
     return () => {
       current = false;
     };
@@ -69,6 +71,7 @@ export function Preview() {
             data={page}
             responsive={{}}
             renderers={renderers}
+            metadata={metadata}
             onAction={(action, payload) => setMessage(`${action} ${JSON.stringify(payload)}`)}
           />
         </div>

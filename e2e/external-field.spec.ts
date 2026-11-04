@@ -164,6 +164,8 @@ test.describe("an external field", () => {
     await pickItem(page, "Coffee beans");
     const card = page.getByTestId("live-item");
     await expect(card).toContainText("199");
+    // The renderer of the kind is given the metadata of the host.
+    await expect(card).toHaveAttribute("data-lang", "en");
     const saved = await storedPage(page, (stored) =>
       JSON.stringify(stored).includes('"item":{"id":"beans"'),
     );
@@ -180,5 +182,6 @@ test.describe("an external field", () => {
     // A visitor's page: the host fills the data in with `resolveSources` before it draws.
     await page.goto("/?preview&items-changed");
     await expect(page.getByTestId("live-item")).toContainText("249");
+    await expect(page.getByTestId("live-item")).toHaveAttribute("data-lang", "en");
   });
 });

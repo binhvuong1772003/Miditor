@@ -1,4 +1,4 @@
-import { type PageData, pageHeightOn } from "@miditor/core";
+import { type JsonValue, type PageData, pageHeightOn } from "@miditor/core";
 import { Render, type Renderer } from "@miditor/render";
 import { type CSSProperties, Profiler, type RefObject } from "react";
 import styles from "../Editor.module.css";
@@ -14,6 +14,7 @@ export interface StagePageProps {
   /** The page as it is drawn, with a pending change in it. */
   shown: PageData;
   renderers: Readonly<Record<string, Renderer>> | undefined;
+  metadata: JsonValue | undefined;
   /** The page has no blocks yet: a hint to add the first one is drawn over it. */
   empty: boolean;
   onAddFirst: () => void;
@@ -25,6 +26,7 @@ export function StagePage({
   stageBox,
   shown,
   renderers,
+  metadata,
   empty,
   onAddFirst,
 }: StagePageProps) {
@@ -66,6 +68,7 @@ export function StagePage({
             device={frame}
             links="inert"
             renderers={renderers}
+            metadata={metadata}
             className={[
               styles.page,
               frame === "phone" && styles.phone,

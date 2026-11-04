@@ -20,3 +20,10 @@ import { Render } from "@miditor/render";
 - `pageMeta(page)` gives the title, description and share picture, for your `<head>`.
 
 See [Getting started](../../docs/GETTING-STARTED.md).
+
+## `metadata`
+
+`<Render metadata={...}>` takes plain JSON about the host's side (a language, a currency, who is looking). Every
+renderer of your kinds gets it as `context.metadata` (`undefined` when there is none), at any depth. It is not part
+of the page, and the blocks the library draws ignore it. Give the editor the same value (`<Editor metadata>`) and a
+block draws the same in both.

@@ -86,6 +86,9 @@ export const components: Registry = {
   },
 };
 
+/** What the host tells the editor and `<Render>` about its side: the renderers of its kinds and its sources read it. */
+export const metadata = { lang: "en" };
+
 /** How the host draws its own kind: a heart that fills its box, in the colour stored on the block. */
 export const renderers: Record<string, Renderer> = {
   Related: ({ props }) => {
@@ -100,7 +103,7 @@ export const renderers: Record<string, Renderer> = {
       </div>
     );
   },
-  LiveItem: ({ props }) => {
+  LiveItem: ({ props, metadata }) => {
     const item = props.item;
     const data =
       typeof item === "object" && item !== null && !Array.isArray(item) ? item.data : undefined;
@@ -109,7 +112,15 @@ export const renderers: Record<string, Renderer> = {
         ? `${String(data.title)} · ${String(data.price)}`
         : "none";
     return (
-      <div data-testid="live-item" style={{ padding: 8 }}>
+      <div
+        data-testid="live-item"
+        data-lang={
+          typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)
+            ? String(metadata.lang)
+            : undefined
+        }
+        style={{ padding: 8 }}
+      >
         {shown}
       </div>
     );

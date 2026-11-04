@@ -66,6 +66,8 @@ export interface CanvasViewProps {
   run: Run;
   api: EditorApi;
   renderers: Parameters<typeof Render>[0]["renderers"];
+  /** The `metadata` of the editor, for the renderers of the host's kinds. */
+  metadata: Parameters<typeof Render>[0]["metadata"];
   addBlockOf: (kind: string, overrides?: NewNodeOverrides) => void;
   /** The editor's root element, which takes the focus back when the menu closes. */
   editorRoot: MutableRefObject<HTMLDivElement | null>;
@@ -91,6 +93,7 @@ export function CanvasView({
   run,
   api,
   renderers,
+  metadata,
   addBlockOf,
   editorRoot,
   workspace,
@@ -399,6 +402,7 @@ export function CanvasView({
         stageBox={stageBox}
         shown={shown}
         renderers={renderers}
+        metadata={metadata}
         empty={data.root.children.length === 0 && !editing}
         onAddFirst={() => addBlockOf("Container")}
       />

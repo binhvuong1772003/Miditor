@@ -141,7 +141,8 @@ export interface EditorProps {
   onChangeDebounce?: number | { wait: number; maxWait?: number };
   /**
    * Anything about the host's side that its sources need to answer (a language, a shop, who is editing),
-   * as plain JSON. It is given to the `search` of every source as `ctx.metadata`, and is not stored in the
+   * as plain JSON. It is given to the `search` of every source as `ctx.metadata`, to every renderer of a
+   * kind (`config.renderers`) as `context.metadata`, and is not stored in the
    * page. Experimental.
    */
   metadata?: JsonValue;
@@ -888,6 +889,7 @@ function EditorBody({
         run={run}
         api={api}
         renderers={config?.renderers}
+        metadata={metadata}
         addBlockOf={addBlockOf}
         editorRoot={editorRoot}
         workspace={workspace}

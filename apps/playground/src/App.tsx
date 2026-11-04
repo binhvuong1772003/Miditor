@@ -22,7 +22,7 @@ import { demoPlugin } from "./demo-plugin";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
 import { itemsSource } from "./items-source";
-import { components, renderers } from "./kinds";
+import { components, metadata, renderers } from "./kinds";
 import { COFFEE_PAGE } from "./landing-coffee";
 import { LANDING_PAGE } from "./landing-page";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
@@ -276,6 +276,7 @@ function Playground({
   // The props both paths share: the default `<Editor>` and the host's `<EditorProvider>`.
   const editorProps: EditorProps = {
     data: page,
+    metadata,
     config: {
       components,
       renderers,

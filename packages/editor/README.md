@@ -996,7 +996,9 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
   `image` (an address) on an item are for the list only and are not stored. A page that holds only `{ id, label }`
   stays valid.
 - `metadata` on `<Editor>` is plain JSON about your side (a language, a shop, who is editing). It is not stored
-  in the page; each `search` gets it as `ctx.metadata`. A `search` that takes only `(query, signal)` still works.
+  in the page; each `search`, `get` and `getMany` gets it as `ctx.metadata`, and the renderer of each of your kinds
+  (`config.renderers`) gets it as `context.metadata`. Give the same `metadata` to `<Render>` (below) so a block draws
+  the same in the editor and on the published page. A `search` that takes only `(query, signal)` still works.
 - The stored `data` is a snapshot. To tell when it is out of date, give the source a `getMany(ids, signal, ctx)`
   (one call for the page; it answers `{ [id]: item | null }`, `null` for an item that is gone) or a
   `get(id, signal, ctx)`. When a page opens, when `metadata` changes and when you call
