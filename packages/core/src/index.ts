@@ -16,6 +16,7 @@ export { builtInRegistry } from "./registry/built-in";
 export { canInsert } from "./registry/can-insert";
 export { canMove } from "./registry/can-move";
 export { defaultValueOf } from "./registry/default-value";
+export { type ExternalRef, externalRefs, withExternalValues } from "./registry/external-refs";
 export type { ExternalItem, ExternalSource, SourceContext } from "./registry/external-source";
 export { keepsRatio } from "./registry/keeps-ratio";
 export {
