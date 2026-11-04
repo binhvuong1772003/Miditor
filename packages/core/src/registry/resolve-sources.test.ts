@@ -50,7 +50,7 @@ describe("resolving the sources of a page", () => {
     const { page: filled } = await resolveSources(page, registry, {
       others: { search: async () => [], getMany: getManyOf({ price: 5 }) },
     });
-    expect((filled.root.children[0]?.props.other as { data: unknown }).data).toEqual({ price: 5 });
+    expect(filled.root.children[0]?.props.other).toMatchObject({ data: { price: 5 } });
   });
 
   it("lists what could not be loaded and still fills the other sources, never throwing", async () => {
