@@ -29,7 +29,12 @@ export {
   useViewCommands,
 } from "./context";
 export { createEditorStore, type EditorStore } from "./create-editor-store";
-export { type DocumentCommands, initialDocumentState } from "./document";
+export {
+  type DocumentCommands,
+  type EditorAction,
+  type EditorActionType,
+  initialDocumentState,
+} from "./document";
 export type { GeometryCommands } from "./geometry";
 export { initialHostState, setHost } from "./host";
 export { createNotifier, type Notifier } from "./notifier";

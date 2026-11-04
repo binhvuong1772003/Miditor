@@ -88,6 +88,7 @@ import {
   createEditorStore,
   createNotifier,
   type Denial,
+  type EditorAction,
   type EditorState,
   initialDocumentState,
   initialHostState,
@@ -212,6 +213,15 @@ export interface EditorProps {
    * the page is plain data and your server must check it again before storing it. Experimental.
    */
   permissions?: Permissions;
+  /**
+   * Called after each change of the page that was kept, with what was done (`action.type`: `"block.add"`,
+   * `"block.edit"`, `"block.delete"`, `"history.undo"`, `"sources.update"`...), the blocks it was about
+   * (`action.ids`), the page after it and the page before it. Not gathered over time like `onChange`: one
+   * call for each command, so a run of arrow keys is a run of calls. Not called for what is only being
+   * dragged or typed, for a change that was refused or for one that changed nothing. Sending anything to a
+   * server, or comparing the two pages, is up to you. Experimental.
+   */
+  onAction?: (action: EditorAction, page: PageData, prevPage: PageData) => void;
   /**
    * Called when a change is refused, with the kind of change and the block it concerned. A repeat of
    * the same refusal within a second is told once. Experimental.
@@ -416,6 +426,7 @@ function EditorBody({
   hide,
   permissions,
   onDenied,
+  onAction,
   appearance,
   i18n,
   historyLimit,
@@ -437,7 +448,13 @@ function EditorBody({
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   // The element the page is drawn in, for the measures of a phone that draws the page as a flow.
   const workspaceRef = useRef<HTMLElement | null>(null);
-  const hostRules = useHostRules(permissions, onDenied, viewing.announce, t("a11y.denied"));
+  const hostRules = useHostRules(
+    permissions,
+    onDenied,
+    viewing.announce,
+    t("a11y.denied"),
+    onAction,
+  );
   const rules = {
     ...hostRules,
     measurePhone: (root: TreeNode) =>

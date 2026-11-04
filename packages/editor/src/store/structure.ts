@@ -301,27 +301,32 @@ export function pasteBlocks<S extends State>(
 export function structureCommands<S extends State>(store: EditorStore<S>, env: Env) {
   const run = runner(store, env);
   return {
-    addBlock: (args: Parameters<typeof addBlock>[1]) => run((state) => addBlock(state, args, env)),
+    addBlock: (args: Parameters<typeof addBlock>[1]) =>
+      run((state) => addBlock(state, args, env), { type: "block.add" }),
     dropBlock: (args: Parameters<typeof dropBlock>[1]) =>
-      run((state) => dropBlock(state, args, env)),
+      run((state) => dropBlock(state, args, env), { type: "block.drop" }),
     duplicateSelected: (container: Size | null) =>
-      run((state) => duplicateSelected(state, { container }, env)),
+      run((state) => duplicateSelected(state, { container }, env), { type: "block.duplicate" }),
     groupSelected: (container: Size | null) =>
-      run((state) => groupSelected(state, { container }, env)),
+      run((state) => groupSelected(state, { container }, env), { type: "block.group" }),
     ungroupSelected: (container: Size | null) =>
-      run((state) => ungroupSelected(state, { container }, env)),
-    deleteSelected: () => run((state) => deleteSelected(state, env)),
-    reorderSelected: (to: Reorder) => run((state) => reorderSelected(state, to, env)),
+      run((state) => ungroupSelected(state, { container }, env), { type: "block.ungroup" }),
+    deleteSelected: () => run((state) => deleteSelected(state, env), { type: "block.delete" }),
+    reorderSelected: (to: Reorder) =>
+      run((state) => reorderSelected(state, to, env), { type: "block.reorder" }),
     /** What is pending in a panel is stored. */
     settleDraft: () => run((state) => settle(state, env)),
     /** Whether any block was pasted. */
     pasteBlocks: (args: Parameters<typeof pasteBlocks>[1]): boolean => {
       let pasted = false;
-      const refused = run((state) => {
-        const done = pasteBlocks(state, args, env);
-        pasted = done.pasted;
-        return done.state;
-      });
+      const refused = run(
+        (state) => {
+          const done = pasteBlocks(state, args, env);
+          pasted = done.pasted;
+          return done.state;
+        },
+        { type: "block.paste" },
+      );
       return pasted && !refused;
     },
   };

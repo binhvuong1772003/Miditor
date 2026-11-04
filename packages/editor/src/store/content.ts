@@ -153,19 +153,20 @@ export function contentCommands<S extends State>(store: EditorStore<S>, env: Env
   const run = runner(store, env);
   return {
     commitPatch: (id: string, patch: PanelPatch) =>
-      run((state) => commitPatch(state, { id, patch }, env)),
+      run((state) => commitPatch(state, { id, patch }, env), { type: "block.edit", ids: [id] }),
     save: () => run((state) => saveDraft(state, env)),
     changeMeta: (patch: Parameters<typeof changeMeta>[1]) =>
-      run((state) => changeMeta(state, patch, env)),
+      run((state) => changeMeta(state, patch, env), { type: "page.info", ids: [] }),
     setThemeColor: (name: string, color: string) =>
-      run((state) => setThemeColor(state, { name, color }, env)),
+      run((state) => setThemeColor(state, { name, color }, env), { type: "page.theme", ids: [] }),
     renameThemeColor: (from: string, to: string) =>
-      run((state) => renameThemeColor(state, { from, to }, env)),
-    deleteThemeColor: (name: string) => run((state) => deleteThemeColor(state, name, env)),
+      run((state) => renameThemeColor(state, { from, to }, env), { type: "page.theme", ids: [] }),
+    deleteThemeColor: (name: string) =>
+      run((state) => deleteThemeColor(state, name, env), { type: "page.theme", ids: [] }),
     setThemeFont: (which: "body" | "heading", stack: string | undefined) =>
-      run((state) => setThemeFont(state, { which, stack }, env)),
+      run((state) => setThemeFont(state, { which, stack }, env), { type: "page.theme", ids: [] }),
     putTheme: (theme: Pick<SavedTheme, "colors" | "font">) =>
-      run((state) => putTheme(state, theme, env)),
+      run((state) => putTheme(state, theme, env), { type: "page.theme", ids: [] }),
   };
 }
 

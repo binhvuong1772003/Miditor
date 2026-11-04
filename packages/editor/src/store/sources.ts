@@ -235,7 +235,9 @@ export function sourcesCommands<S extends DocumentState & SourcesState>(
   return {
     ...answerCommands(store),
     refreshSources: (checked: (source: string) => boolean) =>
-      run((state) => refreshSources(state, { checked, now: new Date() }, env)),
+      run((state) => refreshSources(state, { checked, now: new Date() }, env), {
+        type: "sources.update",
+      }),
   };
 }
 

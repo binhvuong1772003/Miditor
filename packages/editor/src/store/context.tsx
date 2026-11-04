@@ -20,6 +20,8 @@ import { type ViewCommands, viewCommands } from "./view";
 export type HostRules = {
   permissions?: Permissions | undefined;
   denied?: ((denial: Denial) => void) | undefined;
+  /** Told after a command changed the page and was kept (see `Env.onAction`). */
+  onAction?: Env["onAction"];
   /** Where each free block is drawn now (see `Env.measurePhone`): given by the editor, not the host. */
   measurePhone?: Env["measurePhone"];
 };
@@ -102,6 +104,7 @@ export function useDocumentCommands(
   env.current.registry = registry;
   env.current.permissions = rules?.permissions;
   env.current.denied = rules?.denied;
+  env.current.onAction = rules?.onAction;
   env.current.measurePhone = rules?.measurePhone;
   return useMemo(
     () => ({
@@ -133,6 +136,7 @@ export function useRun(
   live.current.env.registry = registry;
   live.current.env.permissions = rules?.permissions;
   live.current.env.denied = rules?.denied;
+  live.current.env.onAction = rules?.onAction;
   live.current.env.measurePhone = rules?.measurePhone;
   live.current.context = context;
   live.current.hooks = hooks;
@@ -166,9 +170,21 @@ export function useHostRules(
   onDenied: ((denial: Denial) => void) | undefined,
   announce: (text: string) => void,
   deniedText: string,
+  onAction?: Env["onAction"],
 ): HostRules {
-  const live = useRef({ onDenied, announce, deniedText });
-  live.current = { onDenied, announce, deniedText };
+  const live = useRef({ onDenied, announce, deniedText, onAction });
+  live.current = { onDenied, announce, deniedText, onAction };
+  // The host's `onAction` is read when a change happens; one that throws does not stop the editor.
+  const told = useMemo<NonNullable<Env["onAction"]>>(
+    () => (action, page, prev) => {
+      try {
+        live.current.onAction?.(action, page, prev);
+      } catch (error) {
+        console.error("[miditor] onAction threw:", error);
+      }
+    },
+    [],
+  );
   const denied = useMemo(
     () =>
       coalesced((denial: Denial) => {
@@ -179,5 +195,5 @@ export function useHostRules(
       }),
     [],
   );
-  return { permissions, denied };
+  return { permissions, denied, onAction: told };
 }

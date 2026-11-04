@@ -359,25 +359,29 @@ export function runFrozen<S extends State>(state: S, env: Env, command: (state: 
 /** The commands tied to a store. */
 export function geometryCommands<S extends State>(store: EditorStore<S>, env: Env) {
   const runOnce = runner(store, env);
-  const run = (command: (state: S) => S) => runOnce((state) => runFrozen(state, env, command));
+  const run = (command: (state: S) => S, action: Parameters<typeof runOnce>[1]) =>
+    runOnce((state) => runFrozen(state, env, command), action);
   return {
     alignSelected: (container: Size | null, to: AlignTo) =>
-      run((state) => alignSelected(state, { container, to }, env)),
+      run((state) => alignSelected(state, { container, to }, env), { type: "block.align" }),
     distributeSelected: (container: Size | null, axis: "x" | "y") =>
-      run((state) => distributeSelected(state, { container, axis }, env)),
+      run((state) => distributeSelected(state, { container, axis }, env), {
+        type: "block.distribute",
+      }),
     nudgeSelected: (args: Parameters<typeof nudgeSelected>[1]) =>
-      run((state) => nudgeSelected(state, args, env)),
+      run((state) => nudgeSelected(state, args, env), { type: "block.nudge" }),
     changeAnchor: (args: Parameters<typeof changeAnchor>[1]) =>
-      run((state) => changeAnchor(state, args, env)),
-    resetPhone: () => run((state) => resetPhone(state, env)),
-    arrangePhone: () => runOnce((state) => arrangePhone(state, env)),
-    setRect: (args: Parameters<typeof setRect>[1]) => run((state) => setRect(state, args, env)),
+      run((state) => changeAnchor(state, args, env), { type: "block.anchor" }),
+    resetPhone: () => run((state) => resetPhone(state, env), { type: "phone.reset" }),
+    arrangePhone: () => runOnce((state) => arrangePhone(state, env), { type: "phone.arrange" }),
+    setRect: (args: Parameters<typeof setRect>[1]) =>
+      run((state) => setRect(state, args, env), { type: "block.rect" }),
     placeBoxes: (args: Parameters<typeof placeBoxes>[1]) =>
-      run((state) => placeBoxes(state, args, env)),
+      run((state) => placeBoxes(state, args, env), { type: "block.place" }),
     turnBlock: (args: Parameters<typeof turnBlock>[1]) =>
-      run((state) => turnBlock(state, args, env)),
+      run((state) => turnBlock(state, args, env), { type: "block.turn" }),
     moveToParent: (args: Parameters<typeof moveToParent>[1]) =>
-      run((state) => moveToParent(state, args, env)),
+      run((state) => moveToParent(state, args, env), { type: "block.reparent" }),
   };
 }
 

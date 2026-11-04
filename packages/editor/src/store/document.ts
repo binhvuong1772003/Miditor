@@ -7,6 +7,44 @@ import { type Denial, guard, type Intent, type Permissions } from "./permissions
 import { afterStep } from "./selection";
 import type { DocumentState, Draft, SelectionState } from "./state";
 
+/** What a change of the page was: the name of the command that made it. @experimental */
+export type EditorActionType =
+  | "edit"
+  | "history.undo"
+  | "history.redo"
+  | "block.add"
+  | "block.drop"
+  | "block.edit"
+  | "block.duplicate"
+  | "block.group"
+  | "block.ungroup"
+  | "block.delete"
+  | "block.reorder"
+  | "block.paste"
+  | "block.rect"
+  | "block.place"
+  | "block.turn"
+  | "block.nudge"
+  | "block.anchor"
+  | "block.align"
+  | "block.distribute"
+  | "block.reparent"
+  | "phone.reset"
+  | "phone.arrange"
+  | "page.info"
+  | "page.theme"
+  | "sources.update"
+  | (string & {});
+
+/**
+ * What `onAction` is told besides the pages: the kind of change and the blocks it was about (the block
+ * that was edited, the ones selected when a command ran, the block an add made). @experimental
+ */
+export interface EditorAction {
+  type: EditorActionType;
+  ids: readonly string[];
+}
+
 /**
  * What a command needs besides the state, and that the host can change while the editor is open:
  * how many steps of history are kept, and the kinds of block there are. It is read when a command runs.
@@ -23,6 +61,8 @@ export type Env = {
    * it so that the first change of the phone layout can place every block where it is drawn.
    */
   measurePhone?: ((root: TreeNode) => ReadonlyMap<string, Measured> | null) | undefined;
+  /** Told after a command that changed the page was kept, with the page after it and the page before it. */
+  onAction?: ((action: EditorAction, page: PageData, prevPage: PageData) => void) | undefined;
   /** Set while a command runs when a change was refused, so the command can be given up whole. */
   refusal?: { endsDraft: boolean } | null | undefined;
 };
@@ -156,23 +196,54 @@ export type DocumentCommands = ReturnType<typeof documentCommands<DocumentState 
  * The way the commands of one store change its state. A command that was refused anywhere is given up
  * whole: the state comes back as it was (with the pending panel change dropped when it was that change
  * that was refused), so nothing that follows an edit (selecting what was added, clearing what was
- * deleted) happens for an edit that did not. Says whether the command was refused.
+ * deleted) happens for an edit that did not. Says whether the command was refused. A command that
+ * changed the page and was kept is told to `env.onAction`, after the state is set, with `action` (or the
+ * plain `"edit"`) and the blocks it was about.
  */
 export function runner<S extends DocumentState>(store: EditorStore<S>, env: Env) {
-  return (command: (state: S) => S): boolean => {
+  return (
+    command: (state: S) => S,
+    action?: { type: EditorActionType; ids?: readonly string[] },
+  ): boolean => {
     let refused = false;
+    let told: { action: EditorAction; page: PageData; prev: PageData } | null = null;
     store.setState((state) => {
       env.refusal = null;
       const next = command(state);
       const refusal = takeRefusal(env);
-      if (!refusal) return next;
+      if (!refusal) {
+        if (next.history.present !== state.history.present) {
+          told = {
+            action: {
+              type: action?.type ?? "edit",
+              ids: action?.ids ?? idsOf(state, next, action?.type),
+            },
+            page: next.history.present,
+            prev: state.history.present,
+          };
+        }
+        return next;
+      }
       refused = true;
       return refusal.endsDraft && state.draft
         ? change(state, { draft: null } as Partial<S>)
         : state;
     });
+    const done = told as { action: EditorAction; page: PageData; prev: PageData } | null;
+    if (done && !refused) env.onAction?.(done.action, done.page, done.prev);
     return refused;
   };
+}
+
+/** The blocks a command was about when it did not say: the new one for an add, else the selected ones. */
+function idsOf(before: DocumentState, after: DocumentState, type: EditorActionType | undefined) {
+  const at = (state: DocumentState) => state as Partial<SelectionState>;
+  if (type === "block.add" || type === "block.drop" || type === "block.paste") {
+    const id = at(after).selectedId;
+    return id ? [id, ...(at(after).picked ?? [])] : [];
+  }
+  const { selectedId, picked } = at(before);
+  return selectedId ? [selectedId, ...(picked ?? [])] : [];
 }
 
 /** What the command that just ran was refused for, if it was; and forget it. */

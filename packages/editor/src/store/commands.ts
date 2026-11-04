@@ -205,7 +205,7 @@ export function createRun(
     const { before, after } = hooks();
     if (before?.(name, value, store.getState()) === false) return false;
     // A command the permissions refuse is given up whole and says so.
-    if (apply((state) => spec.run(state, value, env, context()))) return false;
+    if (apply((state) => spec.run(state, value, env, context()), { type: name })) return false;
     after?.(name, value, store.getState());
     return true;
   };

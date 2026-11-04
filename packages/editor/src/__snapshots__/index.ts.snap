@@ -51,6 +51,6 @@ export { definePlugin, type EditorPlugin, PLUGIN_API_VERSION } from "./plugins";
 export { type PostImageOptions, postImage } from "./post-image";
 export type { SaveStatus } from "./save-status";
 export { useEditorRoot } from "./shell";
-export type { Denial, Permissions } from "./store";
+export type { Denial, EditorAction, EditorActionType, Permissions } from "./store";
 export type { HostTheme } from "./ThemesPanel";
 export type { UploadImage } from "./upload-image";
