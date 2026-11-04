@@ -21,6 +21,7 @@ import { demoIcons } from "./demo-icons";
 import { demoPlugin } from "./demo-plugin";
 import { fonts } from "./fonts";
 import { HostDemo } from "./HostDemo";
+import { itemsSource } from "./items-source";
 import { components, renderers } from "./kinds";
 import { COFFEE_PAGE } from "./landing-coffee";
 import { LANDING_PAGE } from "./landing-page";
@@ -292,7 +293,7 @@ function Playground({
       // `?nosource` leaves the list of pages out, to show the note a field with no list gets.
       ...(new URLSearchParams(window.location.search).has("nosource")
         ? {}
-        : { sources: { pages: pagesSource } }),
+        : { sources: { pages: pagesSource, items: itemsSource } }),
       // `?tools` puts a tool of the host on the rail, with its own panel.
       ...(new URLSearchParams(window.location.search).has("tools") ? { tools: [shopTool] } : {}),
       onThemeSave: (theme) => changeThemes([...saved, withId(theme, saved)]),

@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, openEditor, properties } from "./helpers";
+import { addFromBlocks, openEditor, properties, storedPage } from "./helpers";
 
 // A field that chooses from a list the host keeps (`config.sources`), searched as the person types.
 
@@ -53,5 +53,39 @@ test.describe("an external field", () => {
     await addFromBlocks(page, "Related page");
     await expect(properties(page).getByRole("note")).toContainText("pages");
     expect(warnings).toHaveLength(1);
+  });
+
+  test("stores the data of the picked item, shows it, and refuses an item with too much", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    await addFromBlocks(page, "Shop item");
+    const card = page.getByTestId("shop-item");
+    await expect(card).toContainText("none");
+
+    const panel = properties(page);
+    await panel.getByRole("button", { name: /Item: Choose/ }).click();
+    // The list shows the hint of each item.
+    await expect(panel.getByRole("button", { name: /Coffee beans.*199/ })).toBeVisible();
+    await panel.getByRole("button", { name: /Coffee beans/ }).click();
+    await expect(card).toContainText("Coffee beans");
+    await expect(card).toContainText("199");
+
+    const saved = await storedPage(page, (stored) =>
+      JSON.stringify(stored).includes('"data":{"title":"Coffee beans"'),
+    );
+    const value = JSON.stringify(saved);
+    expect(value).toMatch(
+      /"item":\{"id":"beans","label":"Coffee beans","data":\{[^}]*\},"at":"\d{4}-/,
+    );
+
+    // An item whose data is over the limit is refused: the earlier pick stays, and a message says why.
+    await panel.getByRole("button", { name: /Item: Coffee beans/ }).click();
+    await panel.getByRole("button", { name: /Heavy catalogue/ }).click();
+    await expect(panel.getByRole("alert")).toContainText("too much data");
+    await expect(card).toContainText("Coffee beans");
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(card).toContainText("none");
   });
 });

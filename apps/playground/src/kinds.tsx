@@ -24,6 +24,17 @@ export const components: Registry = {
     defaultProps: { page: null },
     fields: { page: { type: "external", label: "Page", source: "pages" } },
   },
+  // A kind that shows the data of an item picked from the host's shop (`config.sources`, stored in the page).
+  ShopItem: {
+    label: "Shop item",
+    category: "From your website",
+    icon: "box",
+    keywords: ["product", "shop", "demo"],
+    size: { w: 240, h: 64 },
+    canContain: false,
+    defaultProps: { item: null },
+    fields: { item: { type: "external", label: "Item", source: "items" } },
+  },
   // A kind with a list of objects: the entries of a menu, each a label and a link.
   Menu: {
     label: "Menu",
@@ -74,6 +85,20 @@ export const renderers: Record<string, Renderer> = {
     return (
       <div data-testid="related-page" style={{ padding: 8 }}>
         Related: {label}
+      </div>
+    );
+  },
+  ShopItem: ({ props }) => {
+    const item = props.item;
+    const data =
+      typeof item === "object" && item !== null && !Array.isArray(item) ? item.data : undefined;
+    const shown =
+      typeof data === "object" && data !== null && !Array.isArray(data)
+        ? `${String(data.title)} · ${String(data.price)}`
+        : "none";
+    return (
+      <div data-testid="shop-item" style={{ padding: 8 }}>
+        {shown}
       </div>
     );
   },
