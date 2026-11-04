@@ -47,6 +47,8 @@ export function checkPage(
   permissions?: Permissions,
 ): Promise<ReadonlyMap<string, Answer>> {
   return loadPageItems(page, registry, sources, signal, ctx, (ref) => {
+    // A reference is drawn from what the source says, so a block that may not be edited needs it too.
+    if (ref.store === "reference") return true;
     const owner = findNode(page.root, ref.nodeId);
     return owner !== undefined && allowed(permissions?.canEdit, owner);
   });
@@ -160,10 +162,37 @@ export const drawnPage = (
   page: PageData,
   registry: Registry,
   answers: ReadonlyMap<string, Answer>,
-): PageData =>
-  answers.size === 0
-    ? page
-    : fillItemData(page, registry, (ref) => foundItem(answers, ref), "reference");
+): PageData => fillItemData(page, registry, (ref) => foundItem(answers, ref), "reference");
+
+/** What was known, with the answers of a check over it: an id asked again has its newer answer. */
+export function mergeAnswers(
+  before: ReadonlyMap<string, Answer>,
+  answers: ReadonlyMap<string, Answer>,
+): ReadonlyMap<string, Answer> {
+  if (answers.size === 0) return before;
+  return new Map([...before, ...answers]);
+}
+
+/**
+ * The ids the page holds, of sources that can be asked, that no check has answered yet, as one text: the
+ * same ids give the same text and none gives an empty one. A new text means a block with an item came in
+ * (a paste, an undo) that the last check never asked about.
+ */
+export function unansweredKey(
+  page: PageData,
+  registry: Registry,
+  answers: ReadonlyMap<string, Answer>,
+  sources: Readonly<Record<string, ExternalSource>> | undefined,
+): string {
+  const keys = new Set<string>();
+  for (const ref of externalRefs(registry, page)) {
+    const source = sources && Object.hasOwn(sources, ref.source) ? sources[ref.source] : undefined;
+    if (!canCheckSource(source)) continue;
+    const key = answerKey(ref.source, ref.value.id);
+    if (!answers.has(key)) keys.add(key);
+  }
+  return [...keys].sort().join("\n");
+}
 
 /** The answers with this item as the answer for its id, as when the person picked it from a search. */
 export function seedAnswer(
@@ -180,7 +209,9 @@ export function seedAnswer(
 export function answerCommands<S extends SourcesState>(store: EditorStore<S>) {
   return {
     setSourceAnswers: (answers: ReadonlyMap<string, Answer>) => {
-      store.setState({ sourceAnswers: answers } as Partial<S>);
+      store.setState({
+        sourceAnswers: mergeAnswers(store.getState().sourceAnswers, answers),
+      } as Partial<S>);
     },
     seedSourceAnswer: (source: string, item: ExternalItem) => {
       store.setState({

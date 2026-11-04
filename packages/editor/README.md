@@ -1022,9 +1022,10 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
 - **Filling the data where the page is drawn.** `<Render>` never calls the network. For a page whose fields keep
   references, call `resolveSources(page, registry, sources, { signal, metadata })` (from `@miditor/editor`, or
   `@miditor/core`) where you like (when you build the page, on your server, in the browser) and give `page` of the
-  answer to `<Render>`. It asks each source once for all the ids (see above), fills `data` of every `external`
-  value, snapshots included, and never throws for a source: it also returns `failed`, a list of
-  `{ nodeId, source, id }` for items that are gone or could not be loaded, which stay as they were.
+  answer to `<Render>`. It asks each source once for all the ids (see above), fills `data` of the `external`
+  values that keep a reference (pass `{ snapshots: true }` to refresh the snapshots too), and never throws for a source: it also returns `failed`, a list of
+  `{ nodeId, source, id }` for items that are gone or could not be loaded, which stay as they were; a reference whose item is gone is drawn with no data, never with an old snapshot's.
+  The data of a reference is drawn whole (the 8000-byte limit is only for what the page stores).
   Switching a field from snapshot to reference leaves old `data` in stored pages, ignored; the other way, the page
   shows the "newer data" message until Update.
 - A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list

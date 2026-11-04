@@ -98,6 +98,7 @@ import {
   type Permissions,
   StoreProvider,
   sourceReport,
+  unansweredKey,
   useDocumentCommands,
   useEditorState,
   useHostRules,
@@ -687,10 +688,15 @@ function EditorBody({
   // The check of the stored items against the host's sources: when the editor opens, when `metadata`
   // changes, and when the host asks. A new check stops the one before it, and closing the editor stops it.
   const checking = useRef<AbortController | null>(null);
+  // The ids the latest check was started for, so an item that comes into the page later (a paste, an undo)
+  // is asked about once, and a check already under way for the same ids is not started again.
+  const asked = useRef("");
   const checkSources = async () => {
     checking.current?.abort();
     const controller = new AbortController();
     checking.current = controller;
+    const page = store.getState().history.present;
+    asked.current = unansweredKey(page, registry, new Map(), config?.sources);
     try {
       const answers = await checkPage(
         store.getState().history.present,
@@ -717,12 +723,19 @@ function EditorBody({
     () => sourceReport(data, sourceAnswers, registry, checkedSource, permissions),
     [data, sourceAnswers, registry, checkedSource, permissions],
   );
+  const unanswered = useMemo(
+    () => unansweredKey(data, registry, sourceAnswers, hostSources),
+    [data, registry, sourceAnswers, hostSources],
+  );
   const metadataText = metadataKey(metadata);
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs for the metadata the host gave, read through a ref
   useEffect(() => {
     void latest.current.checkSources?.();
     return () => checking.current?.abort();
   }, [metadataText]);
+  useEffect(() => {
+    if (unanswered !== "" && unanswered !== asked.current) void latest.current.checkSources?.();
+  }, [unanswered]);
   const [api] = useState(() =>
     createApi({
       run,

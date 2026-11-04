@@ -8,11 +8,13 @@ import {
   canCheck,
   checkPage,
   drawnPage,
+  mergeAnswers,
   metadataKey,
   refreshSources,
   type SourcesState,
   seedAnswer,
   sourceReport,
+  unansweredKey,
   withoutAnswer,
 } from "./sources";
 import type { DocumentState, SelectionState } from "./state";
@@ -277,5 +279,92 @@ describe("references of the page", () => {
       status: "found",
       item: { id: "a", label: "A", data: { price: 3 } },
     });
+  });
+});
+
+describe("references and the permissions", () => {
+  const mixed = {
+    Card: {
+      label: "Card",
+      defaultProps: {},
+      fields: {
+        snap: { type: "external", label: "S", source: "items" },
+        live: { type: "external", label: "L", source: "items", store: "reference" },
+      },
+    },
+  } as unknown as Registry;
+
+  it("loads the reference of a block that may not be edited, but not its snapshot", async () => {
+    const getMany = vi.fn(async (ids: readonly string[]) =>
+      Object.fromEntries(ids.map((id) => [id, { id, label: id }])),
+    );
+    const page = pageOf(
+      node("c", { snap: { id: "s", label: "s" }, live: { id: "l", label: "l" } }),
+    );
+    await checkPage(
+      page,
+      mixed,
+      { items: { search: async () => [], getMany } },
+      new AbortController().signal,
+      { metadata: undefined },
+      { canEdit: false },
+    );
+    expect(getMany.mock.calls[0]?.[0]).toEqual(["l"]);
+  });
+});
+
+describe("drawing a reference when nothing has been found for it", () => {
+  it("takes the old data out, and gives the same page when there is none to take out", () => {
+    const live = {
+      Card: {
+        label: "Card",
+        defaultProps: {},
+        fields: { item: { type: "external", label: "I", source: "items", store: "reference" } },
+      },
+    } as unknown as Registry;
+    const old = { id: "a", label: "A", data: { price: 1 }, at: "2026-01-01T00:00:00.000Z" };
+    const stale = pageOf(node("c", { item: old }));
+    expect(drawnPage(stale, live, new Map()).root.children[0]?.props.item).toEqual({
+      id: "a",
+      label: "A",
+    });
+    const clean = pageOf(node("c", { item: { id: "a", label: "A" } }));
+    expect(drawnPage(clean, live, new Map())).toBe(clean);
+  });
+});
+
+describe("the answers of a check come into what was known", () => {
+  it("keeps the older answers and takes the new ones over them", () => {
+    const before = answersOf([
+      ["a", { status: "gone" }],
+      ["b", { status: "gone" }],
+    ]);
+    const merged = mergeAnswers(before, answersOf([["a", found(fresh)]]));
+    expect(merged.get(answerKey("items", "a"))?.status).toBe("found");
+    expect(merged.get(answerKey("items", "b"))?.status).toBe("gone");
+  });
+});
+
+describe("the items the page holds that nobody has been asked about", () => {
+  const sources = { items: { search: async () => [], getMany: async () => ({}) } };
+
+  it("is the same text for the same ids, and empty when every id has an answer", () => {
+    const page = pageOf(node("c", { item: old }), node("d", { item: { ...old, id: "z" } }));
+    const key = unansweredKey(page, registry, new Map(), sources);
+    expect(key).not.toBe("");
+    expect(key).toBe(unansweredKey(page, registry, new Map(), sources));
+    const answered = answersOf([
+      ["a", found(fresh)],
+      ["z", { status: "gone" }],
+    ]);
+    expect(unansweredKey(page, registry, answered, sources)).toBe("");
+  });
+
+  it("leaves out a source that cannot be asked", () => {
+    const page = pageOf(node("c", { item: old }));
+    expect(unansweredKey(page, registry, new Map(), { items: { search: async () => [] } })).toBe(
+      "",
+    );
+    expect(unansweredKey(page, registry, new Map(), undefined)).toBe("");
   });
 });

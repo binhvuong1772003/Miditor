@@ -41,11 +41,13 @@ export {
   checkPage,
   drawnPage,
   initialSourcesState,
+  mergeAnswers,
   metadataKey,
   type SourceReport,
   type SourcesCommands,
   seedAnswer,
   sourceReport,
+  unansweredKey,
   withoutAnswer,
 } from "./sources";
 export type {

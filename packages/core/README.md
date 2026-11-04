@@ -27,3 +27,25 @@ What is in it:
 The page is plain JSON; a page that comes from outside is never trusted until `migratePage` and
 `validatePage` have passed it. See [Getting started](../../docs/GETTING-STARTED.md) and
 [VERSIONING](../../docs/VERSIONING.md).
+
+## Sources of items: `resolveSources`
+
+An `external` field can keep a reference (`store: "reference"`): the page holds only `{ id, label }` of the item
+the person picked from a list your system keeps. To draw such a page, fill the data in where you like (at build,
+on your server, in the browser) and give the result to `<Render>`, which never calls the network:
+
+```ts
+import { resolveSources } from "@miditor/core";
+
+const { page, failed } = await resolveSources(stored, registry, {
+  products: {
+    search: (query, signal) => findProducts(query, { signal }),
+    getMany: (ids, signal) => loadProducts(ids, { signal }), // { [id]: item | null }, or give `get(id, signal)`
+  },
+});
+```
+
+Each id is asked once (`getMany` in chunks of 100, `get` five at a time, 15 seconds a call); it never throws for a
+source. An item that is gone or could not be loaded is listed in `failed` (`{ nodeId, source, id }`) and is drawn
+without data. Snapshots are left as the page holds them unless you pass `{ snapshots: true }`. See the editor's
+README for the rest (`ExternalSource`, `metadata`, checking a page when it opens).
