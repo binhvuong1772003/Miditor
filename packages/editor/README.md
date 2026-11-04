@@ -669,16 +669,23 @@ const editor = useCreateEditor();
   your own; the pages are the ones the editor holds.
 - `initialHistory` is `{ past, future }` around `data`, which is always the page shown, so the two cannot
   disagree. It is read once, like `data`. Each page is opened like `data` is (an older version is upgraded) and
-  shares what it has in common with `data`, as the steps of a session do, so a history opened again does not take
-  many times the memory. If one page cannot be opened the editor opens **without any history** and warns once in
+  shares the parts it has in common with `data` (the blocks of a page are matched by their `id`), as the steps of
+  a session do, so a history opened again does not take many times the memory. A picture kept inside the page
+  as a `data:` address is copied into every step you store. If one page cannot be opened the editor opens **without any history** and warns once in
   the console, never with half. Only the newest `historyLimit` steps are kept. Opening them is not a change:
   `onChange` and `onAction` are not called.
+- **The steps are not checked against `permissions`.** Undo only walks back through changes that were allowed
+  during the session, but steps you give (`initialHistory`, `setHistory`) come from you, like `data` does. Open a
+  history saved with more rights under stricter `permissions`, and Undo can bring back a page with a locked block
+  changed. Keep the history with the same person, and check what you store on your server.
+- The pages you give are used as they are where nothing else is shared; do not change them afterwards.
 - `jumpTo(index)` goes to a step in one move (nothing is drawn in between, one `onChange`, one `onAction` of
-  type `history.jump`), and undo and redo go on from there. It says `false` for a step that is not there or the
+  type `history.jump`, whose `ids` are the blocks selected before the move), and undo and redo go on from there. It says `false` for a step that is not there or the
   one shown. The steps in between are not lost: they move to `past` or `future`.
 - `setHistory({ past, future })` puts other steps around the page shown while the editor is open, with the same
   checks as `initialHistory`; the page itself does not change, and nothing is told to `onChange` or `onAction`.
-  It says `false`, and changes nothing, if a page cannot be opened.
+  It says `false`, and changes nothing, if a page cannot be opened. A change that is pending in a panel is left as
+  it is. Because nothing is told to `onChange`, store the steps yourself after you set them.
 - **Size.** Every step is a whole page. We measured a page of 300 blocks (113 kB): 100 steps are 11.7 MB as JSON,
   and `JSON.stringify` of them takes about 25 ms. A page of 2000 blocks (784 kB) with 100 steps is 79 MB. Keep 10
   to 20 steps, and keep them when the page is saved rather than on every change if the page is large.
