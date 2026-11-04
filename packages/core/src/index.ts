@@ -32,6 +32,7 @@ export {
   type Field,
   type ItemField,
   MAX_EXTERNAL_DATA,
+  MAX_EXTERNAL_DATA_DEPTH,
   MAX_FIELD_DEPTH,
   MAX_ITEMS,
   type Registry,

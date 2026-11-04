@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { defaultValueOf } from "./default-value";
-import { type ComponentDef, type Field, MAX_EXTERNAL_DATA, type Registry } from "./types";
+import {
+  type ComponentDef,
+  type Field,
+  MAX_EXTERNAL_DATA,
+  MAX_EXTERNAL_DATA_DEPTH,
+  type Registry,
+} from "./types";
 import { validateProps, validateValue } from "./validate-props";
 import { validateRegistry } from "./validate-registry";
 
@@ -202,6 +208,19 @@ describe("an external field", () => {
     expect(of("x".repeat(7999))).toBe("range");
     expect(of("é".repeat(4000))).toBe("range");
     expect(of("é".repeat(1999))).toBeUndefined();
+  });
+
+  it("keeps the data to MAX_EXTERNAL_DATA_DEPTH levels, so the page that holds it can still be opened", () => {
+    const nested = (levels: number) => {
+      let value: unknown = "end";
+      for (let at = 0; at < levels; at++) value = { inner: value };
+      return value as never;
+    };
+    const of = (levels: number) =>
+      validateValue(pick, { id: "p1", label: "Home", data: nested(levels) });
+    expect(MAX_EXTERNAL_DATA_DEPTH).toBe(16);
+    expect(of(16)).toBeUndefined();
+    expect(of(17)).toBe("range");
   });
 
   it("needs the name of a source in the registry", () => {

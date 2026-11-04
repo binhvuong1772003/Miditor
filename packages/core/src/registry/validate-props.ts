@@ -8,6 +8,7 @@ import {
   type Field,
   type ItemField,
   MAX_EXTERNAL_DATA,
+  MAX_EXTERNAL_DATA_DEPTH,
   MAX_ITEMS,
 } from "./types";
 
@@ -16,6 +17,12 @@ export interface PropIssue {
   key: string;
   code: "unknown" | "type" | "range" | "option";
 }
+
+/** Whether `value` nests more than `limit` levels of arrays and objects; it stops looking at `limit`. */
+const nestsDeeper = (value: unknown, limit: number): boolean =>
+  typeof value === "object" &&
+  value !== null &&
+  (limit <= 0 || Object.values(value).some((inner) => nestsDeeper(inner, limit - 1)));
 
 const EXTERNAL_KEYS = new Set(["id", "label", "data", "at"]);
 
@@ -74,11 +81,11 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
       }
       if (Object.keys(value).some((key) => !EXTERNAL_KEYS.has(key))) return "type";
       if (value.at !== undefined && typeof value.at !== "string") return "type";
-      if (
-        value.data !== undefined &&
-        new TextEncoder().encode(JSON.stringify(value.data)).length > MAX_EXTERNAL_DATA
-      ) {
-        return "range";
+      if (value.data !== undefined) {
+        if (nestsDeeper(value.data, MAX_EXTERNAL_DATA_DEPTH)) return "range";
+        if (new TextEncoder().encode(JSON.stringify(value.data)).length > MAX_EXTERNAL_DATA) {
+          return "range";
+        }
       }
       return undefined;
     }

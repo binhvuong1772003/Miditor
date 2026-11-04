@@ -84,6 +84,9 @@ export const MAX_ITEMS = 100;
 /** The most bytes of JSON (UTF-8) that the `data` of a chosen `external` item may hold in the page. */
 export const MAX_EXTERNAL_DATA = 8000;
 
+/** How deep the `data` of a chosen `external` item may nest: a page keeps props to 32 levels, and the value sits inside them. */
+export const MAX_EXTERNAL_DATA_DEPTH = 16;
+
 /** How deep arrays and objects may nest. */
 export const MAX_FIELD_DEPTH = 3;
 
