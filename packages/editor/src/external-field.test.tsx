@@ -68,6 +68,29 @@ describe("what is stored when an item is picked", () => {
     }
   });
 
+  it("keeps data to 16 levels, so the page that holds it can be opened", () => {
+    const nested = (levels: number) => {
+      let value: unknown = "end";
+      for (let at = 0; at < levels; at++) value = { inner: value };
+      return value as never;
+    };
+    expect(pickValue({ id: "p1", label: "Home", data: nested(16) }, now)).not.toBeNull();
+    expect(pickValue({ id: "p1", label: "Home", data: nested(17) }, now)).toBeNull();
+  });
+
+  it("refuses data that only looks like JSON (a Map, a class instance) and stores a copy of the rest", () => {
+    class Box {
+      a = 1;
+    }
+    for (const data of [new Map([["a", 1]]), new Set([1]), new Box()]) {
+      expect(pickValue({ id: "p1", label: "Home", data: data as never }, now)).toBeNull();
+    }
+    const data = { price: 9 };
+    const value = pickValue({ id: "p1", label: "Home", data }, now) as { data: unknown };
+    expect(value.data).toEqual(data);
+    expect(value.data).not.toBe(data);
+  });
+
   it("keeps data to 8000 bytes of JSON", () => {
     const of = (data: string) => pickValue({ id: "p1", label: "Home", data }, now);
     expect(of("x".repeat(7998))).not.toBeNull();

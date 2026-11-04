@@ -49,7 +49,7 @@ import type { CustomFieldInput } from "./custom-field";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
-import { type ExternalSource, withMetadata } from "./external-field";
+import { type AskedSource, type ExternalSource, withMetadata } from "./external-field";
 import type { FontDef } from "./fonts";
 import type { HideName } from "./hide";
 import { type HostTool, usableTools } from "./host-tool";
@@ -420,11 +420,12 @@ function EditorBody({
   const viewing = useViewCommands();
   const selecting = useSelectionCommands();
   const components = config?.components;
-  // The panels ask the sources through here, each `search` with the editor's `metadata`.
-  const sources = useMemo(
-    () => withMetadata(config?.sources, metadata),
-    [config?.sources, metadata],
-  );
+  // The panels ask the sources through here, each `search` with the editor's `metadata` as it is when the
+  // search starts. The wrappers are kept per source of the host, so a new `config` object does not restart a search.
+  const metadataNow = useRef(metadata);
+  metadataNow.current = metadata;
+  const askedSources = useRef(new WeakMap<ExternalSource, AskedSource>());
+  const sources = withMetadata(config?.sources, () => metadataNow.current, askedSources.current);
   const registry = useMemo<Registry>(() => ({ ...builtInRegistry, ...components }), [components]);
   // The element the page is drawn in, for the measures of a phone that draws the page as a flow.
   const workspaceRef = useRef<HTMLElement | null>(null);
