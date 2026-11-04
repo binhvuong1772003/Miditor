@@ -92,7 +92,7 @@ export async function loadItems(
           for (const id of chunk) {
             settle(id, Object.hasOwn(found, id) ? (found[id] as ExternalItem | null) : undefined);
           }
-        } catch (error) {
+        } catch {
           keep();
           for (const id of chunk) answers.set(id, FAILED);
         }
@@ -105,7 +105,7 @@ export async function loadItems(
         const id = unique[next++] as string;
         try {
           settle(id, await limited(signal, (s) => get.call(source, id, s, ctx)));
-        } catch (error) {
+        } catch {
           keep();
           answers.set(id, FAILED);
         }
