@@ -45,3 +45,39 @@ export function storePage(storage: PageStorage, data: PageData): boolean {
     return false;
   }
 }
+
+/** Where the playground keeps the last steps of the history, next to the page (`?history`). */
+export const HISTORY_KEY = "miditor-playground-history";
+
+/** How many steps of each side are kept: every step is a whole page. */
+const KEPT_STEPS = 20;
+
+/** The steps kept by `storeHistory`, as they were stored, or nothing. The editor checks what they hold. */
+export function loadHistory(
+  storage: PageStorage,
+): { past?: PageData[]; future?: PageData[] } | undefined {
+  try {
+    const text = storage.getItem(HISTORY_KEY);
+    return text === null ? undefined : JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Keeps the last steps of the history; the page itself is kept by `storePage`. */
+export function storeHistory(
+  storage: PageStorage,
+  history: { past: PageData[]; future: PageData[] },
+): void {
+  try {
+    storage.setItem(
+      HISTORY_KEY,
+      JSON.stringify({
+        past: history.past.slice(-KEPT_STEPS),
+        future: history.future.slice(0, KEPT_STEPS),
+      }),
+    );
+  } catch {
+    // A full quota or a private window: the page is still kept, only the steps are not.
+  }
+}

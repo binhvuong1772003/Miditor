@@ -48,7 +48,7 @@ import { ProductPicker } from "./ProductPicker";
 import { pagesSource } from "./pages-source";
 import { SentDataDialog } from "./SentDataDialog";
 import { shopTool } from "./ShopTool";
-import { loadPage, storePage } from "./storage";
+import { HISTORY_KEY, loadHistory, loadPage, storeHistory, storePage } from "./storage";
 import { Twin } from "./Twin";
 import { loadThemes, storeThemes, withId } from "./theme-store";
 import { suggestedThemes } from "./themes";
@@ -63,6 +63,7 @@ function openPage(): PageData {
     url.searchParams.delete("reset");
     url.searchParams.delete("landing");
     window.history.replaceState(null, "", url);
+    window.localStorage.removeItem(HISTORY_KEY);
   }
   const page = loadPage(window.localStorage, reset);
   // `?landing` (or `?landing=coffee`, with no phone layout) opens a landing page made for trying the editor, in place of the stored page. It is
@@ -253,6 +254,12 @@ function Playground({
   // A demo that brings its own page (`data`) keeps the stored one out of it.
   const [page] = useState(() => data ?? openPage());
   const plain = new URLSearchParams(window.location.search).has("plain");
+  // `?history`: the editor gets a controller of its own to read the steps of its history, which are kept
+  // with the page and opened again as `initialHistory`.
+  const historyOn = new URLSearchParams(window.location.search).has("history");
+  const ownController = useCreateEditor();
+  const reader = controller ?? (historyOn ? ownController : undefined);
+  const [steps] = useState(() => (historyOn ? loadHistory(window.localStorage) : undefined));
   // What `onSave` was given, shown in a pop-up in place of a request to a back end.
   const [uploaded, setUploaded] = useState(() => loadUploaded(window.localStorage));
   // Like a real host, the upload also puts the picture in the library the editor shows.
@@ -320,10 +327,13 @@ function Playground({
     onChange: (data) => {
       setStatus("saving");
       storePage(window.localStorage, data);
+      // `?history` keeps the last steps of the history with the page, and opens them again.
+      if (historyOn && reader) storeHistory(window.localStorage, reader.getHistory());
       // A request to a back end takes a moment; this is that moment.
       window.setTimeout(() => setStatus("saved"), 300);
     },
-    ...(controller ? { controller } : {}),
+    ...(reader ? { controller: reader } : {}),
+    ...(steps ? { initialHistory: steps } : {}),
     // `?plugin` gives the editor a plugin: a bundle of overrides, hidden parts and a tool.
     ...(new URLSearchParams(window.location.search).has("plugin") ? { plugins: [demoPlugin] } : {}),
     ...(given ? { overrides: given } : {}),
