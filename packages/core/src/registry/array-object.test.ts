@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultValueOf } from "./default-value";
-import type { ComponentDef, Field, Registry } from "./types";
+import { type ComponentDef, type Field, MAX_EXTERNAL_DATA, type Registry } from "./types";
 import { validateProps, validateValue } from "./validate-props";
 import { validateRegistry } from "./validate-registry";
 
@@ -176,6 +176,32 @@ describe("an external field", () => {
     [[]],
   ])("refuses %j", (value) => {
     expect(validateValue(pick, value as never)).toBe("type");
+  });
+
+  it("accepts the data of the item and the time it was taken", () => {
+    const at = "2026-11-03T10:00:00.000Z";
+    expect(
+      validateValue(pick, { id: "p1", label: "Home", data: { price: 9 }, at }),
+    ).toBeUndefined();
+    for (const data of [null, "text", [1, 2], 5]) {
+      expect(validateValue(pick, { id: "p1", label: "Home", data })).toBeUndefined();
+    }
+  });
+
+  it.each([[{ id: "p1", label: "Home", at: 5 }], [{ id: "p1", label: "Home", extra: 1, data: 1 }]])(
+    "refuses %j",
+    (value) => {
+      expect(validateValue(pick, value as never)).toBe("type");
+    },
+  );
+
+  it("keeps the data to MAX_EXTERNAL_DATA bytes of JSON, counted in UTF-8", () => {
+    const of = (data: string) => validateValue(pick, { id: "p1", label: "Home", data });
+    expect(MAX_EXTERNAL_DATA).toBe(8000);
+    expect(of("x".repeat(7998))).toBeUndefined();
+    expect(of("x".repeat(7999))).toBe("range");
+    expect(of("é".repeat(4000))).toBe("range");
+    expect(of("é".repeat(1999))).toBeUndefined();
   });
 
   it("needs the name of a source in the registry", () => {

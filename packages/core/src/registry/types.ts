@@ -65,7 +65,8 @@ type FieldKind =
   | { type: "array"; label: string; item: ItemField; minItems?: number; maxItems?: number }
   /**
    * A choice from a list that the host keeps (products, articles, pages): stored as `null` or
-   * `{ id, label }`. `source` names the search the host gave the editor (`config.sources`).
+   * `{ id, label }`, and when the host's item has them `data` (what a block shows of it, at most
+   * `MAX_EXTERNAL_DATA` bytes) and `at` (the ISO time `data` was taken). `source` names the search the host gave the editor (`config.sources`).
    */
   | { type: "external"; label: string; source: string }
   /** A group of named values that each follow their own field: `{ label, link }` of a menu entry. */
@@ -79,6 +80,9 @@ export type ItemField = Exclude<FieldKind, { type: "image" | "action" | "payload
 
 /** The longest an array can be, whatever its `maxItems`. */
 export const MAX_ITEMS = 100;
+
+/** The most bytes of JSON (UTF-8) that the `data` of a chosen `external` item may hold in the page. */
+export const MAX_EXTERNAL_DATA = 8000;
 
 /** How deep arrays and objects may nest. */
 export const MAX_FIELD_DEPTH = 3;

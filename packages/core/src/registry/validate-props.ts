@@ -3,13 +3,21 @@ import { isImageUrl } from "../styles/image-url";
 import { isLinkUrl } from "../styles/link-url";
 import { isColorValue, isFontStack } from "../styles/theme";
 import type { JsonValue } from "../tree/types";
-import { type ComponentDef, type Field, type ItemField, MAX_ITEMS } from "./types";
+import {
+  type ComponentDef,
+  type Field,
+  type ItemField,
+  MAX_EXTERNAL_DATA,
+  MAX_ITEMS,
+} from "./types";
 
 /** What is wrong with one prop. `unknown`: no such field. `type`: the wrong kind of value. `range`: too long, too small or too big. `option`: not one of the choices. */
 export interface PropIssue {
   key: string;
   code: "unknown" | "type" | "range" | "option";
 }
+
+const EXTERNAL_KEYS = new Set(["id", "label", "data", "at"]);
 
 const isPlainObject = (value: unknown): value is { [key: string]: JsonValue } =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -55,14 +63,25 @@ function problemWith(field: Field, value: JsonValue): PropIssue["code"] | undefi
     case "custom":
       // Whatever the host's input makes; that it is JSON is checked with the rest of the page.
       return undefined;
-    case "external":
+    case "external": {
       if (value === null) return undefined;
-      return isPlainObject(value) &&
-        typeof value.id === "string" &&
-        typeof value.label === "string" &&
-        Object.keys(value).length === 2
-        ? undefined
-        : "type";
+      if (
+        !isPlainObject(value) ||
+        typeof value.id !== "string" ||
+        typeof value.label !== "string"
+      ) {
+        return "type";
+      }
+      if (Object.keys(value).some((key) => !EXTERNAL_KEYS.has(key))) return "type";
+      if (value.at !== undefined && typeof value.at !== "string") return "type";
+      if (
+        value.data !== undefined &&
+        new TextEncoder().encode(JSON.stringify(value.data)).length > MAX_EXTERNAL_DATA
+      ) {
+        return "range";
+      }
+      return undefined;
+    }
     case "array": {
       if (!Array.isArray(value)) return "type";
       const most = Math.min(field.maxItems ?? MAX_ITEMS, MAX_ITEMS);
