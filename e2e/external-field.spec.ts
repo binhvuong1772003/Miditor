@@ -59,8 +59,8 @@ test.describe("an external field", () => {
     page,
   }) => {
     await openEditor(page);
-    await addFromBlocks(page, "Shop item");
-    const card = page.getByTestId("shop-item");
+    await addFromBlocks(page, "Item card");
+    const card = page.getByTestId("item-card");
     await expect(card).toContainText("none");
 
     const panel = properties(page);

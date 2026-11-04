@@ -25,8 +25,8 @@ export const components: Registry = {
     fields: { page: { type: "external", label: "Page", source: "pages" } },
   },
   // A kind that shows the data of an item picked from the host's shop (`config.sources`, stored in the page).
-  ShopItem: {
-    label: "Shop item",
+  ItemCard: {
+    label: "Item card",
     category: "From your website",
     icon: "box",
     keywords: ["product", "shop", "demo"],
@@ -88,7 +88,7 @@ export const renderers: Record<string, Renderer> = {
       </div>
     );
   },
-  ShopItem: ({ props }) => {
+  ItemCard: ({ props }) => {
     const item = props.item;
     const data =
       typeof item === "object" && item !== null && !Array.isArray(item) ? item.data : undefined;
@@ -97,7 +97,7 @@ export const renderers: Record<string, Renderer> = {
         ? `${String(data.title)} · ${String(data.price)}`
         : "none";
     return (
-      <div data-testid="shop-item" style={{ padding: 8 }}>
+      <div data-testid="item-card" style={{ padding: 8 }}>
         {shown}
       </div>
     );

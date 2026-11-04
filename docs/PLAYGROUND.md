@@ -16,7 +16,7 @@ scheme, `&plain` for a host with no autosave.
 | `?tools`                                  | A tool of the host on the rail                                            | `host-tool.spec.ts`                     |
 | a Menu block                              | An array of objects                                                       | `array-field.spec.ts`                   |
 | a Related page block (`&nosource`)        | A field that chooses from the host's list                                 | `external-field.spec.ts`                |
-| a Shop item block                         | The data of a picked item, stored in the page and shown                   | `external-field.spec.ts`                |
+| an Item card block                        | The data of a picked item, stored in the page and shown                   | `external-field.spec.ts`                |
 | `?plugin`                                 | A plugin                                                                  | `plugin.spec.ts`                        |
 | `?twin`                                   | Two editors side by side (`left` and `right`)                             | `twin.spec.ts`                          |
 | `?preview`                                | The saved page as a visitor gets it                                       | none yet                                |
