@@ -983,12 +983,21 @@ fields: { page: { type: "external", label: "Page", source: "pages" } },
 />;
 ```
 
-- `search(query, signal)` answers with `{ id, label }` items. It is asked with an empty text when the
+- `search(query, signal, ctx)` answers with `{ id, label }` items. It is asked with an empty text when the
   panel opens and again, a moment after the last key, as the person types; an earlier question is aborted
   through `signal`, so stop your request when it is.
 - The panel shows Loading, the items, "Nothing found" or an error when `search` rejects.
 - The stored value is `null` or `{ id, label }`; a Clear button stores `null`. Keep your own data by the
   `id`: the label is only what the person saw when they chose.
+- An item may also carry `data`, any plain JSON that a block shows of it (a title, a price, a picture). It is
+  stored in the page with the item, as `{ id, label, data, at }`, where `at` is the time it was taken. A block
+  reads it as `props.<field>.data`. `data` may take at most 8000 bytes of JSON; an item with more, or with
+  data that is not plain JSON, is refused when the person picks it, with a message. `hint` (a short text) and
+  `image` (an address) on an item are for the list only and are not stored. A page that holds only `{ id, label }`
+  stays valid.
+- `metadata` on `<Editor>` is plain JSON about your side (a language, a shop, who is editing). It is not stored
+  in the page; each `search` gets it as `ctx.metadata`. A `search` that takes only `(query, signal)` still works.
+- The stored `data` is a snapshot: it is not refreshed on its own. Checking and updating it comes later.
 - A `source` with no entry in `sources` shows a note and warns once. An `external` field works inside a list
   or a group too.
 
