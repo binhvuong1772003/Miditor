@@ -7,9 +7,11 @@ import {
   answerKey,
   canCheck,
   checkPage,
+  drawnPage,
   metadataKey,
   refreshSources,
   type SourcesState,
+  seedAnswer,
   sourceReport,
   withoutAnswer,
 } from "./sources";
@@ -228,5 +230,52 @@ describe("an answer is dropped when its item is picked again", () => {
     const next = withoutAnswer(answers, "items", "a");
     expect([...next.keys()]).toEqual([answerKey("items", "b")]);
     expect(withoutAnswer(next, "items", "zzz")).toBe(next);
+  });
+});
+
+describe("references of the page", () => {
+  const live = {
+    Card: {
+      label: "Card",
+      defaultProps: {},
+      fields: { item: { type: "external", label: "I", source: "items", store: "reference" } },
+    },
+  } as unknown as Registry;
+  const stored = { id: "a", label: "A" };
+
+  it("are not counted as changed: nothing of them is stored", () => {
+    const page = pageOf(node("c", { item: stored }));
+    const answers = answersOf([["a", found({ id: "a", label: "A", data: { price: 2 } })]]);
+    expect(sourceReport(page, answers, live, checked, undefined).changed).toEqual([]);
+  });
+
+  it("still say when an item is gone", () => {
+    const page = pageOf(node("c", { item: stored }));
+    const answers = answersOf([["a", { status: "gone" }]]);
+    expect(sourceReport(page, answers, live, checked, undefined).gone).toHaveLength(1);
+  });
+
+  it("are drawn with the data of the source, and the page itself is not changed", () => {
+    const page = pageOf(node("c", { item: stored }));
+    const answers = answersOf([["a", found({ id: "a", label: "A", data: { price: 2 } })]]);
+    const drawn = drawnPage(page, live, answers);
+    expect(drawn.root.children[0]?.props.item).toEqual({ ...stored, data: { price: 2 } });
+    expect(page.root.children[0]?.props.item).toEqual(stored);
+  });
+
+  it("are drawn as the page itself when there is nothing to fill, so nothing is drawn again", () => {
+    const page = pageOf(node("c", { item: stored }));
+    expect(drawnPage(page, live, new Map())).toBe(page);
+    expect(
+      drawnPage(page, registry, answersOf([["a", found({ id: "a", label: "A", data: {} })]])),
+    ).toBe(page);
+  });
+
+  it("get the item that was picked from a search as their answer", () => {
+    const next = seedAnswer(new Map(), "items", { id: "a", label: "A", data: { price: 3 } });
+    expect(next.get(answerKey("items", "a"))).toEqual({
+      status: "found",
+      item: { id: "a", label: "A", data: { price: 3 } },
+    });
   });
 });

@@ -1,5 +1,6 @@
 import {
   type Answer,
+  canCheckSource,
   type ExternalItem,
   type ExternalSource,
   type JsonValue,
@@ -27,6 +28,8 @@ export function ItemRow({ item }: { item: ExternalItem }) {
 /** A source as the field asks it: the editor has already put its `metadata` in. */
 export interface AskedSource {
   search(query: string, signal: AbortSignal): Promise<readonly ExternalItem[]>;
+  /** The source has a `get` or a `getMany`, so a reference to its items can be shown. */
+  canLoad: boolean;
 }
 
 /**
@@ -44,7 +47,10 @@ export function withMetadata(
   for (const [name, source] of Object.entries(sources)) {
     let asked = cache.get(source);
     if (!asked) {
-      asked = { search: (query, signal) => source.search(query, signal, { metadata: read() }) };
+      asked = {
+        search: (query, signal) => source.search(query, signal, { metadata: read() }),
+        canLoad: canCheckSource(source),
+      };
       cache.set(source, asked);
     }
     out[name] = asked;
@@ -95,12 +101,15 @@ const chosen = (value: JsonValue | undefined): ExternalItem | null =>
 export function ExternalField({
   label,
   source,
+  store = "snapshot",
   value,
   onChange,
   sources,
 }: {
   label: string;
   source: string;
+  /** What the page keeps of a chosen item (`field.store`). */
+  store?: "snapshot" | "reference" | undefined;
   value: JsonValue | undefined;
   onChange: (value: JsonValue) => void;
   sources: Readonly<Record<string, AskedSource>> | undefined;
@@ -176,6 +185,11 @@ export function ExternalField({
         )}
       </div>
       {current && <ExternalNote value={current} answer={answer} />}
+      {store === "reference" && !search.canLoad && (
+        <p role="note" className={styles.note}>
+          {t("field.noLoad")}
+        </p>
+      )}
       {open && (
         // biome-ignore lint/a11y/noStaticElementInteractions: Esc is heard from the controls inside, to shut the panel
         <div
@@ -210,7 +224,7 @@ export function ExternalField({
                     className={styles.chip}
                     aria-pressed={current?.id === item.id}
                     onClick={() => {
-                      const value = pickValue(item, new Date());
+                      const value = pickValue(item, new Date(), store);
                       if (value === null) {
                         setTooBig(item.label);
                         return;
@@ -218,7 +232,7 @@ export function ExternalField({
                       setTooBig(null);
                       onChange(value);
                       // What the last check said of this item is about what was stored before the pick.
-                      answers.forgetSourceAnswer(source, item.id);
+                      answers.seedSourceAnswer(source, item);
                       setOpen(false);
                     }}
                   >

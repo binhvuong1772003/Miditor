@@ -39,10 +39,12 @@ export {
   answerKey,
   canCheck,
   checkPage,
+  drawnPage,
   initialSourcesState,
   metadataKey,
   type SourceReport,
   type SourcesCommands,
+  seedAnswer,
   sourceReport,
   withoutAnswer,
 } from "./sources";

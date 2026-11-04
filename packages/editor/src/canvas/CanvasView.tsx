@@ -41,6 +41,7 @@ import { QuickActions, quickOffs } from "../QuickActions";
 import type { Run } from "../store";
 import {
   canRun,
+  drawnPage,
   type useDocumentCommands,
   useEditorState,
   type useSelectionCommands,
@@ -220,9 +221,12 @@ export function CanvasView({
     documents,
   });
 
+  // The fields that keep a reference are drawn with the data their source gave; it is never stored.
+  const sourceAnswers = useEditorState((state) => state.sourceAnswers);
   const shown = useMemo<PageData>(
-    () => (draft ? withDraft(data, draft, frame, registry) : data),
-    [data, draft, frame, registry],
+    () =>
+      drawnPage(draft ? withDraft(data, draft, frame, registry) : data, registry, sourceAnswers),
+    [data, draft, frame, registry, sourceAnswers],
   );
   useBlockMarks({ workspace, selectedId, picked, hoverId, dropId, dragging, shown });
 

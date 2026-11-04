@@ -18,6 +18,15 @@ describe("the metadata given to the search of a source", () => {
     expect(search).toHaveBeenCalledWith("", signal, { metadata: undefined });
   });
 
+  it("says whether the source can load items, for a reference", () => {
+    const cache = new WeakMap();
+    const plain: ExternalSource = { search: async () => [] };
+    const loads: ExternalSource = { search: async () => [], getMany: async () => ({}) };
+    const wrapped = withMetadata({ a: plain, b: loads }, () => 1, cache);
+    expect(wrapped?.a?.canLoad).toBe(false);
+    expect(wrapped?.b?.canLoad).toBe(true);
+  });
+
   it("works for a host whose search takes two parameters", async () => {
     const two: ExternalSource = { search: async (query: string) => [{ id: query, label: query }] };
     const wrapped = withMetadata({ pages: two }, () => 1);

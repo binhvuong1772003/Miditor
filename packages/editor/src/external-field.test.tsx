@@ -3,18 +3,22 @@ import { describe, expect, it } from "vitest";
 import { EditorProvider } from "./Editor";
 import { type AskedSource, ExternalField, ItemRow } from "./external-field";
 
-const sources: Record<string, AskedSource> = { pages: { search: async () => [] } };
+const sources: Record<string, AskedSource> = {
+  pages: { search: async () => [], canLoad: true },
+};
 
 const draw = (
   value: unknown,
   list: Record<string, AskedSource> | undefined = sources,
   source = "pages",
+  store: "snapshot" | "reference" = "snapshot",
 ) =>
   renderToString(
     <EditorProvider>
       <ExternalField
         label="Page"
         source={source}
+        store={store}
         value={value as never}
         onChange={() => {}}
         sources={list}
@@ -28,6 +32,20 @@ describe("an external field", () => {
     expect(draw({ id: "p1", label: "Home" })).toContain("Clear Page");
     expect(draw(null)).toContain("Choose");
     expect(draw(null)).not.toContain("Clear");
+  });
+
+  it("says a reference cannot show its data when the source cannot load items", () => {
+    const cannot = { pages: { search: async () => [], canLoad: false } };
+    const can = { pages: { search: async () => [], canLoad: true } };
+    expect(draw({ id: "p1", label: "Home" }, cannot, "pages", "reference")).toContain(
+      "cannot load items",
+    );
+    expect(draw({ id: "p1", label: "Home" }, can, "pages", "reference")).not.toContain(
+      "cannot load items",
+    );
+    expect(draw({ id: "p1", label: "Home" }, cannot, "pages", "snapshot")).not.toContain(
+      "cannot load items",
+    );
   });
 
   it("keeps the panel shut until the button is pressed", () => {

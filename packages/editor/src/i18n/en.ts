@@ -157,6 +157,7 @@ export const en = {
   "sources.newerOne": "1 block has newer data",
   "sources.newerMany": "{count} blocks have newer data",
   "sources.update": "Update",
+  "field.noLoad": "This source cannot load items, so the block shows no data.",
   "field.nothing": "Nothing found.",
   "field.noSource": "No list was given for the source “{source}”.",
   "field.noInput": "No input was given for the field kind “{kind}”.",

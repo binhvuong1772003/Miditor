@@ -154,6 +154,7 @@ export const vi: Messages = {
   "sources.newerOne": "1 khối có dữ liệu mới",
   "sources.newerMany": "{count} khối có dữ liệu mới",
   "sources.update": "Cập nhật",
+  "field.noLoad": "Nguồn này không tải được từng mục, nên khối không hiện dữ liệu.",
   "field.nothing": "Không thấy gì.",
   "field.noSource": "Chưa có danh sách cho nguồn “{source}”.",
   "field.noInput": "Chưa có ô nhập cho loại trường “{kind}”.",

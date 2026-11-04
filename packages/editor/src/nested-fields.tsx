@@ -123,6 +123,7 @@ export function ValueInput({
         <ExternalField
           label={label}
           source={field.source}
+          store={field.store}
           value={value}
           onChange={onChange}
           sources={sources}
