@@ -41,6 +41,7 @@ import { Render } from "@miditor/render";
 | `data`             | The page to open. Read once.                                                                                                  |
 | `onSave`           | Called with the whole page when the person presses Save. The Save button shows only when it is given.                         |
 | `onChange`         | Called with the whole page after each change that is final (see [Saving](#saving)).                                           |
+| `onAction`         | Called for each kept change with what was done (`action`), the page after and the page before. Experimental.                  |
 | `onChangeDebounce` | A wait in ms, or `{ wait, maxWait }`, so a run of changes is one `onChange` call.                                             |
 | `status`           | `"saved"`, `"unsaved"`, `"saving"` or `"error"`: what the header says about the host's storing.                               |
 | `headerActions`    | Your own controls, drawn in the header before Save: a preview link, a Publish button.                                         |
@@ -640,6 +641,36 @@ const [status, setStatus] = useState<SaveStatus>("saved");
   twice, so make the request safe to repeat (a `PUT` of the whole page is).
 
 Without `status`, the header follows the Save button and shows nothing if there is none.
+
+### Knowing what changed: `onAction`
+
+> Experimental.
+
+`onChange` gives the page and nothing about how it came to be. For a log of what people did, a check on your
+server, or sending only a part of the page, pass `onAction`:
+
+```tsx
+<Editor
+  onAction={(action, page, prevPage) => {
+    // action.type: "block.add", "block.edit", "block.delete", "block.rect", "history.undo", "sources.update"...
+    // action.ids:  the blocks it was about: the one that was edited, the ones selected when it ran,
+    //              or the block an add made. Empty for a change of the page itself (`page.info`, `page.theme`).
+    log(action.type, action.ids);
+  }}
+/>;
+```
+
+- It is called once for each command that changed the page and was kept, right after the change, with the
+  page after it and the page before it (the very objects the history holds, so nothing is copied).
+- It is **not** gathered over time like `onChange`: a run of arrow keys is a run of calls. Use `onChange` (with
+  `onChangeDebounce`) to store the page and `onAction` to know what happened; a host can use both.
+- It is not called for something that is only being typed or dragged, for a change that was refused by
+  `permissions`, or for one that changed nothing. Selecting, zooming and switching the frame are not changes of
+  the page.
+- The editor does not compare the two pages for you. To send only what changed, compare `page` and `prevPage`
+  with the tool of your choice. The `action` names the kind of change and the blocks, so for a log that is often
+  enough.
+- A listener that throws is reported in the console and does not stop the editor.
 
 ## Images
 

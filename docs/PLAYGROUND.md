@@ -21,4 +21,5 @@ scheme, `&plain` for a host with no autosave.
 | `?plugin`                                 | A plugin                                                                      | `plugin.spec.ts`                        |
 | `?twin`                                   | Two editors side by side (`left` and `right`)                                 | `twin.spec.ts`                          |
 | `?preview`                                | The saved page as a visitor gets it                                           | none yet                                |
+| any change (read `window.__actions`)      | `onAction`: what was done, and the pages around it                            | `on-action.spec.ts`                     |
 | `?items-changed`, `?items-lost`           | An Item card checked against a source that has moved on                       | `external-field.spec.ts`                |
