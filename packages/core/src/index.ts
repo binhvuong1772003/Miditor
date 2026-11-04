@@ -27,6 +27,13 @@ export {
   libraryOf,
   searchRegistry,
 } from "./registry/library";
+export {
+  type Answer,
+  GET_CONCURRENCY,
+  GET_MANY_CHUNK,
+  loadItems,
+  SOURCE_TIMEOUT_MS,
+} from "./registry/load-items";
 export { type NewNodeOverrides, newNode } from "./registry/new-node";
 export { propsWithDefaults } from "./registry/props-with-defaults";
 export {
