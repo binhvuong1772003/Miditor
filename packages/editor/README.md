@@ -642,6 +642,50 @@ const [status, setStatus] = useState<SaveStatus>("saved");
 
 Without `status`, the header follows the Save button and shows nothing if there is none.
 
+### Keeping the history: `getHistory`, `initialHistory`, `jumpTo`, `setHistory`
+
+> Experimental.
+
+The steps of Undo and Redo live in the editor, so a page that is opened again starts with none. To keep them,
+store them next to the page and give them back when the page is opened:
+
+```tsx
+const editor = useCreateEditor();
+
+<Editor
+  controller={editor}
+  data={page}
+  initialHistory={history} // { past, future }, from an earlier session
+  onChange={(page) => {
+    // Every step is a whole page, so keep only the last few.
+    const { past, future } = editor.getHistory();
+    save({ page, history: { past: past.slice(-20), future: future.slice(0, 20) } });
+  }}
+/>;
+```
+
+- `getHistory()` gives `{ past, future, index }`. `past` has the oldest step first and `future` the nearest first;
+  `index` is the place of the page shown in `[...past, page, ...future]` (it is `past.length`). The arrays are
+  your own; the pages are the ones the editor holds.
+- `initialHistory` is `{ past, future }` around `data`, which is always the page shown, so the two cannot
+  disagree. It is read once, like `data`. Each page is opened like `data` is (an older version is upgraded) and
+  shares what it has in common with `data`, as the steps of a session do, so a history opened again does not take
+  many times the memory. If one page cannot be opened the editor opens **without any history** and warns once in
+  the console, never with half. Only the newest `historyLimit` steps are kept. Opening them is not a change:
+  `onChange` and `onAction` are not called.
+- `jumpTo(index)` goes to a step in one move (nothing is drawn in between, one `onChange`, one `onAction` of
+  type `history.jump`), and undo and redo go on from there. It says `false` for a step that is not there or the
+  one shown. The steps in between are not lost: they move to `past` or `future`.
+- `setHistory({ past, future })` puts other steps around the page shown while the editor is open, with the same
+  checks as `initialHistory`; the page itself does not change, and nothing is told to `onChange` or `onAction`.
+  It says `false`, and changes nothing, if a page cannot be opened.
+- **Size.** Every step is a whole page. We measured a page of 300 blocks (113 kB): 100 steps are 11.7 MB as JSON,
+  and `JSON.stringify` of them takes about 25 ms. A page of 2000 blocks (784 kB) with 100 steps is 79 MB. Keep 10
+  to 20 steps, and keep them when the page is saved rather than on every change if the page is large.
+- **Versions to go back to** (yesterday's page, who changed what) are the host's to keep: store the page you get
+  in `onChange`, or what `onAction` tells you, with the time and the person, and open the editor again with an old
+  page as `data` (and a new `key`). The history of Undo is not the place for that.
+
 ### Knowing what changed: `onAction`
 
 > Experimental.

@@ -60,6 +60,8 @@ Everything here is experimental until the packages leave `0.0.0` (see [VERSIONIN
 
 - `history.undo`
 - `history.redo`
+- `history.jump`
+- `history.set`
 - `block.duplicate`
 - `block.delete`
 - `block.group`
