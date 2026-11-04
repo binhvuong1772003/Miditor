@@ -532,11 +532,12 @@ describe("<Render> theme", () => {
   });
 });
 
+const Show: Renderer = ({ metadata }) => <i data-m={JSON.stringify(metadata ?? "none")} />;
+
 describe("<Render> metadata", () => {
   const withHeart: PageData = page(
     flow("root", "Page", [{ ...flow("g", "Container", [flow("h", "Heart")]) }]),
   );
-  const Show: Renderer = ({ metadata }) => <i data-m={JSON.stringify(metadata ?? "none")} />;
 
   it("gives the function of a host the metadata of the page, for a block at any depth", () => {
     const markup = renderToStaticMarkup(
