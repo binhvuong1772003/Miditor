@@ -64,6 +64,9 @@ export function createEditor(): EditorController {
     group: to("group", false),
     ungroup: to("ungroup", false),
     checkSources: to("checkSources", Promise.resolve()),
+    getHistory: to("getHistory", { past: [], future: [], index: 0 }),
+    jumpTo: to("jumpTo", false),
+    setHistory: to("setHistory", false),
   };
   records.set(controller, record);
   return controller;

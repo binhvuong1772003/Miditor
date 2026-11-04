@@ -4,18 +4,6 @@ import { historyLimit } from "./history";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** Whether two JSON values are the same, key for key. */
-function sameValue(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  const keys = Object.keys(a);
-  return (
-    keys.length === Object.keys(b).length &&
-    keys.every((key) => sameValue((a as never)[key], (b as never)[key]))
-  );
-}
-
 /**
  * `next` with every part that is the same as in `known` taken from `known`, so the two share those objects:
  * what the steps of a session do on their own, and what a load from JSON loses (each page comes out with
@@ -83,4 +71,30 @@ export function parseHistory(
     return known;
   });
   return { past: sharedPast, future: sharedFuture };
+}
+
+/** The histories that were told about, so React's StrictMode opening one twice tells once. */
+const told = new WeakSet<object>();
+
+/**
+ * What the editor opens with for `initialHistory`: the steps (see `parseHistory`), or nothing when the host
+ * gave none. A history that cannot be opened is told once in the console, and the editor opens without it.
+ */
+export function openSteps(
+  raw: unknown,
+  present: PageData,
+  limit: unknown,
+): { past: PageData[]; future: PageData[] } | undefined {
+  if (raw === undefined) return undefined;
+  const steps = parseHistory(raw, present, limit);
+  if (steps) return steps;
+  // React's StrictMode opens a page twice in development: the same history is told once.
+  if (typeof raw === "object" && raw !== null) {
+    if (told.has(raw)) return undefined;
+    told.add(raw);
+  }
+  console.warn(
+    "[miditor] `initialHistory` is not a history this editor can open (an object with `past` and `future`, each a list of pages it can open): the editor opens without it",
+  );
+  return undefined;
 }

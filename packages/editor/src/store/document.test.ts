@@ -213,3 +213,19 @@ describe("documentCommands", () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe("initialDocumentState with steps of an earlier session", () => {
+  it("puts them before and after the page, and the page is what was saved", () => {
+    const page = emptyPage();
+    const older = { ...emptyPage(), meta: { title: "older" } };
+    const newer = { ...emptyPage(), meta: { title: "newer" } };
+    const state = initialDocumentState(page, { past: [older], future: [newer] });
+    expect(state.history).toEqual({ past: [older], present: page, future: [newer] });
+    expect(state.savedPage).toBe(page);
+  });
+
+  it("is a history with nothing to undo when there are none", () => {
+    const page = emptyPage();
+    expect(initialDocumentState(page).history).toEqual({ past: [], present: page, future: [] });
+  });
+});

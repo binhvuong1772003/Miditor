@@ -1,6 +1,8 @@
+import type { PageData } from "@miditor/core";
 import { type Device, findNode, parentOf, type Reorder } from "@miditor/core";
-import { canRedo, canUndo, redo, undo } from "../history";
+import { canRedo, canUndo, jumpTo, redo, undo, withSteps } from "../history";
 import { MAX_ZOOM, MIN_ZOOM, stepZoom } from "../zoom";
+import { change } from "./change";
 import type { EditorStore } from "./create-editor-store";
 import { type Env, runner, step } from "./document";
 import { allowed, mayAdd, type Permissions } from "./permissions";
@@ -27,6 +29,10 @@ export type ZoomMove = "in" | "out" | "reset";
 export type CommandArgs = {
   "history.undo": undefined;
   "history.redo": undefined;
+  /** The index of a step in `[...past, page, ...future]`. */
+  "history.jump": number;
+  /** Steps that are already opened pages (see `parseHistory`), put around the page shown. */
+  "history.set": { past: readonly PageData[]; future: readonly PageData[] };
   "block.duplicate": undefined;
   "block.delete": undefined;
   "block.group": undefined;
@@ -93,6 +99,19 @@ export const commandTable: { [N in CommandName]: Spec<CommandArgs[N]> } = {
   "history.redo": {
     run: (state) => step(state, redo),
     can: (state) => canRedo(state.history),
+  },
+  "history.jump": {
+    run: (state, index) => step(state, (history) => jumpTo(history, index)),
+    can: (state, index) => jumpTo(state.history, index) !== state.history,
+  },
+  "history.set": {
+    // The page stays, so nothing is drawn again and nobody is told of a change of the page.
+    run: (state, steps, env) =>
+      change(state, {
+        history: withSteps(state.history, steps.past, steps.future, env.limit),
+        draft: null,
+      }),
+    can: () => true,
   },
   "block.duplicate": {
     run: (state, _, env, context) => {

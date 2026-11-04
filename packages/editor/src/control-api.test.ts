@@ -45,6 +45,7 @@ function setup(over: Partial<ApiDeps> = {}) {
       ),
     fit: () => {},
     checkSources: async () => {},
+    historyLimit: () => 100,
     alive: () => true,
     ...over,
   };
@@ -131,5 +132,68 @@ describe("createApi", () => {
   it("remove with nothing selected returns false", () => {
     const { api } = setup();
     expect(api.remove()).toBe(false);
+  });
+
+  describe("the steps of the history", () => {
+    const blocksOf = (store: ReturnType<typeof setup>["store"]) =>
+      store.getState().history.present.root.children.length;
+
+    it("getHistory gives the steps before and after, and the index of the page that is shown", () => {
+      const a = setup();
+      expect(a.api.getHistory()).toEqual({ past: [], future: [], index: 0 });
+      a.api.addBlock("Text");
+      a.api.addBlock("Text");
+      a.api.undo();
+      const h = a.api.getHistory();
+      expect(h.past).toHaveLength(1);
+      expect(h.future).toHaveLength(1);
+      expect(h.index).toBe(1);
+      expect(h.past[0]).toBe(a.store.getState().history.past[0]);
+    });
+
+    it("getHistory gives arrays of its own, so changing them does not change the history", () => {
+      const a = setup();
+      a.api.addBlock("Text");
+      a.api.getHistory().past.length = 0;
+      expect(a.store.getState().history.past).toHaveLength(1);
+    });
+
+    it("jumpTo goes to a step in one move, and says false for a step that is not there or the one shown", () => {
+      const a = setup();
+      for (let i = 0; i < 3; i++) a.api.addBlock("Text");
+      expect(blocksOf(a.store)).toBe(4);
+      expect(a.api.jumpTo(1)).toBe(true);
+      expect(blocksOf(a.store)).toBe(2);
+      expect(a.api.getHistory().index).toBe(1);
+      expect(a.api.getHistory().future).toHaveLength(2);
+      expect(a.api.jumpTo(1)).toBe(false);
+      expect(a.api.jumpTo(9)).toBe(false);
+      expect(a.api.jumpTo(-1)).toBe(false);
+      expect(a.api.jumpTo(1.5)).toBe(false);
+      expect(a.api.jumpTo(3)).toBe(true);
+      expect(blocksOf(a.store)).toBe(4);
+    });
+
+    it("setHistory puts other steps around the page that is shown, and leaves the page alone", () => {
+      const a = setup();
+      a.api.addBlock("Text");
+      a.api.addBlock("Text");
+      const shown = a.store.getState().history.present;
+      const earlier = a.store.getState().history.past[0] as never;
+      expect(a.api.setHistory({ past: [earlier], future: [] })).toBe(true);
+      const h = a.store.getState().history;
+      expect(h.present).toBe(shown);
+      expect(h.past).toHaveLength(1);
+      expect(h.future).toHaveLength(0);
+    });
+
+    it("setHistory says false, and changes nothing, for steps that are not pages", () => {
+      const a = setup();
+      a.api.addBlock("Text");
+      const before = a.store.getState().history;
+      expect(a.api.setHistory({ past: [{ nope: 1 } as never], future: [] })).toBe(false);
+      expect(a.api.setHistory(null as never)).toBe(false);
+      expect(a.store.getState().history).toBe(before);
+    });
   });
 });

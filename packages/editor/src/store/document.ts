@@ -12,6 +12,7 @@ export type EditorActionType =
   | "edit"
   | "history.undo"
   | "history.redo"
+  | "history.jump"
   | "block.add"
   | "block.drop"
   | "block.edit"
@@ -76,9 +77,18 @@ export type Env = {
 // they give back the very state when nothing changes: a page that comes out of a change as the same
 // object is no step of history and is no change for the host.
 
-/** A page just opened: nothing to undo, nothing changed since it was saved. */
-export function initialDocumentState(page: PageData): DocumentState {
-  return { history: createHistory(page), savedPage: page, draft: null, waiting: false };
+/**
+ * A page just opened, nothing changed since it was saved. Without `steps` there is nothing to undo; with
+ * them (what a host kept of an earlier session) there is what came before the page and what undo took away.
+ */
+export function initialDocumentState(
+  page: PageData,
+  steps?: { past: readonly PageData[]; future: readonly PageData[] },
+): DocumentState {
+  const history = steps
+    ? { past: steps.past, present: page, future: steps.future }
+    : createHistory(page);
+  return { history, savedPage: page, draft: null, waiting: false };
 }
 
 /**

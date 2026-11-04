@@ -60,6 +60,7 @@ import { type IconComponent, IconsContext, usableIcons } from "./icons";
 import type { LibraryImage } from "./images";
 import { matchKey } from "./keymap";
 import { isNudgeKey } from "./nudge";
+import { openSteps } from "./open-history";
 import { HostContexts, type Overrides } from "./overrides";
 import { pageWidthVariables } from "./page-width";
 import {
@@ -133,6 +134,15 @@ export interface EditorProps {
    * editor mounts, and once per change. The argument is the whole page, ready to be stored.
    */
   onChange?: (data: PageData) => void;
+  /**
+   * The steps of an earlier session, so that Undo and Redo work after the page is opened again: `{ past, future }`,
+   * from `controller.getHistory()`. `data` is the page shown; `past` are the pages before it (the oldest first)
+   * and `future` the ones undo took away (the nearest first). Read once, like `data`. The pages are opened like
+   * `data` is and share what they have in common with it; if one cannot be opened the editor opens without any
+   * history and warns once. Only the newest `historyLimit` steps are kept. Every step is a whole page, so keep
+   * only the last few. Opening them is not a change: nothing is told to `onChange` or `onAction`. Experimental.
+   */
+  initialHistory?: { past?: readonly PageData[]; future?: readonly PageData[] };
   /**
    * How long to wait, in ms, after the last change before `onChange` is called, so a run of changes
    * is one call with the latest page. Without it, or with 0, `onChange` is called at once for each
@@ -369,6 +379,10 @@ export function EditorProvider(given: EditorProviderProps) {
   // Made when the editor opens (not in an effect, which StrictMode runs twice), one for each editor.
   // The page it opens with is made here, once, because the selection starts on its root.
   const [firstPage] = useState(() => openPage(props.data, props.config?.theme));
+  // The steps of an earlier session the host kept, opened once with the page.
+  const [firstSteps] = useState(() =>
+    openSteps(props.initialHistory, firstPage, props.historyLimit),
+  );
   const [store] = useState(() =>
     createEditorStore<EditorState>({
       ...initialViewState({
@@ -376,7 +390,7 @@ export function EditorProvider(given: EditorProviderProps) {
           typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1100px)").matches,
       }),
       ...initialSelectionState(firstPage.root.id),
-      ...initialDocumentState(firstPage),
+      ...initialDocumentState(firstPage, firstSteps),
       ...initialHostState({ hostStatus: props.status, hasSave: props.onSave !== undefined }),
       ...initialSourcesState(),
     }),
@@ -754,6 +768,8 @@ function EditorBody({
   useEffect(() => {
     if (unanswered !== "" && unanswered !== asked.current) void latest.current.checkSources?.();
   }, [unanswered]);
+  const limitNow = useRef(historyLimit);
+  limitNow.current = historyLimit;
   const [api] = useState(() =>
     createApi({
       run,
@@ -762,6 +778,7 @@ function EditorBody({
       addBlock: (kind, overrides) => latest.current.addBlockOf(kind, overrides),
       fit: () => latest.current.fit(),
       checkSources: () => latest.current.checkSources?.() ?? Promise.resolve(),
+      historyLimit: () => limitNow.current,
       alive: () => alive.current,
     }),
   );

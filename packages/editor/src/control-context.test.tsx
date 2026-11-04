@@ -36,6 +36,7 @@ const stubApi = (store: TestStore) =>
     addBlock: () => {},
     fit: () => {},
     checkSources: async () => {},
+    historyLimit: () => 100,
     alive: () => true,
   });
 

@@ -50,6 +50,7 @@ function setup(permissions?: Permissions) {
       structure.addBlock({ kind, overrides, inside: SIZE, page: SIZE }),
     fit: () => {},
     checkSources: async () => {},
+    historyLimit: () => 100,
     alive: () => true,
   });
   return { store, env, api, denied, run };

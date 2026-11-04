@@ -52,6 +52,7 @@ function apiOf(store: ReturnType<typeof makeStore>): EditorApi {
     addBlock: () => {},
     fit: () => {},
     checkSources: async () => {},
+    historyLimit: () => 100,
     alive: () => true,
   });
 }
@@ -240,6 +241,7 @@ describe("hide", () => {
       addBlock: () => {},
       fit: () => {},
       checkSources: async () => {},
+      historyLimit: () => 100,
       alive: () => true,
     });
     draw(["header.undo", "header.redo"], toolbar, undefined, store);

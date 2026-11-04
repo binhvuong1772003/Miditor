@@ -1,6 +1,6 @@
 import { builtInRegistry, emptyPage, newNode, type PageData, type TreeNode } from "@miditor/core";
-import { describe, expect, it } from "vitest";
-import { parseHistory } from "./open-history";
+import { describe, expect, it, vi } from "vitest";
+import { openSteps, parseHistory } from "./open-history";
 
 const block = (id: string, text: string) => {
   const node = newNode(builtInRegistry, "Text", id, { w: 680, h: 788 }) as TreeNode;
@@ -68,5 +68,40 @@ describe("parseHistory", () => {
     const copy = JSON.stringify(past);
     parseHistory({ past }, present, 100);
     expect(JSON.stringify(past)).toBe(copy);
+  });
+});
+
+describe("openSteps", () => {
+  const present = pageWith(block("a", "now"));
+
+  it("is nothing, and says nothing, when the host gave no history", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(openSteps(undefined, present, 100)).toBeUndefined();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("gives the steps when they can be opened", () => {
+    const got = openSteps({ past: [pageWith(block("a", "before"))] }, present, 100);
+    expect(got?.past).toHaveLength(1);
+  });
+
+  it("is nothing and warns in the console, naming `initialHistory`, when they cannot", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(openSteps({ past: [{ nope: true }] }, present, 100)).toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("initialHistory");
+    warn.mockRestore();
+  });
+
+  it("warns once for the same history, which React's StrictMode opens twice, and again for another", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const bad = { past: [{ nope: true }] };
+    openSteps(bad, present, 100);
+    openSteps(bad, present, 100);
+    expect(warn).toHaveBeenCalledTimes(1);
+    openSteps({ past: [{ nope: true }] }, present, 100);
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
   });
 });

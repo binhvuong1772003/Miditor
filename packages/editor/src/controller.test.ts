@@ -44,6 +44,9 @@ function stubApi() {
     checkSources: async () => {
       done("checkSources", true);
     },
+    getHistory: () => ({ past: [], future: [], index: 0 }),
+    jumpTo: (index) => done(`jumpTo ${index}`, true),
+    setHistory: () => done("setHistory", true),
   };
   return { api, calls };
 }
