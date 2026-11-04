@@ -1,12 +1,65 @@
-import type { JsonValue } from "@miditor/core";
+import { type JsonValue, MAX_EXTERNAL_DATA } from "@miditor/core";
 import { useEffect, useId, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
 
-/** One thing the host's list holds. @experimental */
+/**
+ * One thing the host's list holds. `data` is what a block shows of it (a title, a price, a picture): it is
+ * stored in the page with the item, as plain JSON of at most 8000 bytes. `hint` and `image` are for the list
+ * the person picks from and are not stored. @experimental
+ */
 export interface ExternalItem {
   id: string;
   label: string;
+  data?: JsonValue;
+  hint?: string;
+  image?: string;
+}
+
+const sameJson = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((key) => sameJson((a as never)[key], (b as never)[key]))
+  );
+};
+
+/** Whether `data` is plain JSON that fits the page: what survives a round trip, in at most 8000 bytes. */
+function fitsThePage(data: unknown): boolean {
+  try {
+    const text = JSON.stringify(data);
+    return (
+      text !== undefined &&
+      new TextEncoder().encode(text).length <= MAX_EXTERNAL_DATA &&
+      sameJson(JSON.parse(text), data)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What is stored for a picked item: `{ id, label }`, and with the item's data `{ id, label, data, at }`.
+ * `null` when the data is not plain JSON or is too large to keep in the page.
+ */
+export function pickValue(item: ExternalItem, now: Date): JsonValue | null {
+  if (item.data === undefined) return { id: item.id, label: item.label };
+  if (!fitsThePage(item.data)) return null;
+  return { id: item.id, label: item.label, data: item.data, at: now.toISOString() };
+}
+
+/** One line of the list: the label, with the picture and the hint of the item when it has them. */
+export function ItemRow({ item }: { item: ExternalItem }) {
+  return (
+    <>
+      {item.image && <img src={item.image} alt="" width={24} height={24} />}
+      <span>{item.label}</span>
+      {item.hint && <small>{item.hint}</small>}
+    </>
+  );
 }
 
 /**
@@ -55,6 +108,7 @@ export function ExternalField({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<State>({ status: "loading" });
+  const [tooBig, setTooBig] = useState<string | null>(null);
   const current = chosen(value);
 
   useEffect(() => {
@@ -133,6 +187,7 @@ export function ExternalField({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
+          {tooBig !== null && <p role="alert">{t("field.tooBig", { label: tooBig })}</p>}
           {state.status === "loading" && <p role="status">{t("field.loading")}</p>}
           {state.status === "error" && <p role="alert">{t("field.loadError")}</p>}
           {state.status === "done" && state.items.length === 0 && (
@@ -147,11 +202,17 @@ export function ExternalField({
                     className={styles.chip}
                     aria-pressed={current?.id === item.id}
                     onClick={() => {
-                      onChange({ id: item.id, label: item.label });
+                      const value = pickValue(item, new Date());
+                      if (value === null) {
+                        setTooBig(item.label);
+                        return;
+                      }
+                      setTooBig(null);
+                      onChange(value);
                       setOpen(false);
                     }}
                   >
-                    {item.label}
+                    <ItemRow item={item} />
                   </button>
                 </li>
               ))}

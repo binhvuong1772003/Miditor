@@ -151,6 +151,7 @@ export const en = {
   "field.search": "Search {label}",
   "field.loading": "Loading…",
   "field.loadError": "Could not load the list.",
+  "field.tooBig": "“{label}” has too much data to be kept in the page.",
   "field.nothing": "Nothing found.",
   "field.noSource": "No list was given for the source “{source}”.",
   "field.noInput": "No input was given for the field kind “{kind}”.",

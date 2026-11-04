@@ -148,6 +148,7 @@ export const vi: Messages = {
   "field.search": "Tìm {label}",
   "field.loading": "Đang tải…",
   "field.loadError": "Không tải được danh sách.",
+  "field.tooBig": "“{label}” có quá nhiều dữ liệu để lưu vào trang.",
   "field.nothing": "Không thấy gì.",
   "field.noSource": "Chưa có danh sách cho nguồn “{source}”.",
   "field.noInput": "Chưa có ô nhập cho loại trường “{kind}”.",
