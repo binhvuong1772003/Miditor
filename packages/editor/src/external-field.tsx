@@ -1,20 +1,15 @@
-import { type JsonValue, MAX_EXTERNAL_DATA, MAX_EXTERNAL_DATA_DEPTH } from "@miditor/core";
+import {
+  type ExternalItem,
+  type ExternalSource,
+  type JsonValue,
+  MAX_EXTERNAL_DATA,
+  MAX_EXTERNAL_DATA_DEPTH,
+} from "@miditor/core";
 import { useEffect, useId, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
 
-/**
- * One thing the host's list holds. `data` is what a block shows of it (a title, a price, a picture): it is
- * stored in the page with the item, as plain JSON of at most 8000 bytes. `hint` and `image` are for the list
- * the person picks from and are not stored. @experimental
- */
-export interface ExternalItem {
-  id: string;
-  label: string;
-  data?: JsonValue;
-  hint?: string;
-  image?: string;
-}
+export type { ExternalItem, ExternalSource, SourceContext } from "@miditor/core";
 
 const isPlain = (value: object): boolean => {
   const proto = Object.getPrototypeOf(value);
@@ -75,21 +70,6 @@ export function ItemRow({ item }: { item: ExternalItem }) {
       {item.hint && <small>{item.hint}</small>}
     </>
   );
-}
-
-/** What the editor tells a source about the page it is asked for: the `metadata` of the `<Editor>`. @experimental */
-export interface SourceContext {
-  metadata: JsonValue | undefined;
-}
-
-/**
- * A list the host keeps and the editor searches (`config.sources`, by the `source` of an `external` field):
- * products, articles, pages. `search` is asked for what the person typed (an empty text at first) and may
- * be asked again before it answers, so it should stop when `signal` is aborted. `ctx` carries the
- * `metadata` of the editor (a language, a shop, who is editing). @experimental
- */
-export interface ExternalSource {
-  search(query: string, signal: AbortSignal, ctx: SourceContext): Promise<readonly ExternalItem[]>;
 }
 
 /** A source as the field asks it: the editor has already put its `metadata` in. */
