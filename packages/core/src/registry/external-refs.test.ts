@@ -33,7 +33,7 @@ describe("the stored items of a page", () => {
   it("finds a plain external prop, with the node, path and source", () => {
     const page = pageOf(node("a", { item: beans, title: "x" }));
     expect(externalRefs(registry, page)).toEqual([
-      { nodeId: "a", path: ["item"], source: "items", value: beans },
+      { nodeId: "a", layer: "props", path: ["item"], source: "items", value: beans },
     ]);
   });
 
@@ -44,6 +44,7 @@ describe("the stored items of a page", () => {
     expect(externalRefs(registry, page)).toEqual([
       {
         nodeId: "a",
+        layer: "props",
         path: ["links", 1, "page"],
         source: "pages",
         value: { id: "home", label: "Home" },
@@ -62,6 +63,23 @@ describe("the stored items of a page", () => {
   it("finds items in nested blocks", () => {
     const page = pageOf(node("g", {}, [node("a", { item: beans })]));
     expect(externalRefs(registry, page).map((ref) => ref.nodeId)).toEqual(["a"]);
+  });
+});
+
+describe("items kept for the phone", () => {
+  it("finds an item in phoneProps, and writes it back there", () => {
+    const withPhone = { ...(node("a", { item: null }) as object), phoneProps: { item: beans } };
+    const page = pageOf(withPhone);
+    const refs = externalRefs(registry, page);
+    expect(refs).toEqual([
+      { nodeId: "a", layer: "phoneProps", path: ["item"], source: "items", value: beans },
+    ]);
+    const next = withExternalValues(page, [
+      { nodeId: "a", layer: "phoneProps", path: ["item"], value: { id: "beans", label: "B2" } },
+    ]);
+    const node0 = next.root.children[0] as unknown as { props: unknown; phoneProps: unknown };
+    expect(node0.phoneProps).toEqual({ item: { id: "beans", label: "B2" } });
+    expect(node0.props).toEqual({ item: null });
   });
 });
 

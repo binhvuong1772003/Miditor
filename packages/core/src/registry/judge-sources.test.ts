@@ -34,6 +34,19 @@ describe("judging an answer against what is stored", () => {
     expect(judge({ id: "a", label: "A" }, found({ id: "a", label: "A" }))).toBe("same");
   });
 
+  it("is same for data the page could not keep anyway, so Update is never offered for it", () => {
+    expect(
+      judge(
+        { id: "a", label: "A", data: { price: 10 } },
+        found({ id: "a", label: "A", data: { price: 10, discount: undefined } }),
+      ),
+    ).toBe("same");
+    expect(judge(stored, found({ id: "a", label: "A", data: new Date() }))).toBe("same");
+    expect(judge(stored, found({ id: "a", label: "A", data: { s: "x".repeat(9000) } }))).toBe(
+      "same",
+    );
+  });
+
   it("is changed when the page has data and the item no longer has any", () => {
     expect(judge(stored, found({ id: "a", label: "A" }))).toBe("changed");
   });

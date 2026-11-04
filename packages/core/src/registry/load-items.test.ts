@@ -94,6 +94,40 @@ describe("loading the items of a source", () => {
     expect(answers.get("ok")?.status).toBe("found");
   });
 
+  it("takes an AbortError thrown by the host's own code for a failed call, not for the editor aborting", async () => {
+    const get = async (id: string) => {
+      if (id === "x") throw new DOMException("host aborted", "AbortError");
+      return item(id);
+    };
+    const answers = await loadItems({ search: async () => [], get }, ["x", "y"], none(), ctx);
+    expect(answers.get("x")).toEqual({ status: "failed" });
+    expect(answers.get("y")?.status).toBe("found");
+    const getMany = async () => {
+      throw new DOMException("host aborted", "AbortError");
+    };
+    const many = await loadItems({ search: async () => [], getMany }, ["x"], none(), ctx);
+    expect(many.get("x")).toEqual({ status: "failed" });
+  });
+
+  it("does not take a malformed item for an answer: no object, another id, a number for an id, no label", async () => {
+    const getMany = async () =>
+      ({
+        a: "oops",
+        b: { id: "zzz", label: "Z" },
+        c: { id: 3, label: "C" },
+        d: { id: "d" },
+        e: { id: "e", label: "E" },
+      }) as never;
+    const answers = await loadItems(
+      { search: async () => [], getMany },
+      ["a", "b", "c", "d", "e"],
+      none(),
+      ctx,
+    );
+    for (const id of ["a", "b", "c", "d"]) expect(answers.get(id)).toEqual({ status: "failed" });
+    expect(answers.get("e")?.status).toBe("found");
+  });
+
   it("gives up on a call that never settles after the timeout", async () => {
     vi.useFakeTimers();
     const get = () => new Promise<ExternalItem | null>(() => {});

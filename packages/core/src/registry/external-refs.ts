@@ -4,6 +4,8 @@ import type { Field, ItemField, Registry } from "./types";
 /** One item an `external` field of the page holds: where it is, which source it came from, what is stored. */
 export interface ExternalRef {
   nodeId: string;
+  /** Where on the block it is: its `props`, or the `phoneProps` that a phone layout keeps apart. */
+  layer: "props" | "phoneProps";
   /** From the prop name inward: the array index or the object key of each level. */
   path: readonly (string | number)[];
   source: string;
@@ -41,10 +43,14 @@ export function externalRefs(registry: Registry, page: PageData): ExternalRef[] 
   const walk = (node: TreeNode) => {
     const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
     if (def) {
-      for (const [name, field] of Object.entries(def.fields)) {
-        collect(field, node.props[name], [name], (path, source, value) => {
-          refs.push({ nodeId: node.id, path, source, value });
-        });
+      for (const layer of ["props", "phoneProps"] as const) {
+        const held = node[layer] as Record<string, JsonValue> | undefined;
+        if (!held) continue;
+        for (const [name, field] of Object.entries(def.fields)) {
+          collect(field, held[name], [name], (path, source, value) => {
+            refs.push({ nodeId: node.id, layer, path, source, value });
+          });
+        }
       }
     }
     for (const child of node.children) walk(child);
@@ -81,28 +87,43 @@ function setAt(target: JsonValue, path: readonly (string | number)[], value: Jso
 /** The page with these values written at their paths. The very page when nothing differs. */
 export function withExternalValues(
   page: PageData,
-  changes: readonly { nodeId: string; path: readonly (string | number)[]; value: JsonValue }[],
+  changes: readonly {
+    nodeId: string;
+    layer?: "props" | "phoneProps";
+    path: readonly (string | number)[];
+    value: JsonValue;
+  }[],
 ): PageData {
   if (changes.length === 0) return page;
   let touched = false;
   const walk = (node: TreeNode): TreeNode => {
-    let props = node.props as Record<string, JsonValue>;
+    const held = {
+      props: node.props as Record<string, JsonValue>,
+      phoneProps: node.phoneProps as Record<string, JsonValue> | undefined,
+    };
     let changed = false;
     for (const change of changes) {
       if (change.nodeId !== node.id) continue;
+      const layer = change.layer ?? "props";
       const [name, ...rest] = change.path;
-      if (typeof name !== "string") continue;
-      const before = props[name] as JsonValue;
+      const source = held[layer];
+      if (typeof name !== "string" || !source) continue;
+      const before = source[name] as JsonValue;
       const after = setAt(before, rest, change.value);
       if (same(before, after)) continue;
-      props = { ...props, [name]: after };
+      held[layer] = { ...source, [name]: after };
       changed = true;
     }
     const children = node.children.map(walk);
     const kidsChanged = children.some((child, at) => child !== node.children[at]);
     if (!changed && !kidsChanged) return node;
     touched = true;
-    return { ...node, props, children } as TreeNode;
+    return {
+      ...node,
+      props: held.props,
+      ...(held.phoneProps ? { phoneProps: held.phoneProps } : {}),
+      children,
+    } as TreeNode;
   };
   const root = walk(page.root);
   return touched ? { ...page, root } : page;

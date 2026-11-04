@@ -13,6 +13,12 @@ export const GET_CONCURRENCY = 5;
 /** How long a call of the host may take before the editor stops waiting for it. */
 export const SOURCE_TIMEOUT_MS = 15000;
 
+const isItem = (item: unknown): item is ExternalItem =>
+  typeof item === "object" &&
+  item !== null &&
+  typeof (item as ExternalItem).id === "string" &&
+  typeof (item as ExternalItem).label === "string";
+
 const FAILED: Answer = { status: "failed" };
 const aborted = () => new DOMException("aborted", "AbortError");
 
@@ -62,14 +68,15 @@ export async function loadItems(
   const answers = new Map<string, Answer>();
   if (signal.aborted) throw aborted();
   const settle = (id: string, item: ExternalItem | null | undefined) => {
-    answers.set(
-      id,
-      item === undefined ? FAILED : item === null ? { status: "gone" } : { status: "found", item },
-    );
+    if (item === undefined) answers.set(id, FAILED);
+    else if (item === null) answers.set(id, { status: "gone" });
+    // An answer that is not the item asked for, or has no label, is not an answer.
+    else if (!isItem(item) || item.id !== id) answers.set(id, FAILED);
+    else answers.set(id, { status: "found", item });
   };
-  const keep = (error: unknown) => {
-    if (signal.aborted || (error instanceof DOMException && error.name === "AbortError"))
-      throw aborted();
+  // Only the editor's own signal ends the work: an AbortError thrown by the host's code is a failed call.
+  const keep = () => {
+    if (signal.aborted) throw aborted();
   };
 
   const { getMany, get } = source;
@@ -86,7 +93,7 @@ export async function loadItems(
             settle(id, Object.hasOwn(found, id) ? (found[id] as ExternalItem | null) : undefined);
           }
         } catch (error) {
-          keep(error);
+          keep();
           for (const id of chunk) answers.set(id, FAILED);
         }
       }),
@@ -99,7 +106,7 @@ export async function loadItems(
         try {
           settle(id, await limited(signal, (s) => get.call(source, id, s, ctx)));
         } catch (error) {
-          keep(error);
+          keep();
           answers.set(id, FAILED);
         }
       }

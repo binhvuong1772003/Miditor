@@ -14,8 +14,11 @@ export type Verdict = "same" | "changed" | "gone" | "failed";
 export function judge(stored: ExternalRef["value"], answer: Answer | undefined): Verdict {
   if (!answer || answer.status === "failed") return "failed";
   if (answer.status === "gone") return "gone";
-  const { item } = answer;
-  return stored.label === item.label && sameJson(stored.data, item.data) ? "same" : "changed";
+  // What the page would keep of the item, so data it cannot keep (too big, not plain JSON) never counts
+  // as newer: Update would write the same value back and the message would never go.
+  const kept = pickValue(answer.item, new Date(0)) as { label: string; data?: JsonValue } | null;
+  if (kept === null) return "same";
+  return stored.label === kept.label && sameJson(stored.data, kept.data) ? "same" : "changed";
 }
 
 /**
