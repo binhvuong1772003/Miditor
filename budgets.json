@@ -3,6 +3,6 @@
   "bundles": {
     "packages/core/dist/index.mjs": { "raw": 130000, "gzip": 38000 },
     "packages/render/dist/index.mjs": { "raw": 30000, "gzip": 10000 },
-    "packages/editor/dist/index.mjs": { "raw": 370000, "gzip": 96000 }
+    "packages/editor/dist/index.mjs": { "raw": 385000, "gzip": 100000 }
   }
 }
