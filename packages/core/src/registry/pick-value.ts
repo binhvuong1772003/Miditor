@@ -45,8 +45,12 @@ function copyThatFits(data: unknown): JsonValue | undefined {
  * What is stored for a picked item: `{ id, label }`, and with the item's data `{ id, label, data, at }`.
  * `null` when the data is not plain JSON or is too large or too deep to keep in the page.
  */
-export function pickValue(item: ExternalItem, now: Date): JsonValue | null {
-  if (item.data === undefined) return { id: item.id, label: item.label };
+export function pickValue(
+  item: ExternalItem,
+  now: Date,
+  store: "snapshot" | "reference" = "snapshot",
+): JsonValue | null {
+  if (store === "reference" || item.data === undefined) return { id: item.id, label: item.label };
   const data = copyThatFits(item.data);
   if (data === undefined) return null;
   return { id: item.id, label: item.label, data, at: now.toISOString() };

@@ -1,6 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { pickValue } from "./pick-value";
 
+describe("what is stored when a reference is picked", () => {
+  it("is exactly { id, label } even for an item with data", () => {
+    const value = pickValue(
+      { id: "p1", label: "Home", data: { price: 9 } },
+      new Date("2026-11-03T10:00:00.000Z"),
+      "reference",
+    ) as object;
+    expect(value).toEqual({ id: "p1", label: "Home" });
+    expect(Object.keys(value)).toHaveLength(2);
+  });
+
+  it("stores data for a snapshot, which is the default", () => {
+    const item = { id: "p1", label: "Home", data: { price: 9 } };
+    const now = new Date("2026-11-03T10:00:00.000Z");
+    expect(pickValue(item, now, "snapshot")).toEqual(pickValue(item, now));
+    expect(pickValue(item, now)).toHaveProperty("data");
+  });
+});
+
 describe("what is stored when an item is picked", () => {
   const now = new Date("2026-11-03T10:00:00.000Z");
 

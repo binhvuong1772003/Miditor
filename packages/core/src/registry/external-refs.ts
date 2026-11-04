@@ -9,6 +9,8 @@ export interface ExternalRef {
   /** From the prop name inward: the array index or the object key of each level. */
   path: readonly (string | number)[];
   source: string;
+  /** What the field keeps of the item: the whole snapshot, or only a reference to it. */
+  store: "snapshot" | "reference";
   value: { id: string; label: string; data?: JsonValue; at?: string };
 }
 
@@ -19,12 +21,16 @@ function collect(
   field: Field | ItemField,
   value: JsonValue | undefined,
   path: readonly (string | number)[],
-  out: (path: readonly (string | number)[], source: string, value: ExternalRef["value"]) => void,
+  out: (
+    path: readonly (string | number)[],
+    field: Extract<Field, { type: "external" }>,
+    value: ExternalRef["value"],
+  ) => void,
 ): void {
   if (value === undefined || value === null) return;
   if (field.type === "external") {
     if (isObject(value) && typeof value.id === "string" && typeof value.label === "string") {
-      out(path, field.source, value as ExternalRef["value"]);
+      out(path, field, value as ExternalRef["value"]);
     }
   } else if (field.type === "array" && Array.isArray(value)) {
     value.forEach((item, at) => {
@@ -47,8 +53,15 @@ export function externalRefs(registry: Registry, page: PageData): ExternalRef[] 
         const held = node[layer] as Record<string, JsonValue> | undefined;
         if (!held) continue;
         for (const [name, field] of Object.entries(def.fields)) {
-          collect(field, held[name], [name], (path, source, value) => {
-            refs.push({ nodeId: node.id, layer, path, source, value });
+          collect(field, held[name], [name], (path, found, value) => {
+            refs.push({
+              nodeId: node.id,
+              layer,
+              store: found.store ?? "snapshot",
+              path,
+              source: found.source,
+              value,
+            });
           });
         }
       }

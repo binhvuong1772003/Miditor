@@ -235,5 +235,12 @@ describe("an external field", () => {
     expect(of({ type: "external", label: "P", source: "Pages" })).toEqual([
       { type: "Nav", key: "a", code: "field" },
     ]);
+    expect(of({ type: "external", label: "P", source: "pages", store: "reference" })).toEqual([]);
+    expect(of({ type: "external", label: "P", source: "pages", store: "snapshot" })).toEqual([]);
+    for (const store of ["live", 3, null]) {
+      expect(of({ type: "external", label: "P", source: "pages", store })).toEqual([
+        { type: "Nav", key: "a", code: "field" },
+      ]);
+    }
   });
 });

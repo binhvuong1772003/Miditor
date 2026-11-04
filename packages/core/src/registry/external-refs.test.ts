@@ -33,8 +33,33 @@ describe("the stored items of a page", () => {
   it("finds a plain external prop, with the node, path and source", () => {
     const page = pageOf(node("a", { item: beans, title: "x" }));
     expect(externalRefs(registry, page)).toEqual([
-      { nodeId: "a", layer: "props", path: ["item"], source: "items", value: beans },
+      {
+        nodeId: "a",
+        layer: "props",
+        store: "snapshot",
+        path: ["item"],
+        source: "items",
+        value: beans,
+      },
     ]);
+  });
+
+  it("says whether a field keeps a snapshot or a reference", () => {
+    const keeps = {
+      Card: {
+        label: "Card",
+        defaultProps: {},
+        fields: {
+          a: { type: "external", label: "A", source: "items" },
+          b: { type: "external", label: "B", source: "items", store: "reference" },
+        },
+      },
+    } as unknown as Registry;
+    const refs = externalRefs(
+      keeps,
+      pageOf(node("n", { a: { id: "1", label: "1" }, b: { id: "2", label: "2" } })),
+    );
+    expect(refs.map((ref) => ref.store)).toEqual(["snapshot", "reference"]);
   });
 
   it("finds an item inside an array of objects, with the index in the path", () => {
@@ -45,6 +70,7 @@ describe("the stored items of a page", () => {
       {
         nodeId: "a",
         layer: "props",
+        store: "snapshot",
         path: ["links", 1, "page"],
         source: "pages",
         value: { id: "home", label: "Home" },
@@ -72,7 +98,14 @@ describe("items kept for the phone", () => {
     const page = pageOf(withPhone);
     const refs = externalRefs(registry, page);
     expect(refs).toEqual([
-      { nodeId: "a", layer: "phoneProps", path: ["item"], source: "items", value: beans },
+      {
+        nodeId: "a",
+        layer: "phoneProps",
+        store: "snapshot",
+        path: ["item"],
+        source: "items",
+        value: beans,
+      },
     ]);
     const next = withExternalValues(page, [
       { nodeId: "a", layer: "phoneProps", path: ["item"], value: { id: "beans", label: "B2" } },

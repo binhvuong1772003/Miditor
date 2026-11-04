@@ -68,7 +68,17 @@ type FieldKind =
    * `{ id, label }`, and when the host's item has them `data` (what a block shows of it, at most
    * `MAX_EXTERNAL_DATA` bytes) and `at` (the ISO time `data` was taken). `source` names the search the host gave the editor (`config.sources`).
    */
-  | { type: "external"; label: string; source: string }
+  | {
+      type: "external";
+      label: string;
+      source: string;
+      /**
+       * What the page keeps of the chosen item: `"snapshot"` (the default) its `data` too, so the page draws
+       * with no call; `"reference"` only `{ id, label }`, and the host fills `data` where it draws the page
+       * (`resolveSources`) while the editor reads it from the source.
+       */
+      store?: "snapshot" | "reference";
+    }
   /** A group of named values that each follow their own field: `{ label, link }` of a menu entry. */
   | { type: "object"; label: string; fields: Record<string, ItemField> };
 
