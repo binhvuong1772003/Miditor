@@ -11,6 +11,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   StoreProvider,
 } from "./store";
@@ -22,6 +23,7 @@ const makeStore = (frame: "desktop" | "phone" = "desktop") =>
     ...initialSelectionState("root"),
     ...initialDocumentState(emptyPage()),
     ...initialHostState({ hostStatus: undefined, hasSave: true }),
+    ...initialSourcesState(),
   });
 
 type TestStore = ReturnType<typeof makeStore>;
@@ -33,6 +35,7 @@ const stubApi = (store: TestStore) =>
     save: async () => true,
     addBlock: () => {},
     fit: () => {},
+    checkSources: async () => {},
     alive: () => true,
   });
 

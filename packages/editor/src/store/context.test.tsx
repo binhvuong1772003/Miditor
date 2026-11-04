@@ -8,6 +8,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Run,
   StoreProvider,
@@ -107,6 +108,7 @@ describe("useRun", () => {
       ...initialSelectionState("root"),
       ...initialDocumentState(emptyPage()),
       ...initialHostState({ hostStatus: undefined, hasSave: false }),
+      ...initialSourcesState(),
     });
     const a = createEditorStore<EditorState>(state());
     const b = createEditorStore<EditorState>(state());

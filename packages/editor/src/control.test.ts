@@ -7,6 +7,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
 } from "./store";
 
@@ -16,6 +17,7 @@ function stateOf(page: PageData = emptyPage(), host = {}): EditorState {
     ...initialSelectionState("root"),
     ...initialDocumentState(page),
     ...initialHostState({ hostStatus: undefined, hasSave: true, ...host }),
+    ...initialSourcesState(),
   };
 }
 

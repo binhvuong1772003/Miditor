@@ -11,6 +11,7 @@ import { type GeometryCommands, geometryCommands } from "./geometry";
 import { setHost } from "./host";
 import { coalesced, type Denial, type Permissions } from "./permissions";
 import { type SelectionCommands, selectionCommands } from "./selection";
+import { type SourcesCommands, sourcesCommands } from "./sources";
 import type { EditorState } from "./state";
 import { type StructureCommands, structureCommands } from "./structure";
 import { type ViewCommands, viewCommands } from "./view";
@@ -88,7 +89,7 @@ export function useDocumentCommands(
   limit: unknown,
   registry: Registry,
   rules?: HostRules,
-): DocumentCommands & StructureCommands & GeometryCommands & ContentCommands {
+): DocumentCommands & StructureCommands & GeometryCommands & ContentCommands & SourcesCommands {
   const store = useStoreApi<EditorState>();
   const env = useRef<Env>({ limit, registry });
   env.current.limit = limit;
@@ -102,6 +103,7 @@ export function useDocumentCommands(
       ...structureCommands(store, env.current),
       ...geometryCommands(store, env.current),
       ...contentCommands(store, env.current),
+      ...sourcesCommands(store, env.current),
     }),
     [store],
   );

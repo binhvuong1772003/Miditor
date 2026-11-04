@@ -16,6 +16,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Run,
   StoreProvider,
@@ -38,6 +39,7 @@ function makeStore(extra: Partial<EditorState> = {}) {
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...start, root }),
     ...initialHostState({ hostStatus: undefined, hasSave: true }),
+    ...initialSourcesState(),
     ...extra,
   });
 }
@@ -49,6 +51,7 @@ function apiOf(store: ReturnType<typeof makeStore>): EditorApi {
     save: async () => true,
     addBlock: () => {},
     fit: () => {},
+    checkSources: async () => {},
     alive: () => true,
   });
 }
@@ -236,6 +239,7 @@ describe("hide", () => {
       save: async () => true,
       addBlock: () => {},
       fit: () => {},
+      checkSources: async () => {},
       alive: () => true,
     });
     draw(["header.undo", "header.redo"], toolbar, undefined, store);

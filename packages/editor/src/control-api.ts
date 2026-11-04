@@ -29,6 +29,11 @@ export interface EditorApi {
   group(): boolean;
   /** @experimental Ungroup the selected group. */
   ungroup(): boolean;
+  /**
+   * @experimental Check the items the page stores from the host's sources again, like when the page opens;
+   * settled once the answers are in. What changed is shown, not applied.
+   */
+  checkSources(): Promise<void>;
 }
 
 /** What the editor gives to make the object: its own code, so a button and the host share it. */
@@ -40,6 +45,8 @@ export type ApiDeps = {
   /** The editor's own add (it measures the screen). */
   addBlock(kind: string, overrides?: NewNodeOverrides): void;
   fit(): void;
+  /** The editor's own check of the stored items. */
+  checkSources(): Promise<void>;
   /** False once the editor has unmounted. */
   alive(): boolean;
 };
@@ -82,5 +89,8 @@ export function createApi(deps: ApiDeps): EditorApi {
     duplicate: () => go("block.duplicate"),
     group: () => go("block.group"),
     ungroup: () => go("block.ungroup"),
+    checkSources: async () => {
+      if (live()) await deps.checkSources();
+    },
   };
 }

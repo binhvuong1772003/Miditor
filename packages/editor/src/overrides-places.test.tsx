@@ -14,6 +14,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Run,
   StoreProvider,
@@ -27,6 +28,7 @@ function makeStore(selectedId: string | null = null) {
     ...initialSelectionState(page.root.id),
     ...initialDocumentState(page),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
     selectedId,
   });
 }
@@ -38,6 +40,7 @@ function apiOf(store: ReturnType<typeof makeStore>): EditorApi {
     save: async () => true,
     addBlock: () => {},
     fit: () => {},
+    checkSources: async () => {},
     alive: () => true,
   });
 }

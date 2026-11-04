@@ -11,6 +11,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
 } from "./store";
 
@@ -19,6 +20,7 @@ const store = createEditorStore<EditorState>({
   ...initialSelectionState("root"),
   ...initialDocumentState(emptyPage()),
   ...initialHostState({ hostStatus: undefined, hasSave: false }),
+  ...initialSourcesState(),
 });
 
 const api: EditorApi = createApi({
@@ -27,6 +29,7 @@ const api: EditorApi = createApi({
   save: async () => true,
   addBlock: () => {},
   fit: () => {},
+  checkSources: async () => {},
   alive: () => true,
 });
 

@@ -8,6 +8,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
 } from "./store";
 
@@ -17,6 +18,7 @@ const makeStore = () =>
     ...initialSelectionState("root"),
     ...initialDocumentState(emptyPage()),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
   });
 
 function stubApi() {
@@ -39,6 +41,9 @@ function stubApi() {
     duplicate: () => done("duplicate", true),
     group: () => done("group", true),
     ungroup: () => done("ungroup", true),
+    checkSources: async () => {
+      done("checkSources", true);
+    },
   };
   return { api, calls };
 }

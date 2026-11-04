@@ -8,6 +8,7 @@ import { geometryCommands } from "./geometry";
 import { initialHostState } from "./host";
 import { coalesced, type Denial, type Permissions } from "./permissions";
 import { initialSelectionState, selectionCommands } from "./selection";
+import { initialSourcesState } from "./sources";
 import type { EditorState } from "./state";
 import { structureCommands } from "./structure";
 import { initialViewState } from "./view";
@@ -36,6 +37,7 @@ function setup(permissions: Permissions | undefined, selected: string[] = ["t1"]
     ...initialSelectionState("root"),
     ...initialDocumentState(pageWith()),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
   });
   const document = documentCommands(store, env);
   const structure = structureCommands(store, env);

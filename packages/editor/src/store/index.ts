@@ -34,6 +34,14 @@ export { initialHostState, setHost } from "./host";
 export { createNotifier, type Notifier } from "./notifier";
 export { coalesced, type Denial, PERMISSION_KEYS, type Permissions } from "./permissions";
 export { initialSelectionState, type SelectionCommands } from "./selection";
+export {
+  canCheck,
+  checkPage,
+  initialSourcesState,
+  type SourceReport,
+  type SourcesCommands,
+  sourceReport,
+} from "./sources";
 export type {
   BuiltInTool,
   DocumentState,

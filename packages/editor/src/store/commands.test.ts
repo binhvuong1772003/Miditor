@@ -7,6 +7,7 @@ import { createEditorStore } from "./create-editor-store";
 import { type Env, initialDocumentState } from "./document";
 import { initialHostState } from "./host";
 import { initialSelectionState, selectManyLast, selectOnly } from "./selection";
+import { initialSourcesState } from "./sources";
 import type { EditorState } from "./state";
 import { initialViewState } from "./view";
 
@@ -24,6 +25,7 @@ function withTexts(count = 3): EditorState {
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...start, root }),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
   };
 }
 

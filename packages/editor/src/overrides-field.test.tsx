@@ -14,6 +14,7 @@ const api: EditorApi = createApi({
   save: async () => true,
   addBlock: () => {},
   fit: () => {},
+  checkSources: async () => {},
   alive: () => true,
 });
 

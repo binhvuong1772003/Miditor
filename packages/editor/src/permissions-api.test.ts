@@ -8,6 +8,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Permissions,
 } from "./store";
@@ -36,6 +37,7 @@ function setup(permissions?: Permissions) {
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...start, root }),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
     selectedId: "t1",
   });
   const run = createRun(store, env, () => ({ parentSize: () => SIZE, note: () => {} }));
@@ -47,6 +49,7 @@ function setup(permissions?: Permissions) {
     addBlock: (kind, overrides) =>
       structure.addBlock({ kind, overrides, inside: SIZE, page: SIZE }),
     fit: () => {},
+    checkSources: async () => {},
     alive: () => true,
   });
   return { store, env, api, denied, run };

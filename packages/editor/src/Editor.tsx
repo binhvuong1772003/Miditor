@@ -83,6 +83,7 @@ import { resolveStatus, type SaveStatus } from "./save-status";
 import { RootContext, type Shell, ShellContext } from "./shell";
 import {
   type CommandName,
+  checkPage,
   createEditorStore,
   createNotifier,
   type Denial,
@@ -90,6 +91,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Permissions,
   StoreProvider,
@@ -361,6 +363,7 @@ export function EditorProvider(given: EditorProviderProps) {
       ...initialSelectionState(firstPage.root.id),
       ...initialDocumentState(firstPage),
       ...initialHostState({ hostStatus: props.status, hasSave: props.onSave !== undefined }),
+      ...initialSourcesState(),
     }),
   );
   return (
@@ -662,8 +665,15 @@ function EditorBody({
 
   // The control object: made once, it reads the latest render through a ref, as `useRun` does.
   const store = useStoreApi<EditorState>();
-  const latest = useRef({ save, addBlockOf, fit });
-  latest.current = { save, addBlockOf, fit };
+  const latest = useRef<{
+    save: typeof save;
+    addBlockOf: typeof addBlockOf;
+    fit: typeof fit;
+    checkSources?: () => Promise<void>;
+  }>({ save, addBlockOf, fit });
+  latest.current.save = save;
+  latest.current.addBlockOf = addBlockOf;
+  latest.current.fit = fit;
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -671,6 +681,33 @@ function EditorBody({
       alive.current = false;
     };
   }, []);
+  // The check of the stored items against the host's sources: when the editor opens, when `metadata`
+  // changes, and when the host asks. A new check stops the one before it, and closing the editor stops it.
+  const checking = useRef<AbortController | null>(null);
+  const checkSources = async () => {
+    checking.current?.abort();
+    const controller = new AbortController();
+    checking.current = controller;
+    try {
+      const answers = await checkPage(
+        store.getState().history.present,
+        registry,
+        config?.sources,
+        controller.signal,
+        { metadata: metadataNow.current },
+      );
+      if (!controller.signal.aborted) documents.setSourceAnswers(answers);
+    } catch {
+      // Stopped by a newer check or by closing the editor: nothing to say.
+    }
+  };
+  latest.current.checkSources = checkSources;
+  const metadataKey = JSON.stringify(metadata) ?? "";
+  // biome-ignore lint/correctness/useExhaustiveDependencies: it runs for the metadata the host gave, read through a ref
+  useEffect(() => {
+    void latest.current.checkSources?.();
+    return () => checking.current?.abort();
+  }, [metadataKey]);
   const [api] = useState(() =>
     createApi({
       run,
@@ -678,6 +715,7 @@ function EditorBody({
       save: () => latest.current.save(),
       addBlock: (kind, overrides) => latest.current.addBlockOf(kind, overrides),
       fit: () => latest.current.fit(),
+      checkSources: () => latest.current.checkSources?.() ?? Promise.resolve(),
       alive: () => alive.current,
     }),
   );

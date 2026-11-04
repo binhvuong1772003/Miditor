@@ -7,6 +7,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
 } from "./store";
 import { createRun } from "./store/commands";
@@ -27,6 +28,7 @@ function initial(): EditorState {
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...start, root }),
     ...initialHostState({ hostStatus: undefined, hasSave: true }),
+    ...initialSourcesState(),
   };
 }
 
@@ -42,6 +44,7 @@ function setup(over: Partial<ApiDeps> = {}) {
         addBlock(state, { kind, overrides, inside: SIZE, page: SIZE }, env),
       ),
     fit: () => {},
+    checkSources: async () => {},
     alive: () => true,
     ...over,
   };
@@ -100,6 +103,17 @@ describe("createApi", () => {
     const save = vi.fn(async () => false);
     const { api } = setup({ save });
     expect(await api.save()).toBe(false);
+  });
+
+  it("checkSources runs the editor's check, and does nothing once the editor has closed", async () => {
+    const checkSources = vi.fn(async () => {});
+    let open = true;
+    const { api } = setup({ checkSources, alive: () => open });
+    await api.checkSources();
+    expect(checkSources).toHaveBeenCalledTimes(1);
+    open = false;
+    await api.checkSources();
+    expect(checkSources).toHaveBeenCalledTimes(1);
   });
 
   it("save gives what the editor's save gives", async () => {

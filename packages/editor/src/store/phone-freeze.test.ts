@@ -15,6 +15,7 @@ import { geometryCommands } from "./geometry";
 import { initialHostState } from "./host";
 import type { Permissions } from "./permissions";
 import { initialSelectionState, selectionCommands } from "./selection";
+import { initialSourcesState } from "./sources";
 import type { EditorState } from "./state";
 import { structureCommands } from "./structure";
 import { initialViewState, viewCommands } from "./view";
@@ -44,6 +45,7 @@ function setup(
     ...initialSelectionState("root"),
     ...initialDocumentState({ ...emptyPage(), root }),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
   });
   documentCommands(store, env);
   viewCommands(store).setFrame(options.frame ?? "phone");

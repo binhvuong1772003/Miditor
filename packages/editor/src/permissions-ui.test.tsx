@@ -15,6 +15,7 @@ import {
   initialDocumentState,
   initialHostState,
   initialSelectionState,
+  initialSourcesState,
   initialViewState,
   type Permissions,
   StoreProvider,
@@ -39,6 +40,7 @@ function makeStore() {
     ...initialSelectionState(page.root.id),
     ...initialDocumentState(page),
     ...initialHostState({ hostStatus: undefined, hasSave: false }),
+    ...initialSourcesState(),
     selectedId: "a",
   });
 }

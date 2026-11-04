@@ -2,6 +2,7 @@ import type { Device, PageData } from "@miditor/core";
 import type { History } from "../history";
 import type { PanelPatch } from "../patch";
 import type { SaveStatus } from "../save-status";
+import type { SourcesState } from "./sources";
 
 /** The tools the editor has. */
 export type BuiltInTool = "blocks" | "layers" | "images" | "themes";
@@ -62,4 +63,4 @@ export type HostState = {
 };
 
 /** What the editor keeps in its store; the pieces of state move here a few at a time. */
-export type EditorState = ViewState & SelectionState & DocumentState & HostState;
+export type EditorState = ViewState & SelectionState & DocumentState & HostState & SourcesState;

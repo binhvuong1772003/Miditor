@@ -63,6 +63,7 @@ export function createEditor(): EditorController {
     duplicate: to("duplicate", false),
     group: to("group", false),
     ungroup: to("ungroup", false),
+    checkSources: to("checkSources", Promise.resolve()),
   };
   records.set(controller, record);
   return controller;
