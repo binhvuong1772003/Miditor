@@ -705,14 +705,15 @@ function EditorBody({
   };
   latest.current.checkSources = checkSources;
   const sourceAnswers = useEditorState((state) => state.sourceAnswers);
-  const checkedSource = (name: string) =>
-    canCheck(
-      config?.sources && Object.hasOwn(config.sources, name) ? config.sources[name] : undefined,
-    );
+  const hostSources = config?.sources;
+  const checkedSource = useCallback(
+    (name: string) =>
+      canCheck(hostSources && Object.hasOwn(hostSources, name) ? hostSources[name] : undefined),
+    [hostSources],
+  );
   const report = useMemo(
     () => sourceReport(data, sourceAnswers, registry, checkedSource, permissions),
-    // biome-ignore lint/correctness/useExhaustiveDependencies: checkedSource follows config.sources
-    [data, sourceAnswers, registry, config?.sources, permissions],
+    [data, sourceAnswers, registry, checkedSource, permissions],
   );
   const metadataKey = JSON.stringify(metadata) ?? "";
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs for the metadata the host gave, read through a ref

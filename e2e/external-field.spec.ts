@@ -88,4 +88,71 @@ test.describe("an external field", () => {
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(card).toContainText("none");
   });
+
+  // The source of the playground answers `getMany`; `?items-changed` makes beans cost more and
+  // `?items-lost` takes the kettle off the list, so a page stored before can be checked against it.
+  async function pickItem(page: Page, name: string) {
+    const panel = properties(page);
+    await panel.getByRole("button", { name: /Item: (Choose|.*)/ }).click();
+    await panel.getByRole("button", { name: new RegExp(name) }).click();
+  }
+  const newer = (page: Page) => page.getByText(/blocks? (has|have) newer data/);
+
+  test("tells which stored items have newer data, and changes nothing until Update", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    await addFromBlocks(page, "Item card");
+    await pickItem(page, "Coffee beans");
+    const before = await storedPage(page, (stored) => JSON.stringify(stored).includes("199"));
+    const oldAt = JSON.stringify(before).match(/"at":"([^"]+)"/)?.[1];
+
+    await page.goto("/?items-changed");
+    await expect(newer(page)).toContainText("1 block has newer data");
+    await expect(page.getByTestId("item-card")).toContainText("199");
+    // Nothing was written by the check.
+    expect(JSON.stringify(await storedPage(page))).toContain("199");
+
+    await page.getByRole("button", { name: "Update" }).click();
+    await expect(page.getByTestId("item-card")).toContainText("249");
+    await expect(newer(page)).toHaveCount(0);
+    const after = await storedPage(page, (stored) => JSON.stringify(stored).includes("249"));
+    expect(JSON.stringify(after)).not.toContain(`"at":"${oldAt}"`);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByTestId("item-card")).toContainText("199");
+    await expect(newer(page)).toContainText("1 block has newer data");
+  });
+
+  test("says an item is no longer in the source, and offers no update for it", async ({ page }) => {
+    await openEditor(page);
+    await addFromBlocks(page, "Item card");
+    await pickItem(page, "Steel kettle");
+    await storedPage(page, (stored) => JSON.stringify(stored).includes("459"));
+
+    await page.goto("/?items-lost");
+    await expect(newer(page)).toHaveCount(0);
+    await page.getByTestId("item-card").click();
+    await expect(properties(page).getByRole("note")).toContainText("No longer in the source");
+    await expect(page.getByTestId("item-card")).toContainText("459");
+  });
+
+  test("asks the source once for all the ids of the page", async ({ page }) => {
+    await openEditor(page);
+    await addFromBlocks(page, "Item card");
+    await pickItem(page, "Coffee beans");
+    await addFromBlocks(page, "Item card");
+    await pickItem(page, "Blue mug");
+    await storedPage(page, (stored) => JSON.stringify(stored).includes("89"));
+
+    await page.goto("/?items-changed");
+    await expect(newer(page)).toContainText("1 block has newer data");
+    const calls = await page.evaluate(
+      () =>
+        (window as unknown as { __itemsCalls: { answered: number; ids: string[][] } }).__itemsCalls,
+    );
+    // StrictMode starts the check twice and stops the first: one call is answered, with every id.
+    expect(calls.answered).toBe(1);
+    expect(calls.ids.at(-1)?.sort()).toEqual(["beans", "mug"]);
+  });
 });
