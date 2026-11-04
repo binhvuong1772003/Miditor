@@ -4,6 +4,7 @@ import { useHidden } from "./hide";
 import { useT } from "./i18n/context";
 import { Icon } from "./icons";
 import { OverrideSlot } from "./overrides";
+import { SourcesBanner } from "./SourcesBanner";
 import { type SaveStatus, STATUS_KEY } from "./save-status";
 import { canRun, type Run, useEditorState } from "./store";
 import { zoomText } from "./zoom";
@@ -21,6 +22,10 @@ export interface ToolbarProps {
   onSave: (() => void) | undefined;
   /** Zoom to fit the page in the room there is. */
   onFit: () => void;
+  /** How many blocks hold items that have newer data in the host's sources. */
+  newer?: number;
+  /** Takes that newer data into the page. */
+  onUpdateSources?: () => void;
   run: Run;
 }
 
@@ -33,6 +38,8 @@ export function Toolbar({
   saving,
   onSave,
   onFit,
+  newer = 0,
+  onUpdateSources,
   run,
 }: ToolbarProps) {
   const t = useT();
@@ -91,6 +98,7 @@ export function Toolbar({
               {t(STATUS_KEY[status])}
             </span>
           )}
+          <SourcesBanner count={newer} onUpdate={() => onUpdateSources?.()} />
         </div>
         {hide.frame ? (
           <div />

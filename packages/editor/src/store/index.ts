@@ -35,6 +35,7 @@ export { createNotifier, type Notifier } from "./notifier";
 export { coalesced, type Denial, PERMISSION_KEYS, type Permissions } from "./permissions";
 export { initialSelectionState, type SelectionCommands } from "./selection";
 export {
+  answerKey,
   canCheck,
   checkPage,
   initialSourcesState,

@@ -83,6 +83,7 @@ import { resolveStatus, type SaveStatus } from "./save-status";
 import { RootContext, type Shell, ShellContext } from "./shell";
 import {
   type CommandName,
+  canCheck,
   checkPage,
   createEditorStore,
   createNotifier,
@@ -95,6 +96,7 @@ import {
   initialViewState,
   type Permissions,
   StoreProvider,
+  sourceReport,
   useDocumentCommands,
   useEditorState,
   useHostRules,
@@ -702,6 +704,16 @@ function EditorBody({
     }
   };
   latest.current.checkSources = checkSources;
+  const sourceAnswers = useEditorState((state) => state.sourceAnswers);
+  const checkedSource = (name: string) =>
+    canCheck(
+      config?.sources && Object.hasOwn(config.sources, name) ? config.sources[name] : undefined,
+    );
+  const report = useMemo(
+    () => sourceReport(data, sourceAnswers, registry, checkedSource, permissions),
+    // biome-ignore lint/correctness/useExhaustiveDependencies: checkedSource follows config.sources
+    [data, sourceAnswers, registry, config?.sources, permissions],
+  );
   const metadataKey = JSON.stringify(metadata) ?? "";
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs for the metadata the host gave, read through a ref
   useEffect(() => {
@@ -828,6 +840,8 @@ function EditorBody({
           void save();
         }),
       onFit: fit,
+      newer: new Set(report.changed.map((ref) => ref.nodeId)).size,
+      onUpdateSources: () => documents.refreshSources(checkedSource),
       run,
     },
     rail: { run, hostTools: usableTools(config?.tools) },

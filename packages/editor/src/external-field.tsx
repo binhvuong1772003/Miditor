@@ -1,7 +1,15 @@
-import { type ExternalItem, type ExternalSource, type JsonValue, pickValue } from "@miditor/core";
+import {
+  type Answer,
+  type ExternalItem,
+  type ExternalSource,
+  type JsonValue,
+  judge,
+  pickValue,
+} from "@miditor/core";
 import { useEffect, useId, useState } from "react";
 import { useT } from "./i18n/context";
 import styles from "./PropertiesPanel.module.css";
+import { answerKey, useEditorState } from "./store";
 
 export type { ExternalItem, ExternalSource, SourceContext } from "@miditor/core";
 
@@ -52,6 +60,28 @@ type State =
   | { status: "error" }
   | { status: "done"; items: readonly ExternalItem[] };
 
+/**
+ * What the last check says about the item that is stored, when it is something to tell: the source no
+ * longer has it (the block keeps what it had), or it could not be checked.
+ */
+export function ExternalNote({
+  value,
+  answer,
+}: {
+  value: { id: string; label: string; data?: JsonValue };
+  answer: Answer | undefined;
+}) {
+  const t = useT();
+  if (!answer) return null;
+  const verdict = judge(value, answer);
+  if (verdict !== "gone" && verdict !== "failed") return null;
+  return (
+    <p role="note" className={styles.note}>
+      {t(verdict === "gone" ? "field.gone" : "field.unchecked")}
+    </p>
+  );
+}
+
 const chosen = (value: JsonValue | undefined): ExternalItem | null =>
   typeof value === "object" &&
   value !== null &&
@@ -83,6 +113,9 @@ export function ExternalField({
   const [state, setState] = useState<State>({ status: "loading" });
   const [tooBig, setTooBig] = useState<string | null>(null);
   const current = chosen(value);
+  const answer = useEditorState((state) =>
+    current ? state.sourceAnswers.get(answerKey(source, current.id)) : undefined,
+  );
 
   useEffect(() => {
     if (search || told.has(source)) return;
@@ -141,6 +174,7 @@ export function ExternalField({
           </button>
         )}
       </div>
+      {current && <ExternalNote value={current} answer={answer} />}
       {open && (
         // biome-ignore lint/a11y/noStaticElementInteractions: Esc is heard from the controls inside, to shut the panel
         <div
