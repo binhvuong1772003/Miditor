@@ -305,6 +305,18 @@ function Playground({
     // Autosave: a run of changes is one call, 800 ms after the last one and at least every 4 s.
     // `?plain` is a host that sets neither: onChange at once, and the header follows the Save button.
     ...(plain ? {} : { onChangeDebounce: { wait: 800, maxWait: 4000 }, status }),
+    // The host is told of each change that was kept: what was done and the pages around it. A real host
+    // would log it or send it; here it is kept on `window` for a test to read.
+    onAction: (action, page, prevPage) => {
+      const w = window as unknown as { __actions?: object[] };
+      w.__actions = w.__actions ?? [];
+      w.__actions.push({
+        type: action.type,
+        ids: action.ids,
+        blocks: page.root.children.length,
+        before: prevPage.root.children.length,
+      });
+    },
     onChange: (data) => {
       setStatus("saving");
       storePage(window.localStorage, data);
