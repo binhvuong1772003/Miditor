@@ -43,6 +43,7 @@ import { CanvasView } from "./canvas/CanvasView";
 import { clientRect, elementsAtClient, frameDocumentOf } from "./canvas/client-rect";
 import { firstAccepting } from "./canvas/drop-target";
 import { elementOf } from "./canvas/element-of";
+import { frameOfElement, pageUnit } from "./canvas/frames";
 import { useDropCommit } from "./canvas/use-drop-commit";
 import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
@@ -699,10 +700,38 @@ function EditorBody({
     documents.dropBlock({ kind, parentId, container, at });
   };
 
-  /** A row of the Layers tool was dragged: the block goes into `parentId` at `index`. */
+  /**
+   * A row of the Layers tool was dragged: the block goes into `parentId` at `index`. Into another block it stays
+   * where it is on the page, which needs the two parents measured as they are drawn.
+   */
   const moveLayer = (id: string, parentId: string, index: number) => {
-    if (onPhone) return;
-    documents.moveBlock({ id, parentId, index });
+    if (onPhone || !workspace) return;
+    const moved = findNode(data.root, id);
+    const current = parentOf(data.root, id);
+    if (!moved || !current) return;
+    const nameOf = (node: { type: string }) => shownRegistry[node.type]?.label ?? node.type;
+    if (current.id === parentId) {
+      documents.moveBlock({ id, parentId, index });
+      announce(t("layers.reordered", { name: nameOf(moved) }));
+      return;
+    }
+    const target = findNode(data.root, parentId);
+    const from = elementOf(workspace, current.id);
+    const to = elementOf(workspace, parentId);
+    if (!target || !from || !to) return;
+    const frameOf = (element: HTMLElement, owner: string) =>
+      frameOfElement(element, pageUnit(element, zoom), turnOf(data.root, owner, frame));
+    documents.moveBlock({
+      id,
+      parentId,
+      index,
+      options: { from: frameOf(from, current.id), to: frameOf(to, parentId) },
+    });
+    announce(
+      parentId === data.root.id
+        ? t("layers.movedPage", { name: nameOf(moved) })
+        : t("layers.moved", { name: nameOf(moved), parent: nameOf(target) }),
+    );
   };
 
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */

@@ -355,6 +355,11 @@ export const en = {
   "layers.moved": "{name} moved into {parent}",
   "layers.movedPage": "{name} moved onto the page",
   "layers.reordered": "{name} moved",
+  "layers.instructions":
+    "Press Space to pick up this block, the arrow keys to move it and Space to drop it.",
+  "layers.lifted": "Picked up {name}. Arrow keys move it, Space drops it, Escape cancels.",
+  "layers.over": "Over {name}",
+  "layers.cancelled": "Move cancelled",
 } as const;
 
 /** The name of one thing the editor says. */

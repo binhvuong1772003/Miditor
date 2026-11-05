@@ -25,8 +25,12 @@ export const blocks = (page: Page) => surface(page).locator("[data-miditor-id]")
 
 export const saveState = (page: Page) => page.locator("[data-state]").first();
 
-/** What the editor says aloud after an action; a screen reader gets the same text. */
-export const announcement = (page: Page) => page.locator('[role="status"][aria-live="polite"]');
+/**
+ * What the editor says aloud after an action; a screen reader gets the same text. Not the live region of
+ * dnd-kit, which is there while the Layers tool is: it says what a drag is doing.
+ */
+export const announcement = (page: Page) =>
+  page.locator('[role="status"][aria-live="polite"]:not([id^="dnd-kit"])');
 
 export const properties = (page: Page) => page.locator('aside[aria-label="Properties"]');
 

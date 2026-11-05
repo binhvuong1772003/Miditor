@@ -348,5 +348,9 @@ export const vi: Messages = {
   "layers.moved": "Đã đưa {name} vào {parent}",
   "layers.movedPage": "Đã đưa {name} ra trang",
   "layers.reordered": "Đã đổi chỗ {name}",
+  "layers.instructions": "Nhấn Space để nhấc khối này, phím mũi tên để di chuyển và Space để thả.",
+  "layers.lifted": "Đã nhấc {name}. Phím mũi tên để di chuyển, Space để thả, Escape để huỷ.",
+  "layers.over": "Đang ở trên {name}",
+  "layers.cancelled": "Đã huỷ di chuyển",
   "layers.shut": "Thu gọn {name}",
 };

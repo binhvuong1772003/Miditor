@@ -1,12 +1,14 @@
+import { Accessibility, defaultPreset } from "@dnd-kit/dom";
 import {
   DragDropProvider,
   type DragEndEvent,
   type DragMoveEvent,
   type DragOverEvent,
+  type DragStartEvent,
   useDraggable,
   useDroppable,
 } from "@dnd-kit/react";
-import { canMove, type Registry, type TreeNode } from "@miditor/core";
+import { canMove, findNode, type Registry, type TreeNode } from "@miditor/core";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
@@ -268,9 +270,31 @@ export function LayersPanel({
     onMove?.(String(id), found.parentId, found.index);
   };
 
+  // What dnd-kit says to a screen reader, in the language of the editor and not in its English.
+  const nameOf = (id: unknown) => {
+    const node = findNode(root, String(id));
+    return node ? (registry[node.type]?.label ?? node.type) : "";
+  };
+  const plugins = defaultPreset.plugins.map((plugin) =>
+    plugin === Accessibility
+      ? Accessibility.configure({
+          announcements: {
+            dragstart: ({ operation }: DragStartEvent) =>
+              t("layers.lifted", { name: nameOf(operation.source?.id) }),
+            dragover: ({ operation }: DragOverEvent) =>
+              operation.target && operation.target.id !== operation.source?.id
+                ? t("layers.over", { name: nameOf(operation.target.id) })
+                : undefined,
+            dragend: ({ canceled }: DragEndEvent) => (canceled ? t("layers.cancelled") : undefined),
+          },
+          screenReaderInstructions: { draggable: t("layers.instructions") },
+        })
+      : plugin,
+  );
+
   return (
     <div className={styles.panel}>
-      <DragDropProvider onDragMove={move} onDragOver={move} onDragEnd={end}>
+      <DragDropProvider plugins={plugins} onDragMove={move} onDragOver={move} onDragEnd={end}>
         <ul
           ref={list}
           aria-label={t("layers.label")}
