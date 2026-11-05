@@ -33,7 +33,7 @@ export interface StartPanelProps {
   /** A card is over the page (`point`), or has left it (`null`). */
   onDragMove: (kind: string, point: Point | null) => void;
   /** A card was let go at `point` on the screen. */
-  onDrop: (kind: string, point: Point) => void;
+  onDrop: (kind: string, point: Point, input?: { alt: boolean }) => void;
   /** Put the colours and font of a theme on the page. */
   onApplyTheme: (theme: SavedTheme) => void;
 }

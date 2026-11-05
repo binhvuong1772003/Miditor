@@ -272,6 +272,8 @@ export const vi: Messages = {
   "a11y.selectedAt": "Đã chọn {name}, {at} trên {total}",
   "a11y.joined": "{note}. {what}",
   "a11y.added": "Đã thêm khối",
+  "drop.into": "Thả vào {name}",
+  "drop.page": "Thả ra trang",
   "a11y.duplicated": "Đã nhân đôi khối",
   "a11y.deleted": "Đã xóa khối",
   "a11y.denied": "Không được phép",

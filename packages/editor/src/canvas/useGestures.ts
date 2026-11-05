@@ -25,6 +25,7 @@ import { onWindows } from "./client-rect";
 import { firstAccepting } from "./drop-target";
 import { elementOf } from "./element-of";
 import type { ResizeResult, SelectionControls } from "./SelectionBox";
+import type { DropCommit } from "./use-drop-commit";
 
 /** The frame laid over several selected blocks (see `groupInfo` in the editor). */
 export interface GroupInfo {
@@ -34,6 +35,8 @@ export interface GroupInfo {
 }
 
 export interface GesturesInput {
+  /** Which block a drag would go into, and where a drop lands. */
+  drop: DropCommit;
   workspace: HTMLElement | null;
   /** The element of the selected block. */
   block: HTMLElement | null;
@@ -67,6 +70,7 @@ export function useGestures({
   hoverId,
   onPhone,
   documents,
+  drop,
 }: GesturesInput) {
   // A drag of the selected blocks is on, from the press to the release.
   const [dragging, setDragging] = useState(false);
@@ -80,8 +84,6 @@ export function useGestures({
     gaps: Gap[];
     origin: { left: number; top: number; scale: number };
   } | null>(null);
-  // The block a dragged block would go into if it were dropped now. A hint only, not in the data.
-  const [dropId, setDropId] = useState<string | null>(null);
   const groupGesture = useRef<{
     members: {
       node: FreeNode;
@@ -182,15 +184,21 @@ export function useGestures({
    * stays in its parent: on the phone, over its own parent or over nothing, over a block that may not
    * hold it. A parent may be turned: both are measured as frames.
    */
-  const dropTarget = (g: NonNullable<typeof gesture.current>, dist: { x: number; y: number }) => {
+  const dropTarget = (
+    g: NonNullable<typeof gesture.current>,
+    dist: { x: number; y: number },
+    toPage = false,
+  ) => {
     const from = block?.parentElement;
     if (onPhone || !block || !from || g.others.length > 0) return undefined;
     // `dist` is in the page's own px; the screen is `zoom` times that.
     const x = g.screen.left + g.screen.width / 2 + dist.x * zoom;
     const y = g.screen.top + g.screen.height / 2 + dist.y * zoom;
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
-    const found = firstAccepting(block.ownerDocument.elementsFromPoint(x, y), (id) =>
-      canMove(registry, data.root, g.before.id, id),
+    // `toPage` skips the boxes: only the page takes it, to get a block out of the box it is in.
+    const found = firstAccepting(
+      block.ownerDocument.elementsFromPoint(x, y),
+      (id) => (!toPage || id === data.root.id) && canMove(registry, data.root, g.before.id, id),
     );
     const hit = found?.element;
     const id = found?.id;
@@ -273,7 +281,7 @@ export function useGestures({
   const dragMove = (dist: { x: number; y: number } | null) => {
     const g = gesture.current;
     setMeasure(g && dist ? measureAround(g, dist) : null);
-    setDropId(g && dist ? (dropTarget(g, dist)?.id ?? null) : null);
+    drop.setCandidate(g && dist ? (dropTarget(g, dist)?.id ?? null) : null);
   };
 
   /** The blocks of the frame shown turned with it, around its middle; `null` puts them back. */
@@ -326,7 +334,7 @@ export function useGestures({
     });
   };
 
-  const endDrag = (dist: { x: number; y: number }) => {
+  const endDrag = (dist: { x: number; y: number }, input?: { altKey: boolean }) => {
     if (groupGesture.current) {
       // The frame is not scaled by the zoom, the page is: a distance on the screen is `zoom` times less in the page.
       const dx = dist.x / zoom;
@@ -350,7 +358,12 @@ export function useGestures({
       });
       return;
     }
-    const target = g ? dropTarget(g, dist) : undefined;
+    // Where the drop lands is what is lit: the page, or a block that the pointer rested on. Alt means the page.
+    const picked = g ? dropTarget(g, dist, input?.altKey === true) : undefined;
+    const target =
+      picked && (picked.id === data.root.id || picked.id === drop.committedRef.current)
+        ? picked
+        : undefined;
     if (!g || !target) {
       endGesture((done) => moveRect(done.start, dist, boxFor(done.before, frame).rotation));
       return;
@@ -396,8 +409,7 @@ export function useGestures({
   return {
     dragging,
     measure,
-    dropId,
-    setDropId,
+    dropId: drop.committed,
     gesture,
     groupMoved,
     pendingDrag,

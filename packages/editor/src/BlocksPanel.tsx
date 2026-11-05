@@ -17,7 +17,9 @@ export interface BlocksPanelProps {
   /** A card is being dragged: where the pointer is now, or `null` when the drag is over. */
   onDragMove?: ((type: string, point: { x: number; y: number } | null) => void) | undefined;
   /** A card was dropped here, in screen px. Not called when the drag is cancelled with Esc. */
-  onDrop?: ((type: string, point: { x: number; y: number }) => void) | undefined;
+  onDrop?:
+    | ((type: string, point: { x: number; y: number }, input?: { alt: boolean }) => void)
+    | undefined;
 }
 
 /** How far the pointer goes, in px, before a press on a card is a drag and not a click. */
@@ -86,8 +88,11 @@ export function BlocksPanel({ registry, disabled, onAdd, onDragMove, onDrop }: B
       setGhost(null);
       if (!moved) return;
       dragged.current = true;
+      // The drop reads what is lit before the drag is told that it is over.
+      if (!cancelled && e) {
+        latest.current.onDrop?.(type, { x: e.clientX, y: e.clientY }, { alt: e.altKey });
+      }
       latest.current.onDragMove?.(type, null);
-      if (!cancelled && e) latest.current.onDrop?.(type, { x: e.clientX, y: e.clientY });
     };
     const up = (e: globalThis.PointerEvent) => end(false, e);
     const cancel = () => end(true);

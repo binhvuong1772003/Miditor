@@ -12,7 +12,6 @@ export function useBlockMarks({
   selectedId,
   picked,
   hoverId,
-  dropId,
   dragging,
   shown,
 }: {
@@ -20,7 +19,6 @@ export function useBlockMarks({
   selectedId: string | null;
   picked: readonly string[];
   hoverId: string | null;
-  dropId: string | null;
   dragging: boolean;
   /** The page as it is drawn; a new one can make the elements again. */
   shown: PageData;
@@ -81,17 +79,4 @@ export function useBlockMarks({
       for (const element of own) element.style.removeProperty("cursor");
     };
   }, [workspace, dragging, selectedId, picked, shown]);
-
-  // Outline the block a drag would drop into. Inline, for the same reason as the mark above.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `shown` is a render of the page, which can make the elements again
-  useLayoutEffect(() => {
-    const target = workspace && dropId ? elementOf(workspace, dropId) : null;
-    if (!target) return;
-    target.style.outline = "2px solid var(--_focus)";
-    target.style.outlineOffset = "-2px";
-    return () => {
-      target.style.removeProperty("outline");
-      target.style.removeProperty("outline-offset");
-    };
-  }, [workspace, dropId, shown]);
 }

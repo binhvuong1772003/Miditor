@@ -85,7 +85,7 @@ export interface SelectionBoxProps {
    * Once, on release, and only when the pointer really moved. `dist` is in px, in the node's own
    * (rotated) axes, as react-moveable reports it. The call is flushed to the DOM before returning.
    */
-  onDragEnd: (dist: { x: number; y: number }) => void;
+  onDragEnd: (dist: { x: number; y: number }, input: { altKey: boolean }) => void;
   /**
    * While a drag goes on, with the distance so far in the same axes as `onDragEnd`, and once more with
    * `null` when it is over. For a hint drawn while dragging; nothing is stored from it.
@@ -335,9 +335,11 @@ export function SelectionBox({
       onDragEnd={guarded((e: OnDragEnd) => {
         const el = e.target as HTMLElement;
         end(el);
+        // The drop reads where the drag was going before it is told that the drag is over.
+        if (e.isDrag) {
+          finish(el, () => onDragEnd(lastDist.current, { altKey: e.inputEvent?.altKey === true }));
+        }
         onDragMove?.(null);
-        if (!e.isDrag) return;
-        finish(el, () => onDragEnd(lastDist.current));
       })}
       onResizeStart={guarded((e: OnResizeStart) => {
         lastSize.current = null;

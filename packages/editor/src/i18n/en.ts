@@ -277,6 +277,8 @@ export const en = {
   "a11y.selectedAt": "{name} selected, {at} of {total}",
   "a11y.joined": "{note}. {what}",
   "a11y.added": "Block added",
+  "drop.into": "Into {name}",
+  "drop.page": "Onto the page",
   "a11y.duplicated": "Block duplicated",
   "a11y.deleted": "Block deleted",
   "a11y.denied": "Not allowed",

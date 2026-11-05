@@ -43,6 +43,7 @@ import { CanvasView } from "./canvas/CanvasView";
 import { clientRect, elementsAtClient, frameDocumentOf } from "./canvas/client-rect";
 import { firstAccepting } from "./canvas/drop-target";
 import { elementOf } from "./canvas/element-of";
+import { useDropCommit } from "./canvas/use-drop-commit";
 import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
 import { ControlProvider } from "./control-context";
@@ -577,7 +578,8 @@ function EditorBody({
   // What the canvas tells the provider: whether a gesture is on (the keys wait for it) and which block
   // a card dragged from the library would land in (outlined by the canvas).
   const gesturing = useRef<(() => boolean) | null>(null);
-  const dropHint = useRef<((id: string | null) => void) | null>(null);
+  // Which block a drag, from the library or on the page, would go into; one value for what is lit and where the drop lands.
+  const drop = useDropCommit(data.root.id);
   // A colour that is being picked or typed. It is only drawn, never stored: Save does not include it.
   const draft = useEditorState((state) => state.draft);
   const setDraft = documents.setDraft;
@@ -655,16 +657,27 @@ function EditorBody({
     );
   };
 
-  /** A card is over the page: outline the block it would land in (the page itself needs no outline). */
+  /** A card is over the page: say which block it would land in, so that block is lit once it has rested there. */
   const dragFromLibrary = (kind: string, point: { x: number; y: number } | null) => {
     const landing = point ? landingFor(kind, point) : undefined;
-    dropHint.current?.(landing && landing.id !== data.root.id ? landing.id : null);
+    drop.setCandidate(landing ? landing.id : null);
   };
 
   /** A card was let go at `point`: a block of its kind is added there, centred on the pointer. */
-  const dropFromLibrary = (kind: string, point: { x: number; y: number }) => {
-    const landing = landingFor(kind, point);
-    if (!landing) return;
+  const dropFromLibrary = (
+    kind: string,
+    point: { x: number; y: number },
+    input?: { alt: boolean },
+  ) => {
+    const found = landingFor(kind, point);
+    if (!found) return;
+    // It lands in what is lit: the page, or a block the pointer rested on. Alt, or a pass over a block, means the page.
+    const pageElement = workspace ? elementOf(workspace, data.root.id) : null;
+    const lit = found.id === data.root.id || found.id === drop.committedRef.current;
+    const landing =
+      pageElement && (input?.alt === true || !lit)
+        ? { id: data.root.id, element: pageElement }
+        : found;
     const { id: parentId, element } = landing;
     const container = { w: element.clientWidth, h: element.clientHeight };
     const rect = clientRect(element);
@@ -963,7 +976,7 @@ function EditorBody({
         stage={stage}
         stageBox={stageBox}
         gesturing={gesturing}
-        dropHint={dropHint}
+        drop={drop}
       />
     ),
     canvasClaim,

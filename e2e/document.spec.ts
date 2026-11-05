@@ -204,6 +204,39 @@ test.describe("dragging a block out of the library onto the page", () => {
     await page.mouse.up();
     await expect(blocks(page)).toHaveCount(before + 1);
   });
+
+  // A card dragged onto a box goes into it once the pointer has rested there, and is lit; a pass over it is not.
+  const dragTileOntoSample = async (
+    page: import("@playwright/test").Page,
+    rest: boolean,
+  ): Promise<void> => {
+    const tile = page.getByRole("button", { name: "Text", exact: true }).first();
+    const from = await tile.boundingBox();
+    const target = await boxOf(page, "sample");
+    if (!from) throw new Error("no tile");
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
+    if (rest) {
+      await expect(page.getByText("Into Box")).toBeVisible();
+    }
+    await page.mouse.up();
+  };
+
+  test("a card rested over a box goes into the box", async ({ page }) => {
+    await dragTileOntoSample(page, true);
+    await expect(
+      surface(page).locator('[data-miditor-id="sample"] [data-miditor-type="Text"]'),
+    ).toHaveCount(1);
+  });
+
+  test("a card that only passes over a box goes on the page", async ({ page }) => {
+    await dragTileOntoSample(page, false);
+    await expect(blocks(page).locator("xpath=self::*[@data-miditor-type='Text']")).toHaveCount(1);
+    await expect(
+      surface(page).locator('[data-miditor-id="sample"] [data-miditor-type="Text"]'),
+    ).toHaveCount(0);
+  });
 });
 
 test.describe("the theme of the page", () => {

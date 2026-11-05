@@ -26,6 +26,7 @@ import {
 import { BlockLabel } from "../BlockLabel";
 import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
 import type { EditorApi } from "../control-api";
+import { DropFeedback } from "../DropFeedback";
 import styles from "../Editor.module.css";
 import { GapLabels } from "../GapLabels";
 import { boundsOf, centreOf } from "../group-math";
@@ -54,6 +55,7 @@ import { InFrame } from "./FrameStage";
 import { Marquee } from "./Marquee";
 import { SelectionBox } from "./SelectionBox";
 import { StagePage } from "./StagePage";
+import type { DropCommit } from "./use-drop-commit";
 import { useAltHeld } from "./useAltHeld";
 import { useBlockMarks } from "./useBlockMarks";
 import { useGestures } from "./useGestures";
@@ -84,8 +86,8 @@ export interface CanvasViewProps {
   stageBox: { room: number; page: number; height: number };
   /** Told by the canvas for the keys of the provider: whether a gesture is on. */
   gesturing: MutableRefObject<(() => boolean) | null>;
-  /** Told by the canvas for the library drag of the provider: outline the block a card would land in. */
-  dropHint: MutableRefObject<((id: string | null) => void) | null>;
+  /** Which block a drag, from the library or on the page, would go into. */
+  drop: DropCommit;
 }
 
 /** The page and everything drawn over it; it keeps the state only the canvas needs. */
@@ -108,7 +110,7 @@ export function CanvasView({
   stage,
   stageBox,
   gesturing,
-  dropHint,
+  drop,
 }: CanvasViewProps) {
   const t = useT();
   // When the page is drawn in a frame of its own, its blocks are in the document of that frame: that is
@@ -206,7 +208,6 @@ export function CanvasView({
     dragging,
     measure,
     dropId,
-    setDropId,
     gesture,
     groupMoved,
     pendingDrag,
@@ -231,6 +232,7 @@ export function CanvasView({
     hoverId,
     onPhone,
     documents,
+    drop,
   });
 
   // The fields that keep a reference are drawn with the data their source gave; it is never stored.
@@ -240,7 +242,7 @@ export function CanvasView({
       drawnPage(draft ? withDraft(data, draft, frame, registry) : data, registry, sourceAnswers),
     [data, draft, frame, registry, sourceAnswers],
   );
-  useBlockMarks({ workspace: scope, selectedId, picked, hoverId, dropId, dragging, shown });
+  useBlockMarks({ workspace: scope, selectedId, picked, hoverId, dragging, shown });
 
   // The block under the pointer, for its name tag. Its element comes from the last render.
   const hoverNode = hoverId ? findNode(data.root, hoverId) : undefined;
@@ -278,13 +280,11 @@ export function CanvasView({
 
   // The canvas tells the keys and the library drag what only it knows.
   gesturing.current = () => gesture.current !== null;
-  dropHint.current = setDropId;
   useEffect(() => {
     return () => {
       gesturing.current = null;
-      dropHint.current = null;
     };
-  }, [gesturing, dropHint]);
+  }, [gesturing]);
 
   /** The lines of the menu. Everything that changes the blocks waits for the Desktop screen, like the toolbar. */
   const menuItems = (): ContextMenuItem[] => [
@@ -483,6 +483,19 @@ export function CanvasView({
             // The keys of the editor work again where the pointer was.
             editorRoot.current?.focus({ preventScroll: true });
           }}
+        />
+      )}
+      {workspace && dropId && scope && elementOf(scope, dropId) && (
+        <DropFeedback
+          target={elementOf(scope, dropId) as HTMLElement}
+          workspace={workspace}
+          text={
+            dropId === data.root.id
+              ? t("drop.page")
+              : t("drop.into", {
+                  name: shownRegistry[findNode(data.root, dropId)?.type ?? ""]?.label ?? "",
+                })
+          }
         />
       )}
       {workspace && !editing && hoverId && hoverElement && hoverNode && (
