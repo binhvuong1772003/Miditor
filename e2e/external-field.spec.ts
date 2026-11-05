@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, openEditor, properties, storedPage, surface } from "./helpers";
+import { addFromBlocks, gotoFrame, openEditor, properties, storedPage, surface } from "./helpers";
 
 // A field that chooses from a list the host keeps (`config.sources`), searched as the person types.
 
@@ -107,7 +107,7 @@ test.describe("an external field", () => {
     const before = await storedPage(page, (stored) => JSON.stringify(stored).includes("199"));
     const oldAt = JSON.stringify(before).match(/"at":"([^"]+)"/)?.[1];
 
-    await page.goto("/?items-changed");
+    await gotoFrame(page, "/?items-changed");
     await expect(newer(page)).toContainText("1 block has newer data");
     await expect(surface(page).getByTestId("item-card")).toContainText("199");
     // Nothing was written by the check.
@@ -130,7 +130,7 @@ test.describe("an external field", () => {
     await pickItem(page, "Steel kettle");
     await storedPage(page, (stored) => JSON.stringify(stored).includes("459"));
 
-    await page.goto("/?items-lost");
+    await gotoFrame(page, "/?items-lost");
     await expect(newer(page)).toHaveCount(0);
     await surface(page).getByTestId("item-card").click();
     await expect(properties(page).getByRole("note")).toContainText("No longer in the source");
@@ -145,7 +145,7 @@ test.describe("an external field", () => {
     await pickItem(page, "Blue mug");
     await storedPage(page, (stored) => JSON.stringify(stored).includes("89"));
 
-    await page.goto("/?items-changed");
+    await gotoFrame(page, "/?items-changed");
     await expect(newer(page)).toContainText("1 block has newer data");
     const calls = await page.evaluate(
       () =>
@@ -174,13 +174,13 @@ test.describe("an external field", () => {
     expect(text).not.toContain('"data"');
 
     // The source has moved on: the canvas shows it with no banner, and nothing is written.
-    await page.goto("/?items-changed");
+    await gotoFrame(page, "/?items-changed");
     await expect(surface(page).getByTestId("live-item")).toContainText("249");
     await expect(newer(page)).toHaveCount(0);
     expect(JSON.stringify(await storedPage(page))).not.toContain('"data"');
 
     // A visitor's page: the host fills the data in with `resolveSources` before it draws.
-    await page.goto("/?preview&items-changed");
+    await gotoFrame(page, "/?preview&items-changed");
     await expect(surface(page).getByTestId("live-item")).toContainText("249");
     await expect(surface(page).getByTestId("live-item")).toHaveAttribute("data-lang", "en");
   });

@@ -7,6 +7,11 @@ export async function openEditor(page: Page, query = ""): Promise<void> {
   await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
 }
 
+/** `page.goto`, with `&iframe` added when `E2E_IFRAME=1` so the page is drawn in a frame of its own. */
+export async function gotoFrame(page: Page, path: string): Promise<void> {
+  await page.goto(process.env.E2E_IFRAME ? `${path}${path.includes("?") ? "&" : "?"}iframe` : path);
+}
+
 /** Where the blocks are: the page, or the frame the page is drawn in when `E2E_IFRAME=1`. */
 export const surface = (page: Page) =>
   process.env.E2E_IFRAME ? page.frameLocator('iframe[title="Page"]') : page;

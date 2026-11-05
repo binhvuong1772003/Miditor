@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, boxOf, openEditor, properties, surface } from "./helpers";
+import {
+  addFromBlocks,
+  blocks,
+  boxOf,
+  gotoFrame,
+  openEditor,
+  properties,
+  surface,
+} from "./helpers";
 
 // A host reshapes the editor through `overrides` (`?overrides`): it wraps the bar and the panels,
 // replaces the rail and one input, and adds a line to the right-click menu.
@@ -119,7 +127,7 @@ test.describe("a host reshapes the editor through overrides", () => {
   });
 
   test("two editors keep their own overrides", async ({ page }) => {
-    await page.goto("/?reset&overrides&two");
+    await gotoFrame(page, "/?reset&overrides&two");
     const a = page.getByTestId("editor-a");
     const b = page.getByTestId("editor-b");
     await expect(b.getByRole("button", { name: "Save", exact: true })).toBeVisible();

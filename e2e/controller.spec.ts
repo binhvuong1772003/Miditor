@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks, surface } from "./helpers";
+import { blocks, gotoFrame, surface } from "./helpers";
 
 // A bar drawn outside `<Editor>` drives it through a controller from `useCreateEditor()`
 // (`?control&outside`). `&closed` starts with the editor closed; `&two` gives the controller to two editors.
@@ -17,7 +17,7 @@ function logged(page: Page, type: "error" | "warning") {
 }
 
 async function open(page: Page, query = "") {
-  await page.goto(`/?reset&control&outside${query}`);
+  await gotoFrame(page, `/?reset&control&outside${query}`);
   await expect(bar(page, "Outside add Text")).toBeVisible();
 }
 
@@ -69,7 +69,7 @@ test("a second editor given the same controller is ignored and the first keeps w
   page,
 }) => {
   const errors = logged(page, "error");
-  await page.goto("/?reset&control&outside&two");
+  await gotoFrame(page, "/?reset&control&outside&two");
   const a = page.getByTestId("editor-a");
   const b = page.getByTestId("editor-b");
   // The second still draws.

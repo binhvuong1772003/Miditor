@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, boxOf, dragBy, pressBlock, surface } from "./helpers";
+import { addFromBlocks, blocks, boxOf, dragBy, gotoFrame, pressBlock, surface } from "./helpers";
 
 // A host lays the editor out itself (`?compose`): inside `<EditorProvider>` it places the parts where it
 // wants them. Layers are on the right, Properties are in a dialog, the canvas fills the middle.
@@ -7,7 +7,7 @@ import { addFromBlocks, blocks, boxOf, dragBy, pressBlock, surface } from "./hel
 
 // The custom layouts have no Save button, so the page is ready when a block is drawn.
 async function open(page: Page, query = ""): Promise<void> {
-  await page.goto(`/?reset&compose${query}`);
+  await gotoFrame(page, `/?reset&compose${query}`);
   await expect(surface(page).locator('[data-miditor-id="sample"]')).toBeVisible();
 }
 const layer = (page: Page, id: string) => page.locator(`[data-layer="${id}"]`);
@@ -132,7 +132,7 @@ test.describe("a host lays the editor out itself", () => {
   }) => {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto("/?reset&compose&nocanvas");
+    await gotoFrame(page, "/?reset&compose&nocanvas");
     await expect(page.getByRole("button", { name: "Fit" })).toBeVisible();
     await expect(surface(page).locator("[data-miditor-id]")).toHaveCount(0);
 
@@ -150,7 +150,7 @@ test.describe("a host lays the editor out itself", () => {
   });
 
   test("two providers keep their own state", async ({ page }) => {
-    await page.goto("/?reset&compose&two");
+    await gotoFrame(page, "/?reset&compose&two");
     const a = page.getByTestId("editor-a");
     const b = page.getByTestId("editor-b");
     await expect(a.locator("[data-miditor-id]").first()).toBeVisible();

@@ -1,10 +1,11 @@
 import { expect, type Page, test } from "@playwright/test";
+import { gotoFrame } from "./helpers";
 
 // A page with nothing placed by hand for the phone is drawn there as a flow, and the first change of the
 // phone layout places every block where it is drawn. The coffee page of the playground has no phone data.
 
 const open = async (page: Page) => {
-  await page.goto("/?landing=coffee");
+  await gotoFrame(page, "/?landing=coffee");
   await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
 };
 const phone = (page: Page) => page.getByRole("button", { name: "Phone", exact: true }).click();

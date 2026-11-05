@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks, openEditor, properties, surface } from "./helpers";
+import { blocks, gotoFrame, openEditor, properties, surface } from "./helpers";
 
 // A host part drawn in `headerActions` drives the editor through `useEditor` (`?control`). `?control&two`
 // draws two editors on one page, each with its own part.
@@ -82,7 +82,7 @@ test.describe("a host part inside the editor", () => {
 
 test.describe("two editors on one page", () => {
   test("a button in one acts only on its own editor", async ({ page }) => {
-    await page.goto("/?reset&control&two");
+    await gotoFrame(page, "/?reset&control&two");
     await expect(
       page.getByTestId("editor-b").getByRole("button", { name: "Save", exact: true }),
     ).toBeVisible();

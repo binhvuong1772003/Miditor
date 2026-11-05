@@ -1,5 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, openEditor, type StoredNode, storedPage } from "./helpers";
+import {
+  addFromBlocks,
+  blocks,
+  gotoFrame,
+  openEditor,
+  type StoredNode,
+  storedPage,
+} from "./helpers";
 
 // The playground keeps the page and, with `?history`, the last steps of the history next to it, and opens
 // them again as `initialHistory`: Undo still works after the page is opened again.
@@ -19,7 +26,7 @@ test.describe("initialHistory", () => {
     await storedPage(page, (s) => nodes(s.root) === start + 2);
     await expect.poll(async () => (await stored(page))?.past?.length).toBe(2);
 
-    await page.goto("/?history");
+    await gotoFrame(page, "/?history");
     await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
     await expect(blocks(page)).toHaveCount(start + 2);
     await expect(undo(page)).toBeEnabled();
@@ -45,7 +52,7 @@ test.describe("initialHistory", () => {
     await storedPage(page, (s) => nodes(s.root) === start + 1);
     await page.evaluate((key) => localStorage.setItem(key, '{"past":[{"not":"a page"}]}'), KEY);
 
-    await page.goto("/?history");
+    await gotoFrame(page, "/?history");
     await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
     await expect(undo(page)).toBeDisabled();
     expect(warnings).toHaveLength(1);
@@ -56,7 +63,7 @@ test.describe("initialHistory", () => {
     const start = await blocks(page).count();
     await addFromBlocks(page, "Text");
     await storedPage(page, (s) => nodes(s.root) === start + 1);
-    await page.goto("/");
+    await gotoFrame(page, "/");
     await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
     await expect(undo(page)).toBeDisabled();
   });

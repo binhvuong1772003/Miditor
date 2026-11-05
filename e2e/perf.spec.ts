@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { gotoFrame } from "./helpers";
 
 test("?perf counts how often each part of the editor commits", async ({ page }) => {
-  await page.goto("/?reset&perf");
+  await gotoFrame(page, "/?reset&perf");
   const counts = await page.evaluate(
     () => (window as unknown as { __miditor_perf?: Record<string, number> }).__miditor_perf,
   );
@@ -11,7 +12,7 @@ test("?perf counts how often each part of the editor commits", async ({ page }) 
 });
 
 test("without ?perf nothing is counted", async ({ page }) => {
-  await page.goto("/?reset");
+  await gotoFrame(page, "/?reset");
   const counts = await page.evaluate(
     () => (window as unknown as { __miditor_perf?: unknown }).__miditor_perf,
   );

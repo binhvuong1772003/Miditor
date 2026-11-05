@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { gotoFrame } from "./helpers";
 
 const side = (page: import("@playwright/test").Page, name: "left" | "right") =>
   page.locator(`[data-twin="${name}"]`);
@@ -6,7 +7,7 @@ const percent = (where: import("@playwright/test").Locator) =>
   where.getByRole("button", { name: /^\d+%$/ });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/?twin");
+  await gotoFrame(page, "/?twin");
   await expect(percent(side(page, "left"))).toBeVisible();
   await expect(percent(side(page, "right"))).toBeVisible();
 });
