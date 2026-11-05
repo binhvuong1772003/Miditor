@@ -39,6 +39,7 @@
     "build": "tsdown"
   },
   "dependencies": {
+    "@dnd-kit/react": "0.5.3",
     "@miditor/core": "workspace:*",
     "@miditor/render": "workspace:*",
     "react-moveable": "0.56.0"
