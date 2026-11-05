@@ -57,7 +57,9 @@ test("dragging a corner handle changes the size and keeps the opposite corner", 
   const after = await boxOf(page, "n1");
   expect(after.width).toBeGreaterThan(before.width + 30);
   expect(after.height).toBeGreaterThan(before.height + 20);
-  expect([after.x, after.y]).toEqual([before.x, before.y]);
+  // A width in percent of the page is kept to a hundredth, so the corner can be off by a fraction of a px.
+  expect(after.x).toBeCloseTo(before.x, 0);
+  expect(after.y).toBeCloseTo(before.y, 0);
 });
 
 test("a resize is one step too", async ({ page }) => {
