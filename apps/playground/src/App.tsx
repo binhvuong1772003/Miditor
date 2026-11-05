@@ -25,6 +25,7 @@ import { itemsSource } from "./items-source";
 import { components, metadata, renderers } from "./kinds";
 import { COFFEE_PAGE } from "./landing-coffee";
 import { LANDING_PAGE } from "./landing-page";
+import { STUDIO_PAGE } from "./landing-studio";
 import { loadUploaded, seedImages, storeUploaded } from "./library";
 import { OutsideBar } from "./OutsideBar";
 import {
@@ -70,10 +71,11 @@ function openPage(): PageData {
     window.localStorage.removeItem(HISTORY_KEY);
   }
   const page = loadPage(window.localStorage, reset);
-  // `?landing` (or `?landing=coffee`, with no phone layout) opens a landing page made for trying the editor, in place of the stored page. It is
+  // `?landing` (or `?landing=coffee`, with no phone layout, or `?landing=studio`, all scaled or stretched) opens a landing page made for trying the editor, in place of the stored page. It is
   // stored too, since `?preview` draws the stored page and would show the old one until a first edit.
   if (!landing) return page;
-  const chosen = landingName === "coffee" ? COFFEE_PAGE : LANDING_PAGE;
+  const chosen =
+    landingName === "coffee" ? COFFEE_PAGE : landingName === "studio" ? STUDIO_PAGE : LANDING_PAGE;
   storePage(window.localStorage, chosen);
   return chosen;
 }
