@@ -32,8 +32,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -282,
+            anchor: "scale",
+            start: 5.0,
+            size: 31.25,
           },
           y: {
             anchor: "start",
@@ -71,8 +72,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: 360,
+            anchor: "scale",
+            start: 80.0,
+            size: 15.0,
           },
           y: {
             anchor: "start",
@@ -176,8 +178,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -172,
+            anchor: "scale",
+            start: 5.0,
+            size: 54.166667,
           },
           y: {
             anchor: "start",
@@ -214,8 +217,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -172,
+            anchor: "scale",
+            start: 5.0,
+            size: 54.166667,
           },
           y: {
             anchor: "start",
@@ -252,8 +256,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -192,
+            anchor: "scale",
+            start: 5.0,
+            size: 50.0,
           },
           y: {
             anchor: "start",
@@ -291,8 +296,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -322,
+            anchor: "scale",
+            start: 5.0,
+            size: 22.916667,
           },
           y: {
             anchor: "start",
@@ -330,8 +336,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: -96,
+            anchor: "scale",
+            start: 29.583333,
+            size: 20.833333,
           },
           y: {
             anchor: "start",
@@ -368,8 +375,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: 0,
+            anchor: "scale",
+            start: 5.0,
+            size: 90.0,
           },
           y: {
             anchor: "start",
@@ -440,8 +448,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -478,8 +487,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -552,8 +562,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -590,8 +601,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -664,8 +676,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -702,8 +715,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 1,
+                anchor: "scale",
+                start: 9.190696,
+                size: 82.35391,
               },
               y: {
                 anchor: "start",
@@ -774,8 +788,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: -154,
+                anchor: "scale",
+                start: 5.555556,
+                size: 53.240741,
               },
               y: {
                 anchor: "start",
@@ -812,8 +827,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: -154,
+                anchor: "scale",
+                start: 5.555556,
+                size: 53.240741,
               },
               y: {
                 anchor: "start",
@@ -851,8 +867,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: -274,
+                anchor: "scale",
+                start: 5.555556,
+                size: 25.462963,
               },
               y: {
                 anchor: "start",
@@ -889,8 +906,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 265,
+                anchor: "scale",
+                start: 66.203704,
+                size: 28.935185,
               },
               y: {
                 anchor: "start",
@@ -927,8 +945,9 @@ export const LANDING_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "center",
-                offset: 265,
+                anchor: "scale",
+                start: 66.203704,
+                size: 28.935185,
               },
               y: {
                 anchor: "start",
@@ -967,8 +986,9 @@ export const LANDING_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "center",
-            offset: 0,
+            anchor: "scale",
+            start: 5.0,
+            size: 90.0,
           },
           y: {
             anchor: "start",
