@@ -3,7 +3,6 @@ import {
   type Container,
   canMove,
   drawsPhoneFlow,
-  type Frame,
   type FreeNode,
   findNode,
   isFreeNode,
@@ -24,6 +23,7 @@ import type { useDocumentCommands } from "../store";
 import { onWindows } from "./client-rect";
 import { firstAccepting } from "./drop-target";
 import { elementOf } from "./element-of";
+import { frameOfElement, pageUnit } from "./frames";
 import type { ResizeResult, SelectionControls } from "./SelectionBox";
 import type { DropCommit } from "./use-drop-commit";
 
@@ -185,7 +185,7 @@ export function useGestures({
    * hold it. A parent may be turned: both are measured as frames.
    */
   // What a page px is in the rects of the blocks: `zoom` on the screen, 1 inside the frame of the page.
-  const unit = block && block.ownerDocument !== document ? 1 : zoom;
+  const unit = block ? pageUnit(block, zoom) : zoom;
   const dropTarget = (
     g: NonNullable<typeof gesture.current>,
     dist: { x: number; y: number },
@@ -206,16 +206,8 @@ export function useGestures({
     const hit = found?.element;
     const id = found?.id;
     if (!hit || id === undefined || id === parentOf(data.root, g.before.id)?.id) return undefined;
-    // Each parent as a frame on the screen: its padding box, where its middle is (the middle of a
-    // turned element is the middle of the box around it) and how far it and its parents are turned.
-    const frameOf = (el: HTMLElement): Frame => {
-      const box = el.getBoundingClientRect();
-      return {
-        size: { w: el.clientWidth, h: el.clientHeight },
-        center: { x: (box.left + box.width / 2) / unit, y: (box.top + box.height / 2) / unit },
-        rotation: turnOf(data.root, el.dataset.miditorId ?? "", frame),
-      };
-    };
+    const frameOf = (el: HTMLElement) =>
+      frameOfElement(el, unit, turnOf(data.root, el.dataset.miditorId ?? "", frame));
     return { id, options: { from: frameOf(from), to: frameOf(hit) } };
   };
 
