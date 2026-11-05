@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Pin dnd-kit to an exact version: `"@dnd-kit/react": "0.5.3"` (no `^`), as `react-moveable` is pinned. The package is 0.x and Puck pins 0.4.0.
-- Raise the editor budget in `budgets.json` in the same commit that adds the dependency, to the measured size plus about 3%, and say the new numbers in the commit body.
+- Raise the editor budget in `budgets.json` in the commit that first imports dnd-kit (Task 5), to the measured size plus about 3%, and say the new numbers in the commit body.
 - Commits: small, one logical change each, imperative English, conventional style (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`), no AI mention, no trailer.
 - After every code step: `npx biome check --write .` (never `--unsafe`), `pnpm -r exec tsc --noEmit`, `pnpm build` before any e2e (the playground reads `dist`).
 - e2e must pass in both modes: `E2E_STRICT=1 npx playwright test` and `E2E_INLINE=1 E2E_STRICT=1 npx playwright test`.
@@ -43,17 +43,16 @@
 - Create `e2e/layers-drag.spec.ts`.
 - Modify `packages/editor/package.json`, `budgets.json`, `packages/editor/README.md`.
 
-### Task 1: Add the dependency and raise the budget
+### Task 1: Add the dependency
 
-**Files:** Modify `packages/editor/package.json`, `budgets.json`, lockfile.
+**Files:** Modify `packages/editor/package.json`, lockfile.
 
 **Interfaces:**
 - Produces: `@dnd-kit/react` importable from `packages/editor/src`.
 
-- [ ] **Step 1: Add `"@dnd-kit/react": "0.5.3"` to `dependencies` of `packages/editor/package.json` and run `pnpm install`.** Check that `@dnd-kit/dom`, `abstract`, `geometry`, `state`, `collision` came in at 0.5.3 too (`pnpm why @dnd-kit/dom`).
-- [ ] **Step 2: Import it once so it is in the bundle** (a throwaway `export` is not allowed: do this in Task 4; for now only measure with a scratch import in a file you do not commit), run `pnpm build` and `pnpm size`. Expected: the editor grows by about 31 to 39 kB gzip.
-- [ ] **Step 3: Set the editor limits in `budgets.json` to the measured raw and gzip sizes of the final build of Task 4, plus about 3%.** Until then leave them and do not commit a failing `pnpm size`: commit this task together with Task 4's first working build, or raise the limits here to a number you then tighten.
-- [ ] **Step 4: Commit** `chore(editor): add dnd-kit, pinned, and raise the editor size budget`.
+- [ ] **Step 1: Add `"@dnd-kit/react": "0.5.3"` to `dependencies` of `packages/editor/package.json`** and run `pnpm install`. Check that `@dnd-kit/dom`, `abstract`, `geometry`, `state` and `collision` came in at 0.5.3 too (`pnpm why @dnd-kit/dom`).
+- [ ] **Step 2: Run `pnpm build` and `pnpm size`.** Expected: unchanged sizes (nothing imports it yet) and no error.
+- [ ] **Step 3: Commit** `chore(editor): add dnd-kit, pinned`.
 
 ### Task 2: Where a drop lands (pure)
 
@@ -91,7 +90,7 @@ The list shows the topmost block first and the last child is drawn on top, so "a
   - Root children `[a, b, c]` (c on top): dragging `a` "above" `c` gives `{ parentId: "root", index: 2 }` (the siblings without `a` are `[b, c]`, above `c` is after it); "below" `b` gives `{ parentId: "root", index: 0 }`.
   - "inside" a `Container` `box` with children `[x, y]` gives `{ parentId: "box", index: 2 }`; inside a `Text` gives `undefined`.
   - Over itself, over a descendant of itself as "inside", and over the root: `undefined`.
-  - A drop that leaves the order as it is, such as `b` "below" `c`'s… (choose the case where the result equals the current order): `undefined`.
+  - A drop that leaves the order as it is: root children `[a, b, c]`, dragging `b` "above" `a` (the siblings without `b` are `[a, c]`, above `a` is index 1, where `b` already is): `undefined`.
   - Dropping "above" a row that is a child of `box` gives `parentId: "box"`, whatever the depth of the row above it in the list.
 - [ ] **Step 2: Run** `cd packages/editor && npx vitest run src/layer-drop.test.ts`. Expected: FAIL, module missing.
 - [ ] **Step 3: Implement `zoneAt` and `placeFor`.** For "above" and "below" the parent is `parentOf(root, overId)` and the index comes from the position of `overId` among the parent's children without `draggedId` (`k`: above is `k + 1`, below is `k`). For "inside" the parent is `overId` and the index is its children count without `draggedId`. Refuse with `canMove(registry, root, draggedId, parentId)`. Return `undefined` when `parentId` is the current parent and the new index equals the current index of the block among its siblings.
@@ -142,7 +141,7 @@ export function frameOfElement(element: HTMLElement, unit: number, rotation: num
 - [ ] **Step 3: Implement.** Wrap the `ul` in `DragDropProvider`. Each `li`: `useDraggable({ id, handle })` and `useDroppable({ id })`, both refs set on the `li`. While dragging, compute `zoneAt` from the pointer (or lifted-row centre) against the `li` rect under it, `placeFor` for the result; store `{ overId, zone }` in state to draw an insertion line (above, below) or a tint (inside) with `data-drop="above|inside|below"` and CSS in `LayersPanel.module.css`; draw nothing when `placeFor` is `undefined`. On `onDragEnd` not canceled and with a place, call `onMove(id, place.parentId, place.index)`. Use `DragOverlay` for the lifted row. `PointerSensor` activation: a movement of 4 px, so a click never starts a drag. Keep the existing `keys` handler; it must ignore keys while a drag is on.
 - [ ] **Step 4: Strings:** `layers.move` ("Move {name}" / "Di chuyển {name}"), `layers.moved` ("{name} moved into {parent}", "Đã đưa {name} vào {parent}"), `layers.movedPage` ("{name} moved onto the page", "Đã đưa {name} ra trang"), `layers.reordered` ("{name} moved", "Đã đổi chỗ {name}").
 - [ ] **Step 5: Run the e2e from Step 2 until PASS, then `layer-tree.test.ts`, unit tests, lint.** Commit `feat(editor): drag rows in Layers with dnd-kit`.
-- [ ] **Step 6: Now set the budget (Task 1 Step 3) from `pnpm size` and commit it** with the dependency commit if still open, else `chore(editor): size budget for dnd-kit`.
+- [ ] **Step 6: Set the editor limits in `budgets.json` to the sizes `pnpm size` now reports plus about 3%** (the editor grows by about 31 to 39 kB gzip), and commit `chore(editor): raise the editor size budget for dnd-kit` with the new numbers in the body.
 
 ### Task 6: Wire it to the page
 
