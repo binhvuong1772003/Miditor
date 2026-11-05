@@ -71,7 +71,7 @@ export function Preview() {
           <PreviewFrame>
             <Render
               data={page}
-              responsive={{}}
+              responsive={{ scale: true }}
               renderers={renderers}
               metadata={metadata}
               onAction={(action, payload) => setMessage(`${action} ${JSON.stringify(payload)}`)}
