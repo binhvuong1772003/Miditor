@@ -21,6 +21,17 @@ export function fitZoom(room: number, page: number, roomHeight: number, height: 
 }
 
 /**
+ * The zoom that makes a page `page` px wide fit across the `room` px the workspace has: 1 when it fits,
+ * otherwise the room over the page, rounded down to 1% so it is never wider than the room, and not
+ * under the smallest zoom. A size that is not usable gives 1.
+ */
+export function widthZoom(room: number, page: number): number {
+  if (![room, page].every((n) => n > 0 && Number.isFinite(n))) return 1;
+  if (room >= page) return 1;
+  return Math.max(MIN_ZOOM, Math.floor((room / page) * 100) / 100);
+}
+
+/**
  * The width, in the page's own px, of the box the page sits in when the canvas is zoomed: wide
  * enough to fill the `room` the workspace has once it is scaled, and never narrower than the page,
  * so the page keeps the width it has at 100% and only its size on the screen changes.

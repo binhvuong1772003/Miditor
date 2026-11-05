@@ -6,6 +6,7 @@ import {
   MIN_ZOOM,
   stageWidth,
   stepZoom,
+  widthZoom,
   ZOOM_STEPS,
   zoomBy,
   zoomText,
@@ -94,5 +95,33 @@ describe("zoomBy", () => {
         },
       ),
     );
+  });
+});
+
+describe("widthZoom", () => {
+  it("is 1 when the page fits the room, and room over page when it does not", () => {
+    expect(widthZoom(1200, 960)).toBe(1);
+    expect(widthZoom(960, 960)).toBe(1);
+    expect(widthZoom(480, 960)).toBe(0.5);
+  });
+  it("rounds down to 1%, so the page is never wider than the room", () => {
+    expect(widthZoom(517, 960)).toBe(0.53);
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 300, max: 3000 }),
+        fc.integer({ min: 300, max: 1500 }),
+        (room, page) => {
+          const zoom = widthZoom(room, page);
+          return zoom <= 1 && (zoom * page <= room + 1e-6 || zoom === MIN_ZOOM);
+        },
+      ),
+    );
+  });
+  it("stays inside the range and is 1 when a size is not usable", () => {
+    expect(widthZoom(100, 960)).toBe(MIN_ZOOM);
+    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(widthZoom(bad, 960)).toBe(1);
+      expect(widthZoom(960, bad)).toBe(1);
+    }
   });
 });
