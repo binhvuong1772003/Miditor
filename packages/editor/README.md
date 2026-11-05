@@ -860,7 +860,26 @@ no configuration.
 - Up and Down move through the list, Right and Left open and shut a block (Left on a closed block goes to the one it is in), Enter selects.
 - A line shows the name of the kind in the language of the editor and, for a kind with words in it, the first of them.
 
-Renaming, hiding, locking and reordering by dragging a line are not there yet.
+### Reordering blocks and putting a block into another
+
+Every line has a grip at its end (shown when the pointer is over the line, or the line is selected). Drag a
+line by its grip, or lift it with the keyboard, to change the order of blocks or to put a block into another:
+
+- Over the top or the bottom quarter of a line a bar shows where the block will go, above or below that line
+  and in the same block as that line. Over the middle of a line that can hold blocks the line is tinted and
+  the block goes into it, on top of the ones in it. A line that cannot hold the block shows nothing: letting go
+  there changes nothing.
+- Into another block the block stays where it is on the page; only the numbers that place it are written again.
+- It is one step of history, so one Undo takes it back, and it obeys `permissions` (`canDrag`) like any other
+  move: a refused move is told to `onDenied`. It is not available on the phone screen.
+- With the keyboard, focus the grip of the selected line (it is the one stop of Tab on a line), press Space to
+  lift it, the arrow keys to move it and Space to drop it; Escape cancels the lift and keeps the selection.
+  A screen reader is told what is lifted and what it is over, in the language of the editor.
+
+The drag is done with [dnd-kit](https://dndkit.com) (`@dnd-kit/react`, pinned). Dragging a block on the page is not
+done with it: that is still the job of the selection frame.
+
+Renaming, hiding and locking are not there yet.
 
 ## On the canvas
 
