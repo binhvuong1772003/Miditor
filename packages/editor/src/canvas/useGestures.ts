@@ -17,12 +17,12 @@ import {
   turnOf,
 } from "@miditor/core";
 import { useRef, useState } from "react";
-import { isHtmlElement } from "../dom";
 import { type Gap, gapsAround } from "../gaps";
 import { centreOf, rectAt, turnGroup } from "../group-math";
 import { drawnBox, freezeRoot } from "../phone-freeze";
 import type { useDocumentCommands } from "../store";
 import { onWindows } from "./client-rect";
+import { firstAccepting } from "./drop-target";
 import { elementOf } from "./element-of";
 import type { ResizeResult, SelectionControls } from "./SelectionBox";
 
@@ -189,13 +189,11 @@ export function useGestures({
     const x = g.screen.left + g.screen.width / 2 + dist.x * zoom;
     const y = g.screen.top + g.screen.height / 2 + dist.y * zoom;
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
-    const under = block.ownerDocument
-      .elementsFromPoint(x, y)
-      .filter((el): el is HTMLElement => isHtmlElement(el) && el.dataset.miditorId !== undefined);
-    const hit = under.find((el) =>
-      canMove(registry, data.root, g.before.id, el.dataset.miditorId as string),
+    const found = firstAccepting(block.ownerDocument.elementsFromPoint(x, y), (id) =>
+      canMove(registry, data.root, g.before.id, id),
     );
-    const id = hit?.dataset.miditorId;
+    const hit = found?.element;
+    const id = found?.id;
     if (!hit || id === undefined || id === parentOf(data.root, g.before.id)?.id) return undefined;
     // Each parent as a frame on the screen: its padding box, where its middle is (the middle of a
     // turned element is the middle of the box around it) and how far it and its parents are turned.

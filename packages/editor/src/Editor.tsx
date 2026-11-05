@@ -41,13 +41,13 @@ import type { ActionDef } from "./actions";
 import { type Appearance, appearanceVariables, schemeOf } from "./appearance";
 import { CanvasView } from "./canvas/CanvasView";
 import { clientRect, elementsAtClient, frameDocumentOf } from "./canvas/client-rect";
+import { firstAccepting } from "./canvas/drop-target";
 import { elementOf } from "./canvas/element-of";
 import { useStageSize } from "./canvas/useStageSize";
 import { createApi } from "./control-api";
 import { ControlProvider } from "./control-context";
 import { attachController, type EditorController } from "./controller";
 import type { CustomFieldInput } from "./custom-field";
-import { isHtmlElement } from "./dom";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
@@ -646,14 +646,13 @@ function EditorBody({
     if (!probe || onPhone || !workspace) return undefined;
     // The blocks are in the frame the page is drawn in, when there is one.
     const surface = frameDocumentOf(workspace);
-    for (const element of elementsAtClient(surface ?? document, point.x, point.y)) {
-      if (!isHtmlElement(element) || !(surface ? surface.body : workspace).contains(element)) {
-        continue;
-      }
-      const id = element.dataset.miditorId;
-      if (id !== undefined && canInsert(registry, data.root, id, probe)) return { id, element };
-    }
-    return undefined;
+    const scope = surface ? surface.body : workspace;
+    return firstAccepting(
+      elementsAtClient(surface ?? document, point.x, point.y).filter((element) =>
+        scope.contains(element),
+      ),
+      (id) => canInsert(registry, data.root, id, probe),
+    );
   };
 
   /** A card is over the page: outline the block it would land in (the page itself needs no outline). */
