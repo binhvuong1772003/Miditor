@@ -33,7 +33,7 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
+            start: 5,
             size: 31.25,
           },
           y: {
@@ -73,8 +73,8 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 80.0,
-            size: 15.0,
+            start: 80,
+            size: 15,
           },
           y: {
             anchor: "start",
@@ -179,7 +179,7 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
+            start: 5,
             size: 54.166667,
           },
           y: {
@@ -218,7 +218,7 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
+            start: 5,
             size: 54.166667,
           },
           y: {
@@ -257,8 +257,8 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
-            size: 50.0,
+            start: 5,
+            size: 50,
           },
           y: {
             anchor: "start",
@@ -297,7 +297,7 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
+            start: 5,
             size: 22.916667,
           },
           y: {
@@ -376,8 +376,8 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
-            size: 90.0,
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",
@@ -987,8 +987,8 @@ export const LANDING_PAGE: PageData = {
           mode: "free",
           x: {
             anchor: "scale",
-            start: 5.0,
-            size: 90.0,
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",

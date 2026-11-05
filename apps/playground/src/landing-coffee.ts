@@ -47,8 +47,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 25,
           },
           y: {
             anchor: "start",
@@ -86,8 +87,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 788,
+            anchor: "scale",
+            start: 82.0833,
+            size: 12.9167,
           },
           y: {
             anchor: "start",
@@ -124,8 +126,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",
@@ -162,8 +165,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 100,
+            anchor: "scale",
+            start: 10.4167,
+            size: 79.1667,
           },
           y: {
             anchor: "start",
@@ -200,8 +204,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 170,
+            anchor: "scale",
+            start: 17.7083,
+            size: 64.5833,
           },
           y: {
             anchor: "start",
@@ -239,8 +244,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 290,
+            anchor: "scale",
+            start: 30.2083,
+            size: 21.875,
           },
           y: {
             anchor: "start",
@@ -278,8 +284,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 520,
+            anchor: "scale",
+            start: 54.1667,
+            size: 15.625,
           },
           y: {
             anchor: "start",
@@ -310,8 +317,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 360,
+            anchor: "scale",
+            start: 37.5,
+            size: 25,
           },
           y: {
             anchor: "start",
@@ -342,8 +350,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 390,
+            anchor: "scale",
+            start: 40.625,
+            size: 18.75,
           },
           y: {
             anchor: "start",
@@ -374,8 +383,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 410,
+            anchor: "scale",
+            start: 42.7083,
+            size: 14.5833,
           },
           y: {
             anchor: "start",
@@ -406,8 +416,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 300,
+            anchor: "scale",
+            start: 31.25,
+            size: 2.9167,
           },
           y: {
             anchor: "start",
@@ -438,8 +449,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 640,
+            anchor: "scale",
+            start: 66.6667,
+            size: 2.9167,
           },
           y: {
             anchor: "start",
@@ -470,8 +482,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 330,
+            anchor: "scale",
+            start: 34.375,
+            size: 2.5,
           },
           y: {
             anchor: "start",
@@ -502,8 +515,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 615,
+            anchor: "scale",
+            start: 64.0625,
+            size: 2.5,
           },
           y: {
             anchor: "start",
@@ -540,8 +554,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",
@@ -582,8 +597,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 28.3333,
           },
           y: {
             anchor: "start",
@@ -613,8 +629,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 13.2353,
               },
               y: {
                 anchor: "start",
@@ -651,8 +668,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -689,8 +707,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -733,8 +752,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 344,
+            anchor: "scale",
+            start: 35.8333,
+            size: 28.3333,
           },
           y: {
             anchor: "start",
@@ -764,8 +784,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 13.2353,
               },
               y: {
                 anchor: "start",
@@ -802,8 +823,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -840,8 +862,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -884,8 +907,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 640,
+            anchor: "scale",
+            start: 66.6667,
+            size: 28.3333,
           },
           y: {
             anchor: "start",
@@ -915,8 +939,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 13.2353,
               },
               y: {
                 anchor: "start",
@@ -953,8 +978,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -991,8 +1017,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 24,
+                anchor: "scale",
+                start: 8.8235,
+                size: 82.3529,
               },
               y: {
                 anchor: "start",
@@ -1035,8 +1062,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 144,
+            anchor: "scale",
+            start: 15,
+            size: 70,
           },
           y: {
             anchor: "start",
@@ -1072,8 +1100,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 40,
+                anchor: "scale",
+                start: 5.9524,
+                size: 88.0952,
               },
               y: {
                 anchor: "start",
@@ -1110,8 +1139,9 @@ export const COFFEE_PAGE: PageData = {
             position: {
               mode: "free",
               x: {
-                anchor: "start",
-                offset: 40,
+                anchor: "scale",
+                start: 5.9524,
+                size: 88.0952,
               },
               y: {
                 anchor: "start",
@@ -1150,8 +1180,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 100,
+            anchor: "scale",
+            start: 10.4167,
+            size: 79.1667,
           },
           y: {
             anchor: "start",
@@ -1188,8 +1219,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",
@@ -1227,8 +1259,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 360,
+            anchor: "scale",
+            start: 37.5,
+            size: 25,
           },
           y: {
             anchor: "start",
@@ -1265,8 +1298,9 @@ export const COFFEE_PAGE: PageData = {
         position: {
           mode: "free",
           x: {
-            anchor: "start",
-            offset: 48,
+            anchor: "scale",
+            start: 5,
+            size: 90,
           },
           y: {
             anchor: "start",

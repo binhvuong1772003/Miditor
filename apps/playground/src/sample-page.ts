@@ -4,27 +4,57 @@ import { type PageData, SCHEMA_VERSION } from "@miditor/editor";
 export const SAMPLE_PAGE: PageData = {
   schemaVersion: SCHEMA_VERSION,
   theme: {
-    colors: { primary: "#2563eb", accent: "#e11d48", paper: "#f8fafc" },
-    fonts: { body: "system-ui, sans-serif", heading: "Georgia, serif" },
+    colors: {
+      primary: "#2563eb",
+      accent: "#e11d48",
+      paper: "#f8fafc",
+    },
+    fonts: {
+      body: "system-ui, sans-serif",
+      heading: "Georgia, serif",
+    },
   },
   root: {
     id: "root",
     type: "Page",
     props: {},
     styles: {},
-    position: { mode: "flow" },
+    position: {
+      mode: "flow",
+    },
     children: [
       {
         id: "sample",
         type: "Container",
         props: {},
-        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
+        styles: {
+          background: "#d5dae3",
+          borderWidth: 1,
+          borderColor: "#b3bccb",
+          borderRadius: 4,
+        },
         position: {
           mode: "free",
-          x: { anchor: "end", offset: 20 },
-          y: { anchor: "start", offset: 40 },
+          x: {
+            anchor: "scale",
+            start: 81.25,
+            size: 16.6667,
+          },
+          y: {
+            anchor: "start",
+            offset: 40,
+          },
         },
-        size: { w: { kind: "px", v: 160 }, h: { kind: "px", v: 96 } },
+        size: {
+          w: {
+            kind: "px",
+            v: 160,
+          },
+          h: {
+            kind: "px",
+            v: 96,
+          },
+        },
         rotation: 0,
         children: [],
       },
@@ -32,13 +62,34 @@ export const SAMPLE_PAGE: PageData = {
         id: "sample-2",
         type: "Container",
         props: {},
-        styles: { background: "#d5dae3", borderWidth: 1, borderColor: "#b3bccb", borderRadius: 4 },
+        styles: {
+          background: "#d5dae3",
+          borderWidth: 1,
+          borderColor: "#b3bccb",
+          borderRadius: 4,
+        },
         position: {
           mode: "free",
-          x: { anchor: "start", offset: 40 },
-          y: { anchor: "end", offset: 60 },
+          x: {
+            anchor: "scale",
+            start: 4.1667,
+            size: 20.8333,
+          },
+          y: {
+            anchor: "end",
+            offset: 60,
+          },
         },
-        size: { w: { kind: "px", v: 200 }, h: { kind: "px", v: 64 } },
+        size: {
+          w: {
+            kind: "px",
+            v: 200,
+          },
+          h: {
+            kind: "px",
+            v: 64,
+          },
+        },
         rotation: 0,
         children: [],
       },
