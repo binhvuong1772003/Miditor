@@ -181,7 +181,8 @@ test.describe("an external field", () => {
 
     // A visitor's page: the host fills the data in with `resolveSources` before it draws.
     await page.goto("/?preview&items-changed");
-    await expect(page.getByTestId("live-item")).toContainText("249");
-    await expect(page.getByTestId("live-item")).toHaveAttribute("data-lang", "en");
+    const visitor = page.frameLocator('iframe[title="Preview"]');
+    await expect(visitor.getByTestId("live-item")).toContainText("249");
+    await expect(visitor.getByTestId("live-item")).toHaveAttribute("data-lang", "en");
   });
 });

@@ -3,6 +3,7 @@ import { pageMeta, Render } from "@miditor/render";
 import { useEffect, useState } from "react";
 import { itemsSource } from "./items-source";
 import { components, metadata, renderers } from "./kinds";
+import { PreviewFrame } from "./PreviewFrame";
 import { loadPage } from "./storage";
 
 const WIDTHS = [
@@ -67,13 +68,15 @@ export function Preview() {
       )}
       <div className="preview-stage">
         <div className="preview-box" style={{ inlineSize: `min(${width}px, 100%)` }}>
-          <Render
-            data={page}
-            responsive={{}}
-            renderers={renderers}
-            metadata={metadata}
-            onAction={(action, payload) => setMessage(`${action} ${JSON.stringify(payload)}`)}
-          />
+          <PreviewFrame>
+            <Render
+              data={page}
+              responsive={{}}
+              renderers={renderers}
+              metadata={metadata}
+              onAction={(action, payload) => setMessage(`${action} ${JSON.stringify(payload)}`)}
+            />
+          </PreviewFrame>
         </div>
       </div>
     </div>
