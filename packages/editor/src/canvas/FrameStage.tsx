@@ -149,8 +149,9 @@ export function FrameStage({
     // The colour is the focus colour of the editor, which the rules of the workspace give outside the frame.
     // The height of the frame follows what is in it, so a host sheet that gives `html` and `body` a height of the
     // window (a common reset) must not hold the page to the height the frame has now.
+    // What hangs over the edge of the page is cut, so the frame has no scroll bars of its own: the workspace scrolls.
     base.textContent =
-      "html, body { height: auto !important; min-height: 0 !important; } .moveable-control-box { top: 0; left: 0; --moveable-color: #1d4ed8; }";
+      "html, body { height: auto !important; min-height: 0 !important; } html { overflow: hidden !important; } .moveable-control-box { top: 0; left: 0; --moveable-color: #1d4ed8; }";
     base.setAttribute("data-miditor-frame-base", "");
     doc.head.append(base);
     const measure = () => setHeight(doc.body.offsetHeight);
