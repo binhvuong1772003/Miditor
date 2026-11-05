@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { addFromBlocks, announcement, boxOf, openEditor, openTool, surface } from "./helpers";
+import {
+  addFromBlocks,
+  announcement,
+  boxOf,
+  openEditor,
+  openTool,
+  properties,
+  surface,
+} from "./helpers";
 
 // The rows of the Layers tool can be dragged, by their grip, to change the order of blocks and to put a block into another.
 
@@ -54,3 +62,84 @@ for (const zoomOuts of [0, 2]) {
     await expect(announcement(page)).toContainText("moved into");
   });
 }
+
+const order = async (page: import("@playwright/test").Page) =>
+  rows(page).evaluateAll((lines) => lines.map((line) => line.getAttribute("data-layer")));
+
+async function liftAndMove(
+  page: import("@playwright/test").Page,
+  id: string,
+  presses: number,
+  how: "drop" | "cancel",
+): Promise<void> {
+  await page.locator(`[data-layer="${id}"]`).click();
+  await grip(page, id).focus();
+  await page.keyboard.press("Space");
+  for (let i = 0; i < presses; i++) await page.keyboard.press("ArrowDown");
+  await page.keyboard.press(how === "drop" ? "Space" : "Escape");
+}
+
+test("the keyboard lifts a row with Space, moves it with the arrows and drops it with Space", async ({
+  page,
+}) => {
+  expect(await order(page)).toEqual(["sample-2", "sample"]);
+  await liftAndMove(page, "sample-2", 4, "drop");
+  await expect.poll(() => order(page)).toEqual(["sample", "sample-2"]);
+  // The focus is not lost: it is in the row that moved.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document.activeElement
+          ?.closest("li")
+          ?.querySelector("[data-layer]")
+          ?.getAttribute("data-layer"),
+      ),
+    )
+    .toBe("sample-2");
+});
+
+test("Escape cancels a lift and leaves the order and the selection as they were", async ({
+  page,
+}) => {
+  await liftAndMove(page, "sample-2", 4, "cancel");
+  // The lifted row goes back with a short animation, during which a copy of it is still in the list.
+  await expect.poll(() => order(page)).toEqual(["sample-2", "sample"]);
+  await expect(page.locator('[data-layer="sample-2"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(properties(page)).toContainText("Box");
+});
+
+test("one Undo takes back a drop", async ({ page }) => {
+  await liftAndMove(page, "sample-2", 4, "drop");
+  await expect.poll(() => order(page)).toEqual(["sample", "sample-2"]);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(() => order(page)).toEqual(["sample-2", "sample"]);
+});
+
+test("the grips are not there on the phone screen", async ({ page }) => {
+  await expect(page.locator("[data-layer-grip]").first()).toBeAttached();
+  await page.getByRole("button", { name: "Phone", exact: true }).click();
+  await expect(page.locator("[data-layer-grip]")).toHaveCount(0);
+});
+
+test("a block the host has locked is not moved, and the host is told", async ({ page }) => {
+  await openEditor(page, "&permissions");
+  await openTool(page, "Layers");
+  const before = await order(page);
+  expect(before).toContain("footer");
+  const other = before.find((id) => id !== "footer") as string;
+  const from = await grip(page, "footer").boundingBox();
+  const over = await page.locator(`[data-layer="${other}"]`).boundingBox();
+  if (!from || !over) throw new Error("the rows are not drawn");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    over.x + over.width / 2,
+    over.y + (before[0] === "footer" ? over.height * 0.9 : 2),
+    {
+      steps: 12,
+    },
+  );
+  await page.mouse.up();
+  await expect(page.getByTestId("denied")).not.toHaveText("");
+  await expect.poll(() => order(page)).toEqual(before);
+});

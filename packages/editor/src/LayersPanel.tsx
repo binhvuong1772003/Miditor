@@ -173,6 +173,8 @@ export function LayersPanel({
   // Where a drag in progress would drop, for the line that shows it; the place is read when it ends.
   const [over, setOver] = useState<{ id: string; zone: DropZone } | null>(null);
   const place = useRef<LayerPlace | undefined>(undefined);
+  // A row is lifted: Escape then cancels the lift and goes no further, or it would clear the selection too.
+  const lifted = useRef(false);
   const dragDisabled = disabled || !onMove;
 
   // The list opens the way to a block that was selected somewhere else, on the page for example.
@@ -262,6 +264,10 @@ export function LayersPanel({
     setOver(found ? { id: overId, zone } : null);
   };
   const end = (event: DragEndEvent) => {
+    // Not before the key that ended the lift has gone the whole way up: dnd-kit hears it first, the editor after.
+    setTimeout(() => {
+      lifted.current = false;
+    }, 0);
     const found = place.current;
     place.current = undefined;
     setOver(null);
@@ -293,8 +299,22 @@ export function LayersPanel({
   );
 
   return (
-    <div className={styles.panel}>
-      <DragDropProvider plugins={plugins} onDragMove={move} onDragOver={move} onDragEnd={end}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: it only keeps Escape of a lift from the rest of the editor
+    <div
+      className={styles.panel}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && lifted.current) event.stopPropagation();
+      }}
+    >
+      <DragDropProvider
+        plugins={plugins}
+        onDragStart={() => {
+          lifted.current = true;
+        }}
+        onDragMove={move}
+        onDragOver={move}
+        onDragEnd={end}
+      >
         <ul
           ref={list}
           aria-label={t("layers.label")}
