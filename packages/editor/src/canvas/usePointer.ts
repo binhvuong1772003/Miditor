@@ -17,7 +17,6 @@ import { elementOf } from "./element-of";
 import { isMoveableLayer, type SelectionControls } from "./SelectionBox";
 
 export interface PointerInput {
-  workspace: HTMLElement | null;
   /** Where the blocks are looked for: the workspace, or the document of the frame the page is drawn in. */
   scope: HTMLElement | null;
   /** The editor's own element, which takes the focus after a press so Esc reaches it. */
@@ -46,7 +45,6 @@ export interface PointerInput {
  * are what the canvas draws for the menu and the box.
  */
 export function usePointer({
-  workspace,
   scope,
   editorRoot,
   data,

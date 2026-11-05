@@ -247,7 +247,6 @@ export function CanvasView({
   const hoverElement = scope && hoverId ? elementOf(scope, hoverId) : null;
 
   const { menuAt, setMenuAt, marquee, press, hover, openMenu, enter } = usePointer({
-    workspace,
     scope,
     editorRoot,
     data,
