@@ -22,6 +22,7 @@ import {
   changeAnchor,
   distributeSelected,
   geometryCommands,
+  moveBlock,
   moveToParent,
   nudgeSelected,
   placeBoxes,
@@ -335,5 +336,67 @@ describe("the boxes after any moves", () => {
         },
       ),
     );
+  });
+});
+
+describe("moveBlock", () => {
+  const ids = (state: State, parent = "root") =>
+    (parent === "root"
+      ? rootOf(state)
+      : (findNode(rootOf(state), parent) as TreeNode)
+    ).children.map((child) => child.id);
+
+  it("puts a block at another place among its siblings, in one step that Undo takes back", () => {
+    const state = pageWith(3);
+    const next = moveBlock(state, { id: "t1", parentId: "root", index: 3 }, env);
+    expect(ids(next)).toEqual(["t2", "t3", "box", "t1"]);
+    expect(next.history.past).toHaveLength(1);
+  });
+
+  it("puts a block into another block and keeps it where it was on the page", () => {
+    const state = pageWith(1);
+    const before = resolveRect(boxFor(node(state, "t1"), "desktop"), SIZE);
+    const from = { size: SIZE, center: { x: 340, y: 394 }, rotation: 0 };
+    // The box is 200 by 64 with its middle at (500, 300): its top left corner is at (400, 268).
+    const to = { size: { w: 200, h: 64 }, center: { x: 500, y: 300 }, rotation: 0 };
+    const next = moveBlock(
+      state,
+      { id: "t1", parentId: "box", index: 0, options: { from, to } },
+      env,
+    );
+    expect(ids(next, "box")).toEqual(["t1"]);
+    const after = resolveRect(boxFor(node(next, "t1"), "desktop"), { w: 200, h: 64 });
+    expect(after.x).toBeCloseTo(before.x - 400, 0);
+    expect(after.y).toBeCloseTo(before.y - 268, 0);
+  });
+
+  it("refuses another parent without the frames to measure in", () => {
+    const state = pageWith(1);
+    expect(moveBlock(state, { id: "t1", parentId: "box", index: 0 }, env)).toBe(state);
+  });
+
+  it("changes nothing on the phone screen, into itself, or to the place it is at", () => {
+    const state = pageWith(2);
+    const phone: State = { ...state, frame: "phone" };
+    expect(moveBlock(phone, { id: "t1", parentId: "root", index: 1 }, env)).toBe(phone);
+    expect(moveBlock(state, { id: "box", parentId: "box", index: 0 }, env)).toBe(state);
+    expect(moveBlock(state, { id: "t1", parentId: "root", index: 0 }, env)).toBe(state);
+  });
+
+  it("is told to the host as a reorder or a reparent, by what changed", () => {
+    const onAction = vi.fn();
+    const withHost: Env = { ...env, onAction };
+    const store = createEditorStore(pageWith(2));
+    const commands = geometryCommands(store, withHost);
+    commands.moveBlock({ id: "t1", parentId: "root", index: 2 });
+    expect(onAction.mock.calls[0]?.[0]).toMatchObject({ type: "block.reorder" });
+    const from = { size: SIZE, center: { x: 340, y: 394 }, rotation: 0 };
+    commands.moveBlock({
+      id: "t1",
+      parentId: "box",
+      index: 0,
+      options: { from, to: { ...from, size: { w: 200, h: 64 } } },
+    });
+    expect(onAction.mock.calls[1]?.[0]).toMatchObject({ type: "block.reparent" });
   });
 });

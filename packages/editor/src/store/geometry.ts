@@ -12,8 +12,10 @@ import {
   isFreeNode,
   keepsRatio,
   minSize,
+  moveNode,
   normalizeAngle,
   type PageData,
+  parentOf,
   type Rect,
   reparentNode,
   resolveRect,
@@ -320,6 +322,40 @@ export function moveToParent<S extends State>(
 }
 
 /**
+ * A block put at another place among its siblings, or in another block. In another block it is written again
+ * for that block, so it stays where it is on the page: `options` are the two parents measured as frames, and
+ * without them a change of parent is refused. Nothing on the phone screen, where blocks are not moved, and
+ * nothing when the block would stay where it is.
+ */
+export function moveBlock<S extends State>(
+  state: S,
+  args: {
+    id: string;
+    parentId: string;
+    index: number;
+    options?: { from: Frame; to: Frame };
+  },
+  env: Env,
+): S {
+  if (state.frame === "phone") return state;
+  const settled = settle(state, env);
+  const current = parentOf(rootOf(settled), args.id);
+  if (!current) return settled;
+  const same = current.id === args.parentId;
+  if (!same && !args.options) return settled;
+  const { options } = args;
+  return edit(
+    settled,
+    withRoot((root) =>
+      same || !options
+        ? moveNode(root, args.id, args.parentId, args.index)
+        : reparentNode(root, args.id, args.parentId, { ...options, index: args.index }),
+    ),
+    env,
+  );
+}
+
+/**
  * The state with the page placed for the phone where it is drawn, when the phone draws it as a flow:
  * from then on every block has a place of its own. No step of history; see `runFrozen`.
  */
@@ -383,6 +419,13 @@ export function geometryCommands<S extends State>(store: EditorStore<S>, env: En
       run((state) => turnBlock(state, args, env), { type: "block.turn" }),
     moveToParent: (args: Parameters<typeof moveToParent>[1]) =>
       run((state) => moveToParent(state, args, env), { type: "block.reparent" }),
+    moveBlock: (args: Parameters<typeof moveBlock>[1]) =>
+      run((state) => moveBlock(state, args, env), {
+        type:
+          parentOf(rootOf(store.getState()), args.id)?.id === args.parentId
+            ? "block.reorder"
+            : "block.reparent",
+      }),
   };
 }
 
