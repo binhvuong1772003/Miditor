@@ -160,12 +160,12 @@ export interface EditorProps {
    */
   metadata?: JsonValue;
   /**
-   * Where the page is drawn while it is edited: `"inline"` (the default) in the page that holds the editor,
-   * or `"iframe"` in a frame of its own. In a frame the blocks have a width of their own (`@media` and `vw` in
+   * Where the page is drawn while it is edited: `"iframe"` (the default) in a frame of its own,
+   * or `"inline"` in the page that holds the editor. In a frame the blocks have a width of their own (`@media` and `vw` in
    * the blocks of your kinds see the width of the page, as they do when it is published), the style of the
    * editor cannot reach them and theirs cannot reach the editor, and what hangs over the edge of the page is
    * cut. The style sheets of the page that holds the editor are copied into the frame, so the classes your
-   * kinds use are there. Experimental.
+   * kinds use are there.
    */
   canvas?: "inline" | "iframe";
   /**
@@ -440,7 +440,7 @@ function EditorBody({
   onChange,
   onChangeDebounce,
   metadata,
-  canvas,
+  canvas = "iframe",
   status,
   onSave,
   headerActions,

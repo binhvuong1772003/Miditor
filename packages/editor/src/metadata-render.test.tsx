@@ -33,6 +33,7 @@ describe("the canvas of the editor", () => {
   it("gives the renderers of a kind the metadata of the editor", () => {
     const html = renderToString(
       <Editor
+        canvas="inline"
         data={page}
         metadata={{ currency: "VND" }}
         config={{
@@ -47,6 +48,7 @@ describe("the canvas of the editor", () => {
   it("gives them undefined when the host gave none", () => {
     const html = renderToString(
       <Editor
+        canvas="inline"
         data={page}
         config={{
           components,

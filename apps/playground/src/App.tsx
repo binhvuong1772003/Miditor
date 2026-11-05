@@ -53,9 +53,9 @@ import { Twin } from "./Twin";
 import { loadThemes, storeThemes, withId } from "./theme-store";
 import { suggestedThemes } from "./themes";
 
-/** Whether the page is drawn in a frame of its own: `?iframe` in the address, or `VITE_IFRAME=1` when the server starts. */
-const framed = () =>
-  import.meta.env.VITE_IFRAME === "1" || new URLSearchParams(window.location.search).has("iframe");
+/** Whether the page is drawn in place instead of in a frame of its own: `?inline` in the address, or `VITE_INLINE=1` when the server starts. */
+const inline = () =>
+  import.meta.env.VITE_INLINE === "1" || new URLSearchParams(window.location.search).has("inline");
 
 /** `?reset` in the address drops the stored page; it is taken out of the address so a reload keeps the page. */
 function openPage(): PageData {
@@ -288,8 +288,8 @@ function Playground({
   const editorProps: EditorProps = {
     data: page,
     metadata,
-    // `?iframe` (or `VITE_IFRAME=1` when the server starts) draws the page in a frame of its own; the e2e suite runs that way too.
-    ...(framed() ? { canvas: "iframe" as const } : {}),
+    // The page is drawn in a frame of its own; `?inline` (or `VITE_INLINE=1` when the server starts) draws it in place.
+    ...(inline() ? { canvas: "inline" as const } : {}),
     config: {
       components,
       renderers,

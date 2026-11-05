@@ -22,7 +22,7 @@ const plain = (html: string) =>
 
 describe("the default layout is the editor as it was", () => {
   it("draws the same markup", async () => {
-    await expect(plain(renderToString(<Editor />))).toMatchFileSnapshot(
+    await expect(plain(renderToString(<Editor canvas="inline" />))).toMatchFileSnapshot(
       "./__snapshots__/editor-default.txt",
     );
   });
@@ -30,6 +30,7 @@ describe("the default layout is the editor as it was", () => {
   it("draws the same markup with overrides and hide", async () => {
     const html = renderToString(
       <Editor
+        canvas="inline"
         overrides={{ header: ({ children }) => <div id="host">{children}</div> }}
         hide={["tool.themes", "header.zoom"]}
       />,

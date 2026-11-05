@@ -2,23 +2,23 @@ import { expect, type Page } from "@playwright/test";
 
 /** A fresh playground: `?reset` drops the stored page so every test starts from the same one. */
 export async function openEditor(page: Page, query = ""): Promise<void> {
-  // `E2E_IFRAME=1` runs the whole suite with the page drawn in a frame of its own.
-  await page.goto(`/?reset${process.env.E2E_IFRAME ? "&iframe" : ""}${query}`);
+  // `E2E_INLINE=1` runs the whole suite with the page drawn in place instead of in a frame.
+  await page.goto(`/?reset${process.env.E2E_INLINE ? "&inline" : ""}${query}`);
   await expect(page.getByRole("button", { name: /^(Save|Lưu)$/ })).toBeVisible();
 }
 
-/** `page.goto`, with `&iframe` added when `E2E_IFRAME=1` so the page is drawn in a frame of its own. */
+/** `page.goto`, with `&inline` added when `E2E_INLINE=1` so the page is drawn in place. */
 export async function gotoFrame(page: Page, path: string): Promise<void> {
-  await page.goto(process.env.E2E_IFRAME ? `${path}${path.includes("?") ? "&" : "?"}iframe` : path);
+  await page.goto(process.env.E2E_INLINE ? `${path}${path.includes("?") ? "&" : "?"}inline` : path);
 }
 
 /** The page drawn inside an editor of a page with several, or the editor itself when the page is drawn in place. */
 export const inFrame = (editor: import("@playwright/test").Locator) =>
-  process.env.E2E_IFRAME ? editor.frameLocator('iframe[title="Page"]') : editor;
+  process.env.E2E_INLINE ? editor : editor.frameLocator('iframe[title="Page"]');
 
-/** Where the blocks are: the page, or the frame the page is drawn in when `E2E_IFRAME=1`. */
+/** Where the blocks are: the frame the page is drawn in, or the page itself when `E2E_INLINE=1`. */
 export const surface = (page: Page) =>
-  process.env.E2E_IFRAME ? page.frameLocator('iframe[title="Page"]') : page;
+  process.env.E2E_INLINE ? page : page.frameLocator('iframe[title="Page"]');
 
 /** The blocks drawn on the page, the page itself included. */
 export const blocks = (page: Page) => surface(page).locator("[data-miditor-id]");

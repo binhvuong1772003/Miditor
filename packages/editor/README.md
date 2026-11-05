@@ -642,15 +642,13 @@ const [status, setStatus] = useState<SaveStatus>("saved");
 
 Without `status`, the header follows the Save button and shows nothing if there is none.
 
-### The page in a frame of its own: `canvas="iframe"`
+### The page in a frame of its own: `canvas`
 
-> Experimental.
-
-By default the page is drawn in the page that holds the editor. With `canvas="iframe"` it is drawn in a frame of
-its own, as Puck does:
+By default the page is drawn in a frame of its own, as Puck does. `canvas="inline"` draws it in the page that
+holds the editor instead:
 
 ```tsx
-<Editor canvas="iframe" data={page} />;
+<Editor canvas="inline" data={page} />;
 ```
 
 - **A width of its own.** `@media`, `vw` and `vh` in the blocks of your own kinds see the width of the page
@@ -664,8 +662,7 @@ its own, as Puck does:
   labels and the menus stay outside it.
 - **Known gaps:** the first change of a phone page that is laid out as a flow (see "The phone layout") does not
   place the blocks where they are drawn when the page is in a frame (one e2e test fails). Keys are given to the
-  editor from the frame; a host that listens to keys on its own should listen in both documents. The default stays
-  `"inline"` until this has been used more.
+  editor from the frame; a host that listens to keys on its own should listen in both documents.
 
 ### Keeping the history: `getHistory`, `initialHistory`, `jumpTo`, `setHistory`
 
