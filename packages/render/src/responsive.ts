@@ -1,3 +1,4 @@
+import { DEVICE_WIDTH } from "@miditor/core";
 import type { CSSProperties } from "react";
 
 /** The width, in px, below which the page is laid out for a phone unless the host says otherwise. */
@@ -12,7 +13,27 @@ export interface ResponsiveOptions {
   breakpoint?: number | undefined;
   /** `"container"` (the default) follows the box that holds the page, `"viewport"` the window. */
   query?: ResponsiveQuery | undefined;
+  /**
+   * Draws the desktop page smaller as a whole, between the breakpoint and the width of the desktop page,
+   * in place of letting the blocks crowd each other as the box gets narrower. `true` takes the width
+   * of the desktop page the editor uses (960 px); `{ from }` gives another. Text, heights, distances
+   * and borders all get smaller together, in steps of 16 px of width, by the CSS `zoom` of an element
+   * `<Render>` puts around the page; at and below the breakpoint the phone layout is drawn as before.
+   */
+  scale?: boolean | { from?: number | undefined } | undefined;
 }
+
+/**
+ * The element `<Render>` puts around the page when it scales it. The page itself says `all: initial` in its
+ * own inline style, which would take a zoom of a style sheet away, so the zoom goes on this element.
+ */
+export const SCALE_ATTRIBUTE = "data-miditor-scale";
+
+/** Whether `options` ask for the page to be scaled. */
+export const scalesPage = (options: ResponsiveOptions | undefined) => Boolean(options?.scale);
+
+/** The width, in px, of one step of the scale: the page is zoomed once for every step of the box. */
+const SCALE_STEP = 16;
 
 /**
  * The custom property that says "this is a phone". It is not set on a desktop, where it counts as
@@ -100,7 +121,32 @@ const widthOf = (breakpoint: number | undefined) =>
 export function responsiveCss(options: ResponsiveOptions = {}): string {
   const width = widthOf(options.breakpoint);
   const rule = `:where([data-miditor-render]) > * { ${PHONE_VAR}: ; }`;
-  return options.query === "viewport"
-    ? `@media (max-width: ${width}px) { ${rule} }`
-    : `@container (max-width: ${width}px) { ${rule} }`;
+  const head = options.query === "viewport" ? "@media" : "@container";
+  return `${head} (max-width: ${width}px) { ${rule} }${scaleCss(options, width, head)}`;
 }
+
+/**
+ * The steps of `scale`: for each stretch of widths above the breakpoint and under the width of the desktop
+ * page, the zoom that draws the desktop page at the lowest width of the stretch, so it never comes out wider
+ * than the box. Each stretch has both ends, so nothing is zoomed in the phone layout, and they are 0.01 px
+ * apart, since a box can be a fraction of a px wide.
+ */
+function scaleCss(options: ResponsiveOptions, breakpoint: number, head: string): string {
+  const { scale } = options;
+  if (!scale) return "";
+  const asked = typeof scale === "object" ? scale.from : undefined;
+  const from =
+    typeof asked === "number" && Number.isFinite(asked) && asked > breakpoint + 1
+      ? asked
+      : DEVICE_WIDTH.desktop;
+  if (from <= breakpoint + 1) return "";
+  let css = "";
+  for (let high = from - 0.01; high > breakpoint + 0.01; high -= SCALE_STEP) {
+    const low = Math.max(breakpoint + 0.01, high + 0.01 - SCALE_STEP);
+    const zoom = Math.floor((low / from) * 1e4) / 1e4;
+    css += ` ${head} (min-width: ${round2(low)}px) and (max-width: ${round2(high)}px) { :where([data-miditor-render]) > [${SCALE_ATTRIBUTE}] { zoom: ${zoom}; } }`;
+  }
+  return css;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;

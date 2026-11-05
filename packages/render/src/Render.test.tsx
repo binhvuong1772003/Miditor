@@ -1,6 +1,7 @@
 // @vitest-environment node
 import {
   type Device,
+  emptyPage,
   type FlowNode,
   type FreeNode,
   type JsonValue,
@@ -965,5 +966,16 @@ describe("<Render> background picture", () => {
     );
     expect(tagOf(markup, "b")).toContain("background-image:url(&quot;/a.png&quot;)");
     expect(tagOf(markup, "b")).not.toContain("--m-background-image");
+  });
+});
+
+describe("scale", () => {
+  const data = emptyPage();
+  it("puts the page in a box of its own that the zoom is on, only when asked for", () => {
+    const plain = renderToStaticMarkup(<Render data={data} responsive={{}} />);
+    expect(plain).not.toContain("data-miditor-scale");
+    const scaled = renderToStaticMarkup(<Render data={data} responsive={{ scale: true }} />);
+    expect(scaled).toContain("data-miditor-scale");
+    expect(scaled).toContain("zoom:");
   });
 });

@@ -33,7 +33,14 @@ import {
   textStyle,
 } from "./kind-style";
 import { isBuiltIn, nodeStyle, type PhoneFlow } from "./node-style";
-import { PHONE_VAR, type ResponsiveOptions, responsiveCss, splitStyles } from "./responsive";
+import {
+  PHONE_VAR,
+  type ResponsiveOptions,
+  responsiveCss,
+  SCALE_ATTRIBUTE,
+  scalesPage,
+  splitStyles,
+} from "./responsive";
 
 /** What a host's drawing function is given for one block of its own kind. */
 export interface RendererContext {
@@ -416,6 +423,25 @@ export function Render({
   styleNonce,
 }: RenderProps) {
   const screen: Screen = responsive ? "responsive" : device === "phone" ? "phone" : "desktop";
+  const page = (
+    <RenderNode
+      node={data.root}
+      isRoot
+      screen={screen}
+      renderers={renderers}
+      metadata={metadata}
+      theme={data.theme}
+      inert={links === "inert"}
+      onAction={onAction}
+      auto={screen !== "desktop" && drawsPhoneFlow(data.root)}
+      size={{
+        w: DEVICE_WIDTH.desktop,
+        h: isPageHeight(data.root.styles?.minHeight)
+          ? data.root.styles.minHeight
+          : DEFAULT_PAGE_HEIGHT,
+      }}
+    />
+  );
   return (
     <div
       className={className}
@@ -428,23 +454,17 @@ export function Render({
       }}
     >
       {responsive && <style nonce={styleNonce}>{responsiveCss(responsive)}</style>}
-      <RenderNode
-        node={data.root}
-        isRoot
-        screen={screen}
-        renderers={renderers}
-        metadata={metadata}
-        theme={data.theme}
-        inert={links === "inert"}
-        onAction={onAction}
-        auto={screen !== "desktop" && drawsPhoneFlow(data.root)}
-        size={{
-          w: DEVICE_WIDTH.desktop,
-          h: isPageHeight(data.root.styles?.minHeight)
-            ? data.root.styles.minHeight
-            : DEFAULT_PAGE_HEIGHT,
-        }}
-      />
+      {scalesPage(responsive) ? (
+        // The zoom of the style sheet is on this box; it stays a column so the page fills it, as it fills the wrapper.
+        <div
+          {...{ [SCALE_ATTRIBUTE]: "" }}
+          style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}
+        >
+          {page}
+        </div>
+      ) : (
+        page
+      )}
     </div>
   );
 }

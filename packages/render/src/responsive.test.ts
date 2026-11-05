@@ -178,3 +178,62 @@ describe("responsiveCss", () => {
     );
   });
 });
+
+describe("responsiveCss with scale", () => {
+  const zoomAt = (css: string, width: number, query: "container" | "media" = "container") => {
+    const head = query === "container" ? "@container" : "@media";
+    let found: number | undefined;
+    for (const match of css.matchAll(
+      new RegExp(
+        `${head} \\(min-width: (\\d+(?:\\.\\d+)?)px\\) and \\(max-width: (\\d+(?:\\.\\d+)?)px\\) \\{[^{}]*\\{[^{}]*zoom: ([0-9.]+)`,
+        "g",
+      ),
+    )) {
+      if (width >= Number(match[1]) && width <= Number(match[2])) found = Number(match[3]);
+    }
+    return found;
+  };
+
+  it("adds nothing when scale is not asked for", () => {
+    expect(responsiveCss({})).not.toContain("zoom");
+  });
+
+  it("does not zoom at or below the breakpoint, or at or above the width of the desktop page", () => {
+    const css = responsiveCss({ scale: true });
+    for (const width of [100, 375, 640]) expect(zoomAt(css, width)).toBeUndefined();
+    for (const width of [960, 1200, 3000]) expect(zoomAt(css, width)).toBeUndefined();
+  });
+
+  it("zooms less as the page gets narrower, never above 1, and never wider than the box", () => {
+    const css = responsiveCss({ scale: true });
+    let before = 1;
+    for (let width = 959; width > 640; width--) {
+      const zoom = zoomAt(css, width);
+      expect(zoom).toBeDefined();
+      expect(zoom as number).toBeLessThanOrEqual(1);
+      expect(zoom as number).toBeLessThanOrEqual(before + 1e-9);
+      // The page drawn at 960 px wide and zoomed fits the box.
+      expect((zoom as number) * 960).toBeLessThanOrEqual(width + 1e-6);
+      before = zoom as number;
+    }
+  });
+
+  it("zooms the box around the page, not the box that is the container", () => {
+    expect(responsiveCss({ scale: true })).toContain(
+      ":where([data-miditor-render]) > [data-miditor-scale] { zoom:",
+    );
+  });
+
+  it("follows the breakpoint and a width of the desktop page that the host gives", () => {
+    const css = responsiveCss({ scale: { from: 1200 }, breakpoint: 480 });
+    expect(zoomAt(css, 480)).toBeUndefined();
+    expect(zoomAt(css, 1199)).toBeCloseTo(1184 / 1200, 2);
+    expect(zoomAt(css, 1200)).toBeUndefined();
+  });
+
+  it("uses media queries for a query on the window", () => {
+    const css = responsiveCss({ scale: true, query: "viewport" });
+    expect(zoomAt(css, 800, "media")).toBeDefined();
+    expect(css).not.toContain("@container");
+  });
+});
