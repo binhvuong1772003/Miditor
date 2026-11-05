@@ -9,7 +9,7 @@ import {
   useDroppable,
 } from "@dnd-kit/react";
 import { canMove, findNode, type Registry, type TreeNode } from "@miditor/core";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
 import styles from "./LayersPanel.module.css";
@@ -56,7 +56,14 @@ interface LayerItemProps {
   toggle: (id: string) => void;
 }
 
-function LayerItem({
+/** What a line needs to be dragged: the refs of dnd-kit, and whether it is the one lifted. */
+interface DragParts {
+  place: (element: HTMLLIElement | null) => void;
+  handleRef: (element: Element | null) => void;
+  isDragging: boolean;
+}
+
+function LayerView({
   row: { node, parentId, depth, hasChildren, expanded },
   name,
   snippet,
@@ -65,26 +72,20 @@ function LayerItem({
   primary,
   hovered,
   drop,
-  disabled,
   onHover,
   onSelect,
   toggle,
-}: LayerItemProps) {
+  drag,
+}: Omit<LayerItemProps, "disabled"> & { drag?: DragParts | undefined }) {
   const t = useT();
-  const draggable = useDraggable({ id: node.id, disabled });
-  const droppable = useDroppable({ id: node.id, disabled });
-  const place = (element: HTMLLIElement | null) => {
-    draggable.ref(element);
-    droppable.ref(element);
-  };
   return (
     <li
-      ref={place}
+      ref={drag?.place}
       className={styles.item}
       data-selected={selected}
       data-primary={primary}
       data-hover={hovered && !selected}
-      data-dragging={draggable.isDragging || undefined}
+      data-dragging={drag?.isDragging || undefined}
       data-drop={drop}
       style={{ paddingInlineStart: `${depth * 1}rem` }}
       onPointerEnter={() => onHover(node.id)}
@@ -116,10 +117,10 @@ function LayerItem({
         <span className={styles.name}>{name}</span>
         {snippet && <span className={styles.snippet}>{snippet}</span>}
       </button>
-      {!disabled && (
+      {drag && (
         <button
           type="button"
-          ref={draggable.handleRef}
+          ref={drag.handleRef}
           className={styles.grip}
           data-layer-grip=""
           // Only the grip of the selected line is a stop of the Tab key; the others are for the pointer.
@@ -130,6 +131,26 @@ function LayerItem({
         </button>
       )}
     </li>
+  );
+}
+
+/**
+ * A line that can be dragged. Its hooks register the line with dnd-kit, which marks it as a draggable button for a
+ * screen reader and the Tab key and never takes that back, so a line that cannot be dragged is not this component.
+ */
+function DraggableLayer(props: Omit<LayerItemProps, "disabled">) {
+  const id = props.row.node.id;
+  const draggable = useDraggable({ id });
+  const droppable = useDroppable({ id });
+  const place = (element: HTMLLIElement | null) => {
+    draggable.ref(element);
+    droppable.ref(element);
+  };
+  return (
+    <LayerView
+      {...props}
+      drag={{ place, handleRef: draggable.handleRef, isDragging: draggable.isDragging }}
+    />
   );
 }
 
@@ -145,6 +166,34 @@ function snippetOf(node: TreeNode, registry: Registry): string | undefined {
   const line = value.replace(/\s+/g, " ").trim();
   if (line === "") return undefined;
   return line.length > SNIPPET ? `${line.slice(0, SNIPPET)}…` : line;
+}
+
+/** The plugins of dnd-kit with what it says to a screen reader in the language of the editor and not in its English. */
+function announcingPlugins(
+  latest: RefObject<{ root: TreeNode; registry: Registry; t: ReturnType<typeof useT> }>,
+) {
+  const nameOf = (id: unknown) => {
+    const { root, registry } = latest.current;
+    const node = findNode(root, String(id));
+    return node ? (registry[node.type]?.label ?? node.type) : "";
+  };
+  return defaultPreset.plugins.map((plugin) =>
+    plugin === Accessibility
+      ? Accessibility.configure({
+          announcements: {
+            dragstart: ({ operation }: DragStartEvent) =>
+              latest.current.t("layers.lifted", { name: nameOf(operation.source?.id) }),
+            dragover: ({ operation }: DragOverEvent) =>
+              operation.target && operation.target.id !== operation.source?.id
+                ? latest.current.t("layers.over", { name: nameOf(operation.target.id) })
+                : undefined,
+            dragend: ({ canceled }: DragEndEvent) =>
+              canceled ? latest.current.t("layers.cancelled") : undefined,
+          },
+          screenReaderInstructions: { draggable: latest.current.t("layers.instructions") },
+        })
+      : plugin,
+  );
 }
 
 /**
@@ -173,9 +222,14 @@ export function LayersPanel({
   // Where a drag in progress would drop, for the line that shows it; the place is read when it ends.
   const [over, setOver] = useState<{ id: string; zone: DropZone } | null>(null);
   const place = useRef<LayerPlace | undefined>(undefined);
-  // A row is lifted: Escape then cancels the lift and goes no further, or it would clear the selection too.
-  const lifted = useRef(false);
+  // A row is lifted: the list says so, and the editor leaves the keys to the lift, or Escape would clear the selection
+  // and the arrows nudge the block that is selected.
+  const [lifted, setLifted] = useState(false);
   const dragDisabled = disabled || !onMove;
+  // dnd-kit reads the options of its plugins once, when it is made, so they read what is current from here.
+  const latest = useRef({ root, registry, t });
+  latest.current = { root, registry, t };
+  const plugins = useMemo(() => announcingPlugins(latest), []);
 
   // The list opens the way to a block that was selected somewhere else, on the page for example.
   useEffect(() => {
@@ -221,7 +275,9 @@ export function LayersPanel({
     const go = (to: number) => {
       const element = [...(list.current?.querySelectorAll<HTMLElement>("[data-layer]") ?? [])][to];
       if (element) {
+        // The key is the list's: it must not go on to nudge the block that is selected.
         event.preventDefault();
+        event.stopPropagation();
         element.focus();
       }
     };
@@ -231,9 +287,11 @@ export function LayersPanel({
     else if (event.key === "End") go(rows.length - 1);
     else if (event.key === "ArrowRight" && row?.hasChildren && !row.expanded) {
       event.preventDefault();
+      event.stopPropagation();
       toggle(id);
     } else if (event.key === "ArrowLeft" && row) {
       event.preventDefault();
+      event.stopPropagation();
       if (row.hasChildren && row.expanded) toggle(id);
       else {
         const parent = rows.findIndex((other) => other.node.id === row.parentId);
@@ -264,10 +322,8 @@ export function LayersPanel({
     setOver(found ? { id: overId, zone } : null);
   };
   const end = (event: DragEndEvent) => {
-    // Not before the key that ended the lift has gone the whole way up: dnd-kit hears it first, the editor after.
-    setTimeout(() => {
-      lifted.current = false;
-    }, 0);
+    // Not before the key that ended the lift has gone the whole way up: dnd-kit may hear it first, the editor after.
+    setTimeout(() => setLifted(false), 0);
     const found = place.current;
     place.current = undefined;
     setOver(null);
@@ -276,41 +332,11 @@ export function LayersPanel({
     onMove?.(String(id), found.parentId, found.index);
   };
 
-  // What dnd-kit says to a screen reader, in the language of the editor and not in its English.
-  const nameOf = (id: unknown) => {
-    const node = findNode(root, String(id));
-    return node ? (registry[node.type]?.label ?? node.type) : "";
-  };
-  const plugins = defaultPreset.plugins.map((plugin) =>
-    plugin === Accessibility
-      ? Accessibility.configure({
-          announcements: {
-            dragstart: ({ operation }: DragStartEvent) =>
-              t("layers.lifted", { name: nameOf(operation.source?.id) }),
-            dragover: ({ operation }: DragOverEvent) =>
-              operation.target && operation.target.id !== operation.source?.id
-                ? t("layers.over", { name: nameOf(operation.target.id) })
-                : undefined,
-            dragend: ({ canceled }: DragEndEvent) => (canceled ? t("layers.cancelled") : undefined),
-          },
-          screenReaderInstructions: { draggable: t("layers.instructions") },
-        })
-      : plugin,
-  );
-
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: it only keeps Escape of a lift from the rest of the editor
-    <div
-      className={styles.panel}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && lifted.current) event.stopPropagation();
-      }}
-    >
+    <div className={styles.panel} data-lifted={lifted || undefined}>
       <DragDropProvider
         plugins={plugins}
-        onDragStart={() => {
-          lifted.current = true;
-        }}
+        onDragStart={() => setLifted(true)}
         onDragMove={move}
         onDragOver={move}
         onDragEnd={end}
@@ -326,22 +352,23 @@ export function LayersPanel({
             const { node } = row;
             const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
             const selected = node.id === selectedId || picked.includes(node.id);
-            return (
-              <LayerItem
-                key={node.id}
-                row={row}
-                name={def?.label ?? node.type}
-                snippet={snippetOf(node, registry)}
-                icon={def?.icon && isIconName(def.icon) ? def.icon : "box"}
-                selected={selected}
-                primary={node.id === selectedId}
-                hovered={node.id === hoverId}
-                drop={over?.id === node.id ? over.zone : undefined}
-                disabled={dragDisabled}
-                onHover={onHover}
-                onSelect={onSelect}
-                toggle={toggle}
-              />
+            const line = {
+              row,
+              name: def?.label ?? node.type,
+              snippet: snippetOf(node, registry),
+              icon: (def?.icon && isIconName(def.icon) ? def.icon : "box") as IconName,
+              selected,
+              primary: node.id === selectedId,
+              hovered: node.id === hoverId,
+              drop: over?.id === node.id ? over.zone : undefined,
+              onHover,
+              onSelect,
+              toggle,
+            };
+            return dragDisabled ? (
+              <LayerView key={node.id} {...line} />
+            ) : (
+              <DraggableLayer key={node.id} {...line} />
             );
           })}
         </ul>

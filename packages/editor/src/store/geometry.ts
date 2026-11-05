@@ -419,13 +419,18 @@ export function geometryCommands<S extends State>(store: EditorStore<S>, env: En
       run((state) => turnBlock(state, args, env), { type: "block.turn" }),
     moveToParent: (args: Parameters<typeof moveToParent>[1]) =>
       run((state) => moveToParent(state, args, env), { type: "block.reparent" }),
-    moveBlock: (args: Parameters<typeof moveBlock>[1]) =>
-      run((state) => moveBlock(state, args, env), {
+    /** Whether the block moved: not when it was refused, or would stay where it is. */
+    moveBlock: (args: Parameters<typeof moveBlock>[1]) => {
+      const before = store.getState().history.present;
+      const refused = run((state) => moveBlock(state, args, env), {
         type:
           parentOf(rootOf(store.getState()), args.id)?.id === args.parentId
             ? "block.reorder"
             : "block.reparent",
-      }),
+        ids: [args.id],
+      });
+      return !refused && store.getState().history.present !== before;
+    },
   };
 }
 

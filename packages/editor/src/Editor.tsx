@@ -711,8 +711,9 @@ function EditorBody({
     if (!moved || !current) return;
     const nameOf = (node: { type: string }) => shownRegistry[node.type]?.label ?? node.type;
     if (current.id === parentId) {
-      documents.moveBlock({ id, parentId, index });
-      announce(t("layers.reordered", { name: nameOf(moved) }));
+      if (documents.moveBlock({ id, parentId, index })) {
+        announce(t("layers.reordered", { name: nameOf(moved) }));
+      }
       return;
     }
     const target = findNode(data.root, parentId);
@@ -721,12 +722,14 @@ function EditorBody({
     if (!target || !from || !to) return;
     const frameOf = (element: HTMLElement, owner: string) =>
       frameOfElement(element, pageUnit(element, zoom), turnOf(data.root, owner, frame));
-    documents.moveBlock({
+    const done = documents.moveBlock({
       id,
       parentId,
       index,
       options: { from: frameOf(from, current.id), to: frameOf(to, parentId) },
     });
+    // A refused move, or one that changed nothing, is not announced as done.
+    if (!done) return;
     announce(
       parentId === data.root.id
         ? t("layers.movedPage", { name: nameOf(moved) })
@@ -1041,6 +1044,13 @@ function EditorBody({
                     onCut={cutSelected}
                     onPaste={pasteBlocks}
                     onKeyDown={(event) => {
+                      // A row of Layers is lifted: its keys are the lift's, not the page's.
+                      if (
+                        event.target instanceof Element &&
+                        event.target.closest("[data-lifted]")
+                      ) {
+                        return;
+                      }
                       // A field keeps its own Esc and its own undo.
                       if (isEditableTarget(event.target)) return;
                       // Tab on the canvas goes from block to block of the level the person is working in; at the end

@@ -383,13 +383,21 @@ describe("moveBlock", () => {
     expect(moveBlock(state, { id: "t1", parentId: "root", index: 0 }, env)).toBe(state);
   });
 
+  it("says whether the block moved: not when it would stay where it is", () => {
+    const store = createEditorStore(pageWith(2));
+    const commands = geometryCommands(store, env);
+    expect(commands.moveBlock({ id: "t1", parentId: "root", index: 0 })).toBe(false);
+    expect(commands.moveBlock({ id: "t1", parentId: "root", index: 2 })).toBe(true);
+  });
+
   it("is told to the host as a reorder or a reparent, by what changed", () => {
     const onAction = vi.fn();
     const withHost: Env = { ...env, onAction };
     const store = createEditorStore(pageWith(2));
     const commands = geometryCommands(store, withHost);
-    commands.moveBlock({ id: "t1", parentId: "root", index: 2 });
-    expect(onAction.mock.calls[0]?.[0]).toMatchObject({ type: "block.reorder" });
+    // The selection is the page: the block that moved is the one named, not the one selected.
+    expect(commands.moveBlock({ id: "t1", parentId: "root", index: 2 })).toBe(true);
+    expect(onAction.mock.calls[0]?.[0]).toMatchObject({ type: "block.reorder", ids: ["t1"] });
     const from = { size: SIZE, center: { x: 340, y: 394 }, rotation: 0 };
     commands.moveBlock({
       id: "t1",
