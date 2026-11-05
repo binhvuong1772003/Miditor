@@ -1,9 +1,18 @@
-import type { Registry, TreeNode } from "@miditor/core";
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragOverEvent,
+  useDraggable,
+  useDroppable,
+} from "@dnd-kit/react";
+import { canMove, type Registry, type TreeNode } from "@miditor/core";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useT } from "./i18n/context";
 import { Icon, type IconName, isIconName } from "./icons";
 import styles from "./LayersPanel.module.css";
-import { ancestorIds, layerRows } from "./layer-tree";
+import { type DropZone, type LayerPlace, placeFor, zoneAt } from "./layer-drop";
+import { ancestorIds, type LayerRow, layerRows } from "./layer-tree";
 import fieldStyles from "./PropertiesPanel.module.css";
 import { useRenders } from "./perf";
 
@@ -19,6 +28,107 @@ export interface LayersPanelProps {
   /** A line was pressed. `add` is true with Shift, Ctrl or Cmd. */
   onSelect: (id: string, parentId: string, add: boolean) => void;
   onHover: (id: string | null) => void;
+  /**
+   * A row was dragged to a new place: block `id` goes into `parentId` at `index` (see `moveNode`). Without it the
+   * rows cannot be dragged.
+   */
+  onMove?: ((id: string, parentId: string, index: number) => void) | undefined;
+  /** Rows are not dragged: on the phone screen, or when the editor is read only. */
+  disabled?: boolean | undefined;
+}
+
+/** What a line of the list is, which a hook of its own needs a component for. */
+interface LayerItemProps {
+  row: LayerRow;
+  name: string;
+  snippet: string | undefined;
+  icon: IconName;
+  selected: boolean;
+  primary: boolean;
+  hovered: boolean;
+  /** Where a drag in progress would drop, when it is over this row. */
+  drop: DropZone | undefined;
+  disabled: boolean;
+  onHover: (id: string | null) => void;
+  onSelect: LayersPanelProps["onSelect"];
+  toggle: (id: string) => void;
+}
+
+function LayerItem({
+  row: { node, parentId, depth, hasChildren, expanded },
+  name,
+  snippet,
+  icon,
+  selected,
+  primary,
+  hovered,
+  drop,
+  disabled,
+  onHover,
+  onSelect,
+  toggle,
+}: LayerItemProps) {
+  const t = useT();
+  const draggable = useDraggable({ id: node.id, disabled });
+  const droppable = useDroppable({ id: node.id, disabled });
+  const place = (element: HTMLLIElement | null) => {
+    draggable.ref(element);
+    droppable.ref(element);
+  };
+  return (
+    <li
+      ref={place}
+      className={styles.item}
+      data-selected={selected}
+      data-primary={primary}
+      data-hover={hovered && !selected}
+      data-dragging={draggable.isDragging || undefined}
+      data-drop={drop}
+      style={{ paddingInlineStart: `${depth * 1}rem` }}
+      onPointerEnter={() => onHover(node.id)}
+    >
+      {hasChildren ? (
+        <button
+          type="button"
+          tabIndex={-1}
+          className={styles.fold}
+          aria-label={t(expanded ? "layers.shut" : "layers.open", { name })}
+          aria-expanded={expanded}
+          onClick={() => toggle(node.id)}
+        >
+          <Icon name={expanded ? "chevronDown" : "chevronRight"} size={12} />
+        </button>
+      ) : (
+        <span className={styles.fold} aria-hidden="true" />
+      )}
+      <button
+        type="button"
+        className={styles.line}
+        data-layer={node.id}
+        aria-pressed={selected}
+        onClick={(event) =>
+          onSelect(node.id, parentId, event.shiftKey || event.ctrlKey || event.metaKey)
+        }
+      >
+        <Icon name={icon} size={14} />
+        <span className={styles.name}>{name}</span>
+        {snippet && <span className={styles.snippet}>{snippet}</span>}
+      </button>
+      {!disabled && (
+        <button
+          type="button"
+          ref={draggable.handleRef}
+          className={styles.grip}
+          data-layer-grip=""
+          // Only the grip of the selected line is a stop of the Tab key; the others are for the pointer.
+          tabIndex={primary ? 0 : -1}
+          aria-label={t("layers.move", { name })}
+        >
+          <Icon name="more" size={14} />
+        </button>
+      )}
+    </li>
+  );
 }
 
 const SNIPPET = 40;
@@ -50,12 +160,18 @@ export function LayersPanel({
   hoverId,
   onSelect,
   onHover,
+  onMove,
+  disabled = false,
 }: LayersPanelProps) {
   useRenders("layers");
   const t = useT();
   const [shut, setShut] = useState<ReadonlySet<string>>(new Set());
   const list = useRef<HTMLUListElement>(null);
   const rows = layerRows(root, shut);
+  // Where a drag in progress would drop, for the line that shows it; the place is read when it ends.
+  const [over, setOver] = useState<{ id: string; zone: DropZone } | null>(null);
+  const place = useRef<LayerPlace | undefined>(undefined);
+  const dragDisabled = disabled || !onMove;
 
   // The list opens the way to a block that was selected somewhere else, on the page for example.
   useEffect(() => {
@@ -122,62 +238,70 @@ export function LayersPanel({
     }
   };
 
+  // The row under the drag, and where on it: the pointer for a drag by the mouse, the lifted row for the keyboard.
+  const move = (event: DragMoveEvent | DragOverEvent) => {
+    const { source, target, position } = event.operation;
+    const element = target?.element;
+    if (!source || !target || !element) {
+      place.current = undefined;
+      setOver(null);
+      return;
+    }
+    const box = element.getBoundingClientRect();
+    const draggedId = String(source.id);
+    const overId = String(target.id);
+    const zone = zoneAt(
+      position.current.y - box.top,
+      box.height,
+      canMove(registry, root, draggedId, overId),
+    );
+    const found = placeFor({ root, registry, draggedId, overId, zone });
+    place.current = found;
+    setOver(found ? { id: overId, zone } : null);
+  };
+  const end = (event: DragEndEvent) => {
+    const found = place.current;
+    place.current = undefined;
+    setOver(null);
+    const id = event.operation.source?.id;
+    if (event.canceled || !found || id === undefined) return;
+    onMove?.(String(id), found.parentId, found.index);
+  };
+
   return (
     <div className={styles.panel}>
-      <ul
-        ref={list}
-        aria-label={t("layers.label")}
-        className={styles.tree}
-        onKeyDown={keys}
-        onPointerLeave={() => onHover(null)}
-      >
-        {rows.map(({ node, parentId, depth, hasChildren, expanded }) => {
-          const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
-          const name = def?.label ?? node.type;
-          const snippet = snippetOf(node, registry);
-          const selected = node.id === selectedId || picked.includes(node.id);
-          const icon: IconName = def?.icon && isIconName(def.icon) ? def.icon : "box";
-          return (
-            <li
-              key={node.id}
-              className={styles.item}
-              data-selected={selected}
-              data-primary={node.id === selectedId}
-              data-hover={node.id === hoverId && !selected}
-              style={{ paddingInlineStart: `${depth * 1}rem` }}
-              onPointerEnter={() => onHover(node.id)}
-            >
-              {hasChildren ? (
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  className={styles.fold}
-                  aria-label={t(expanded ? "layers.shut" : "layers.open", { name })}
-                  aria-expanded={expanded}
-                  onClick={() => toggle(node.id)}
-                >
-                  <Icon name={expanded ? "chevronDown" : "chevronRight"} size={12} />
-                </button>
-              ) : (
-                <span className={styles.fold} aria-hidden="true" />
-              )}
-              <button
-                type="button"
-                className={styles.line}
-                data-layer={node.id}
-                aria-pressed={selected}
-                onClick={(event) =>
-                  onSelect(node.id, parentId, event.shiftKey || event.ctrlKey || event.metaKey)
-                }
-              >
-                <Icon name={icon} size={14} />
-                <span className={styles.name}>{name}</span>
-                {snippet && <span className={styles.snippet}>{snippet}</span>}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      <DragDropProvider onDragMove={move} onDragOver={move} onDragEnd={end}>
+        <ul
+          ref={list}
+          aria-label={t("layers.label")}
+          className={styles.tree}
+          onKeyDown={keys}
+          onPointerLeave={() => onHover(null)}
+        >
+          {rows.map((row) => {
+            const { node } = row;
+            const def = Object.hasOwn(registry, node.type) ? registry[node.type] : undefined;
+            const selected = node.id === selectedId || picked.includes(node.id);
+            return (
+              <LayerItem
+                key={node.id}
+                row={row}
+                name={def?.label ?? node.type}
+                snippet={snippetOf(node, registry)}
+                icon={def?.icon && isIconName(def.icon) ? def.icon : "box"}
+                selected={selected}
+                primary={node.id === selectedId}
+                hovered={node.id === hoverId}
+                drop={over?.id === node.id ? over.zone : undefined}
+                disabled={dragDisabled}
+                onHover={onHover}
+                onSelect={onSelect}
+                toggle={toggle}
+              />
+            );
+          })}
+        </ul>
+      </DragDropProvider>
       <p className={fieldStyles.hint}>{t("layers.hint")}</p>
     </div>
   );

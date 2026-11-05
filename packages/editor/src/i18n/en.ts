@@ -351,6 +351,10 @@ export const en = {
   "layers.hint": "Press a block to select it. Shift adds blocks from the same level.",
   "layers.open": "Open {name}",
   "layers.shut": "Close {name}",
+  "layers.move": "Move {name}",
+  "layers.moved": "{name} moved into {parent}",
+  "layers.movedPage": "{name} moved onto the page",
+  "layers.reordered": "{name} moved",
 } as const;
 
 /** The name of one thing the editor says. */

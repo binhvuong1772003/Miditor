@@ -36,11 +36,17 @@ export interface StartPanelProps {
   onDrop: (kind: string, point: Point, input?: { alt: boolean }) => void;
   /** Put the colours and font of a theme on the page. */
   onApplyTheme: (theme: SavedTheme) => void;
+  /** A row of the Layers tool was dragged: block `id` goes into `parentId` at `index`. */
+  onMoveLayer: (id: string, parentId: string, index: number) => void;
 }
 
 /** The Layers tool: every block of the page as a list, to select from. */
-export function LayersTool({ registry }: Pick<StartPanelProps, "registry">) {
+export function LayersTool({
+  registry,
+  onMoveLayer,
+}: Pick<StartPanelProps, "registry" | "onMoveLayer">) {
   const selecting = useSelectionCommands();
+  const onPhone = useEditorState((state) => state.frame === "phone");
   const data = useEditorState((state) => state.history.present);
   const selectedId = useEditorState((state) => state.selectedId);
   const picked = useEditorState((state) => state.picked);
@@ -73,6 +79,8 @@ export function LayersTool({ registry }: Pick<StartPanelProps, "registry">) {
       hoverId={hoverId}
       onSelect={pickFromLayers}
       onHover={selecting.setHover}
+      onMove={onMoveLayer}
+      disabled={onPhone}
     />
   );
 }
@@ -215,7 +223,8 @@ const LABELS = {
 function ToolContent({ tool, ...props }: StartPanelProps & { tool: Tool }) {
   const host = usableTools(props.config?.tools).find(({ id }) => id === tool);
   if (host) return <HostToolContent tool={host} />;
-  if (tool === "layers") return <LayersTool registry={props.registry} />;
+  if (tool === "layers")
+    return <LayersTool registry={props.registry} onMoveLayer={props.onMoveLayer} />;
   if (tool === "images") return <ImagesTool config={props.config} onAddBlock={props.onAddBlock} />;
   if (tool === "themes") {
     return <ThemesTool config={props.config} onApplyTheme={props.onApplyTheme} />;

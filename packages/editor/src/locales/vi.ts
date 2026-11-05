@@ -344,5 +344,9 @@ export const vi: Messages = {
   "layers.empty": "Chưa có khối nào trên trang.",
   "layers.hint": "Bấm một khối để chọn. Giữ Shift để thêm các khối cùng cấp.",
   "layers.open": "Mở {name}",
+  "layers.move": "Di chuyển {name}",
+  "layers.moved": "Đã đưa {name} vào {parent}",
+  "layers.movedPage": "Đã đưa {name} ra trang",
+  "layers.reordered": "Đã đổi chỗ {name}",
   "layers.shut": "Thu gọn {name}",
 };

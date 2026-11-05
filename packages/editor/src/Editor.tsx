@@ -699,6 +699,12 @@ function EditorBody({
     documents.dropBlock({ kind, parentId, container, at });
   };
 
+  /** A row of the Layers tool was dragged: the block goes into `parentId` at `index`. */
+  const moveLayer = (id: string, parentId: string, index: number) => {
+    if (onPhone) return;
+    documents.moveBlock({ id, parentId, index });
+  };
+
   /** The size of the parent of the selected block, which `groupNodes` and `ungroupNode` measure in. */
   const parentSize = () => {
     const parent = block?.parentElement;
@@ -945,6 +951,7 @@ function EditorBody({
       onDragMove: dragFromLibrary,
       onDrop: dropFromLibrary,
       onApplyTheme: documents.putTheme,
+      onMoveLayer: moveLayer,
     },
     end: {
       config,

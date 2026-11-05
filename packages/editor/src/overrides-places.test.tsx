@@ -68,6 +68,7 @@ const startPanel = (
     onDragMove={() => {}}
     onDrop={() => {}}
     onApplyTheme={() => {}}
+    onMoveLayer={() => {}}
   />
 );
 

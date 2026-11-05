@@ -95,6 +95,7 @@ const startPanel = (
     onDragMove={noop}
     onDrop={noop}
     onApplyTheme={noop}
+    onMoveLayer={noop}
   />
 );
 const endPanel = (
