@@ -4,8 +4,8 @@ import { zoomBy } from "../zoom";
 
 /**
  * What the zoomed stage needs to know, and the wheel zoom that changes it. `stage` is the element
- * the page is drawn in; `stageBox` is the room the workspace has, the width the page has at 100% and
- * the height of the stage before it is scaled.
+ * the page is drawn in; `stageBox` is the room the workspace has, the width the page has at 100% (that of
+ * its screen, even when the room is narrower) and the height of the stage before it is scaled.
  */
 export function useStageSize(workspace: HTMLElement | null): {
   stage: RefObject<HTMLDivElement | null>;
@@ -72,7 +72,7 @@ export function useStageSize(workspace: HTMLElement | null): {
       setStageBox((prev) => {
         const next = {
           room,
-          page: Number.isFinite(widest) ? Math.min(widest, room) : room,
+          page: Number.isFinite(widest) ? widest : room,
           height: box.offsetHeight,
         };
         return prev.room === next.room && prev.page === next.page && prev.height === next.height

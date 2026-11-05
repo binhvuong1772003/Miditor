@@ -304,9 +304,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The page has the width of its screen whatever the room is: a narrow room zooms the canvas, it does not narrow the page. */
 .page {
   flex: 1 0 auto;
-  inline-size: var(--_zoom-page, 100%);
+  inline-size: var(--_zoom-page, var(--_page-desktop));
   max-inline-size: var(--_page-desktop);
   min-block-size: 40rem;
   margin-inline: auto;
@@ -319,6 +320,7 @@
 
 /* The phone frame: the width of a common phone page, from DEVICE_WIDTH in core. */
 .phone {
+  inline-size: var(--_zoom-page, var(--_page-phone));
   max-inline-size: var(--_page-phone);
 }
 

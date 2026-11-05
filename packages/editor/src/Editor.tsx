@@ -118,7 +118,7 @@ import { allowed } from "./store/permissions";
 import type { HostTheme } from "./ThemesPanel";
 import { stepSelection } from "./tab-order";
 import type { UploadImage } from "./upload-image";
-import { fitZoom } from "./zoom";
+import { fitZoom, widthZoom } from "./zoom";
 
 export interface EditorProps {
   /** Extra class on the root element, for example to size the editor inside the host page. */
@@ -550,6 +550,20 @@ function EditorBody({
   const [workspace, setWorkspace] = useState<HTMLElement | null>(null);
   workspaceRef.current = workspace;
   const { stage, stageBox } = useStageSize(workspace);
+  // A page has the width of its screen, whatever the room is, so a narrow room shows it smaller instead of
+  // cutting it. The canvas fits the page across the room by itself until the person zooms it.
+  const autoZoom = useRef({ last: 1, manual: false });
+  useEffect(() => {
+    if (zoom !== autoZoom.current.last) autoZoom.current.manual = true;
+  }, [zoom]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new room or page width is the trigger
+  useEffect(() => {
+    if (autoZoom.current.manual) return;
+    const next = widthZoom(stageBox.room, stageBox.page);
+    if (next === autoZoom.current.last) return;
+    autoZoom.current.last = next;
+    viewing.setZoom(next);
+  }, [stageBox.room, stageBox.page]);
   const [block, setBlock] = useState<HTMLElement | null>(null);
 
   const editorRoot = useRef<HTMLDivElement | null>(null);
