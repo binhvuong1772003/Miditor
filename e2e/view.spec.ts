@@ -61,7 +61,15 @@ test.describe("zoom", () => {
   test("Fit sizes the page to the room", async ({ page }) => {
     await page.getByRole("button", { name: "Zoom in" }).click();
     await page.getByRole("button", { name: "Fit" }).click();
-    await expect(percent(page)).toHaveText("100%");
+    // The whole page is inside the room the canvas has.
+    const room = await page.locator("section[aria-label='Canvas']").boundingBox();
+    const sheet = await page
+      .locator('iframe[title="Page"], [data-miditor-render]')
+      .first()
+      .boundingBox();
+    if (!room || !sheet) throw new Error("the canvas or the page is not drawn");
+    expect(sheet.width).toBeLessThanOrEqual(room.width + 1);
+    expect(sheet.height).toBeLessThanOrEqual(room.height + 1);
   });
 });
 

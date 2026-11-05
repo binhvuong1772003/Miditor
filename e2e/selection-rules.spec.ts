@@ -14,9 +14,9 @@ const picked = (page: import("@playwright/test").Page) =>
   surface(page).locator("[data-miditor-picked]");
 
 async function marqueeAll(page: import("@playwright/test").Page): Promise<void> {
-  await page.mouse.move(430, 90);
+  await page.mouse.move(410, 90);
   await page.mouse.down();
-  await page.mouse.move(1100, 880, { steps: 12 });
+  await page.mouse.move(1500, 1000, { steps: 12 });
   await page.mouse.up();
 }
 

@@ -13,9 +13,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("zooming one editor leaves the other at its own zoom", async ({ page }) => {
+  // Each editor starts at the zoom that fits its own room, which a narrow room makes under 100%.
+  const left = (await percent(side(page, "left")).textContent()) ?? "";
+  const right = (await percent(side(page, "right")).textContent()) ?? "";
   await side(page, "left").getByRole("button", { name: "Zoom in" }).click();
-  await expect(percent(side(page, "left"))).toHaveText("125%");
-  await expect(percent(side(page, "right"))).toHaveText("100%");
+  await expect(percent(side(page, "left"))).not.toHaveText(left);
+  await expect(percent(side(page, "right"))).toHaveText(right);
 });
 
 test("the frame of one editor is not the frame of the other", async ({ page }) => {

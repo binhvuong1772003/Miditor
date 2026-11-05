@@ -23,8 +23,9 @@ test("a block added to the page is the one selected", async ({ page }) => {
 test("pressing a block selects it and pressing the empty page selects nothing", async ({
   page,
 }) => {
+  // The strip of the box under the text that was put in it, away from the handles of the text.
   const box = surface(page).locator('[data-miditor-type="Container"]').last();
-  await box.click({ position: { x: 4, y: 4 } });
+  await box.click({ position: { x: 60, y: 78 } });
   await expect(properties(page)).toContainText("Box");
 
   // Outside every block, on the grey of the workspace, nothing stays selected.
@@ -44,7 +45,7 @@ test("Tab goes from block to block on the level and Shift+Tab goes back", async 
   await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
-    .click({ position: { x: 4, y: 4 } });
+    .click({ position: { x: 60, y: 78 } });
   const last = await indexOfSelected();
   await page.keyboard.press("Shift+Tab");
   const before = await indexOfSelected();
@@ -57,7 +58,7 @@ test("Escape lets go of the selection", async ({ page }) => {
   await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
-    .click({ position: { x: 4, y: 4 } });
+    .click({ position: { x: 60, y: 78 } });
   await page.keyboard.press("Escape");
   await expect(properties(page)).toContainText("Page info");
 });
@@ -76,6 +77,6 @@ test("selecting on the canvas shows in the Layers tool", async ({ page }) => {
   await surface(page)
     .locator('[data-miditor-type="Container"]')
     .last()
-    .click({ position: { x: 4, y: 4 } });
+    .click({ position: { x: 60, y: 78 } });
   await expect(page.locator('[data-layer][aria-pressed="true"]')).toHaveCount(1);
 });

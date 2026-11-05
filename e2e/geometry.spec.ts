@@ -23,7 +23,9 @@ test("dragging a block moves it by the distance of the hand", async ({ page }) =
   const after = await boxOf(page, "n1");
   expect(after.x - before.x).toBeCloseTo(80, -1);
   expect(after.y - before.y).toBeCloseTo(50, -1);
-  expect([after.width, after.height]).toEqual([before.width, before.height]);
+  // A width in percent of the page is kept to a hundredth, so it can be off by a fraction of a px.
+  expect(after.width).toBeCloseTo(before.width, 0);
+  expect(after.height).toBeCloseTo(before.height, 0);
 });
 
 test("a drag is one step: Undo puts the block back and Redo moves it again", async ({ page }) => {

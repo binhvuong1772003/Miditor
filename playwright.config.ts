@@ -6,7 +6,10 @@ export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
   reporter: "list",
-  use: { baseURL: "http://localhost:5199", viewport: { width: 1440, height: 900 } },
+  use: {
+    baseURL: "http://localhost:5199", // A desktop screen: the room beside the panels is wider than the 960 px page, so the canvas starts at 100%.
+    viewport: { width: 1920, height: 1080 },
+  },
   webServer: {
     // E2E_STRICT=1 runs the playground in React's StrictMode.
     command: `${process.env.E2E_STRICT ? "VITE_STRICT=1 " : ""}${process.env.E2E_INLINE ? "VITE_INLINE=1 " : ""}pnpm --filter playground exec vite --port 5199 --strictPort`,
