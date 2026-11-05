@@ -1,5 +1,14 @@
 import { expect, type Page, test } from "@playwright/test";
-import { addFromBlocks, blocks, boxOf, dragBy, gotoFrame, pressBlock, surface } from "./helpers";
+import {
+  addFromBlocks,
+  blocks,
+  boxOf,
+  dragBy,
+  gotoFrame,
+  inFrame,
+  pressBlock,
+  surface,
+} from "./helpers";
 
 // A host lays the editor out itself (`?compose`): inside `<EditorProvider>` it places the parts where it
 // wants them. Layers are on the right, Properties are in a dialog, the canvas fills the middle.
@@ -153,13 +162,13 @@ test.describe("a host lays the editor out itself", () => {
     await gotoFrame(page, "/?reset&compose&two");
     const a = page.getByTestId("editor-a");
     const b = page.getByTestId("editor-b");
-    await expect(a.locator("[data-miditor-id]").first()).toBeVisible();
-    await expect(b.locator("[data-miditor-id]").first()).toBeVisible();
+    await expect(inFrame(a).locator("[data-miditor-id]").first()).toBeVisible();
+    await expect(inFrame(b).locator("[data-miditor-id]").first()).toBeVisible();
     const rowsA = await a.locator("[data-layer]").count();
     const rowsB = await b.locator("[data-layer]").count();
 
     // Select a block in A and duplicate it with the keys: only A has one more.
-    const box = await a.locator('[data-miditor-id="sample"]').boundingBox();
+    const box = await inFrame(a).locator('[data-miditor-id="sample"]').boundingBox();
     if (!box) throw new Error("no sample block in editor A");
     await page.mouse.click(box.x + 20, box.y + 20);
     await expect(a.locator('[data-layer="sample"]')).toHaveAttribute("aria-pressed", "true");

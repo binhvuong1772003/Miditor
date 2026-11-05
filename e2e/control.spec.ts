@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks, gotoFrame, openEditor, properties, surface } from "./helpers";
+import { blocks, gotoFrame, inFrame, openEditor, properties, surface } from "./helpers";
 
 // A host part drawn in `headerActions` drives the editor through `useEditor` (`?control`). `?control&two`
 // draws two editors on one page, each with its own part.
@@ -90,12 +90,12 @@ test.describe("two editors on one page", () => {
     const b = page.getByTestId("editor-b");
     const inA = (name: string) => a.getByRole("button", { name, exact: true });
     const inB = (name: string) => b.getByRole("button", { name, exact: true });
-    const blocksB = await b.locator("[data-miditor-id]").count();
+    const blocksB = await inFrame(b).locator("[data-miditor-id]").count();
     await inA("Host add Text").click();
     await expect(a.getByTestId("host-selection")).toHaveText("n1");
     await expect(b.getByTestId("host-selection")).toHaveText("none");
-    await expect(a.locator("[data-miditor-id]")).toHaveCount(blocksB + 1);
-    await expect(b.locator("[data-miditor-id]")).toHaveCount(blocksB);
+    await expect(inFrame(a).locator("[data-miditor-id]")).toHaveCount(blocksB + 1);
+    await expect(inFrame(b).locator("[data-miditor-id]")).toHaveCount(blocksB);
     await expect(inA("Host undo")).toBeEnabled();
     await expect(inB("Host undo")).toBeDisabled();
     await inB("Host add Text").click();
@@ -103,7 +103,7 @@ test.describe("two editors on one page", () => {
     await expect(b.getByTestId("host-selection")).toHaveText("n2");
     await expect(a.getByTestId("host-selection")).toHaveText("n1");
     await inA("Host undo").click();
-    await expect(a.locator("[data-miditor-id]")).toHaveCount(blocksB);
-    await expect(b.locator("[data-miditor-id]")).toHaveCount(blocksB + 2);
+    await expect(inFrame(a).locator("[data-miditor-id]")).toHaveCount(blocksB);
+    await expect(inFrame(b).locator("[data-miditor-id]")).toHaveCount(blocksB + 2);
   });
 });

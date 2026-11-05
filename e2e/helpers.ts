@@ -12,6 +12,10 @@ export async function gotoFrame(page: Page, path: string): Promise<void> {
   await page.goto(process.env.E2E_IFRAME ? `${path}${path.includes("?") ? "&" : "?"}iframe` : path);
 }
 
+/** The page drawn inside an editor of a page with several, or the editor itself when the page is drawn in place. */
+export const inFrame = (editor: import("@playwright/test").Locator) =>
+  process.env.E2E_IFRAME ? editor.frameLocator('iframe[title="Page"]') : editor;
+
 /** Where the blocks are: the page, or the frame the page is drawn in when `E2E_IFRAME=1`. */
 export const surface = (page: Page) =>
   process.env.E2E_IFRAME ? page.frameLocator('iframe[title="Page"]') : page;

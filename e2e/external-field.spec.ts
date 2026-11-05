@@ -180,8 +180,8 @@ test.describe("an external field", () => {
     expect(JSON.stringify(await storedPage(page))).not.toContain('"data"');
 
     // A visitor's page: the host fills the data in with `resolveSources` before it draws.
-    await gotoFrame(page, "/?preview&items-changed");
-    await expect(surface(page).getByTestId("live-item")).toContainText("249");
-    await expect(surface(page).getByTestId("live-item")).toHaveAttribute("data-lang", "en");
+    await page.goto("/?preview&items-changed");
+    await expect(page.getByTestId("live-item")).toContainText("249");
+    await expect(page.getByTestId("live-item")).toHaveAttribute("data-lang", "en");
   });
 });

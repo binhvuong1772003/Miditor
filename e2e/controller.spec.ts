@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { blocks, gotoFrame, surface } from "./helpers";
+import { blocks, gotoFrame, inFrame, surface } from "./helpers";
 
 // A bar drawn outside `<Editor>` drives it through a controller from `useCreateEditor()`
 // (`?control&outside`). `&closed` starts with the editor closed; `&two` gives the controller to two editors.
@@ -78,14 +78,14 @@ test("a second editor given the same controller is ignored and the first keeps w
   await expect
     .poll(() => errors.some((text) => text.includes("already belongs to another editor")))
     .toBe(true);
-  const before = await a.locator("[data-miditor-id]").count();
-  expect(await b.locator("[data-miditor-id]").count()).toBe(before);
+  const before = await inFrame(a).locator("[data-miditor-id]").count();
+  expect(await inFrame(b).locator("[data-miditor-id]").count()).toBe(before);
   await bar(page, "Outside add Text").click();
-  await expect(a.locator("[data-miditor-id]")).toHaveCount(before + 1);
-  await expect(b.locator("[data-miditor-id]")).toHaveCount(before);
+  await expect(inFrame(a).locator("[data-miditor-id]")).toHaveCount(before + 1);
+  await expect(inFrame(b).locator("[data-miditor-id]")).toHaveCount(before);
   await expect(selection(page)).toHaveText("n1");
   await bar(page, "Outside undo").click();
-  await expect(a.locator("[data-miditor-id]")).toHaveCount(before);
+  await expect(inFrame(a).locator("[data-miditor-id]")).toHaveCount(before);
 });
 
 test("the readout goes idle when the editor is closed", async ({ page }) => {

@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { gotoFrame } from "./helpers";
+import { gotoFrame, surface } from "./helpers";
 
 // A page with nothing placed by hand for the phone is drawn there as a flow, and the first change of the
 // phone layout places every block where it is drawn. The coffee page of the playground has no phone data.
@@ -12,7 +12,7 @@ const phone = (page: Page) => page.getByRole("button", { name: "Phone", exact: t
 const desktop = (page: Page) => page.getByRole("button", { name: "Desktop", exact: true }).click();
 
 const box = async (page: Page, text: string) => {
-  const found = await page.getByText(text, { exact: true }).first().boundingBox();
+  const found = await surface(page).getByText(text, { exact: true }).first().boundingBox();
   if (!found) throw new Error(`${text} is not drawn`);
   return found;
 };
@@ -71,7 +71,7 @@ test.describe("a phone page with nothing placed for it", () => {
     const before = await box(page, "Fresh in 48 hours");
     expect(await storedPhoneBoxes(page)).toBe(0);
 
-    await page.getByText("Why it tastes different", { exact: true }).click();
+    await surface(page).getByText("Why it tastes different", { exact: true }).click();
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => storedPhoneBoxes(page)).toBeGreaterThan(5);
 
@@ -89,7 +89,7 @@ test.describe("a phone page with nothing placed for it", () => {
     await open(page);
     await phone(page);
     await expect(page.getByRole("button", { name: "Arrange for phone" })).toHaveCount(0);
-    await page.getByText("Why it tastes different", { exact: true }).click();
+    await surface(page).getByText("Why it tastes different", { exact: true }).click();
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => storedPhoneBoxes(page)).toBeGreaterThan(5);
 
