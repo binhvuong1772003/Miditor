@@ -45,7 +45,7 @@ export function InFrame({
   children: ReactNode;
 }) {
   if (doc) return createPortal(children, doc.body);
-  return enabled ? null : <>{children}</>;
+  return enabled ? null : children;
 }
 
 /**
@@ -150,7 +150,6 @@ export function FrameStage({
     base.textContent = ".moveable-control-box { top: 0; left: 0; --moveable-color: #1d4ed8; }";
     base.setAttribute("data-miditor-frame-base", "");
     doc.head.append(base);
-    const root = doc.documentElement;
     const measure = () => setHeight(doc.body.offsetHeight);
     measure();
     // Measured a frame later: the frame is made as tall as what is in it, and measuring in the same turn
