@@ -46,19 +46,33 @@ describe("newBlock", () => {
     expect(rect.x + rect.w).toBeLessThanOrEqual(375);
   });
 
-  it("with a size, keeps exactly that size and sits in the middle across, whatever the page", () => {
+  it("with a size, has exactly that size and sits in the middle across, on the page it is added to", () => {
     fc.assert(
       fc.property(solidContainer, (c) => {
         const block = newBlock("n1", c, { w: 90, h: 70 });
-        expect(block.position.x).toEqual({ anchor: "center", offset: 0 });
         const rect = resolveRect(freeBoxOf(block), c);
-        expect(rect.w).toBe(90);
+        expect(rect.w).toBeCloseTo(90);
         expect(rect.h).toBe(70);
         expect(rect.x + rect.w / 2).toBeCloseTo(c.w / 2);
         if (c.h >= 70) expect(Math.abs(rect.y + rect.h / 2 - c.h / 2)).toBeLessThanOrEqual(0.5);
         else expect(rect.y).toBe(0);
       }),
     );
+  });
+
+  it("with a size, scales across with the page and keeps its height", () => {
+    const block = newBlock("n1", page, { w: 240, h: 60 });
+    expect(block.position.x).toEqual({ anchor: "scale", start: 37.5, size: 25 });
+    const narrow = resolveRect(freeBoxOf(block), { w: 480, h: 640 });
+    expect(narrow.w).toBeCloseTo(120);
+    expect(narrow.x + narrow.w / 2).toBeCloseTo(240);
+    expect(narrow.h).toBe(60);
+  });
+
+  it("with a size on a container with no width, keeps the size in px, centred", () => {
+    const block = newBlock("n1", { w: 0, h: 640 }, { w: 90, h: 70 });
+    expect(block.position.x).toEqual({ anchor: "center", offset: 0 });
+    expect(block.size.w).toEqual({ kind: "px", v: 90 });
   });
 
   it("ignores a size that is not finite or not above 0", () => {

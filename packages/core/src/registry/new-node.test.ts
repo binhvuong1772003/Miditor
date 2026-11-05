@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isFreeNode } from "../tree/free-box";
+import { resolveRect } from "../position/resolve-rect";
+import { freeBoxOf, isFreeNode } from "../tree/free-box";
 import { newBlock } from "../tree/new-block";
 import { insertNode } from "../tree/nodes";
 import { emptyPage, isPageData } from "../tree/page";
+import type { FreeNode } from "../tree/types";
 import { newNode } from "./new-node";
 import type { Registry } from "./types";
 import { validatePage } from "./validate-page";
@@ -55,13 +57,20 @@ describe("newNode", () => {
     }
   });
 
+  it("scales across with the page when its kind does not keep its proportions", () => {
+    const node = newNode(registry, "Text", "n1", page, { size: { w: 240, h: 60 } });
+    expect(node?.position.x).toEqual({ anchor: "scale", start: 37.5, size: 25 });
+    expect(resolveRect(freeBoxOf(node as FreeNode), { w: 480, h: 640 }).w).toBeCloseTo(120);
+  });
+
   it("starts with the size and the props it is given, and the defaults for the rest", () => {
     const node = newNode(registry, "Text", "n1", page, {
       size: { w: 200, h: 100 },
       props: { size: 40 },
     });
-    expect(node?.size).toEqual({ w: { kind: "px", v: 200 }, h: { kind: "px", v: 100 } });
-    expect(node?.position.x).toEqual({ anchor: "center", offset: 0 });
+    expect(node?.size.h).toEqual({ kind: "px", v: 100 });
+    const rect = resolveRect(freeBoxOf(node as FreeNode), page);
+    expect(rect.w).toBeCloseTo(200);
     expect(node?.props).toEqual({ text: "Your text", size: 40 });
   });
 
