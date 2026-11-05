@@ -72,7 +72,7 @@ export async function pressBlock(page: Page, id: string, shift = false): Promise
 /** Two Text blocks side by side on the page, `n1` and `n2`: a new block lands on the one before it. */
 export async function addTwoTexts(page: Page): Promise<void> {
   await addFromBlocks(page, "Text");
-  await dragBy(page, "n1", -250, -150);
+  await dragBy(page, "n1", -200, -150);
   await addFromBlocks(page, "Text");
 }
 
