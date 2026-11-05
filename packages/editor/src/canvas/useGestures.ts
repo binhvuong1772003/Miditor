@@ -184,6 +184,8 @@ export function useGestures({
    * stays in its parent: on the phone, over its own parent or over nothing, over a block that may not
    * hold it. A parent may be turned: both are measured as frames.
    */
+  // What a page px is in the rects of the blocks: `zoom` on the screen, 1 inside the frame of the page.
+  const unit = block && block.ownerDocument !== document ? 1 : zoom;
   const dropTarget = (
     g: NonNullable<typeof gesture.current>,
     dist: { x: number; y: number },
@@ -191,9 +193,10 @@ export function useGestures({
   ) => {
     const from = block?.parentElement;
     if (onPhone || !block || !from || g.others.length > 0) return undefined;
-    // `dist` is in the page's own px; the screen is `zoom` times that.
-    const x = g.screen.left + g.screen.width / 2 + dist.x * zoom;
-    const y = g.screen.top + g.screen.height / 2 + dist.y * zoom;
+    // `dist` is in the page's own px. The rects of the blocks are in the coordinates of the document they are in:
+    // on the screen, `zoom` times the page's px, in the frame of the page, which the zoom does not scale, the same.
+    const x = g.screen.left + g.screen.width / 2 + dist.x * unit;
+    const y = g.screen.top + g.screen.height / 2 + dist.y * unit;
     // Topmost first, so the deepest block under the pointer is met before the ones around it.
     // `toPage` skips the boxes: only the page takes it, to get a block out of the box it is in.
     const found = firstAccepting(
@@ -209,7 +212,7 @@ export function useGestures({
       const box = el.getBoundingClientRect();
       return {
         size: { w: el.clientWidth, h: el.clientHeight },
-        center: { x: (box.left + box.width / 2) / zoom, y: (box.top + box.height / 2) / zoom },
+        center: { x: (box.left + box.width / 2) / unit, y: (box.top + box.height / 2) / unit },
         rotation: turnOf(data.root, el.dataset.miditorId ?? "", frame),
       };
     };
