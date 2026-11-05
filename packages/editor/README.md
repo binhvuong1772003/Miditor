@@ -642,6 +642,31 @@ const [status, setStatus] = useState<SaveStatus>("saved");
 
 Without `status`, the header follows the Save button and shows nothing if there is none.
 
+### The page in a frame of its own: `canvas="iframe"`
+
+> Experimental.
+
+By default the page is drawn in the page that holds the editor. With `canvas="iframe"` it is drawn in a frame of
+its own, as Puck does:
+
+```tsx
+<Editor canvas="iframe" data={page} />;
+```
+
+- **A width of its own.** `@media`, `vw` and `vh` in the blocks of your own kinds see the width of the page
+  (375 px on the phone frame), as they do when the page is published, not the width of the editor.
+- **Style cannot cross.** The style of the editor does not reach the blocks and the style of the blocks does
+  not reach the editor. The style sheets of the page that holds the editor (the classes and fonts your kinds
+  use) are copied into the frame, and copied again when one is added later.
+- **What hangs over the edge of the page is cut,** as it is when the page is published.
+- Selecting, dragging, resizing, turning, the typing box, the keys, Ctrl and the wheel to zoom, the box drawn
+  over the empty page, and dragging a card from the library onto the page all work in the frame. The panels, the
+  labels and the menus stay outside it.
+- **Known gaps:** the first change of a phone page that is laid out as a flow (see "The phone layout") does not
+  place the blocks where they are drawn when the page is in a frame (one e2e test fails). Keys are given to the
+  editor from the frame; a host that listens to keys on its own should listen in both documents. The default stays
+  `"inline"` until this has been used more.
+
 ### Keeping the history: `getHistory`, `initialHistory`, `jumpTo`, `setHistory`
 
 > Experimental.

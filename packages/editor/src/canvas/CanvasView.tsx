@@ -70,6 +70,8 @@ export interface CanvasViewProps {
   renderers: Parameters<typeof Render>[0]["renderers"];
   /** The `metadata` of the editor, for the renderers of the host's kinds. */
   metadata: Parameters<typeof Render>[0]["metadata"];
+  /** Draw the page in a frame of its own (`canvas="iframe"`). */
+  inFrame: boolean;
   addBlockOf: (kind: string, overrides?: NewNodeOverrides) => void;
   /** The editor's root element, which takes the focus back when the menu closes. */
   editorRoot: MutableRefObject<HTMLDivElement | null>;
@@ -96,6 +98,7 @@ export function CanvasView({
   api,
   renderers,
   metadata,
+  inFrame,
   addBlockOf,
   editorRoot,
   workspace,
@@ -410,6 +413,7 @@ export function CanvasView({
         shown={shown}
         renderers={renderers}
         metadata={metadata}
+        inFrame={inFrame}
         onFrame={setFrameDoc}
         onFrameWheel={(event, at) => {
           // The workspace zooms on this wheel; it did not hear of it, since it was over the frame.
@@ -548,7 +552,7 @@ export function CanvasView({
           }}
         />
       )}
-      <InFrame doc={frameDoc}>
+      <InFrame enabled={inFrame} doc={frameDoc}>
         <SelectionBox
           target={editing ? null : groupInfo ? frameEl : block}
           container={scope}

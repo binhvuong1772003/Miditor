@@ -29,20 +29,23 @@ function useCopiedStyles(doc: Document | null) {
   }, [doc]);
 }
 
-/** Whether the page is drawn in a frame of its own (experimental, from `?iframe` while it is tried). */
-export const frameMode = () =>
-  typeof window !== "undefined" &&
-  ((window as unknown as { __MIDITOR_FRAME__?: boolean }).__MIDITOR_FRAME__ === true ||
-    new URLSearchParams(window.location.search).has("iframe"));
-
 /**
  * Draws what it has inside the frame once there is one. While the page is drawn in a frame and it is not
  * there yet nothing is drawn, so that what is drawn (the controls, which put their style in the document of
  * their own) is made once, in the document it belongs to.
  */
-export function InFrame({ doc, children }: { doc: Document | null; children: ReactNode }) {
+export function InFrame({
+  enabled,
+  doc,
+  children,
+}: {
+  /** The page is drawn in a frame (`canvas="iframe"`). */
+  enabled: boolean;
+  doc: Document | null;
+  children: ReactNode;
+}) {
   if (doc) return createPortal(children, doc.body);
-  return frameMode() ? null : <>{children}</>;
+  return enabled ? null : <>{children}</>;
 }
 
 /**

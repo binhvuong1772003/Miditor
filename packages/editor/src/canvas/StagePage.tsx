@@ -6,7 +6,7 @@ import { EmptyPage } from "../EmptyPage";
 import { countCommit } from "../perf";
 import { useEditorState, useViewCommands } from "../store";
 import { stageWidth } from "../zoom";
-import { FrameStage, frameMode } from "./FrameStage";
+import { FrameStage } from "./FrameStage";
 
 export interface StagePageProps {
   /** The element the page is drawn in, which the wheel zoom and the size measure look at. */
@@ -19,6 +19,8 @@ export interface StagePageProps {
   /** The page has no blocks yet: a hint to add the first one is drawn over it. */
   empty: boolean;
   /** Draw the page in a frame of its own instead of in place (experimental). */
+  /** Draw the page in a frame of its own (`canvas="iframe"`). */
+  inFrame?: boolean;
   /** Told the document of the frame when the page is drawn in one. */
   onFrame?: (doc: Document | null) => void;
   /** Told the keys pressed in the frame (see `FrameStage`). */
@@ -36,6 +38,7 @@ export function StagePage({
   renderers,
   metadata,
   empty,
+  inFrame = false,
   onFrame,
   onFrameKey,
   onFrameWheel,
@@ -44,9 +47,6 @@ export function StagePage({
   const zoom = useEditorState((state) => state.zoom);
   const frame = useEditorState((state) => state.frame);
   const viewing = useViewCommands();
-  // Experimental spike: `?iframe` draws the page in a frame of its own.
-  const inFrame =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("iframe");
   const pageClass = [
     styles.page,
     frame === "phone" && styles.phone,

@@ -160,6 +160,15 @@ export interface EditorProps {
    */
   metadata?: JsonValue;
   /**
+   * Where the page is drawn while it is edited: `"inline"` (the default) in the page that holds the editor,
+   * or `"iframe"` in a frame of its own. In a frame the blocks have a width of their own (`@media` and `vw` in
+   * the blocks of your kinds see the width of the page, as they do when it is published), the style of the
+   * editor cannot reach them and theirs cannot reach the editor, and what hangs over the edge of the page is
+   * cut. The style sheets of the page that holds the editor are copied into the frame, so the classes your
+   * kinds use are there. Experimental.
+   */
+  canvas?: "inline" | "iframe";
+  /**
    * How the host is storing the page, for the header to say so: "saved", "unsaved", "saving" or
    * "error". Without it the header follows the Save button (and shows nothing when there is none).
    * A change that is still waiting for its delayed `onChange` shows as unsaved, whatever this says,
@@ -431,6 +440,7 @@ function EditorBody({
   onChange,
   onChangeDebounce,
   metadata,
+  canvas,
   status,
   onSave,
   headerActions,
@@ -930,6 +940,7 @@ function EditorBody({
         api={api}
         renderers={config?.renderers}
         metadata={metadata}
+        inFrame={canvas === "iframe"}
         addBlockOf={addBlockOf}
         editorRoot={editorRoot}
         workspace={workspace}
