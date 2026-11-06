@@ -15,10 +15,14 @@ import {
 import { useEditorRoot } from "./shell";
 
 // The markup of the default layout, kept from before the editor was split into parts: the default
-// layout only adds `data-layout`, and the ids React makes follow the place in the tree; both are
-// taken out here. (The files are `.txt` so the formatter leaves them alone.)
+// layout only adds `data-layout`, the ids React makes follow the place in the tree, and the hash at the
+// end of a class name follows the place of the checkout; all three are taken out here. (The files
+// are `.txt` so the formatter leaves them alone.)
 const plain = (html: string) =>
-  html.replace(' data-layout="default"', "").replace(/_R_[0-9a-z]+_/g, "_R_");
+  html
+    .replace(' data-layout="default"', "")
+    .replace(/_R_[0-9a-z]+_/g, "_R_")
+    .replace(/(_[A-Za-z][\w-]*)_[0-9a-f]{6}\b/g, "$1");
 
 describe("the default layout is the editor as it was", () => {
   it("draws the same markup", async () => {

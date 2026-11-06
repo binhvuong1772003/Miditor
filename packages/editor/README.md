@@ -787,7 +787,9 @@ It sends the file as a `multipart/form-data` POST and reads the address from the
 answers with. A server that refuses, a broken answer or no network is shown to the person as the
 reason the upload failed. What the server checks, stores and cleans up is its own business.
 
-**Keep it in the page**, for a host with no server, with `embedImage`:
+**Keep it in the page.** A host that gives no `uploadImage` still gets the Upload buttons: the editor uses
+`embedImage()` for it. Pass your own `uploadImage` to store pictures on a server instead. To choose the
+settings of the default, pass it yourself with `embedImage`:
 
 ```tsx
 import { embedImage } from "@miditor/editor";
@@ -1056,10 +1058,10 @@ English. Right-to-left is not supported: the editor sets `lang` but not `dir`.
 ## Page info
 
 The Page settings on the right, shown when no block is selected, have a Page info section: a title, a description and a share picture. With
-`config.uploadImage` the share picture is uploaded like the background of the page; without it, a
-person types a full `https://` address. A social network only reads a full `https://` address, so
-for the share picture your upload should answer with one (a `data:` address from `embedImage` is
-fine to try things out but is not shown in a share). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
+`config.uploadImage` the share picture is uploaded like the background of the page; without it, the
+editor keeps the picture in the page with `embedImage()`. A social network only reads a full
+`https://` address, so for the share picture your upload should answer with one (a `data:` address
+from `embedImage` is fine to try things out but is not shown in a share). They are saved in `data.meta`. `<Render>` draws no head, so you put them there:
 
 ```tsx
 import { pageMeta } from "@miditor/render";

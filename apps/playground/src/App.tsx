@@ -260,6 +260,8 @@ function Playground({
   // A demo that brings its own page (`data`) keeps the stored one out of it.
   const [page] = useState(() => data ?? openPage());
   const plain = new URLSearchParams(window.location.search).has("plain");
+  // `?noupload`: the host gives no way to upload, so the editor keeps a chosen picture in the page.
+  const noUpload = new URLSearchParams(window.location.search).has("noupload");
   // `?history`: the editor gets a controller of its own to read the steps of its history, which are kept
   // with the page and opened again as `initialHistory`.
   const historyOn = new URLSearchParams(window.location.search).has("history");
@@ -295,7 +297,7 @@ function Playground({
     config: {
       components,
       renderers,
-      uploadImage,
+      ...(noUpload ? {} : { uploadImage }),
       actions,
       fonts,
       images: [...uploaded, ...seedImages],

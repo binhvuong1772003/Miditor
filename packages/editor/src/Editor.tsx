@@ -53,6 +53,7 @@ import type { CustomFieldInput } from "./custom-field";
 import { localPoint } from "./drop-place";
 import styles from "./Editor.module.css";
 import { isEditableTarget } from "./editable";
+import { embedImage } from "./embed-image";
 import { type AskedSource, type ExternalSource, withMetadata } from "./external-field";
 import type { FontDef } from "./fonts";
 import type { HideName } from "./hide";
@@ -378,6 +379,9 @@ function openPage(data: PageData | undefined, theme?: Theme): PageData {
 /** How close together, in ms, arrow-key presses are one step of history. */
 const NUDGE_MERGE_MS = 500;
 
+/** The upload of a host that gave none: the file is shrunk and kept in the page as an address. */
+const keptInPage = embedImage();
+
 /** What `<EditorProvider>` takes: the props of `<Editor>`, and the parts the host places. */
 export type EditorProviderProps = EditorProps & { children?: ReactNode };
 
@@ -458,9 +462,14 @@ function EditorBody({
   appearance,
   i18n,
   historyLimit,
-  config,
+  config: hostConfig,
 }: EditorProviderProps) {
   useRenders("editor");
+  // A host with no way to upload still gets an Upload button: the picture is kept inside the page.
+  const config = useMemo(
+    () => ({ ...hostConfig, uploadImage: hostConfig?.uploadImage ?? keptInPage }),
+    [hostConfig],
+  );
   const t = useMemo(() => createT(i18n), [i18n]);
   const icons = useMemo(() => usableIcons(config?.icons), [config?.icons]);
   const rootClass = className ? `${styles.root} ${className}` : styles.root;
